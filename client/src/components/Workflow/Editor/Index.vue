@@ -13,6 +13,7 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
         <b-modal
             v-model="showSaveAsModal"
             title="Save As a New Workflow"
@@ -147,7 +148,7 @@
     <MarkdownEditor
         v-else
         :markdown-text="markdownText"
-        :markdown-config="markdownConfig"
+        :markdown-config="report"
         mode="report"
         :title="'Workflow Report: ' + name"
         :steps="steps"
@@ -169,7 +170,7 @@
 <script>
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
-import Vue, { computed, onUnmounted, ref, unref } from "vue";
+import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
 
 import { replaceLabel } from "@/components/Markdown/parse";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
@@ -195,6 +196,7 @@ import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -207,6 +209,7 @@ export default {
     components: {
         MarkdownEditor,
         FlexPanel,
+        SaveChangesModal,
         StateUpgradeModal,
         ToolPanel,
         FormDefault,
@@ -313,7 +316,6 @@ export default {
     data() {
         return {
             isCanvas: true,
-            markdownConfig: null,
             markdownText: null,
             versions: [],
             parameters: null,
@@ -341,6 +343,8 @@ export default {
             transform: { x: 0, y: 0, k: 1 },
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
             debounceTimer: null,
+            showSaveChangesModal: false,
+            navUrl: "",
         };
     },
     computed: {
@@ -702,14 +706,21 @@ export default {
             const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        async onNavigate(url) {
+        async onNavigate(url, forceSave = false, ignoreChanges = false) {
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
-            } else {
-                await this.onSave(true);
+            } else if (this.hasChanges && !forceSave && !ignoreChanges) {
+                // if there are changes, prompt user to save or discard or cancel
+                this.navUrl = url;
+                this.showSaveChangesModal = true;
+                return;
+            } else if (forceSave) {
+                // when forceSave is true, save the workflow before navigating
+                await this.onSave();
             }
 
             this.hasChanges = false;
+            await nextTick();
             this.$router.push(url);
         },
         onSave(hideProgress = false) {
@@ -787,8 +798,8 @@ export default {
 
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
+            this.report = report;
             this.markdownText = markdown;
-            this.markdownConfig = report;
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;

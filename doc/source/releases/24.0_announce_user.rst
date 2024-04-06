@@ -30,9 +30,9 @@ My workflows: list view
 New select component for selecting a large amount of options
 -----------------------------------------------------------
 
-This new component addresses the need of selecting a very large number of options at once. The component features a list based layout which can be filtered using plain-text or a regular expression. Options can be added individually, in bulk via the filter value, or by first highlighting a range. 
+This new component addresses the need of selecting a very large number of options at once. The component features a list based layout which can be filtered using plain-text or a regular expression. Options can be added individually, in bulk via the filter value, or by first highlighting a range.
 
-The component is fully keyboard accessible. All methods of selection and highlighting work via keyboard. The options are not selectable individually with tab, but can be scrolled through using the arrow-keys. The hover hint adapts when a keyboard is used. 
+The component is fully keyboard accessible. All methods of selection and highlighting work via keyboard. The options are not selectable individually with tab, but can be scrolled through using the arrow-keys. The hover hint adapts when a keyboard is used.
 
 The size of the table can be increased to allow for seeing more options at once.The options in the list are limited to 1000 for performance reasons, but this can be temporarily increased in steps of 500, when reaching the end of a list.
 
@@ -47,7 +47,7 @@ The component can be chosen when multiple options are available; a local prefere
 Multiple item drag and drop and keyboard navigation
 -----------------------------------------------------------
 
-This new feature allows users to select multiple history items and drag and drop them into other histories or even tool forms! Users can also navigate their history using the arrow keys; multiple history items can be selected with the <kbd>Shift + ArrowUp/ArrowDown</kbd> key combination. 
+This new feature allows users to select multiple history items and drag and drop them into other histories or even tool forms! Users can also navigate their history using the arrow keys; multiple history items can be selected with the <kbd>Shift + ArrowUp/ArrowDown</kbd> key combination.
 
 Drag and drop:
 
@@ -73,7 +73,7 @@ Your histories, visualisations, and pages are now consolidated into an easier to
 Move datasets between storage locations
 -----------------------------------------------------------
 
-Relocate a dataset to a new object store with ease using this new UI feature! The example below uses an instance with four object stores defined, but only three of them declaring the same "device" ID. Clicking on the dataset information and scrolling to storage details has a "Relocate" option if the dataset is "safe" to relocate and there are valid targets to relocate it to. The UI utilizes the same visual language used for describing attributes of the storage and exposing admin provided details. This example also shows what the buttons look like with quota enabled object stores and object stores without quota enabled.
+Relocate a dataset to a different storage location with ease using this new UI feature! The example below uses an instance with four storage locations defined, but only three of them declaring the same "device" ID (set by the administrator). Clicking on the dataset information and scrolling to storage details has a "Relocate" option if the dataset is "safe" to relocate and there are valid targets to relocate it to. The UI utilizes the same visual language used for describing attributes of the storage and exposing admin provided details. This example also shows what the buttons look like for storage locations with and without quota enabled.
 
 .. raw:: html
 

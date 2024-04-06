@@ -1453,7 +1453,7 @@
     This option has no effect if the file specified by
     object_store_config_file exists. Otherwise, if this option is set,
     it overrides any other objectstore settings.
-    The syntax, available instrumenters, and documentation of their
+    The syntax, available storage plugins, and documentation of their
     options is explained in detail in the object store sample
     configuration file, `object_store_conf.sample.yml`
 :Default: ``None``
@@ -2606,8 +2606,20 @@
 
 :Description:
     The upload store is a temporary directory in which files uploaded
-    by the tus middleware or server will be placed. Defaults to
-    new_file_path if not set.
+    by the tus middleware or server for user uploads will be placed.
+    Defaults to new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store_job_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server for remote job files (Pulsar) will
+    be placed. Defaults to tus_upload_store if not set.
 :Default: ``None``
 :Type: str
 
@@ -4030,6 +4042,23 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``oidc_scope_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the prefix for OIDC scopes specific to this Galaxy instance.
+    If an API call is made against this Galaxy instance using an OIDC
+    bearer token, any scopes must be prefixed with this value e.g.
+    https://galaxyproject.org/api. More concretely, to request all
+    permissions that the user has, the scope would have to be
+    specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+    Currently, only * is recognised as a valid scope, and future
+    iterations may provide more fine-grained scopes.
+:Default: ``https://galaxyproject.org/api``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``auth_config_file``
 ~~~~~~~~~~~~~~~~~~~~
@@ -5439,9 +5468,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``help_forum_tool_panel_integration_enabled``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_help_forum_tool_panel_integration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.
