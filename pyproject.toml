@@ -158,7 +158,7 @@ selenium = "*"
 urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
+sphinx-rtd-theme = "*"
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
