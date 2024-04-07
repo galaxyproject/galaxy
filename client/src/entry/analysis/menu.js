@@ -19,123 +19,11 @@ export function fetchMenu(options = {}) {
     });
 
     //
-    // Workflow tab.
-    //
-    menu.push({
-        id: "workflow",
-        title: _l("Workflow"),
-        tooltip: _l("Chain tools into workflows"),
-        disabled: !Galaxy.user.id,
-        url: "/workflows/list",
-    });
-
-    //
-    // Visualization tab.
-    //
-    if (Galaxy.config.visualizations_visible) {
-        menu.push({
-            id: "visualization",
-            title: _l("Visualize"),
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            url: "/visualizations",
-        });
-    }
-
-    //
-    // 'Data' tab.
-    //
-    if (Galaxy.user.id) {
-        menu.push({
-            id: "resources",
-            title: _l("Data"),
-            url: "javascript:void(0)",
-            tooltip: _l("Access resources"),
-            menu: [
-                {
-                    title: _l("Data Libraries"),
-                    url: "/libraries",
-                },
-                {
-                    title: _l("Datasets"),
-                    url: "/datasets/list",
-                },
-                {
-                    title: _l("Histories"),
-                    url: "/histories/list",
-                },
-                {
-                    title: _l("Pages"),
-                    url: "/pages/list",
-                },
-                {
-                    title: _l("Visualizations"),
-                    url: "/visualizations/list",
-                },
-                {
-                    title: _l("Workflows"),
-                    url: "/workflows/list",
-                },
-                {
-                    title: _l("Workflow Invocations"),
-                    url: "/workflows/invocations",
-                },
-            ],
-        });
-    } else {
-        menu.push({
-            id: "resources",
-            title: _l("Data"),
-            url: "javascript:void(0)",
-            tooltip: _l("Access published resources"),
-            menu: [
-                {
-                    title: _l("Data Libraries"),
-                    url: "/libraries",
-                },
-                {
-                    title: _l("Histories"),
-                    url: "/histories/list_published",
-                },
-                {
-                    title: _l("Pages"),
-                    url: "/pages/list_published",
-                },
-                {
-                    title: _l("Visualizations"),
-                    url: "/visualizations/list_published",
-                },
-                {
-                    title: _l("Workflows"),
-                    url: "/workflows/list_published",
-                },
-            ],
-        });
-    }
-
-    //
-    // Admin.
-    //
-    if (Galaxy.user.get("is_admin")) {
-        menu.push({
-            id: "admin",
-            title: _l("Admin"),
-            url: "/admin",
-            tooltip: _l("Administer this Galaxy"),
-            cls: "admin-only",
-            onclick: () => {
-                const userStore = useUserStore();
-                userStore.toggleSideBar("admin");
-            },
-        });
-    }
-
-    //
     // Help tab.
     //
     const helpTab = {
         id: "help",
-        title: _l("Help"),
+        icon: "fa-question",
         url: "javascript:void(0)",
         tooltip: _l("Support, contact, and community"),
         menu: [
@@ -213,42 +101,12 @@ export function fetchMenu(options = {}) {
     } else {
         userTab = {
             id: "user",
-            title: _l("User"),
+            icon: "fa-sign-out-alt",
             cls: "loggedin-only",
-            url: "javascript:void(0)",
-            tooltip: _l("Account and saved data"),
-            menu: [
-                {
-                    title: `${_l("Signed in as")} ${
-                        Galaxy.user.get("username") ? Galaxy.user.get("username") : Galaxy.user.get("email")
-                    }`,
-                    disabled: true,
-                },
-                { divider: true },
-            ],
-        };
-        if (Galaxy.config.interactivetools_enable) {
-            userTab.menu.push({
-                title: _l("Active Interactive Tools"),
-                url: "/interactivetool_entry_points/list",
-            });
-        }
-        if (Galaxy.config.enable_notification_system) {
-            userTab.menu.push({
-                title: _l("Notifications"),
-                url: "/user/notifications",
-            });
-        }
-        userTab.menu.push({ divider: true });
-        userTab.menu.push({
-            title: _l("Preferences"),
-            url: "/user",
-        });
-        userTab.menu.push({
-            title: _l("Sign Out"),
             onclick: userLogout,
             hidden: Galaxy.config.single_user,
-        });
+            tooltip: _l("Logout"),
+        };
     }
     menu.push(userTab);
     return menu;

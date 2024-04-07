@@ -14,8 +14,6 @@ import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
 
-import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
-
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const route = useRoute();
@@ -138,13 +136,8 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem
-                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
-                id="notifications-bell">
-                <NotificationsBell tooltip-placement="bottom" />
-            </BNavItem>
+            <QuotaMeter />
         </BNavbarNav>
-        <QuotaMeter />
     </BNavbar>
 </template>
 
