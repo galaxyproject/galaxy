@@ -103,7 +103,7 @@ onMounted(() => {
         <BNavbarNav>
             <BNavbarBrand
                 v-b-tooltip.hover
-                class="ml-2 mr-2"
+                class="ml-2 mr-2 p-0"
                 title="Home"
                 aria-label="homepage"
                 :href="withPrefix(logoUrl)">
@@ -177,12 +177,12 @@ onMounted(() => {
                     color: var(--masthead-text-hover);
                 }
                 &.nav-icon {
-                    font-size: 1.3em;
+                    font-size: 1em;
                     .nav-note {
                         position: absolute;
-                        left: 1.9rem;
-                        top: 1.9rem;
-                        font-size: 0.6rem;
+                        left: 1.4rem;
+                        top: 1.4rem;
+                        font-size: 0.4rem;
                         font-weight: bold;
                     }
                 }
@@ -194,11 +194,12 @@ onMounted(() => {
     }
     .navbar-brand {
         cursor: pointer;
+        line-height: $masthead-height;
         img {
             filter: $text-shadow;
             display: inline;
             border: none;
-            height: 2.3rem;
+            height: 2rem;
         }
     }
     .navbar-text {
@@ -206,7 +207,7 @@ onMounted(() => {
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: 1rem;
-        line-height: 2rem;
+        line-height: $masthead-height;
         color: var(--masthead-text-color);
     }
 }
