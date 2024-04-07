@@ -137,7 +137,7 @@ class HDCADetailedWithOutputName(HDCADetailed):
 AnyHDCAWithOutputName = Union[HDCADetailedWithOutputName, HDCASummaryWithOutputName]
 
 
-class ToolResponse(Model):
+class ExecuteToolResponse(Model):
     outputs: List[AnyHDAWithOutputName] = Field(
         default=[],
         title="Outputs",

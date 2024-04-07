@@ -36,7 +36,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.tools import (
     ExecuteToolPayload,
-    ToolResponse,
+    ExecuteToolResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
@@ -98,7 +98,7 @@ class ToolsService(ServiceBase):
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[List[UploadFile]] = None,
-    ) -> ToolResponse:
+    ):
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
@@ -132,7 +132,7 @@ class ToolsService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         payload: ExecuteToolPayload,
-    ) -> ToolResponse:
+    ) -> ExecuteToolResponse:
         tool_id = payload.tool_id
         tool_uuid = payload.tool_uuid
         if tool_id in PROTECTED_TOOLS:
@@ -149,13 +149,14 @@ class ToolsService(ServiceBase):
             if key.startswith("files_") and isinstance(create_payload[key], UploadFile):
                 files[key] = self.create_temp_file_execute(trans, create_payload.pop(key))
         create_payload.update(files)
-        return self._create(trans, create_payload)
+        return self._create(trans, create_payload, encode_ids=False)
 
     def _create(
         self,
         trans: ProvidesHistoryContext,
         payload: Dict[str, Any],
-    ) -> ToolResponse:
+        encode_ids: bool = True,
+    ):
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
@@ -249,9 +250,9 @@ class ToolsService(ServiceBase):
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
 
-        return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
+        return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars, encode_ids)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> ToolResponse:
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars, encode_ids=True):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
@@ -269,6 +270,9 @@ class ToolsService(ServiceBase):
             # correspond with which tool file outputs
             output_dict["output_name"] = output_name
             outputs.append(output_dict)
+
+        for job in vars.get("jobs", []):
+            rval["jobs"].append(job.to_dict(view="collection"))
 
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
@@ -292,11 +296,10 @@ class ToolsService(ServiceBase):
             output_dict["output_name"] = output_name
             rval["implicit_collections"].append(output_dict)
 
-        # Encoding the job ids is handled by the pydantic model
-        for job in vars.get("jobs", []):
-            rval["jobs"].append(job.to_dict(view="collection"))
+        if encode_ids:
+            rval = self.encode_all_ids(rval, recursive=True)
 
-        return ToolResponse(**rval)
+        return rval
 
     def _search(self, q, view):
         """

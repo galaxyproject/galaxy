@@ -33,7 +33,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.tools import (
     ExecuteToolPayload,
-    ToolResponse,
+    ExecuteToolResponse,
 )
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -80,9 +80,7 @@ class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(
-        self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans
-    ) -> ToolResponse:
+    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -96,7 +94,7 @@ class FetchTools:
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> ToolResponse:
+    ):
         files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
 
         # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
@@ -115,7 +113,7 @@ class FetchTools:
         self,
         payload: ExecuteToolPayload = depend_on_either_json_or_form_data(ExecuteToolPayload),
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> ToolResponse:
+    ) -> ExecuteToolResponse:
         return self.service.execute(trans, payload)
 
 
