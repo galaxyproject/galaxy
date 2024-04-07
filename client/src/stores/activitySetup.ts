@@ -11,7 +11,7 @@ export const Activities = [
         icon: "fa-laptop",
         id: "interactivetools",
         mutable: false,
-        optional: true,
+        optional: false,
         title: "Interactive Tools",
         tooltip: "Show active interactive tools",
         to: "/interactivetool_entry_points/list",
