@@ -111,7 +111,19 @@ export const Activities = [
         title: "Datasets",
         tooltip: "Show all datasets",
         to: "/datasets/list",
-        visible: false,
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Display and create new Pages.",
+        icon: "fa-file-contract",
+        id: "pages",
+        mutable: false,
+        optional: true,
+        title: "Pages",
+        tooltip: "Show all pages",
+        to: "/pages/list",
+        visible: true,
     },
 ];
 
