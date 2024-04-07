@@ -37,7 +37,7 @@ onUnmounted(() => {
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar />
+        <ActivityBar v-if="showPanels" />
         <div id="center" class="overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <div v-show="!showCenter" class="h-100">
