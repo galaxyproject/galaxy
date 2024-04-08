@@ -38,6 +38,9 @@ def test_qza_set_peek():
     with get_input_files("qiime2.qza") as input_files:
         dataset = MockDataset(1)
         dataset.set_file_name(input_files[0])
+        dataset.metadata.semantic_type = None
+        dataset.metadata.uuid = None
+        assert qza.display_peek(dataset) == "Peek unavailable"
 
         qza.set_meta(dataset)
         qza.set_peek(dataset)

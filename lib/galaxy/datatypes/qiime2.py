@@ -50,6 +50,10 @@ class _QIIME2ResultBase(CompressedZipArchive):
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
+        if dataset.metadata.semantic_type is None:
+            # Proxy for metadata elements not (yet) set
+            return "Peek unavailable"
+
         def make_row(pair):
             return f"<tr><th>{pair[0]}</th><td>{html.escape(pair[1])}</td></tr>"
 

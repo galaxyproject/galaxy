@@ -4666,7 +4666,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return self.datatype.as_display_type(self, type, **kwd)
 
     def display_peek(self):
-        return self.datatype.display_peek(self)
+        try:
+            return self.datatype.display_peek(self)
+        except Exception:
+            log.exception("Error occurred while generating dataset peek")
+            return None
 
     def display_name(self):
         return self.datatype.display_name(self)
