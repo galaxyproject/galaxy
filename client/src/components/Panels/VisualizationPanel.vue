@@ -4,7 +4,8 @@ import PluginList from "@/components/Visualizations/PluginList.vue";
 </script>
 
 <template>
-    <ActivityPanel title="Visualizations">
+    <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
+        <h3>Create Visualization</h3>
         <PluginList />
     </ActivityPanel>
 </template>
