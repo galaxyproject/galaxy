@@ -61,7 +61,7 @@ function onQuery(newQuery: string) {
 <template>
     <div class="activity-settings rounded no-highlight">
         <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
-        <div v-if="foundActivities" class="activity-settings-content">
+        <div v-if="foundActivities" class="activity-settings-content mt-2">
             <div v-for="activity in filteredActivities" :key="activity.id">
                 <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">
