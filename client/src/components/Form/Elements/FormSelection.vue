@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -8,39 +8,38 @@ import { computed, ref, watch } from "vue";
 
 import { useUserFlagsStore } from "@/stores/userFlagsStore";
 
-import FormCheck from "./FormCheck.vue";
-import FormRadio from "./FormRadio.vue";
-import FormSelect from "./FormSelect.vue";
-import FormSelectMany from "./FormSelectMany/FormSelectMany.vue";
+import FormCheck from "@/components/Form/Elements/FormCheck.vue";
+import FormRadio from "@/components/Form/Elements/FormRadio.vue";
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import FormSelectMany from "@/components/Form/Elements/FormSelectMany/FormSelectMany.vue";
 
 library.add(faCaretDown);
 
-const emit = defineEmits(["input"]);
-const props = defineProps({
-    value: {
-        default: null,
-    },
-    data: {
-        type: Array,
-        default: null,
-    },
-    display: {
-        type: String,
-        default: null,
-    },
-    optional: {
-        type: Boolean,
-        default: false,
-    },
-    options: {
-        type: Array,
-        default: null,
-    },
-    multiple: {
-        type: Boolean,
-        default: false,
-    },
+interface Props {
+    display?: string;
+    optional?: boolean;
+    multiple?: boolean;
+    value?: string | string[];
+    options?: [string, string][];
+    data?: { label: string; value: string }[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    display: "select",
+    optional: false,
+    multiple: false,
+    value: "",
+    options: () => [],
+    data: () => [],
 });
+
+const emit = defineEmits<{
+    (e: "input", value: string | string[]): void;
+}>();
+
+const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
+
+const useMany = ref(false);
 
 const currentValue = computed({
     get: () => {
@@ -53,26 +52,26 @@ const currentValue = computed({
 
 /** Provides formatted select options. */
 const currentOptions = computed(() => {
-    let result = [];
     const data = props.data;
     const options = props.options;
+
+    let result: { label: string; value: string }[] = [];
+
     if (options && options.length > 0) {
         result = options.map((option) => ({ label: option[0], value: option[1] }));
     } else if (data && data.length > 0) {
         result = data;
     }
+
     if (!props.display && !props.multiple && props.optional) {
         result.unshift({
             label: "Nothing selected",
-            value: null,
+            value: "",
         });
     }
+
     return result;
 });
-
-const useMany = ref(false);
-
-const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
 
 watch(
     () => preferredFormSelectElement.value,
@@ -120,19 +119,23 @@ const showMultiButton = computed(() => displayMany.value);
 
             <BDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
                 <template v-slot:button-content>
-                    <FontAwesomeIcon icon="fa-caret-down"></FontAwesomeIcon>
+                    <FontAwesomeIcon :icon="faCaretDown" />
+
                     <span class="sr-only">select element preferences</span>
                 </template>
+
                 <BDropdownItemButton
                     :active="preferredFormSelectElement === 'none'"
                     @click="preferredFormSelectElement = 'none'">
                     No preference
                 </BDropdownItemButton>
+
                 <BDropdownItemButton
                     :active="preferredFormSelectElement === 'multi'"
                     @click="preferredFormSelectElement = 'multi'">
                     Default to simple select
                 </BDropdownItemButton>
+
                 <BDropdownItemButton
                     :active="preferredFormSelectElement === 'many'"
                     @click="preferredFormSelectElement = 'many'">
