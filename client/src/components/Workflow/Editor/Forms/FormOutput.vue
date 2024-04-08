@@ -1,7 +1,7 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            <FormOutputLabel :name="outputName" :step="step" @onOutputLabel="onOutputLabel" />
+            <FormOutputLabel :name="outputName" :step="step" />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
@@ -203,9 +203,6 @@ export default {
         },
         onInput(value, pjaKey) {
             this.$emit("onInput", value, pjaKey);
-        },
-        onOutputLabel(oldValue, newValue) {
-            this.$emit("onOutputLabel", oldValue, newValue);
         },
         onDatatype(newDatatype) {
             this.$emit("onDatatype", this.actionNames.ChangeDatatypeAction__newtype, this.outputName, newDatatype);

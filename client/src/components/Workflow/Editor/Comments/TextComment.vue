@@ -65,7 +65,11 @@ function getInnerText() {
 }
 
 function saveText() {
-    emit("change", { ...props.comment.data, text: getInnerText() });
+    const text = getInnerText();
+
+    if (text !== props.comment.data.text) {
+        emit("change", { ...props.comment.data, text });
+    }
 }
 
 function toggleBold() {

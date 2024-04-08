@@ -107,7 +107,7 @@ function onSetColor(color: WorkflowCommentColor) {
 function onTextChange() {
     const element = markdownTextarea.value;
 
-    if (element) {
+    if (element && element.value !== props.comment.data.text) {
         emit("change", { text: element.value });
     }
 }

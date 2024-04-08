@@ -62,8 +62,8 @@ export function splitMarkdown(markdown: string, preserveWhitespace: boolean = fa
 export function replaceLabel(
     markdown: string,
     labelType: WorkflowLabelKind,
-    fromLabel: string,
-    toLabel: string
+    fromLabel: string | null | undefined,
+    toLabel: string | null | undefined
 ): string {
     const { sections } = splitMarkdown(markdown, true);
 
@@ -80,9 +80,9 @@ export function replaceLabel(
             }
             // we've got a section with a matching label and type...
             const newArgs = { ...args };
-            newArgs[labelType] = toLabel;
+            newArgs[labelType] = toLabel ?? "";
             const argRexExp = namedArgumentRegex(labelType);
-            let escapedToLabel = escapeRegExpReplacement(toLabel);
+            let escapedToLabel = escapeRegExpReplacement(toLabel ?? "");
             const incomingContent = directiveSection.content;
             let content: string;
             const match = incomingContent.match(argRexExp);

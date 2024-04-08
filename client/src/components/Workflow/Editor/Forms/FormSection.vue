@@ -23,7 +23,6 @@
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
-            @onOutputLabel="onOutputLabel"
             @onDatatype="onDatatype" />
     </div>
 </template>
@@ -92,8 +91,11 @@ export default {
             return Boolean(this.formData[this.deleteActionKey]);
         },
     },
-    watch: {
-        formData() {
+    created() {
+        this.setFormData();
+    },
+    methods: {
+        postPostJobActions() {
             // The formData shape is kind of unfortunate, but it is what we have now.
             // This should be a properly nested object whose values should be retrieved and set via a store
             const postJobActions = {};
@@ -119,11 +121,6 @@ export default {
             });
             this.$emit("onChange", postJobActions);
         },
-    },
-    created() {
-        this.setFormData();
-    },
-    methods: {
         setFormData() {
             const pjas = {};
             Object.values(this.postJobActions).forEach((pja) => {
@@ -149,9 +146,6 @@ export default {
                 delete pjas[this.emailPayloadKey];
             }
         },
-        onOutputLabel(oldValue, newValue) {
-            this.$emit("onOutputLabel", oldValue, newValue);
-        },
         onInput(value, pjaKey) {
             let changed = false;
             const exists = pjaKey in this.formData;
@@ -168,6 +162,7 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
+                this.postPostJobActions();
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {
