@@ -303,8 +303,12 @@ NotificationCreateRequest = GenericNotificationCreateRequest[int]
 NotificationRecipients = GenericNotificationRecipients[int]
 
 
-class NotificationCreateRequestBody(RootModel):
-    root: GenericNotificationCreateRequest[DecodedDatabaseIdField]
+class NotificationRecipientsPayload(GenericNotificationRecipients[DecodedDatabaseIdField]):
+    pass
+
+
+class NotificationCreateRequestBody(GenericNotificationCreateRequest[DecodedDatabaseIdField]):
+    recipients: NotificationRecipientsPayload
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):

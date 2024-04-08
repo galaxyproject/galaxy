@@ -57,8 +57,8 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
         request = NotificationCreateRequest.model_construct(
-            notification=payload.root.notification,
-            recipients=payload.root.recipients,
+            notification=payload.notification,
+            recipients=payload.recipients,
         )
         return self.send_notification_internal(request)
 
