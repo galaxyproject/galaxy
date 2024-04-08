@@ -39,27 +39,27 @@
                 @onInsertWorkflowSteps="onInsertWorkflowSteps" />
         </FlexPanel>
         <div id="center" class="workflow-center">
-            <div class="unified-panel-header" unselectable="on">
-                <div class="unified-panel-header-inner">
+            <div class="editor-top-bar" unselectable="on">
+                <span>
                     <span class="sr-only">Workflow Editor</span>
-                    <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
-                    <i v-else>Create New Workflow</i>
+                    <span v-if="!isNewTempWorkflow || name" class="editor-title" :title="name">{{ name }}</span>
+                    <i v-else class="editor-title">Create New Workflow</i>
+                </span>
 
-                    <b-button-group>
-                        <b-button
-                            :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
-                            :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
-                            @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon icon="fa-arrow-left" />
-                        </b-button>
-                        <b-button
-                            :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
-                            :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
-                            @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon icon="fa-arrow-right" />
-                        </b-button>
-                    </b-button-group>
-                </div>
+                <b-button-group>
+                    <b-button
+                        :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
+                        :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
+                        @click="undoRedoStore.undo()">
+                        <FontAwesomeIcon icon="fa-arrow-left" />
+                    </b-button>
+                    <b-button
+                        :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
+                        :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
+                        @click="undoRedoStore.redo()">
+                        <FontAwesomeIcon icon="fa-arrow-right" />
+                    </b-button>
+                </b-button-group>
             </div>
             <WorkflowGraph
                 v-if="!datatypesMapperLoading"
@@ -926,7 +926,33 @@ export default {
     },
 };
 </script>
-<style scoped>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.editor-top-bar {
+    background: $brand-light;
+    color: $brand-dark;
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    height: 2.5rem;
+    padding: 0 1rem;
+
+    & > span {
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+
+    .editor-title {
+        overflow: hidden;
+        white-space: no-wrap;
+        text-overflow: ellipsis;
+    }
+}
+
 .reset-wheel {
     position: absolute;
     left: 1rem;
