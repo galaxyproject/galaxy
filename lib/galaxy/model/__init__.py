@@ -206,19 +206,19 @@ log = logging.getLogger(__name__)
 
 _datatypes_registry = None
 
-OPTIONAL_STR_TO_STR_DICT = Optional[Dict[str, str]]
+STR_TO_STR_DICT = Dict[str, str]
 
 
 class TransformAction(TypedDict):
     action: str
 
 
-TRANSFORM_ACTIONS = Optional[List[TransformAction]]
+TRANSFORM_ACTIONS = List[TransformAction]
 
 mapper_registry = registry(
     type_annotation_map={
-        OPTIONAL_STR_TO_STR_DICT: JSONType,
-        TRANSFORM_ACTIONS: MutableJSONType,
+        Optional[STR_TO_STR_DICT]: JSONType,
+        Optional[TRANSFORM_ACTIONS]: MutableJSONType,
     },
 )
 
@@ -1406,7 +1406,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     params: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
-    object_store_id_overrides: Mapped[OPTIONAL_STR_TO_STR_DICT] = mapped_column(JSONType)
+    object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
 
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
@@ -4364,7 +4364,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    transform: Mapped[TRANSFORM_ACTIONS] = mapped_column(MutableJSONType)
+    transform: Mapped[Optional[TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="sources")
     hashes: Mapped[List["DatasetSourceHash"]] = relationship(back_populates="source")
     dict_collection_visible_keys = ["id", "source_uri", "extra_files_path", "transform"]
