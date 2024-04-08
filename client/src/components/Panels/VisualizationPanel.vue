@@ -6,6 +6,7 @@ import { urlData } from "@/utils/url";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Plugin {
     description: string;
@@ -16,6 +17,7 @@ interface Plugin {
 
 const plugins: Ref<Array<Plugin>> = ref([]);
 const query = ref("");
+const isLoading = ref(true);
 
 const filteredPlugins = computed(() => {
     const queryLower = query.value.toLowerCase();
@@ -33,6 +35,7 @@ onMounted(() => {
 
 async function getPlugins() {
     plugins.value = await urlData({ url: "/api/plugins" });
+    isLoading.value = false;
 }
 </script>
 
@@ -41,7 +44,8 @@ async function getPlugins() {
         <h3>Create Visualization</h3>
         <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
         <div class="overflow-y mt-2">
-            <div v-if="filteredPlugins.length > 0">
+            <LoadingSpan v-if="isLoading" message="Loading visualizations"/>
+            <div v-else-if="filteredPlugins.length > 0">
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
                     <button :data-plugin-name="plugin.name">
                         <div class="d-flex">
