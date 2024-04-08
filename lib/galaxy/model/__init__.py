@@ -8037,6 +8037,19 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     def history_id(self):
         return self.workflow_invocation.history_id
 
+    def _serialize(self, id_encoder, serialization_options):
+        wfi_attrs = dict_for(self)
+        serialization_options.attach_identifier(id_encoder, self, wfi_attrs)
+        wfi_attrs["reason"] = unicodify(self.reason)
+        wfi_attrs["details"] = unicodify(self.details)
+        wfi_attrs["output_name"] = unicodify(self.output_name)
+        wfi_attrs["workflow_step_id"] = self.workflow_step_id
+        wfi_attrs["dependent_workflow_step_id"] = self.dependent_workflow_step_id
+        wfi_attrs["job_id"] = self.job_id
+        wfi_attrs["hda_id"] = self.hda_id
+        wfi_attrs["hdca_id"] = self.hdca_id
+        return wfi_attrs
+
 
 class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_step"
