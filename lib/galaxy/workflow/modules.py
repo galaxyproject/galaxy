@@ -2381,13 +2381,14 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
-    def get_informal_replacement_parameters(self, step) -> List[str]:
+    def get_informal_replacement_parameters(self, step: WorkflowStep) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            for argument in pja.action_arguments.values():
-                for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                    replacement_parameters.add(match)
+            if action_arguments := pja.action_arguments:
+                for argument in action_arguments.values():
+                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
+                        replacement_parameters.add(match)
 
         return list(replacement_parameters)
 
