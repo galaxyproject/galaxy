@@ -3,7 +3,7 @@ import { computed, onMounted, type Ref, ref } from "vue";
 
 import { absPath } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
-
+import { faEye } from "@fortawesome/free-solid-svg-icons";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -51,7 +51,7 @@ async function getPlugins() {
                         <div class="d-flex">
                             <div class="plugin-thumbnail mr-3">
                                 <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
-                                <div v-else class="fa fa-eye" />
+                                <icon v-else :icon="faEye" class="plugin-icon"/>
                             </div>
                             <div class="text-break">
                                 <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
@@ -66,12 +66,12 @@ async function getPlugins() {
     </ActivityPanel>
 </template>
 
-<style>
+<style lang="scss">
 .plugin-thumbnail {
     img {
         width: 2rem;
     }
-    div {
+    .plugin-icon {
         font-size: 1.5rem;
         padding: 0.2rem;
     }
