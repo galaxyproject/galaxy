@@ -4669,7 +4669,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         try:
             return self.datatype.display_peek(self)
         except Exception:
-            log.exception("Error occurred while generating dataset pee")
+            log.exception("Error occurred while generating dataset peek")
             return None
 
     def display_name(self):
