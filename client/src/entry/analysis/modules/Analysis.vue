@@ -40,7 +40,9 @@ onUnmounted(() => {
         <ActivityBar />
         <div id="center" class="overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
-            <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
+            <div v-show="!showCenter" class="h-100">
+                <router-view :key="$route.fullPath" class="h-100" />
+            </div>
         </div>
         <FlexPanel v-if="showPanels" side="right">
             <HistoryIndex />
