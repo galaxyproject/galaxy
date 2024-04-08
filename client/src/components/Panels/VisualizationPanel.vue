@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { onMounted, type Ref, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 
 import { absPath } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 interface Plugin {
@@ -14,6 +15,17 @@ interface Plugin {
 }
 
 const plugins: Ref<Array<Plugin>> = ref([]);
+const query = ref("");
+
+const filteredPlugins = computed(() => {
+    const queryLower = query.value.toLowerCase();
+    return plugins.value.filter(
+        (plugin) =>
+            !query.value ||
+            plugin.html.toLowerCase().includes(queryLower) ||
+            (plugin.description && plugin.description.toLowerCase().includes(queryLower))
+    );
+});
 
 onMounted(() => {
     getPlugins();
@@ -27,21 +39,25 @@ async function getPlugins() {
 <template>
     <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
         <h3>Create Visualization</h3>
-        <div class="overflow-y">
-            <div v-for="plugin in plugins" :key="plugin.name">
-                <button :data-plugin-name="plugin.name">
-                    <div class="d-flex">
-                        <div class="plugin-thumbnail mr-3">
-                            <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
-                            <div v-else class="fa fa-eye" />
+        <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
+        <div class="overflow-y mt-2">
+            <div v-if="filteredPlugins.length > 0">
+                <div v-for="plugin in filteredPlugins" :key="plugin.name">
+                    <button :data-plugin-name="plugin.name">
+                        <div class="d-flex">
+                            <div class="plugin-thumbnail mr-3">
+                                <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
+                                <div v-else class="fa fa-eye" />
+                            </div>
+                            <div class="text-break">
+                                <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
+                                <div class="plugin-list-text">{{ plugin.description }}</div>
+                            </div>
                         </div>
-                        <div class="text-break">
-                            <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
-                            <div class="plugin-list-text">{{ plugin.description }}</div>
-                        </div>
-                    </div>
-                </button>
+                    </button>
+                </div>
             </div>
+            <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
         </div>
     </ActivityPanel>
 </template>
