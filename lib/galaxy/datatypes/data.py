@@ -337,10 +337,10 @@ class Data(metaclass=DataMeta):
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML table, used for displaying peek"""
+        if not dataset.peek:
+            return "Peek not available"
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            if not dataset.peek:
-                dataset.set_peek()
             data = dataset.peek
             lines = data.splitlines()
             for line in lines:
