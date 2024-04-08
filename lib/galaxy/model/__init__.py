@@ -6854,14 +6854,23 @@ class HistoryDatasetCollectionAssociation(
             if self.collection:
                 flag_modified(self.collection, "collection_type")
 
-    def to_hda_representative(self, multiple=False):
+    @overload
+    def to_hda_representative(self, multiple: Literal[False] = False) -> Optional[HistoryDatasetAssociation]: ...
+
+    @overload
+    def to_hda_representative(self, multiple: Literal[True]) -> List[HistoryDatasetAssociation]: ...
+
+    def to_hda_representative(
+        self, multiple: bool = False
+    ) -> Union[List[HistoryDatasetAssociation], Optional[HistoryDatasetAssociation]]:
         rval = []
         for dataset in self.collection.dataset_elements:
             rval.append(dataset.dataset_instance)
             if multiple is False:
                 break
-        if len(rval) > 0:
-            return rval if multiple else rval[0]
+        if multiple:
+            return rval
+        return rval[0] if rval else None
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
