@@ -1494,7 +1494,6 @@ class ColumnListParameter(SelectToolParameter):
                 and hasattr(dataset.metadata, "column_names")
                 and dataset.metadata.element_is_set("column_names")
             ):
-                log.error(f"column_names {dataset.metadata.column_names}")
                 column_list = [
                     ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
                 ]
