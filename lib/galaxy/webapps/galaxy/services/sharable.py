@@ -180,7 +180,9 @@ class ShareableService:
             and users_to_notify
         ):
             request = SharedItemNotificationFactory.build_notification_request(item, users_to_notify, status)
-            self.notification_service.send_notification_internal(request)
+            # We can set force_sync=True here because we already have the set of users to notify
+            # and there is no need to resolve them asynchronously as no groups or roles are involved.
+            self.notification_service.send_notification_internal(request, force_sync=True)
 
 
 class SharedItemNotificationFactory:
