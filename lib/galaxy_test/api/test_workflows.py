@@ -970,6 +970,36 @@ steps:
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["steps"]["0"]["label"] == "new_label"
 
+    def test_refactor_tool_state_upgrade(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  multiple_versions_changes:
+    tool_id: multiple_versions_changes
+    tool_version: "0.1"
+    state:
+      inttest: 1
+      cond:
+        bool_to_select: false
+"""
+        )
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        refactor_response.raise_for_status()
+        refactor_result = refactor_response.json()
+        upgrade_result = refactor_result["action_executions"][0]
+        assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
+        message_one, message_two = upgrade_result["messages"]
+        assert message_one["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["input_name"] == "floattest"
+        assert message_two["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
+        assert message_two["input_name"] == "cond|bool_to_select"
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
