@@ -11,6 +11,7 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    UUID4,
 )
 from typing_extensions import Annotated
 
@@ -45,7 +46,7 @@ class ExecuteToolPayload(Model):
         title="Tool ID",
         description="The ID of the tool to execute.",
     )
-    tool_uuid: Optional[Any] = Field(
+    tool_uuid: Optional[UUID4] = Field(
         default=None,
         title="Tool UUID",
         description="The UUID of the tool to execute.",
