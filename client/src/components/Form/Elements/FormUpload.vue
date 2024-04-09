@@ -8,13 +8,13 @@ import { computed, ref } from "vue";
 library.add(faSpinner);
 
 interface Props {
-    value: string | ArrayBuffer | unknown;
+    value: string | string[] | number;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: string | ArrayBuffer | unknown): void;
+    (e: "input", value: string | string[] | number): void;
 }>();
 
 const file = ref(null);
@@ -36,7 +36,7 @@ function readFile() {
         waiting.value = true;
 
         reader.onload = () => {
-            currentValue.value = reader.result ?? "";
+            currentValue.value = reader.result as string;
             waiting.value = false;
         };
 
