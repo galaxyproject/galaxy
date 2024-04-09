@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DatasetDetails } from "@/api";
+import { type HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { bytesToString } from "@/utils/utils";
 
@@ -9,7 +9,7 @@ import DecodedId from "@/components/DecodedId.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
-    dataset: DatasetDetails;
+    dataset: HDADetailed;
 }
 
 defineProps<Props>();

@@ -7,7 +7,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { DatasetDetails } from "@/api";
+import { type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { fetchJobCommonProblems, fetchJobDetails, JobDetails, JobInputSummary } from "@/api/jobs";
 import { sendErrorReport } from "@/components/DatasetInformation/services";
@@ -38,7 +38,7 @@ const datasetLoading = ref(false);
 const jobDetails = ref<JobDetails>();
 const jobProblems = ref<JobInputSummary>();
 const resultMessages = ref<string[][]>([]);
-const dataset = ref<DatasetDetails | null>(null);
+const dataset = ref<HDADetailed | null>(null);
 
 const showForm = computed(() => {
     const noResult = !resultMessages.value.length;
@@ -91,7 +91,7 @@ async function getJobProblems() {
     }
 }
 
-async function submit(dataset: DatasetDetails, userEmailJob?: string | null) {
+async function submit(dataset: HDADetailed, userEmailJob?: string | null) {
     const email = userEmailJob;
 
     try {

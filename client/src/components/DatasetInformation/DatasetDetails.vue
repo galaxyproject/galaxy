@@ -4,7 +4,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-import { DatasetDetails } from "@/api";
+import { type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { fetchJobDetails, JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
@@ -36,7 +36,7 @@ const loading = ref(false);
 const jobLoading = ref(true);
 const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
-const dataset = ref<DatasetDetails | null>(null);
+const dataset = ref<HDADetailed | null>(null);
 const jobLoadingError = ref<string | null>(null);
 const datasetLoadingError = ref<string | null>(null);
 
