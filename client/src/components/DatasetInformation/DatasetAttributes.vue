@@ -51,13 +51,19 @@ function onError(message: string) {
     messageVariant.value = "danger";
 }
 
-function submit(key: string, operation: string) {
-    setAttributes(props.datasetId, formData.value[key], operation).then((response) => {
+async function submit(key: string, operation: string) {
+    try {
+        const response = await setAttributes(props.datasetId, formData.value[key], operation);
+
         messageText.value = response.message;
         messageVariant.value = response.status;
 
         historyStore.loadCurrentHistory();
-    }, onError);
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+
+        onError(error.response?.data?.err_msg || "Unable to save dataset attributes.");
+    }
 }
 
 async function loadDatasetAttributes() {
