@@ -2,7 +2,6 @@ import simplify from "simplify-js";
 import { ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { UndoRedoStore } from "@/stores/undoRedoStore";
 import type { BaseWorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
@@ -138,7 +137,7 @@ export function useToolLogic() {
         if (toolbarStore.currentTool === "freehandEraser") {
             return;
         } else if (comment.value?.type === "freehand") {
-            finalizeFreehandComment(comment);
+            finalizeFreehandComment(comment.value);
         } else if (toolbarStore.currentTool === "boxSelect") {
             finalizeBoxSelect();
         } else if (toolbarStore.currentTool !== "freehandComment") {
