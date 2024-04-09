@@ -34,6 +34,10 @@ export const useUserStore = defineStore("userStore", () => {
         loadPromise = null;
     }
 
+    const isAdmin = computed(() => {
+        return currentUser.value?.is_admin ?? false;
+    });
+
     const isAnonymous = computed(() => {
         return !("email" in (currentUser.value || []));
     });
@@ -121,6 +125,7 @@ export const useUserStore = defineStore("userStore", () => {
     return {
         currentUser,
         currentPreferences,
+        isAdmin,
         isAnonymous,
         currentTheme,
         currentFavorites,

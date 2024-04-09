@@ -2,6 +2,8 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
 
+import { useUserStore } from "@/stores/userStore";
+
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
@@ -121,6 +123,10 @@ export function fetchMenu(options = {}) {
             url: "/admin",
             tooltip: _l("Administer this Galaxy"),
             cls: "admin-only",
+            onclick: () => {
+                const userStore = useUserStore();
+                userStore.toggleSideBar("admin");
+            },
         });
     }
 
