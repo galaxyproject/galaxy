@@ -48,7 +48,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
             },
         });
 
-    const wrapper = await mount(DatasetError as object, {
+    const wrapper = mount(DatasetError as object, {
         propsData: {
             datasetId: DATASET_ID,
         },
