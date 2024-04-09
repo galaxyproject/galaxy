@@ -8873,7 +8873,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def add_message(self, message: "InvocationMessageUnion"):
         self.messages.append(
-            WorkflowInvocationMessage(
+            WorkflowInvocationMessage(  # type:ignore[abstract]
                 workflow_invocation_id=self.id,
                 **message.dict(
                     exclude_unset=True,
