@@ -1761,9 +1761,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             rval = session.execute(
                 update(Job).where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states))).values(state=state)
             )
-            with transaction(session):
-                session.commit()
             if rval.rowcount == 1:
+                # Need to expire state since we just updated it, but ORM doesn't know about it.
+                session.expire(self, ["state"])
                 self.state_history.append(JobStateHistory(self))
                 return True
             else:
@@ -4774,7 +4774,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return self.datatype.as_display_type(self, type, **kwd)
 
     def display_peek(self):
-        return self.datatype.display_peek(self)
+        try:
+            return self.datatype.display_peek(self)
+        except Exception:
+            log.exception("Error occurred while generating dataset peek")
+            return None
 
     def display_name(self):
         return self.datatype.display_name(self)
@@ -6989,14 +6993,23 @@ class HistoryDatasetCollectionAssociation(
             if self.collection:
                 flag_modified(self.collection, "collection_type")
 
-    def to_hda_representative(self, multiple=False):
+    @overload
+    def to_hda_representative(self, multiple: Literal[False] = False) -> Optional[HistoryDatasetAssociation]: ...
+
+    @overload
+    def to_hda_representative(self, multiple: Literal[True]) -> List[HistoryDatasetAssociation]: ...
+
+    def to_hda_representative(
+        self, multiple: bool = False
+    ) -> Union[List[HistoryDatasetAssociation], Optional[HistoryDatasetAssociation]]:
         rval = []
         for dataset in self.collection.dataset_elements:
             rval.append(dataset.dataset_instance)
             if multiple is False:
                 break
-        if len(rval) > 0:
-            return rval if multiple else rval[0]
+        if multiple:
+            return rval
+        return rval[0] if rval else None
 
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
