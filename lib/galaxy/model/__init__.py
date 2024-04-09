@@ -7455,12 +7455,6 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
         self.history = history
 
 
-class UCI:
-    def __init__(self):
-        self.id = None
-        self.user = None
-
-
 class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
