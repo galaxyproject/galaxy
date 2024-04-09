@@ -9638,14 +9638,18 @@ export interface components {
              */
             variant: components["schemas"]["NotificationVariant"];
         };
-        /** NotificationCreateRequestBody */
-        NotificationCreateRequestBody: {
+        /** NotificationCreateRequest */
+        NotificationCreateRequest: {
             /**
              * Notification
              * @description The notification to create. The structure depends on the category.
              */
             notification: components["schemas"]["NotificationCreateData"];
-            recipients: components["schemas"]["NotificationRecipientsPayload"];
+            /**
+             * Recipients
+             * @description The recipients of the notification. Can be a combination of users, groups and roles.
+             */
+            recipients: components["schemas"]["NotificationRecipientsRequest"];
         };
         /** NotificationCreatedResponse */
         NotificationCreatedResponse: {
@@ -9660,8 +9664,8 @@ export interface components {
              */
             total_notifications_sent: number;
         };
-        /** NotificationRecipientsPayload */
-        NotificationRecipientsPayload: {
+        /** NotificationRecipientsRequest */
+        NotificationRecipientsRequest: {
             /**
              * Group IDs
              * @description The list of encoded group IDs of the groups that should receive the notification.
@@ -19976,7 +19980,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NotificationCreateRequestBody"];
+                "application/json": components["schemas"]["NotificationCreateRequest"];
             };
         };
         responses: {

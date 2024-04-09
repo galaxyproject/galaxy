@@ -52,7 +52,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
-    GenericNotificationCreateRequest,
+    GenericNotificationCreate,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -154,9 +154,7 @@ class NotificationManager:
     def can_send_notifications_async(self):
         return self.config.enable_celery_tasks
 
-    def send_notification_to_recipients(
-        self, request: GenericNotificationCreateRequest
-    ) -> Tuple[Optional[Notification], int]:
+    def send_notification_to_recipients(self, request: GenericNotificationCreate) -> Tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
 

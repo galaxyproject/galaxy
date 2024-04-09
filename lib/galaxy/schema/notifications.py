@@ -6,7 +6,6 @@ from typing import (
     Generic,
     List,
     Optional,
-    TypeVar,
     Union,
 )
 
@@ -23,6 +22,10 @@ from typing_extensions import (
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+)
+from galaxy.schema.generics import (
+    DatabaseIdT,
+    GenericModel,
 )
 from galaxy.schema.schema import Model
 from galaxy.schema.types import (
@@ -261,10 +264,7 @@ class NotificationCreateData(Model):
     )
 
 
-DatabaseIdT = TypeVar("DatabaseIdT")
-
-
-class GenericNotificationRecipients(Model, Generic[DatabaseIdT]):
+class GenericNotificationRecipients(GenericModel, Generic[DatabaseIdT]):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
     user_ids: List[DatabaseIdT] = Field(
@@ -284,7 +284,7 @@ class GenericNotificationRecipients(Model, Generic[DatabaseIdT]):
     )
 
 
-class GenericNotificationCreateRequest(Model, Generic[DatabaseIdT]):
+class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
     """Contains the recipients and the notification to create."""
 
     recipients: GenericNotificationRecipients[DatabaseIdT] = Field(
@@ -299,16 +299,11 @@ class GenericNotificationCreateRequest(Model, Generic[DatabaseIdT]):
     )
 
 
-NotificationCreateRequest = GenericNotificationCreateRequest[int]
+NotificationCreateRequest = GenericNotificationCreate[int]
 NotificationRecipients = GenericNotificationRecipients[int]
 
 
-class NotificationRecipientsPayload(GenericNotificationRecipients[DecodedDatabaseIdField]):
-    pass
-
-
-class NotificationCreateRequestBody(GenericNotificationCreateRequest[DecodedDatabaseIdField]):
-    recipients: NotificationRecipientsPayload
+NotificationCreateRequestBody = GenericNotificationCreate[DecodedDatabaseIdField]
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):
