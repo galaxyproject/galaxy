@@ -559,7 +559,7 @@ steps:
 
         assert len(action_executions) == 1
         messages = action_executions[0].messages
-        assert len(messages) == 1
+        assert len(messages) == 2
         message = messages[0]
         assert message.message_type == RefactorActionExecutionMessageTypeEnum.tool_state_adjustment
         assert message.order_index == 0

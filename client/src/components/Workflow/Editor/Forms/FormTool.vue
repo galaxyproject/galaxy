@@ -129,7 +129,10 @@ export default {
     },
     computed: {
         id() {
-            return `${this.stepId}:${this.configForm.id}`;
+            // Make sure we compute a unique id. Local tools don't include the version in the id,
+            // but updating tool form when switching tool versions requires that the id changes.
+            // (see https://github.com/galaxyproject/galaxy/blob/f5e07b11f0996e75b2b6f27896b2301d8fa8717d/client/src/components/Form/FormDisplay.vue#L108)
+            return `${this.stepId}:${this.configForm.id}/${this.configForm.version}`;
         },
         toolCardId() {
             return `${this.stepId}`;
