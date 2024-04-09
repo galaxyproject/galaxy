@@ -76,7 +76,7 @@ FetchDataForm = as_form(FetchDataFormPayload)
 
 
 @router.cbv
-class FetchTools:
+class FastAPITools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
