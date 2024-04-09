@@ -5154,7 +5154,9 @@
     only if you have setup a Celery worker for Galaxy and you have
     configured the `celery_conf` option below. Specifically, you need
     to set the `result_backend` option in the `celery_conf` option to
-    a valid Celery result backend URL. For details, see
+    a valid Celery result backend URL. By default a SQLite database is
+    used for storing task results, please use a more robust backend
+    for production setups like Redis. For details, see
     https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
 :Default: ``false``
 :Type: bool
@@ -5177,7 +5179,7 @@
     disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
-:Default: ``{'result_backend': 'redis://127.0.0.1:6379/0', 'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Default: ``{'result_backend': 'db+sqlite:///./database/results.sqlite?isolation_level=IMMEDIATE', 'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
 :Type: any
 
 
