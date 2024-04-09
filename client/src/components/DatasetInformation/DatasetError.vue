@@ -9,8 +9,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { fetchJobCommonProblems, fetchJobDetails, JobDetails, JobInputSummary } from "@/api/jobs";
-import { sendErrorReport } from "@/components/DatasetInformation/services";
+import { fetchJobCommonProblems, fetchJobDetails, JobDetails, JobInputSummary, postJobErrorReport } from "@/api/jobs";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -95,13 +94,14 @@ async function submit(dataset: HDADetailed, userEmailJob?: string | null) {
     const email = userEmailJob;
 
     try {
-        const res = await sendErrorReport(dataset.creating_job, {
+        const { data } = await postJobErrorReport({
+            job_id: dataset.creating_job,
             dataset_id: dataset.id,
             message: message.value,
             email,
         });
 
-        resultMessages.value = res as string[][];
+        resultMessages.value = data.messages;
     } catch (error: any) {
         resultMessages.value = error;
     }

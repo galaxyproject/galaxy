@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { ShowFullJobResponse } from "./services";
+import { type ShowFullJobResponse } from "@/api/jobs";
 
 interface Props {
     jobStderr?: string;
