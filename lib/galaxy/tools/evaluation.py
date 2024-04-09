@@ -355,6 +355,7 @@ class ToolEvaluator:
                 element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
                 if element_identifier:
                     wrapper_kwds["identifier"] = element_identifier
+                wrapper_kwds["formats"] = input.formats
                 input_values[input.name] = DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
                 dataset_collection = value
