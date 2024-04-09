@@ -12,7 +12,7 @@ const DATASET_ID = "dataset_id";
 
 const localVue = getLocalVue();
 
-async function montDatasetAttributes(conversion_disable = false) {
+async function mountDatasetAttributes(conversion_disable = false) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
@@ -41,7 +41,7 @@ async function montDatasetAttributes(conversion_disable = false) {
 
 describe("DatasetAttributes", () => {
     it("check rendering", async () => {
-        const wrapper = await montDatasetAttributes();
+        const wrapper = await mountDatasetAttributes();
 
         expect(wrapper.findAll("button").length).toBe(6);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
@@ -61,7 +61,7 @@ describe("DatasetAttributes", () => {
     });
 
     it("check rendering without conversion option", async () => {
-        const wrapper = await montDatasetAttributes(true);
+        const wrapper = await mountDatasetAttributes(true);
 
         await flushPromises();
 
