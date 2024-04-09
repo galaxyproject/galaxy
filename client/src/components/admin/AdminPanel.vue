@@ -10,7 +10,7 @@ const { config, isConfigLoaded } = useConfig();
 const adminProperties = computed(() => {
     return {
         enableQuotas: config.value.enable_quotas,
-        isToolshedInstalled: config.value.tool_shed_urls && config.value.tool_shed_urls.length > 0,
+        isToolshedInstalled: config.value.tool_shed_urls?.length > 0 ?? false,
         versionMajor: config.value.version_major,
     };
 });
