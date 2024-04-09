@@ -644,12 +644,6 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         return "a few years ago"
 
 
-def pretty_print_json(json_data, is_json_string=False):
-    if is_json_string:
-        json_data = json.loads(json_data)
-    return json.dumps(json_data, sort_keys=True, indent=4)
-
-
 # characters that are valid
 valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
 
@@ -1621,6 +1615,19 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     :type  reply_to: str
     :param reply_to: Reply-to address (Default None)
     """
+    if config.smtp_server.startswith("mock_emails_to_path://"):
+        path = config.smtp_server[len("mock_emails_to_path://") :]
+        email_dict = {
+            "from": frm,
+            "to": to,
+            "subject": subject,
+            "body": body,
+            "html": html,
+            "reply_to": reply_to,
+        }
+        email_json = json.to_json_string(email_dict)
+        with open(path, "w") as f:
+            f.write(email_json)
 
     to = listify(to)
     if html:
