@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { type DatasetHash as DatasetHashType } from "@/api";
+
 import DatasetHash from "@/components/DatasetInformation/DatasetHash.vue";
 
 interface Props {
-    hashes: {
-        hash_value: string;
-    }[];
+    hashes: DatasetHashType[];
 }
 
 defineProps<Props>();
