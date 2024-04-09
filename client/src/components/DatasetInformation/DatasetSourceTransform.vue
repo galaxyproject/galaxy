@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { type DatasetTransform } from "@/api";
+
 const TRANSFORM_ACTION_DESCRIPTIONS = {
     to_posix_lines: {
         short: "Normalized new line characters",
@@ -29,13 +31,8 @@ const UNKNOWN_ACTION_DESCRIPTION = {
     long: "",
 };
 
-type Transform = {
-    action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
-    datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
-};
-
 interface Props {
-    transform: Transform[];
+    transform: DatasetTransform[];
 }
 
 const props = defineProps<Props>();
@@ -44,15 +41,15 @@ const actions = computed(() => {
     return props.transform.length > 1 ? "actions" : "action";
 });
 
-function actionDescription(transformAction: Transform) {
+function actionDescription(transformAction: DatasetTransform) {
     return TRANSFORM_ACTION_DESCRIPTIONS[transformAction.action] || UNKNOWN_ACTION_DESCRIPTION;
 }
 
-function actionShortDescription(transformAction: Transform) {
+function actionShortDescription(transformAction: DatasetTransform) {
     return actionDescription(transformAction).short || "Unknown action.";
 }
 
-function actionLongDescription(transformAction: Transform) {
+function actionLongDescription(transformAction: DatasetTransform) {
     let longDescription = actionDescription(transformAction).long || "";
 
     if (transformAction.action == "datatype_groom") {

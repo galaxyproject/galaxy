@@ -4,6 +4,7 @@ import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { type DatasetTransform } from "@/api";
 import { copy } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 
@@ -14,10 +15,7 @@ library.add(faCopy, faExternalLinkAlt);
 interface Props {
     source: {
         source_uri: string;
-        transform: {
-            action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
-            datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
-        }[];
+        transform: DatasetTransform[];
     };
 }
 

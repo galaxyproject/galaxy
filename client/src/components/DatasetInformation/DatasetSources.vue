@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import { type DatasetTransform } from "@/api";
+
 import DatasetSource from "@/components/DatasetInformation/DatasetSource.vue";
 
 interface Props {
     sources: {
         source_uri: string;
-        transform: {
-            action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
-            datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
-        }[];
+        transform: DatasetTransform[];
     }[];
 }
 
