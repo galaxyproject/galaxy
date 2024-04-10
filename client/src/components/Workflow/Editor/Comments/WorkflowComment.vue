@@ -12,7 +12,6 @@ import {
     LazyChangePositionAction,
     LazyChangeSizeAction,
 } from "../Actions/commentActions";
-import { useMultiSelect } from "../composables/multiSelect";
 
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
@@ -65,7 +64,6 @@ function onMove(position: [number, number]) {
         lazyAction = new LazyChangePositionAction(commentStore, props.comment, position);
         undoRedoStore.applyLazyAction(lazyAction);
     }
-    hasMoved = true;
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -80,21 +78,14 @@ function onSetColor(color: WorkflowCommentColor) {
     undoRedoStore.applyAction(new ChangeColorAction(commentStore, props.comment, color));
 }
 
-const { deselectAll } = useMultiSelect();
-let hasMoved = false;
-
 function toggleSelect(e: MouseEvent) {
-    if (!props.readonly && !(props.comment.type === "freehand") && !hasMoved) {
+    if (!props.readonly && !(props.comment.type === "freehand")) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopImmediatePropagation();
             commentStore.toggleCommentMultiSelected(props.comment.id);
-        } else {
-            deselectAll();
         }
     }
-
-    hasMoved = false;
 }
 </script>
 

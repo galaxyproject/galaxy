@@ -55,6 +55,7 @@ const emit = defineEmits<{
     (e: "pan-by", position: Position): void;
     (e: "move", position: MovePosition, event?: MouseEvent): void;
     (e: "mouseup", event: MouseEvent): void;
+    (e: "mousedown", event: MouseEvent): void;
     (e: "start"): void;
 }>();
 
@@ -170,6 +171,7 @@ function onStart() {
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
+        @mousedown="(e) => emit('mousedown', e)"
         v-on="$listeners">
         <slot></slot>
     </Draggable>

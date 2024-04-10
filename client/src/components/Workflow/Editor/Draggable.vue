@@ -64,16 +64,19 @@ type Size = { width: number; height: number };
 const { throttle } = useAnimationFrameThrottle();
 
 let dragging = false;
+let hasMoved = false;
 
-const { anySelected, multiSelectedSteps, multiSelectedComments } = useMultiSelect();
+const { anySelected, multiSelectedSteps, multiSelectedComments, deselectAll } = useMultiSelect();
 
 const previousPosition = ref<Position | null>(null);
 const currentLazyAction = ref<LazyMoveMultipleAction | null>(null);
 
 const onStart = (_position: Position, event: DragEvent) => {
+    emit("mousedown", event);
+    hasMoved = false;
+
     if (!anySelected.value) {
         emit("start");
-        emit("mousedown", event);
     }
 
     if (event.type == "dragstart") {
@@ -156,6 +159,8 @@ const onMove = (position: Position, event: DragEvent) => {
                 } else {
                     emit("move", snapped, event);
                 }
+
+                hasMoved = true;
             }
 
             previousPosition.value = snapped;
@@ -169,10 +174,15 @@ const onEnd = (_position: Position, event: DragEvent) => {
         dragImg = null;
     }
 
+    if (!hasMoved && !event.shiftKey) {
+        deselectAll();
+    }
+
     dragging = false;
 
+    emit("mouseup", event);
+
     if (!anySelected.value) {
-        emit("mouseup", event);
         emit("stop");
     }
 };
