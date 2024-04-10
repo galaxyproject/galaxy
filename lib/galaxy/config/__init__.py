@@ -51,6 +51,7 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
+from galaxy.util.resources import files
 from galaxy.util.themes import flatten_theme
 from ..version import (
     VERSION_MAJOR,
@@ -59,11 +60,6 @@ from ..version import (
 
 if TYPE_CHECKING:
     from galaxy.model import User
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
 
 log = logging.getLogger(__name__)
 

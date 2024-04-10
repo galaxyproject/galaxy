@@ -51,6 +51,7 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
+from galaxy.util.resources import files
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web.framework import (
@@ -59,12 +60,6 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 
