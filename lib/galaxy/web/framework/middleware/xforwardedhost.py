@@ -10,11 +10,11 @@ class XForwardedHostMiddleware:
     def __call__(self, environ, start_response):
         x_forwarded_host = environ.get("HTTP_X_FORWARDED_HOST", None)
         if x_forwarded_host:
-            environ["ORGINAL_HTTP_HOST"] = environ["HTTP_HOST"]
+            environ["ORIGINAL_HTTP_HOST"] = environ.get("HTTP_HOST")
             environ["HTTP_HOST"] = x_forwarded_host.split(", ", 1)[0]
         x_forwarded_for = environ.get("HTTP_X_FORWARDED_FOR", None)
         if x_forwarded_for:
-            environ["ORGINAL_REMOTE_ADDR"] = environ["REMOTE_ADDR"]
+            environ["ORIGINAL_REMOTE_ADDR"] = environ.get("REMOTE_ADDR")
             environ["REMOTE_ADDR"] = x_forwarded_for.split(",", 1)[0].strip()
         x_forwarded_proto = environ.get("HTTP_X_FORWARDED_PROTO", None)
         if x_forwarded_proto:
