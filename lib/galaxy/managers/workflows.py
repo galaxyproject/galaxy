@@ -1461,12 +1461,11 @@ class WorkflowContentsManager(UsesAnnotations):
             if not annotation_str and annotation_owner:
                 annotation_str = self.get_item_annotation_str(trans.sa_session, annotation_owner, step) or ""
             content_id = module.get_content_id() if allow_upgrade else step.content_id
-            errors = {}
             try:
                 tool_state = module.get_export_state()
             except ValueError:
                 # Fix state if necessary
-                errors = module.check_and_update_state()
+                module.check_and_update_state()
                 tool_state = module.get_export_state()
 
             # Step info
@@ -1478,7 +1477,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "tool_version": module.get_version() if allow_upgrade else step.tool_version,
                 "name": module.get_name(),
                 "tool_state": json.dumps(tool_state),
-                "errors": errors or module.get_errors(),
+                "errors": module.get_errors(),
                 "uuid": str(step.uuid),
                 "label": step.label or None,
                 "annotation": annotation_str,
