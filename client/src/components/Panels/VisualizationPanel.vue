@@ -79,7 +79,7 @@ onMounted(() => {
                 <div v-for="plugin in filteredPlugins" :key="plugin.name">
                     <button :data-plugin-name="plugin.name" @click="selectVisualization(plugin)">
                         <div class="d-flex">
-                            <div class="plugin-thumbnail mr-3">
+                            <div class="plugin-thumbnail mr-2">
                                 <img v-if="plugin.logo" alt="visualization" :src="absPath(plugin.logo)" />
                                 <icon v-else :icon="faEye" class="plugin-icon" />
                             </div>

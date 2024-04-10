@@ -77,12 +77,12 @@ function onQuery(newQuery: string) {
                                 icon="fas fa-check-square"
                                 fa-fw />
                             <FontAwesomeIcon v-else class="mr-1" icon="far fa-square" fa-fw />
-                            <small>
+                            <span>
                                 <icon class="mr-1" :icon="activity.icon" />
                                 <span v-localize class="font-weight-bold">{{
                                     activity.title || "No title available"
                                 }}</span>
-                            </small>
+                            </span>
                         </span>
                         <b-button
                             v-if="activity.mutable"
@@ -94,9 +94,9 @@ function onQuery(newQuery: string) {
                             <FontAwesomeIcon icon="fa-trash" fa-fw />
                         </b-button>
                     </div>
-                    <small v-localize>
+                    <div v-localize>
                         {{ activity.description || "No description available" }}
-                    </small>
+                    </div>
                 </button>
             </div>
         </div>
