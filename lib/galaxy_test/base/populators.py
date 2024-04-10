@@ -2872,6 +2872,8 @@ class BaseDatasetCollectionPopulator:
             history_id=history_id,
             targets=targets,
         )
+        if "__files" in kwds:
+            payload["__files"] = kwds.pop("__files")
         return payload
 
     def wait_for_fetched_collection(self, fetch_response: Union[Dict[str, Any], Response]):
@@ -3007,7 +3009,8 @@ def load_data_dict(
         if is_dict and ("elements" in value or value.get("collection_type")):
             elements_data = value.get("elements", [])
             elements = []
-            for element_data in elements_data:
+            new_collection_kwds: Dict[str, Any] = {}
+            for i, element_data in enumerate(elements_data):
                 # Adapt differences between test_data dict and fetch API description.
                 if "name" not in element_data:
                     identifier = element_data.pop("identifier")
@@ -3015,14 +3018,17 @@ def load_data_dict(
                 input_type = element_data.pop("type", "raw")
                 content = None
                 if input_type == "File":
-                    content = read_test_data(element_data)
+                    content = open_test_data(element_data)
+                    element_data["src"] = "files"
+                    if "__files" not in new_collection_kwds:
+                        new_collection_kwds["__files"] = {}
+                    new_collection_kwds["__files"][f"file_{i}|file_data"] = content
                 else:
                     content = element_data.pop("content")
-                if content is not None:
-                    element_data["src"] = "pasted"
-                    element_data["paste_content"] = content
+                    if content is not None:
+                        element_data["src"] = "pasted"
+                        element_data["paste_content"] = content
                 elements.append(element_data)
-            new_collection_kwds = {}
             if "name" in value:
                 new_collection_kwds["name"] = value["name"]
             collection_type = value.get("collection_type", "")
