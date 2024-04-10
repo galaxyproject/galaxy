@@ -1082,6 +1082,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = (
                 f"sqlalchemy+sqlite:///{self._in_data_dir('control.sqlite')}?isolation_level=IMMEDIATE"
             )
+
+        self._process_celery_config()
+
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path) as stream:
@@ -1202,6 +1205,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 _load_theme(file_path, self.themes_by_host[host])
         else:
             _load_theme(self.themes_config_file, self.themes)
+
+    def _process_celery_config(self):
+        if self.celery_conf:
+            result_backend = self.celery_conf.get("result_backend")
+            if result_backend:
+                # If the result_backend is the default SQLite database, we need to
+                # ensure that the correct data directory is used.
+                if "results.sqlite" in result_backend:
+                    result_backend = f"db+sqlite:///{self._in_data_dir('results.sqlite')}?isolation_level=IMMEDIATE"
+                self.celery_conf["result_backend"] = result_backend
 
     def _check_database_connection_strings(self):
         """

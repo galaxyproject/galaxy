@@ -5154,9 +5154,10 @@
     only if you have setup a Celery worker for Galaxy and you have
     configured the `celery_conf` option below. Specifically, you need
     to set the `result_backend` option in the `celery_conf` option to
-    a valid Celery result backend URL. By default a SQLite database is
-    used for storing task results, please use a more robust backend
-    for production setups like Redis. For details, see
+    a valid Celery result backend URL. By default, Galaxy uses an
+    SQLite database at '<data_dir>/results.sqlite' for storing task
+    results. Please use a more robust backend for production setups
+    like Redis. For details, see
     https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
 :Default: ``false``
 :Type: bool
