@@ -1,11 +1,13 @@
 <script setup lang="ts">
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed } from "vue";
 
-export interface FormBooleanProps {
-    value: boolean | string;
+export interface Props {
+    value: boolean | "true" | "false";
 }
 
-const props = defineProps<FormBooleanProps>();
+const props = defineProps<Props>();
+
 const emit = defineEmits<{
     (e: "input", value: boolean): void;
 }>();
@@ -23,7 +25,7 @@ const label = computed(() => (currentValue.value ? "Yes" : "No"));
 </script>
 
 <template>
-    <b-form-checkbox v-model="currentValue" class="no-highlight" switch>
+    <BFormCheckbox v-model="currentValue" class="no-highlight" switch>
         {{ label }}
-    </b-form-checkbox>
+    </BFormCheckbox>
 </template>
