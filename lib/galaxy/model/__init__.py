@@ -771,7 +771,7 @@ class User(Base, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         collection_class=ordering_list("order_index"),
     )
-    _preferences: Mapped[List["UserPreference"]] = relationship(
+    _preferences: Mapped[Dict[str, "UserPreference"]] = relationship(
         "UserPreference", collection_class=attribute_keyed_dict("name")
     )
     values: Mapped[List["FormValues"]] = relationship(
