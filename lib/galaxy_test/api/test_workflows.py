@@ -3828,6 +3828,31 @@ test_data:
                 assert_ok=True,
             )
 
+    @skip_without_tool("implicit_conversion_format_input")
+    def test_run_with_implicit_collection_map_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  collection: collection
+steps:
+  map_over:
+    tool_id: implicit_conversion_format_input
+    in:
+      input1: collection
+test_data:
+  collection:
+    collection_type: list
+    elements:
+      - identifier: 1
+        value: 1.fasta.gz
+        type: File
+""",
+                history_id=history_id,
+                assert_ok=True,
+            )
+
     @skip_without_tool("random_lines1")
     def test_change_datatype_collection_map_over(self):
         with self.dataset_populator.test_history() as history_id:
