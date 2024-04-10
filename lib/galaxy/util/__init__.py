@@ -34,6 +34,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -1736,25 +1737,23 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  # type: ignore[name-defined]
+#  Don't use this directly, prefer method version that "works" with packaged Galaxy.
+galaxy_root_path = Path(__file__).parent.parent.parent.parent
 
 
-def galaxy_directory():
-    path = galaxy_root_path
+def galaxy_directory() -> str:
     if in_packages():
-        path = os.path.join(galaxy_root_path, "..")
+        # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
+        cwd = Path.cwd()
+        path = cwd.parent.parent
+    else:
+        path = galaxy_root_path
     return os.path.abspath(path)
 
 
-def in_packages():
-    # Normalize first; otherwise basename will be `..`
-    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
-
-
-def galaxy_samples_directory():
-    return os.path.join(galaxy_directory(), "lib", "galaxy", "config", "sample")
+def in_packages() -> bool:
+    galaxy_lib_path = Path(__file__).parent.parent.parent
+    return galaxy_lib_path.name != "lib"
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

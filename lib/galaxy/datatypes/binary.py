@@ -4367,7 +4367,7 @@ class HexrdImagesNpz(Npz):
     >>> fname = get_test_fname('hexrd.images.npz')
     >>> HexrdImagesNpz().sniff(fname)
     True
-    >>> fname = get_test_fname('eta_ome.npz')
+    >>> fname = get_test_fname('hexrd.eta_ome.npz')
     >>> HexrdImagesNpz().sniff(fname)
     False
     """
