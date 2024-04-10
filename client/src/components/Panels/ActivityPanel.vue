@@ -77,8 +77,7 @@ const emit = defineEmits(["goToAll"]);
             border-color: transparent;
         }
         button:first-child:hover {
-            background: $brand-primary;
-            color: $brand-light;
+            background: $gray-200;
         }
     }
 
