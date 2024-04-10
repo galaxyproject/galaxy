@@ -1207,14 +1207,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             _load_theme(self.themes_config_file, self.themes)
 
     def _process_celery_config(self):
-        if self.celery_conf:
-            result_backend = self.celery_conf.get("result_backend")
-            if result_backend:
-                # If the result_backend is the default SQLite database, we need to
-                # ensure that the correct data directory is used.
-                if "results.sqlite" in result_backend:
-                    result_backend = f"db+sqlite:///{self._in_data_dir('results.sqlite')}?isolation_level=IMMEDIATE"
-                self.celery_conf["result_backend"] = result_backend
+        if self.celery_conf and self.celery_conf.get("result_backend") is None:
+            # If the result_backend is not set, use a SQLite database in the data directory
+            result_backend = f"db+sqlite:///{self._in_data_dir('results.sqlite')}?isolation_level=IMMEDIATE"
+            self.celery_conf["result_backend"] = result_backend
 
     def _check_database_connection_strings(self):
         """
