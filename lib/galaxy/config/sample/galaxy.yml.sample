@@ -2773,15 +2773,15 @@ galaxy:
   # `foo` is the function name of the task defined in the
   # galaxy.celery.tasks module.
   # The `broker_url` option, if unset, defaults to the value of
-  # `amqp_internal_connection`. The `result_backend` option must be set
-  # if the `enable_celery_tasks` option is set.
+  # `amqp_internal_connection`. The `result_backend` option, if unset,
+  # defaults to an SQLite database at '<data_dir>/results.sqlite' for
+  # storing task results.
   # The galaxy.fetch_data task can be disabled by setting its route to
   # "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
   # disabled on a per-task basis at this time.)
   # For details, see Celery documentation at
   # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
   #celery_conf:
-  #  result_backend: db+sqlite:///./database/results.sqlite?isolation_level=IMMEDIATE
   #  task_routes:
   #    galaxy.fetch_data: galaxy.external
   #    galaxy.set_job_metadata: galaxy.external
