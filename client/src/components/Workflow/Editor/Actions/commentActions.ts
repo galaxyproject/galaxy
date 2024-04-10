@@ -5,7 +5,6 @@ import type {
     WorkflowCommentColor,
     WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
-import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 
 class CommentAction extends UndoRedoAction {
     protected store: WorkflowCommentStore;
@@ -144,86 +143,5 @@ export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
 
     get name() {
         return `resize ${this.type} comment`;
-    }
-}
-
-type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
-
-export class LazyMoveMultipleAction extends LazyUndoRedoAction {
-    private commentStore;
-    private stepStore;
-    private comments;
-    private steps;
-
-    private stepStartOffsets = new Map<number, [number, number]>();
-    private commentStartOffsets = new Map<number, [number, number]>();
-
-    private positionFrom;
-    private positionTo;
-
-    get name() {
-        return "move multiple nodes";
-    }
-
-    constructor(
-        commentStore: WorkflowCommentStore,
-        stepStore: WorkflowStepStore,
-        comments: WorkflowComment[],
-        steps: StepWithPosition[],
-        position: { x: number; y: number },
-        positionTo?: { x: number; y: number }
-    ) {
-        super();
-        this.commentStore = commentStore;
-        this.stepStore = stepStore;
-        this.comments = [...comments];
-        this.steps = [...steps];
-
-        this.steps.forEach((step) => {
-            this.stepStartOffsets.set(step.id, [step.position.left - position.x, step.position.top - position.y]);
-        });
-
-        this.comments.forEach((comment) => {
-            this.commentStartOffsets.set(comment.id, [
-                comment.position[0] - position.x,
-                comment.position[1] - position.y,
-            ]);
-        });
-
-        this.positionFrom = { ...position };
-        this.positionTo = positionTo ? { ...positionTo } : { ...position };
-    }
-
-    changePosition(position: { x: number; y: number }) {
-        this.setPosition(position);
-        this.positionTo = { ...position };
-    }
-
-    private setPosition(position: { x: number; y: number }) {
-        this.steps.forEach((step) => {
-            const stepPosition = { left: 0, top: 0 };
-            const offset = this.stepStartOffsets.get(step.id) ?? [0, 0];
-            stepPosition.left = position.x + offset[0];
-            stepPosition.top = position.y + offset[1];
-            this.stepStore.updateStep({ ...step, position: stepPosition });
-        });
-
-        this.comments.forEach((comment) => {
-            const offset = this.commentStartOffsets.get(comment.id) ?? [0, 0];
-            const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
-            this.commentStore.changePosition(comment.id, commentPosition);
-        });
-    }
-
-    queued() {
-        this.setPosition(this.positionTo);
-    }
-
-    undo() {
-        this.setPosition(this.positionFrom);
-    }
-
-    redo() {
-        this.setPosition(this.positionTo);
     }
 }

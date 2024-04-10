@@ -949,7 +949,7 @@ export default {
 
     .editor-title {
         overflow: hidden;
-        white-space: no-wrap;
+        white-space: nowrap;
         text-overflow: ellipsis;
     }
 }

@@ -8,7 +8,7 @@ import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize"
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
-import { useMultidrag } from "./composables/multidrag";
+import { LazyMoveMultipleAction } from "./Actions/workflowActions";
 import { useMultiSelect } from "./composables/multiSelect";
 import { useDraggable } from "./composables/useDraggable";
 
@@ -65,15 +65,15 @@ const { throttle } = useAnimationFrameThrottle();
 
 let dragging = false;
 
-const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
 const { anySelected, multiSelectedSteps, multiSelectedComments } = useMultiSelect();
 
-const onStart = (_position: Position, event: DragEvent) => {
-    emit("start");
-    emit("mousedown", event);
+const previousPosition = ref<Position | null>(null);
+const currentLazyAction = ref<LazyMoveMultipleAction | null>(null);
 
-    if (anySelected.value && props.position) {
-        multidragStart(props.position, multiSelectedSteps.value, multiSelectedComments.value);
+const onStart = (_position: Position, event: DragEvent) => {
+    if (!anySelected.value) {
+        emit("start");
+        emit("mousedown", event);
     }
 
     if (event.type == "dragstart") {
@@ -90,11 +90,14 @@ const onStart = (_position: Position, event: DragEvent) => {
         if (props.dragData) {
             event.dataTransfer!.setData("text/plain", JSON.stringify(props.dragData));
         }
-        emit("dragstart", event);
+
+        if (!anySelected.value) {
+            emit("dragstart", event);
+        }
     }
 };
 
-const { toolbarStore } = useWorkflowStores();
+const { toolbarStore, stepStore, commentStore, undoRedoStore } = useWorkflowStores();
 const { snapActive } = storeToRefs(toolbarStore);
 
 function getSnappedPosition<T extends Position>(position: T) {
@@ -112,8 +115,6 @@ function getSnappedPosition<T extends Position>(position: T) {
         } as T;
     }
 }
-
-let previousPosition: Position | undefined;
 
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
@@ -133,12 +134,31 @@ const onMove = (position: Position, event: DragEvent) => {
 
             const snapped = getSnappedPosition(newPosition);
 
-            if (!previousPosition || previousPosition.x !== snapped.x || previousPosition.y !== snapped.y) {
-                emit("move", snapped, event);
+            if (
+                !previousPosition.value ||
+                previousPosition.value.x !== snapped.x ||
+                previousPosition.value.y !== snapped.y
+            ) {
+                if (anySelected.value) {
+                    if (undoRedoStore.isQueued(currentLazyAction.value)) {
+                        currentLazyAction.value?.changePosition(snapped);
+                    } else {
+                        currentLazyAction.value = new LazyMoveMultipleAction(
+                            commentStore,
+                            stepStore,
+                            multiSelectedComments.value,
+                            multiSelectedSteps.value,
+                            props.position ?? newPosition,
+                            snapped
+                        );
+                        undoRedoStore.applyLazyAction(currentLazyAction.value);
+                    }
+                } else {
+                    emit("move", snapped, event);
+                }
             }
 
-            multidragMove(snapped);
-            previousPosition = snapped;
+            previousPosition.value = snapped;
         }
     });
 };
@@ -150,10 +170,11 @@ const onEnd = (_position: Position, event: DragEvent) => {
     }
 
     dragging = false;
-    multidragEnd();
 
-    emit("mouseup", event);
-    emit("stop");
+    if (!anySelected.value) {
+        emit("mouseup", event);
+        emit("stop");
+    }
 };
 
 const maybeDraggable = computed(() => (props.disabled ? null : draggable.value));

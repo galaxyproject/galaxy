@@ -14,7 +14,6 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
-    LazyMoveMultipleAction,
 } from "./commentActions";
 import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
 import {
@@ -26,7 +25,7 @@ import {
     RemoveStepAction,
     UpdateStepAction,
 } from "./stepActions";
-import { CopyIntoWorkflowAction, LazySetValueAction } from "./workflowActions";
+import { CopyIntoWorkflowAction, LazyMoveMultipleAction, LazySetValueAction } from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -74,13 +73,19 @@ describe("Workflow Undo Redo Actions", () => {
 
     const { commentStore, undoRedoStore, stepStore, stateStore, connectionStore } = stores;
 
-    describe("Comment Actions", () => {
-        function addComment() {
-            const comment = mockComment(commentStore.highestCommentId + 1);
-            commentStore.addComments([comment]);
-            return comment;
-        }
+    function addComment() {
+        const comment = mockComment(commentStore.highestCommentId + 1);
+        commentStore.addComments([comment]);
+        return comment;
+    }
 
+    function addStep() {
+        const step = mockToolStep(stepStore.getStepIndex + 1);
+        stepStore.addStep(step);
+        return step;
+    }
+
+    describe("Comment Actions", () => {
         it("AddCommentAction", () => {
             expect(commentStore.comments.length).toBe(0);
 
@@ -119,19 +124,6 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new LazyChangeSizeAction(commentStore, comment, [1000, 1000]);
             testUndoRedo(action);
         });
-
-        it("LazyMoveMultipleAction", () => {
-            addComment();
-            const action = new LazyMoveMultipleAction(
-                commentStore,
-                stores.stepStore,
-                commentStore.comments,
-                Object.values(stores.stepStore.steps) as any,
-                { x: 0, y: 0 },
-                { x: 500, y: 500 }
-            );
-            testUndoRedo(action);
-        });
     });
 
     describe("Workflow Actions", () => {
@@ -153,15 +145,22 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
             testUndoRedo(action);
         });
+
+        it("LazyMoveMultipleAction", () => {
+            addComment();
+            const action = new LazyMoveMultipleAction(
+                commentStore,
+                stores.stepStore,
+                commentStore.comments,
+                Object.values(stores.stepStore.steps) as any,
+                { x: 0, y: 0 },
+                { x: 500, y: 500 }
+            );
+            testUndoRedo(action);
+        });
     });
 
     describe("Step Actions", () => {
-        function addStep() {
-            const step = mockToolStep(stepStore.getStepIndex + 1);
-            stepStore.addStep(step);
-            return step;
-        }
-
         it("LazyMutateStepAction", () => {
             const step = addStep();
             const action = new LazyMutateStepAction(stepStore, step.id, "annotation", "", "hello world");

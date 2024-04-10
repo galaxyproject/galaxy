@@ -13,9 +13,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-import { LazyMoveMultipleAction } from "../Actions/commentActions";
-import { useMultidrag } from "../composables/multidrag";
-import { useMultiSelect } from "../composables/multiSelect";
+import { LazyMoveMultipleAction } from "../Actions/workflowActions";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -143,10 +141,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
     return comments;
 }
 
-const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
-
 let lazyAction: LazyMoveMultipleAction | null = null;
-const { anySelected } = useMultiSelect();
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -167,15 +162,11 @@ function onDragStart() {
 
     lazyAction = new LazyMoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
     undoRedoStore.applyLazyAction(lazyAction);
-    if (!anySelected.value) {
-        multidragStart(aabb, stepsInBounds, commentsInBounds);
-    }
 }
 
 function onDragEnd() {
     saveText();
     undoRedoStore.flushLazyAction();
-    multidragEnd();
 }
 
 function onMove(position: { x: number; y: number }) {
@@ -184,7 +175,6 @@ function onMove(position: { x: number; y: number }) {
     } else {
         onDragStart();
     }
-    multidragMove(position);
 }
 
 function onDoubleClick() {
