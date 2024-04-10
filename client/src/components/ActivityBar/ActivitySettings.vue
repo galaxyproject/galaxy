@@ -94,7 +94,7 @@ function onQuery(newQuery: string) {
                             <FontAwesomeIcon icon="fa-trash" fa-fw />
                         </b-button>
                     </div>
-                    <div v-localize>
+                    <div v-localize class="text-muted">
                         {{ activity.description || "No description available" }}
                     </div>
                 </button>

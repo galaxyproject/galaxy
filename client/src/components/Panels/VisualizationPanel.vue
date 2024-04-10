@@ -85,7 +85,7 @@ onMounted(() => {
                             </div>
                             <div class="text-break">
                                 <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
-                                <div class="plugin-list-text">{{ plugin.description }}</div>
+                                <div class="plugin-list-text text-muted">{{ plugin.description }}</div>
                             </div>
                         </div>
                     </button>
