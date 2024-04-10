@@ -1269,7 +1269,7 @@ class PasswordResetToken(Base):
     token: Mapped[str] = mapped_column(String(32), primary_key=True, unique=True, index=True)
     expiration_time: Mapped[Optional[datetime]]
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user: Mapped["User"] = relationship("User")
+    user: Mapped[Optional["User"]] = relationship("User")
 
     def __init__(self, user, token=None):
         if token:
