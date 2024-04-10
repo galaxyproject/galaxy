@@ -101,7 +101,7 @@ class BaseMetadataGenerator:
         repo_path = self.repository.repo_path(self.app)
         if hasattr(self.repository, "repo_files_directory"):
             # Galaxy Side.
-            repo_files_directory = self.repository.repo_files_directory(self.app)  # type: ignore[attr-defined]
+            repo_files_directory = self.repository.repo_files_directory(self.app)
             repo_dir = repo_files_directory
         else:
             # Tool Shed side.

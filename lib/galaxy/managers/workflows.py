@@ -538,7 +538,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             for inv in trans.sa_session.scalars(stmt)
             if self.check_security(trans, inv, check_ownership=True, check_accessible=False)
         ]
-        return invocations, total_matches  # type:ignore[return-value]
+        return invocations, total_matches
 
 
 MissingToolsT = List[Tuple[str, str, Optional[str], str]]

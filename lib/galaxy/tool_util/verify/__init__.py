@@ -31,11 +31,11 @@ except ImportError:
 try:
     from PIL import Image
 except ImportError:
-    Image = None  # type: ignore[assignment]
+    Image = None  # type: ignore[assignment, unused-ignore]
 try:
     import tifffile
 except ImportError:
-    tifffile = None  # type: ignore[assignment]
+    tifffile = None  # type: ignore[assignment, unused-ignore]
 
 
 from galaxy.tool_util.parser.util import (

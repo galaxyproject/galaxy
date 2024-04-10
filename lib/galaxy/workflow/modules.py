@@ -1385,14 +1385,14 @@ class InputParameterModule(WorkflowModule):
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
-            static_options = []  # type:ignore[var-annotated]
+            static_options = []
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
                 assert connection.input_step
                 module = connection.input_step.module
                 assert isinstance(module, (ToolModule, SubWorkflowModule))
-                if isinstance(module, ToolModule):  # type:ignore[unreachable]
+                if isinstance(module, ToolModule):
                     assert module.tool
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
@@ -2551,7 +2551,7 @@ class WorkflowModuleInjector:
 
     def compute_runtime_state(self, step: WorkflowStep, step_args=None):
         assert step.module, "module must be injected before computing runtime state"
-        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)  # type:ignore[unreachable]
+        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
         step.state = state
 
         # Fix any missing parameters

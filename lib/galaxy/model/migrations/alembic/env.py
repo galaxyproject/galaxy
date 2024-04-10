@@ -58,7 +58,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
         if revision_str:
             if len(revision_str) > 1:
                 log.error("Please run the commmand for one revision at a time")
-            revision_str = revision_str[0]  # type: ignore[union-attr]
+            revision_str = revision_str[0]
 
     if revision_str.startswith(f"{GXY}@"):
         url = urls[GXY]

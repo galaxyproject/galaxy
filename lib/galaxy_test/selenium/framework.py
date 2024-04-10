@@ -536,7 +536,7 @@ else:
     NavigatesGalaxyMixin = object
 
 
-class UsesLibraryAssertions(NavigatesGalaxyMixin):  # type:ignore[valid-type, misc]
+class UsesLibraryAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def assert_num_displayed_items_is(self, n):
         num_displayed = self.num_displayed_items()
@@ -546,7 +546,7 @@ class UsesLibraryAssertions(NavigatesGalaxyMixin):  # type:ignore[valid-type, mi
         return len(self.libraries_table_elements())
 
 
-class UsesHistoryItemAssertions(NavigatesGalaxyMixin):  # type:ignore[valid-type, misc]
+class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         peek_text = item_body.peek.wait_for_text()
@@ -584,7 +584,7 @@ EXAMPLE_WORKFLOW_URL_1 = (
 )
 
 
-class UsesWorkflowAssertions(NavigatesGalaxyMixin):  # type:ignore[valid-type, misc]
+class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
         if (actual_count := len(self.workflow_card_elements())) != n:

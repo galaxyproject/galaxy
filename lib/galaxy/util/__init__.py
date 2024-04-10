@@ -62,7 +62,7 @@ from boltons.iterutils import (
     remap,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped, unused-ignore]
 from typing_extensions import (
     Literal,
     Self,
@@ -117,7 +117,7 @@ try:
 
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+    import xml.etree.ElementTree as etree  # type: ignore[no-redef]
     from xml.etree.ElementTree import (  # type: ignore[assignment]  # noqa: F401
         Element,
         ElementTree,
@@ -135,7 +135,7 @@ from .path import (  # noqa: F401
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
-    shlex_join = shlex.join  # type: ignore[attr-defined]
+    shlex_join = shlex.join  # type: ignore[attr-defined, unused-ignore]
 except AttributeError:
     # Python < 3.8
     def shlex_join(split_command):
@@ -179,9 +179,10 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):  # type: ignore[unreachable]
+    elif s.startswith(prefix):
         return s[len(prefix) :]
-    return s
+    else:
+        return s
 
 
 def remove_protocol_from_url(url):
@@ -1133,7 +1134,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[misc]
+def unicodify(  # type: ignore[overload-overlap]
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
