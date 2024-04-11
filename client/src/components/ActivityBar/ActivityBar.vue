@@ -197,7 +197,7 @@ watch(
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
@@ -253,6 +253,11 @@ watch(
 
 .activity-drag-class {
     display: none;
+}
+
+.activity-footer {
+    border-top: $border-default;
+    border-top-style: dotted;
 }
 
 .activity-popper-disabled {
