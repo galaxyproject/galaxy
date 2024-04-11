@@ -10053,7 +10053,7 @@ class CustosAuthnzToken(Base, RepresentById):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), nullable=True)
     external_user_id: Mapped[Optional[str]] = mapped_column(String(255))
     provider: Mapped[Optional[str]] = mapped_column(String(255))
     access_token: Mapped[Optional[str]] = mapped_column(Text)
@@ -10061,7 +10061,7 @@ class CustosAuthnzToken(Base, RepresentById):
     refresh_token: Mapped[Optional[str]] = mapped_column(Text)
     expiration_time: Mapped[datetime] = mapped_column(nullable=True)
     refresh_expiration_time: Mapped[datetime] = mapped_column(nullable=True)
-    user = relationship("User", back_populates="custos_auth")
+    user: Mapped["User"] = relationship("User", back_populates="custos_auth")
 
 
 class CloudAuthz(Base):
