@@ -17,7 +17,8 @@ export class DatatypesMapperModel {
     isSubType(child: string, parent: string): boolean {
         const mapping = this.datatypesMapping;
         const childClassName = mapping.ext_to_class_name[child];
-        const parentClassName = mapping.ext_to_class_name[parent];
+        const parentClassName = mapping.ext_to_class_name[parent] || parent;
+
         if (!childClassName || !parentClassName) {
             return false;
         }
