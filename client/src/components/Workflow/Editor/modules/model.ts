@@ -47,7 +47,7 @@ export async function fromSimple(
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
     if (appendData) {
-        useMultiSelect().deselectAll();
+        useMultiSelect(id).deselectAll();
 
         const stepIdOffset = stepStore.getStepIndex + 1;
 

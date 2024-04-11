@@ -1,11 +1,11 @@
-import { computed } from "vue";
+import { computed, type Ref } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
-export function useMultiSelect() {
-    const { commentStore, stateStore, stepStore } = useWorkflowStores();
+export function useMultiSelect(workflowId?: Ref<string> | string) {
+    const { commentStore, stateStore, stepStore } = useWorkflowStores(workflowId);
 
     function deselectAll() {
         commentStore.clearMultiSelectedComments();

@@ -58,8 +58,8 @@ export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
  *
  * @returns workflow stores
  */
-export function useWorkflowStores() {
-    const workflowId = inject("workflowId") as Ref<string> | string;
+export function useWorkflowStores(workflowId?: Ref<string> | string) {
+    workflowId = workflowId ?? (inject("workflowId") as Ref<string> | string);
     const id = unref(workflowId);
 
     if (typeof id !== "string") {
