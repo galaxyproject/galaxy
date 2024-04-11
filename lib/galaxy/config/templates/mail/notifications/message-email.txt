@@ -13,12 +13,13 @@ sent:
 - name                      The user's name
 - user_email                The user's email
 - date                      Date and time of the notification
-- hostname                  Your galaxy's hostname
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
 - contact_email             Your galaxy's contact email
 - notification_settings_url The URL to the user's notification settings to manage their subscriptions
 - content                   The message payload
   - subject                 The message subject
   - content                 The message content in HTML (converted from Markdown)
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
 
 Template begins here>>>>>>
 Hello {{ name }},
@@ -31,11 +32,18 @@ Subject:
 Message:
 {{ content['message'] }}
 
-To manage your notification settings, please visit {{ notification_settings_url }}.
-
-If you have any questions, please contact us at {{ contact_email }}.
-
 Thank you for using Galaxy!
 
 Regards,
-Your Galaxy Team
+Your Galaxy Team at {{ hostname }}
+
+---
+
+You received this email because you are subscribed to receive notifications from the Galaxy Team.
+{% if notification_settings_url %}
+To manage your notification settings, please visit {{ notification_settings_url }}.
+{% endif %}
+
+{% if contact_email %}
+This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
+{% endif %}

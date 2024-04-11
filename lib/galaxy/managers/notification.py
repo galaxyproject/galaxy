@@ -726,7 +726,8 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
         return content
 
     def get_subject(self) -> str:
-        return "[Galaxy] New message received"
+        content = cast(MessageNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] New message: {content.subject}"
 
 
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
@@ -737,7 +738,7 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
 
     def get_subject(self) -> str:
         content = cast(NewSharedItemNotificationContent, self.get_content(TemplateFormats.TXT))
-        return f"[Galaxy] New {content.item_type} shared with you"
+        return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):
