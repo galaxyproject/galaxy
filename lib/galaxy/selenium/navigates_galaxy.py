@@ -1510,7 +1510,7 @@ class NavigatesGalaxy(HasDriver):
             workflow_run.expand_form_link.wait_for_and_click()
             workflow_run.expanded_form.wait_for_visible()
 
-    def workflow_create_new(self, annotation=None, clear_placeholder=False):
+    def workflow_create_new(self, annotation=None, clear_placeholder=False, save_workflow=True):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
@@ -1522,11 +1522,12 @@ class NavigatesGalaxy(HasDriver):
         name_component.wait_for_and_send_keys(name)
         annotation = annotation or self._get_random_name()
         self.components.workflow_editor.edit_annotation.wait_for_and_send_keys(annotation)
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        assert not save_button.has_class("disabled")
-        save_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        if save_workflow:
+            save_button = self.components.workflow_editor.save_button
+            save_button.wait_for_visible()
+            assert not save_button.has_class("disabled")
+            save_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def invocation_index_table_elements(self):
