@@ -4,7 +4,7 @@ import {
     type WorkflowComment,
     type WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
-import type { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -91,6 +91,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     position;
     stepStore;
     commentStore;
+    subAction;
 
     constructor(workflowId: string, data: Workflow, position: ReturnType<typeof defaultPosition>) {
         super();
@@ -101,6 +102,9 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
 
         this.stepStore = useWorkflowStepStore(this.workflowId);
         this.commentStore = useWorkflowCommentStore(this.workflowId);
+        const stateStore = useWorkflowStateStore(this.workflowId);
+
+        this.subAction = new ChangeSelectionAction(this.commentStore, stateStore, { comments: [], steps: [] });
     }
 
     get name() {
@@ -133,6 +137,8 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     undo() {
         this.newCommentIds.forEach((id) => this.commentStore.deleteComment(id));
         this.newStepIds.forEach((id) => this.stepStore.removeStep(id));
+
+        this.subAction.undo();
     }
 }
 
