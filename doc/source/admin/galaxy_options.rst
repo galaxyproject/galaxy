@@ -5156,8 +5156,7 @@
     to set the `result_backend` option in the `celery_conf` option to
     a valid Celery result backend URL. By default, Galaxy uses an
     SQLite database at '<data_dir>/results.sqlite' for storing task
-    results. Please use a more robust backend (e.g. Redis) for
-    production setups. For details, see
+    results. For details, see
     https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
 :Default: ``false``
 :Type: bool
@@ -5175,7 +5174,8 @@
     The `broker_url` option, if unset or null, defaults to the value
     of `amqp_internal_connection`. The `result_backend` option, if
     unset or null, defaults to an SQLite database at
-    '<data_dir>/results.sqlite' for storing task results.
+    '<data_dir>/results.sqlite' for storing task results. Please use a
+    more robust backend (e.g. Redis) for production setups.
     The galaxy.fetch_data task can be disabled by setting its route to
     "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
     disabled on a per-task basis at this time.)
