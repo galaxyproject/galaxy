@@ -2310,14 +2310,12 @@ class JobToInputDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_dataset"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
     dataset_version: Mapped[Optional[int]]
     name: Mapped[Optional[str]] = mapped_column(String(255))
-    dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
-        lazy="joined", back_populates="dependent_jobs"
-    )
-    job: Mapped[Optional["Job"]] = relationship(back_populates="input_datasets")
+    dataset: Mapped["HistoryDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
+    job: Mapped["Job"] = relationship(back_populates="input_datasets")
 
     def __init__(self, name, dataset):
         self.name = name
