@@ -4,7 +4,9 @@ import {
     type WorkflowComment,
     type WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
+import type { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
 
 import { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, Workflow } from "../modules/model";
@@ -212,5 +214,104 @@ export class LazyMoveMultipleAction extends LazyUndoRedoAction {
 
     redo() {
         this.setPosition(this.positionTo);
+    }
+}
+
+type SelectionState =
+    | {
+          comments: number[];
+          steps: number[];
+      }
+    | {
+          comments: number[];
+          steps: undefined;
+      }
+    | {
+          steps: number[];
+          comments: undefined;
+      };
+
+export class ChangeSelectionAction extends UndoRedoAction {
+    commentStore;
+    stateStore;
+    fromState: SelectionState;
+    toState: SelectionState;
+
+    constructor(commentStore: WorkflowCommentStore, stateStore: WorkflowStateStore, changedSelection: SelectionState) {
+        super();
+
+        this.commentStore = commentStore;
+        this.stateStore = stateStore;
+
+        this.fromState = {
+            comments: changedSelection.comments ? [...commentStore.multiSelectedCommentIds] : undefined,
+            steps: changedSelection.steps ? [...stateStore.multiSelectedStepIds] : undefined,
+        } as SelectionState;
+
+        this.toState = structuredClone(changedSelection);
+    }
+
+    setCommentsSelection(commentIds: number[]) {
+        this.commentStore.clearMultiSelectedComments();
+        commentIds.forEach((id) => this.commentStore.setCommentMultiSelected(id, true));
+    }
+
+    setStepsSelection(stepIds: number[]) {
+        this.stateStore.clearStepMultiSelection();
+        stepIds.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
+    }
+
+    get commentsText() {
+        assertDefined(this.toState.comments, "Invalid comments text getter. Comment Ids not in action state");
+
+        if (this.toState.comments.length > 1) {
+            return `${this.toState.comments.length} comments`;
+        } else {
+            return `1 comment`;
+        }
+    }
+
+    get stepsText() {
+        assertDefined(this.toState.steps, "Invalid steps text getter. Step Ids not in action state");
+
+        if (this.toState.steps.length > 1) {
+            return `${this.toState.steps.length} steps`;
+        } else {
+            return `1 step`;
+        }
+    }
+
+    get name() {
+        if (this.toState.comments && this.toState.steps) {
+            return `select ${this.commentsText} and ${this.stepsText}`;
+        }
+
+        if (this.toState.comments) {
+            return `select ${this.commentsText}`;
+        }
+
+        if (this.toState.steps) {
+            return `select ${this.stepsText}`;
+        }
+    }
+
+    run() {
+        if (this.toState.comments) {
+            this.setCommentsSelection(this.toState.comments);
+        }
+
+        if (this.toState.steps) {
+            this.setStepsSelection(this.toState.steps);
+        }
+    }
+
+    undo() {
+        if (this.fromState.comments) {
+            this.setCommentsSelection(this.fromState.comments);
+        }
+
+        if (this.fromState.steps) {
+            this.setStepsSelection(this.fromState.steps);
+        }
     }
 }
