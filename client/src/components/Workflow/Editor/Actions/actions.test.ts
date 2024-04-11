@@ -25,7 +25,12 @@ import {
     RemoveStepAction,
     UpdateStepAction,
 } from "./stepActions";
-import { CopyIntoWorkflowAction, LazyMoveMultipleAction, LazySetValueAction } from "./workflowActions";
+import {
+    ChangeSelectionAction,
+    CopyIntoWorkflowAction,
+    LazyMoveMultipleAction,
+    LazySetValueAction,
+} from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -158,6 +163,14 @@ describe("Workflow Undo Redo Actions", () => {
             );
             testUndoRedo(action);
         });
+
+        it("ChangeSelectionAction", () => {
+            addComment();
+            addStep();
+
+            const action = new ChangeSelectionAction(commentStore, stateStore, { comments: [0], steps: [0] });
+            testUndoRedo(action);
+        });
     });
 
     describe("Step Actions", () => {
@@ -276,6 +289,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "stepPosition",
             "stepLoadingState",
             "report",
+            "multiSelectedStepIds",
         ]),
         connectionStoreState: extractKeys(connectionStore, [
             "connections",
@@ -284,7 +298,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "terminalToConnection",
             "stepToConnections",
         ]),
-        commentStoreState: extractKeys(commentStore, ["commentsRecord"]),
+        commentStoreState: extractKeys(commentStore, ["commentsRecord", "multiSelectedCommentIds"]),
         workflowState: workflow,
     });
 
