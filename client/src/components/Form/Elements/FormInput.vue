@@ -3,14 +3,14 @@ import { computed } from "vue";
 
 interface Props {
     id: string;
-    value?: string;
     area?: boolean;
+    value?: string | number;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: string | undefined): void;
+    (e: "input", value: string | number | undefined): void;
 }>();
 
 const currentValue = computed({
