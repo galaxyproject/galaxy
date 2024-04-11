@@ -94,7 +94,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                         "label": "Content",
                         "area": True,
                         "value": content,
-                        "hidden": content_hide,
+                        "hidden": True,
                     },
                 ],
             }
