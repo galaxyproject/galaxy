@@ -2,19 +2,18 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
+import { jobsReportError } from "@/api/jobs";
+
 export async function sendErrorReport(dataset, message, email) {
-    const payload = {
+    const jobId = dataset.creating_job;
+    const request = {
+        job_id: jobId,
         dataset_id: dataset.id,
         message,
         email,
     };
-    const url = `${getAppRoot()}api/jobs/${dataset.creating_job}/error`;
-    try {
-        const { data } = await axios.post(url, payload);
-        return data.messages;
-    } catch (e) {
-        rethrowSimple(e);
-    }
+    const { data } = await jobsReportError(request);
+    return data.messages;
 }
 
 export async function setAttributes(datasetId, settings, operation) {
