@@ -11,6 +11,7 @@ from typing import (
     Tuple,
     Type,
 )
+from urllib.parse import urlparse
 
 from pydantic import (
     BaseModel,
@@ -52,7 +53,6 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
-    GenericNotificationCreate,
     MandatoryNotificationCategory,
     MessageNotificationContent,
     NewSharedItemNotificationContent,
@@ -60,6 +60,7 @@ from galaxy.schema.notifications import (
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
+    NotificationCreateRequest,
     NotificationRecipients,
     PersonalNotificationCategory,
     UpdateUserNotificationPreferencesRequest,
@@ -154,7 +155,7 @@ class NotificationManager:
     def can_send_notifications_async(self):
         return self.config.enable_celery_tasks
 
-    def send_notification_to_recipients(self, request: GenericNotificationCreate) -> Tuple[Optional[Notification], int]:
+    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
 
@@ -163,7 +164,7 @@ class NotificationManager:
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
-        notification = self._create_notification_model(request.notification)
+        notification = self._create_notification_model(request.notification, request.galaxy_url)
         self.sa_session.add(notification)
         with transaction(self.sa_session):
             self.sa_session.commit()
@@ -463,7 +464,9 @@ class NotificationManager:
 
         return CleanupResultSummary(deleted_notifications_count, deleted_associations_count)
 
-    def _create_notification_model(self, payload: NotificationCreateData):
+    def _create_notification_model(
+        self, payload: NotificationCreateData, galaxy_url: Optional[str] = None
+    ) -> Notification:
         notification = Notification(
             payload.source,
             payload.category,
@@ -472,6 +475,7 @@ class NotificationManager:
         )
         notification.publication_time = payload.publication_time
         notification.expiration_time = payload.expiration_time
+        notification.galaxy_url = galaxy_url
         return notification
 
     def _user_notifications_query(
@@ -650,6 +654,7 @@ class NotificationContext(BaseModel):
     contact_email: str
     notification_settings_url: str
     content: AnyNotificationContent
+    galaxy_url: Optional[str] = None
 
 
 class EmailNotificationTemplateBuilder(Protocol):
@@ -680,15 +685,22 @@ class EmailNotificationTemplateBuilder(Protocol):
         notification = self.notification
         user = self.user
         notification_date = notification.publication_time if notification.publication_time else notification.create_time
+        hostname = (
+            urlparse(self.notification.galaxy_url).hostname if self.notification.galaxy_url else self.config.server_name
+        )
+        notification_settings_url = (
+            f"{self.notification.galaxy_url}/user/notifications" if self.notification.galaxy_url else None
+        )
+        contact_email = self.config.error_email_to or None
         return NotificationContext(
             name=user.username,
             user_email=user.email,
             date=notification_date.strftime("%B %d, %Y"),
-            hostname=self.config.server_name,
-            contact_email=self.config.error_email_to or "",
-            # TODO: How to build the proper URL without access to trans?
-            notification_settings_url=f"https://{self.config.server_name}/user/notifications",
+            hostname=hostname,
+            contact_email=contact_email,
+            notification_settings_url=notification_settings_url,
             content=self.get_content(template_format),
+            galaxy_url=self.notification.galaxy_url,
         )
 
     def get_body(self, template_format: TemplateFormats) -> str:

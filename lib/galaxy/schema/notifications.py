@@ -299,7 +299,14 @@ class GenericNotificationCreate(GenericModel, Generic[DatabaseIdT]):
     )
 
 
-NotificationCreateRequest = GenericNotificationCreate[int]
+class NotificationCreateRequest(GenericNotificationCreate[int]):
+    galaxy_url: Optional[str] = Field(
+        None,
+        title="Galaxy URL",
+        description="The URL of the Galaxy instance. Used to generate links in the notification content.",
+    )
+
+
 NotificationRecipients = GenericNotificationRecipients[int]
 
 

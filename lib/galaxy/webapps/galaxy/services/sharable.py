@@ -117,7 +117,8 @@ class ShareableService:
         base_status = self._get_sharing_status(trans, item)
         status = self.share_with_status_cls.model_construct(**base_status.model_dump(), extra=extra)
         status.errors.extend(errors)
-        self._send_notification_to_users(users_to_notify, item, status)
+        galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
+        self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
         return status
 
     def _share_with_options(
@@ -173,13 +174,17 @@ class ShareableService:
 
         return send_to_users, send_to_err
 
-    def _send_notification_to_users(self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus):
+    def _send_notification_to_users(
+        self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
+    ):
         if (
             self.notification_service.notification_manager.notifications_enabled
             and not status.errors
             and users_to_notify
         ):
-            request = SharedItemNotificationFactory.build_notification_request(item, users_to_notify, status)
+            request = SharedItemNotificationFactory.build_notification_request(
+                item, users_to_notify, status, galaxy_url
+            )
             # We can set force_sync=True here because we already have the set of users to notify
             # and there is no need to resolve them asynchronously as no groups or roles are involved.
             self.notification_service.send_notification_internal(request, force_sync=True)
@@ -197,7 +202,7 @@ class SharedItemNotificationFactory:
 
     @staticmethod
     def build_notification_request(
-        item: SharableItem, users_to_notify: Set[User], status: ShareWithStatus
+        item: SharableItem, users_to_notify: Set[User], status: ShareWithStatus, galaxy_url: Optional[str] = None
     ) -> NotificationCreateRequest:
         user_ids = [user.id for user in users_to_notify]
         request = NotificationCreateRequest(
@@ -213,5 +218,6 @@ class SharedItemNotificationFactory:
                     slug=status.username_and_slug,
                 ),
             ),
+            galaxy_url=galaxy_url,
         )
         return request
