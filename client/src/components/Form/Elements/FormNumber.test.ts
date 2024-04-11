@@ -118,12 +118,12 @@ describe("FormInput", () => {
     });
 
     it("should calculate the right step for floats", async () => {
-        async function expectStep(value: number | string | undefined, expectedStep: number) {
-            const props = { value: value, type: "float", min: 0, max: 1 };
+        async function expectStep(value: number | string | undefined, expectedStep?: number) {
+            const props = { value: Number(value), type: "float", min: 0, max: 1 };
             const wrapper = await mountFormNumber(props);
 
             const input = getInput(wrapper);
-            expect(input.attributes("step")).toBe(expectedStep.toString());
+            expect(input.attributes("step")).toBe(expectedStep?.toString());
         }
 
         //minimum step 0.1 - maximum step 0.001
@@ -139,7 +139,7 @@ describe("FormInput", () => {
         ];
 
         for (let index = 0; index < testValues.length; index++) {
-            expectStep(testValues[index]?.value, testValues[index].step);
+            expectStep(testValues[index]?.value, testValues[index]?.step);
         }
     });
 });
