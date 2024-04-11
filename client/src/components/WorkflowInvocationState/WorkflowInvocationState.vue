@@ -8,6 +8,7 @@
                 :invocation-and-job-terminal="invocationAndJobTerminal"
                 :invocation-scheduling-terminal="invocationSchedulingTerminal"
                 :job-states-summary="jobStatesSummary"
+                :is-subworkflow="isSubworkflow"
                 @invocation-cancelled="cancelWorkflowScheduling" />
         </b-tab>
         <b-tab title="Details">
@@ -57,6 +58,10 @@ export default {
             type: Number,
             required: false,
             default: null,
+        },
+        isSubworkflow: {
+            type: Boolean,
+            default: false,
         },
     },
     setup() {

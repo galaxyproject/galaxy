@@ -189,6 +189,18 @@ $galaxy-state-bg: (
     border-style: dotted;
 }
 
+.node-header-invocation {
+    color: $text-color;
+    @each $state in map-keys($galaxy-state-bg) {
+        &.header-#{$state} {
+            background-color: map-get($galaxy-state-bg, $state) !important;
+        }
+    }
+    &.header-paused {
+        background-color: $state-info-bg !important;
+    }
+}
+
 // Extra label colors
 .badge-beta {
     @extend .badge-warning;

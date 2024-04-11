@@ -51,6 +51,7 @@ const props = defineProps<{
     datatypesMapper: DatatypesMapperModel;
     parentNode: HTMLElement | null;
     readonly: boolean;
+    blank: boolean;
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
@@ -341,7 +342,7 @@ const removeTagsAction = computed(() => {
 
 <template>
     <div class="node-output" :class="rowClass" :data-output-name="output.name">
-        <div class="d-flex flex-column w-100">
+        <div v-if="!props.blank" class="d-flex flex-column w-100">
             <div class="node-output-buttons">
                 <button
                     v-if="showCalloutActiveOutput"

@@ -1,7 +1,13 @@
 <template>
     <div class="d-flex" :data-step="workflowStep.id">
         <div class="ui-portlet-section" style="width: 100%">
-            <div class="portlet-header portlet-title portlet-operations cursor-pointer" @click="toggleStep">
+            <div
+                class="portlet-header portlet-operations cursor-pointer"
+                :class="graphStep?.headerClass"
+                role="button"
+                tabindex="0"
+                @keyup.enter="toggleStep"
+                @click="toggleStep">
                 <span :id="`step-icon-${workflowStep.id}`">
                     <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStepType" />
                 </span>
@@ -11,9 +17,16 @@
                         <WorkflowStepTitle v-bind="titleProps(workflowStep.id)" />
                     </u>
                 </span>
-                <FontAwesomeIcon class="float-right" :icon="expanded ? 'fa-chevron-up' : 'fa-chevron-down'" />
+                <span class="float-right">
+                    <FontAwesomeIcon
+                        v-if="graphStep?.headerIcon"
+                        class="mr-1"
+                        :icon="graphStep.headerIcon"
+                        :spin="graphStep.headerIconSpin" />
+                    <FontAwesomeIcon :icon="computedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" />
+                </span>
             </div>
-            <div v-if="expanded" class="portlet-content">
+            <div v-if="computedExpanded" class="portlet-content">
                 <InvocationStepProvider
                     v-if="isReady && invocationStepId !== undefined"
                     :id="invocationStepId"
@@ -24,7 +37,8 @@
                         <div v-else>
                             <details
                                 v-if="Object.values(stepDetails.outputs).length > 0"
-                                class="invocation-step-output-details">
+                                class="invocation-step-output-details"
+                                :open="graphStep !== undefined">
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
@@ -33,7 +47,8 @@
                             </details>
                             <details
                                 v-if="Object.values(stepDetails.output_collections).length > 0"
-                                class="invocation-step-output-collection-details">
+                                class="invocation-step-output-collection-details"
+                                :open="graphStep !== undefined">
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
@@ -41,9 +56,16 @@
                                 </div>
                             </details>
                             <div class="portlet-body" style="width: 100%; overflow-x: auto">
-                                <details v-if="workflowStepType == 'tool'" class="invocation-step-job-details">
+                                <details
+                                    v-if="workflowStepType == 'tool'"
+                                    class="invocation-step-job-details"
+                                    :open="graphStep !== undefined">
                                     <summary><b>Jobs</b></summary>
-                                    <JobStep :jobs="stepDetails.jobs" />
+                                    <JobStep
+                                        :jobs="stepDetails.jobs"
+                                        :invocation-graph="graphStep !== undefined"
+                                        :showing-job-id="showingJobId"
+                                        @row-clicked="showJob" />
                                 </details>
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
@@ -72,6 +94,7 @@
                                     </div>
                                     <WorkflowInvocationState
                                         v-else
+                                        is-subworkflow
                                         :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
                             </div>
@@ -125,11 +148,14 @@ export default {
         invocation: Object,
         workflowStep: Object,
         workflow: Object,
+        graphStep: { type: Object, default: undefined },
+        expanded: { type: Boolean, default: undefined },
+        showingJobId: { type: String, default: null },
     },
     data() {
         return {
-            expanded: false,
             polling: null,
+            localExpanded: this.expanded === undefined ? false : this.expanded,
         };
     },
     computed: {
@@ -137,6 +163,19 @@ export default {
         ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
         isReady() {
             return this.invocation.steps.length > 0;
+        },
+        // a computed property that assesses whether we have an expanded prop
+        computedExpanded: {
+            get() {
+                return this.expanded === undefined ? this.localExpanded : this.expanded;
+            },
+            set(value) {
+                if (this.expanded === undefined) {
+                    this.localExpanded = value;
+                } else {
+                    this.$emit("update:expanded", value);
+                }
+            },
         },
         invocationStepId() {
             return this.step?.id;
@@ -164,8 +203,11 @@ export default {
                 this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
             }
         },
+        showJob(id) {
+            this.$emit("show-job", id);
+        },
         toggleStep() {
-            this.expanded = !this.expanded;
+            this.computedExpanded = !this.computedExpanded;
         },
         toolProps(stepIndex) {
             const workflowStep = this.workflow.steps[stepIndex];
@@ -189,3 +231,11 @@ export default {
     },
 };
 </script>
+
+<style scoped lang="scss">
+.portlet-header {
+    &:hover {
+        opacity: 0.8;
+    }
+}
+</style>

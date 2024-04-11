@@ -1,8 +1,12 @@
 <template>
     <div class="invocations-list" aria-labelledby="invocations-title">
-        <h1 id="invocations-title" class="mb-3 h-lg">
-            {{ title }}
-        </h1>
+        <div class="grid-header d-flex justify-content-between pb-2 flex-column">
+            <div class="d-flex">
+                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                    <span v-localize>{{ title }}</span>
+                </Heading>
+            </div>
+        </div>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
@@ -94,11 +98,13 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 import paginationMixin from "./paginationMixin";
 
+import Heading from "../Common/Heading.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 export default {
     components: {
+        Heading,
         HelpText,
         UtcDate,
         WorkflowInvocationState,

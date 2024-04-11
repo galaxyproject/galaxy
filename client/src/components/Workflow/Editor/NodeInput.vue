@@ -70,6 +70,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    blank: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 onBeforeUnmount(() => {
@@ -145,7 +149,7 @@ const label = computed(() => props.input.label || props.input.name);
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
-    if (props.input?.valid === false) {
+    if (!props.blank && props.input?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
@@ -234,21 +238,23 @@ watch(
             </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
         </div>
-        <button
-            v-if="hasConnections && !readonly"
-            v-b-tooltip.hover
-            :title="reason"
-            class="delete-terminal-button"
-            @click="onRemove">
-            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
-        </button>
-        {{ label }}
-        <span
-            v-if="!input.optional && !hasTerminals"
-            v-b-tooltip.hover
-            class="input-required"
-            title="Input is required">
-            *
+        <span v-if="!blank">
+            <button
+                v-if="hasConnections && !readonly"
+                v-b-tooltip.hover
+                :title="reason"
+                class="delete-terminal-button"
+                @click="onRemove">
+                <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+            </button>
+            {{ label }}
+            <span
+                v-if="!input.optional && !hasTerminals"
+                v-b-tooltip.hover
+                class="input-required"
+                title="Input is required">
+                *
+            </span>
         </span>
     </div>
 </template>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
+import { withPrefix } from "@/utils/redirect";
 
 import {
     errorCount as jobStatesSummaryErrorCount,
@@ -12,6 +15,9 @@ import {
     runningCount as jobStatesSummaryRunningCount,
 } from "./util";
 
+import ExternalLink from "../ExternalLink.vue";
+import HelpText from "../Help/HelpText.vue";
+import InvocationGraph from "../Workflow/Invocation/Graph/InvocationGraph.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
@@ -26,12 +32,15 @@ interface Props {
     invocationSchedulingTerminal: boolean;
     jobStatesSummary: InvocationJobsSummary;
     index?: number;
+    isSubworkflow?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const reportTooltip = "View report for this workflow invocation";
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
+
+const { workflow } = useWorkflowInstance(props.invocation?.workflow_id ?? "");
 
 const invocationId = computed<string | undefined>(() => props.invocation?.id);
 
@@ -151,74 +160,99 @@ function onCancel() {
 
 <template>
     <div class="mb-3 workflow-invocation-state-component">
-        <div v-if="invocationAndJobTerminal">
-            <span>
-                <b-button
+        <div v-if="!invocationAndJobTerminal">
+            <BAlert variant="info" show>
+                <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
+            </BAlert>
+            <BButton
+                v-b-tooltip.noninteractive.hover
+                class="cancel-workflow-scheduling"
+                title="Cancel scheduling of workflow invocation"
+                size="sm"
+                @click="onCancel">
+                <span class="fa fa-times mr-1" /> Cancel
+            </BButton>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+            <div v-if="invocationAndJobTerminal" class="d-flex mr-1">
+                <BButton
                     v-b-tooltip.hover
                     :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
-                    class="invocation-report-link"
+                    class="invocation-report-link text-nowrap"
                     :href="invocationLink">
                     View Report
-                </b-button>
-                <b-button
+                </BButton>
+                <BButton
                     v-b-tooltip.hover
                     :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
-                    class="invocation-pdf-link"
+                    class="invocation-pdf-link text-nowrap"
                     :href="invocationPdfLink"
                     target="_blank">
                     Generate PDF
-                </b-button>
-            </span>
+                </BButton>
+            </div>
+            <div class="w-100">
+                <ProgressBar
+                    v-if="!stepCount"
+                    note="Loading step state summary..."
+                    :loading="true"
+                    class="steps-progress" />
+                <template v-if="invocation?.messages?.length">
+                    <InvocationMessage
+                        v-for="message in invocation.messages"
+                        :key="message.reason"
+                        class="steps-progress my-1"
+                        :invocation-message="message"
+                        :invocation="invocation">
+                    </InvocationMessage>
+                </template>
+                <ProgressBar
+                    v-else-if="invocationState == 'cancelled'"
+                    note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                    :error-count="1"
+                    class="steps-progress" />
+                <ProgressBar
+                    v-else-if="invocationState == 'failed'"
+                    note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                    :error-count="1"
+                    class="steps-progress" />
+                <ProgressBar
+                    v-else
+                    :note="stepStatesStr"
+                    :total="stepCount"
+                    :ok-count="stepStates.scheduled"
+                    :loading="!invocationSchedulingTerminal"
+                    class="steps-progress" />
+                <ProgressBar
+                    :note="jobStatesStr"
+                    :total="jobCount"
+                    :ok-count="okCount"
+                    :running-count="runningCount"
+                    :new-count="newCount"
+                    :error-count="errorCount"
+                    :loading="!invocationAndJobTerminal"
+                    class="jobs-progress" />
+            </div>
         </div>
-        <div v-else-if="!invocationAndJobTerminal">
-            <b-alert variant="info" show>
-                <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
-            </b-alert>
-            <span
-                v-b-tooltip.hover
-                class="fa fa-times cancel-workflow-scheduling"
-                title="Cancel scheduling of workflow invocation"
-                @click="onCancel"></span>
+        <!-- An invocation has been loaded, display the graph -->
+        <div v-if="invocation">
+            <div v-if="workflow && !isSubworkflow">
+                <InvocationGraph
+                    :invocation="invocation"
+                    :workflow="workflow"
+                    :is-terminal="invocationAndJobTerminal"
+                    :is-scheduled="invocationSchedulingTerminal" />
+            </div>
+            <BAlert v-else-if="isSubworkflow" variant="secondary" show>
+                This subworkflow is
+                <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
+                <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
+                to view this subworkflow in graph view.
+            </BAlert>
         </div>
-        <ProgressBar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
-        <template v-if="invocation.messages?.length">
-            <InvocationMessage
-                v-for="message in invocation.messages"
-                :key="message.reason"
-                class="steps-progress my-1"
-                :invocation-message="message"
-                :invocation="invocation">
-            </InvocationMessage>
-        </template>
-        <ProgressBar
-            v-else-if="invocationState == 'cancelled'"
-            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
-            :error-count="1"
-            class="steps-progress" />
-        <ProgressBar
-            v-else-if="invocationState == 'failed'"
-            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
-            :error-count="1"
-            class="steps-progress" />
-        <ProgressBar
-            v-else
-            :note="stepStatesStr"
-            :total="stepCount"
-            :ok-count="stepStates.scheduled"
-            :loading="!invocationSchedulingTerminal"
-            class="steps-progress" />
-        <ProgressBar
-            :note="jobStatesStr"
-            :total="jobCount"
-            :ok-count="okCount"
-            :running-count="runningCount"
-            :new-count="newCount"
-            :error-count="errorCount"
-            :loading="!invocationAndJobTerminal"
-            class="jobs-progress" />
     </div>
 </template>
