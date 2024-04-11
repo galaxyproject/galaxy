@@ -2949,6 +2949,9 @@ class Notification(Base, Dictifiable, RepresentById):
     dispatched: Mapped[Boolean] = mapped_column(
         Boolean, index=True, default=False
     )  # Whether the notification has been dispatched to users via other channels
+    galaxy_url: Mapped[Optional[str]] = mapped_column(
+        String(255)
+    )  # The URL to the Galaxy instance, used for generating links in the notification
     # A bug in early 23.1 led to values being stored as json string, so we use this special type to process the result value twice.
     # content should always be a dict
     content: Mapped[Optional[bytes]] = mapped_column(DoubleEncodedJsonType)
