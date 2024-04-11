@@ -8,7 +8,6 @@
             <b-button
                 v-if="userOwnsHistory"
                 size="sm"
-                variant="outline-info"
                 :title="setAsCurrentTitle"
                 :disabled="isSetAsCurrentDisabled"
                 data-description="switch to history button"
@@ -20,7 +19,6 @@
                 v-if="canImportHistory"
                 v-b-modal:copy-history-modal
                 size="sm"
-                variant="outline-info"
                 title="Import this history"
                 data-description="import history button">
                 Import this history
