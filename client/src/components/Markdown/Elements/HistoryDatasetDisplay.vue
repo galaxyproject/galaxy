@@ -61,7 +61,13 @@
                     <div v-else-if="error">{{ error }}</div>
                     <div v-else :class="contentClass">
                         <b-embed
-                            v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
+                            v-if="
+                                isSubTypeOfAny(
+                                    datasetType,
+                                    ['pdf', 'html', 'galaxy.datatypes.images.Image'],
+                                    datatypesModel
+                                )
+                            "
                             type="iframe"
                             aspect="16by9"
                             :src="displayUrl" />
