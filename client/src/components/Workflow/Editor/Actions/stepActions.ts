@@ -323,7 +323,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(this.step), false);
+        this.stepStore.addStep(structuredClone(this.step), false, false);
         this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
         this.stateStore.activeNodeId = this.step.id;
         this.stateStore.hasChanges = true;

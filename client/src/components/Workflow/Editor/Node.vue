@@ -11,8 +11,6 @@
         :class="classes"
         :style="style"
         :disabled="readonly"
-        @mousedown="onMouseDown"
-        @mouseup="onMouseUp"
         @move="onMoveTo"
         @pan-by="onPanBy">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
