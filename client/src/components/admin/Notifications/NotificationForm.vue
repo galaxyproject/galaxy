@@ -153,7 +153,8 @@ async function sendNewNotification() {
                 :optional="false"
                 help="The message can be written in markdown."
                 placeholder="Enter message"
-                required />
+                required
+                area />
 
             <FormElement
                 id="notification-variant"
