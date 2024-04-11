@@ -1,25 +1,29 @@
 <script setup lang="ts">
+import { BAlert, BFormCheckbox, BFormCheckboxGroup } from "bootstrap-vue";
 import { computed } from "vue";
+
+type Value = string | number | boolean;
 
 interface CheckOption {
     label: string;
-    value: string;
+    value: Value;
 }
 
-export interface FormCheckProps {
-    value?: string | string[];
-    options: Array<CheckOption>;
+export interface Props {
+    options: CheckOption[];
+    value?: Value | Value[];
 }
 
-const props = defineProps<FormCheckProps>();
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: string[] | null): void;
+    (e: "input", value: Value | Value[] | null): void;
 }>();
 
 const currentValue = computed({
     get: () => {
         const val = props.value ?? [];
+
         return Array.isArray(val) ? val : [val];
     },
     set: (newValue) => {
@@ -32,12 +36,13 @@ const currentValue = computed({
 });
 
 const hasOptions = computed(() => props.options.length > 0);
-const indeterminate = computed(() => ![0, props.options.length].includes(currentValue.value.length));
 const selectAll = computed(() => currentValue.value.length === props.options.length);
+const indeterminate = computed(() => ![0, props.options.length].includes(currentValue.value.length));
 
-function onSelectAll(selected: boolean): void {
+function onSelectAll(selected: boolean) {
     if (selected) {
         const allValues = props.options.map((option) => option.value);
+
         emit("input", allValues);
     } else {
         emit("input", null);
@@ -47,19 +52,20 @@ function onSelectAll(selected: boolean): void {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox
+        <BFormCheckbox
             v-localize
             class="mb-1"
             :checked="selectAll"
             :indeterminate="indeterminate"
             @change="onSelectAll">
             Select / Deselect all
-        </b-form-checkbox>
-        <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
-            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option.value">
+        </BFormCheckbox>
+
+        <BFormCheckboxGroup v-model="currentValue" stacked class="pl-3">
+            <BFormCheckbox v-for="(option, index) in options" :key="index" :value="option.value">
                 {{ option.label }}
-            </b-form-checkbox>
-        </b-form-checkbox-group>
+            </BFormCheckbox>
+        </BFormCheckboxGroup>
     </div>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <BAlert v-else v-localize variant="warning" show> No options available. </BAlert>
 </template>
