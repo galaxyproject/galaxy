@@ -2874,7 +2874,7 @@ class Group(Base, Dictifiable, RepresentById):
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     quotas: Mapped[List["GroupQuotaAssociation"]] = relationship(back_populates="group")
     roles: Mapped[List["GroupRoleAssociation"]] = relationship(back_populates="group", cascade_backrefs=False)
-    users = relationship("UserGroupAssociation", back_populates="group")
+    users: Mapped[List["UserGroupAssociation"]] = relationship("UserGroupAssociation", back_populates="group")
 
     dict_collection_visible_keys = ["id", "name"]
     dict_element_visible_keys = ["id", "name"]
@@ -2888,12 +2888,12 @@ class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    group_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user: Mapped[Optional["User"]] = relationship(back_populates="groups")
-    group: Mapped[Optional["Group"]] = relationship(back_populates="users")
+    user: Mapped["User"] = relationship(back_populates="groups")
+    group: Mapped["Group"] = relationship(back_populates="users")
 
     def __init__(self, user, group):
         add_object_to_object_session(self, user)
