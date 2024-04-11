@@ -134,7 +134,7 @@ class ToolsService(ServiceBase):
         payload: ExecuteToolPayload,
     ) -> ExecuteToolResponse:
         tool_id = payload.tool_id
-        tool_uuid = payload.tool_uuid
+        tool_uuid = str(payload.tool_uuid) if payload.tool_uuid else None
         if tool_id in PROTECTED_TOOLS:
             raise HTTPException(
                 status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
@@ -142,7 +142,7 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
         create_payload = payload.model_dump(exclude_unset=True)
-
+        create_payload["tool_uuid"] = tool_uuid
         # process files, when they come in as multipart file data
         files = {}
         for key in list(create_payload.keys()):
