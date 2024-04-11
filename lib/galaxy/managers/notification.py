@@ -689,7 +689,9 @@ class EmailNotificationTemplateBuilder(Protocol):
             urlparse(self.notification.galaxy_url).hostname if self.notification.galaxy_url else self.config.server_name
         )
         notification_settings_url = (
-            f"{self.notification.galaxy_url}/user/notifications" if self.notification.galaxy_url else None
+            f"{self.notification.galaxy_url}/user/notifications?preferences=true"
+            if self.notification.galaxy_url
+            else None
         )
         contact_email = self.config.error_email_to or None
         return NotificationContext(
