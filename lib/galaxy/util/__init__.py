@@ -1615,7 +1615,8 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     :type  reply_to: str
     :param reply_to: Reply-to address (Default None)
     """
-    if config.smtp_server.startswith("mock_emails_to_path://"):
+    smtp_server = config.smtp_server
+    if smtp_server and isinstance(smtp_server, str) and smtp_server.startswith("mock_emails_to_path://"):
         path = config.smtp_server[len("mock_emails_to_path://") :]
         email_dict = {
             "from": frm,
@@ -1628,6 +1629,7 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         email_json = json.to_json_string(email_dict)
         with open(path, "w") as f:
             f.write(email_json)
+        return
 
     to = listify(to)
     if html:
