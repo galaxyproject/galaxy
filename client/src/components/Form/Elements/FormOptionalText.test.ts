@@ -25,7 +25,7 @@ describe("FormOptionalText", () => {
 
         await el.setChecked(false);
 
-        expect(wrapper.emitted().input?.[0]?.[0]).toEqual(null);
+        expect(wrapper.emitted().input?.[0]?.[0]).toEqual("");
 
         await el.setChecked(true);
 
