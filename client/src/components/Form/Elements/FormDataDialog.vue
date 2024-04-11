@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BInputGroup } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { getCurrentGalaxyHistory } from "@/utils/data";
@@ -10,20 +11,28 @@ import DataDialog from "@/components/DataDialog/DataDialog.vue";
 
 library.add(faFolderOpen);
 
-interface DataDialogProps {
+type Value = string | string[];
+
+interface Props {
     id: string;
     multiple?: boolean;
-    value?: Array<string> | string;
+    value?: Value;
 }
 
-const props = withDefaults(defineProps<DataDialogProps>(), {
-    multiple: false,
-    value: "",
-});
+const props = defineProps<Props>();
 
-const title = "Browse Datasets";
+const emit = defineEmits<{
+    (e: "input", value: Value): void;
+}>();
+
 const localHistoryId = ref("");
 const dataDialogOpen = ref(false);
+
+function onData(result: string[] | string) {
+    dataDialogOpen.value = false;
+
+    emit("input", result);
+}
 
 watch(
     () => dataDialogOpen.value,
@@ -32,25 +41,18 @@ watch(
         localHistoryId.value = await getCurrentGalaxyHistory();
     }
 );
-
-const emit = defineEmits<{
-    (e: "input", value: Array<string> | string): void;
-}>();
-
-function onData(result: Array<string> | string) {
-    dataDialogOpen.value = false;
-    emit("input", result);
-}
 </script>
 
 <template>
     <div class="d-flex">
-        <b-input-group>
+        <BInputGroup>
             <button @click="dataDialogOpen = true">
-                <FontAwesomeIcon icon="folder-open" :title="title" />
+                <FontAwesomeIcon :icon="faFolderOpen" title="Browse Datasets" />
             </button>
+
             <input :value="props.value" readonly class="float-left" />
-        </b-input-group>
+        </BInputGroup>
+
         <DataDialog
             v-if="dataDialogOpen"
             :history="localHistoryId"
