@@ -108,8 +108,8 @@ onMounted(() => {
         width: 2rem;
     }
     .plugin-icon {
-        font-size: 1.5rem;
-        padding: 0.2rem;
+        font-size: 1.3rem;
+        padding: 0.3rem;
     }
 }
 </style>
