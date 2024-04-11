@@ -39,7 +39,9 @@ export function useToolLogic() {
         () => comment.value,
         (newComment, oldComment) => {
             if (newComment === null && oldComment !== null) {
-                undoRedoStore.applyAction(new AddCommentAction(commentStore, oldComment));
+                const comment = commentStore.commentsRecord[oldComment.id];
+                assertDefined(comment);
+                undoRedoStore.applyAction(new AddCommentAction(commentStore, comment));
             }
 
             toolbarStore.resetBoxSelect();
