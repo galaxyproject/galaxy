@@ -8317,10 +8317,10 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "stored_workflow_user_share_connection"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
-    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship(back_populates="users_shared_with")
+    stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="users_shared_with")
 
 
 class StoredWorkflowMenuEntry(Base, RepresentById):
