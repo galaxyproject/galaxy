@@ -2533,13 +2533,15 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
     __tablename__ = "implicit_collection_jobs_job_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    implicit_collection_jobs_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("implicit_collection_jobs.id"), index=True
+    implicit_collection_jobs_id: Mapped[int] = mapped_column(
+        ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True
     )
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)  # Consider making this nullable...
+    job_id: Mapped[int] = mapped_column(
+        ForeignKey("job.id"), index=True, nullable=True
+    )  # Consider making this nullable...
     order_index: Mapped[int]
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", back_populates="jobs")
-    job: Mapped[Optional["Job"]] = relationship(back_populates="implicit_collection_jobs_association")
+    job: Mapped["Job"] = relationship(back_populates="implicit_collection_jobs_association")
 
 
 class PostJobAction(Base, RepresentById):
