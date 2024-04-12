@@ -1367,7 +1367,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     tool_version: Mapped[Optional[str]] = mapped_column(TEXT, default="1.0.0")
     galaxy_version: Mapped[Optional[str]] = mapped_column(String(64), default=None)
     dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
-    state: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    state: Mapped[str] = mapped_column(String(64), index=True, nullable=True)
     info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     copied_from_job_id: Mapped[Optional[int]]
     command_line: Mapped[Optional[str]] = mapped_column(TEXT)
