@@ -671,12 +671,6 @@ def populate_api_routes(webapp, app):
     #     conditions=dict(method=["POST"]),
     # )
     webapp.mapper.connect(
-        "/api/workflows/{encoded_workflow_id}",
-        controller="workflows",
-        action="update",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
         "/api/workflows",
         controller="workflows",
         action="create",
