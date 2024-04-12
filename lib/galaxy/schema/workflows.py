@@ -1060,3 +1060,81 @@ class WorkflowUpdatePayload(Model):
     from_tool_form: Optional[bool] = Field(
         None, title="From Tool Form", description="True iff encoded state coming in is encoded for the tool form."
     )
+
+
+class WorkflowCreatePayload(Model):
+    archive_file: Optional[Any] = Field(
+        None,
+        title="Archive File",
+        description="A file containing a workflow archive to be imported.",
+    )
+    archive_source: Optional[str] = Field(
+        None,
+        title="Archive Source",
+        description="A URL or file path pointing to a workflow archive to be imported.",
+    )
+    from_history_id: Optional[str] = Field(
+        None,
+        title="From History ID",
+        description="The ID of a history from which to extract a workflow.",
+    )
+    job_ids: Optional[List[str]] = Field(
+        None,
+        title="Job IDs",
+        description="If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.",
+    )
+    dataset_ids: Optional[List[str]] = Field(
+        None,
+        title="Dataset IDs",
+        description="If from_history_id is set, this is an optional list of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history.",
+    )
+    dataset_collection_ids: Optional[List[str]] = Field(
+        None,
+        title="Dataset Collection IDs",
+        description="If from_history_id is set, this is an optional list of HDCA 'hid's corresponding to workflow inputs when extracting a workflow from history.",
+    )
+    workflow_name: Optional[str] = Field(
+        None,
+        title="Workflow Name",
+        description="If from_history_id is set, this is the name of the workflow to create when extracting a workflow from history.",
+    )
+    from_path: Optional[str] = Field(
+        None,
+        title="From Path",
+        description="A path from which to import a workflow.",
+    )
+    object_id: Optional[str] = Field(
+        None,
+        title="Object ID",
+        description="If from_path is set, this is an optional object ID to include when importing a workflow from a path.",
+    )
+    shared_workflow_id: Optional[str] = Field(
+        None,
+        title="Shared Workflow ID",
+        description="The ID of a shared workflow to import.",
+    )
+    workflow: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Workflow",
+        description="A dictionary containing information about a new workflow to import.",
+    )
+    trs_url: Optional[str] = Field(
+        None,
+        title="TRS URL",
+        description="If archive_source is set to 'trs_tool', this is the URL of the Tool Registry Service (TRS) from which to import a workflow.",
+    )
+    trs_server: Optional[str] = Field(
+        None,
+        title="TRS Server",
+        description="If archive_source is set to 'trs_tool', this is the server of the Tool Registry Service (TRS) from which to import a workflow.",
+    )
+    trs_tool_id: Optional[str] = Field(
+        None,
+        title="TRS Tool ID",
+        description="If archive_source is set to 'trs_tool', this is the ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.",
+    )
+    trs_version_id: Optional[str] = Field(
+        None,
+        title="TRS Version ID",
+        description="If archive_source is set to 'trs_tool', this is the version ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.",
+    )
