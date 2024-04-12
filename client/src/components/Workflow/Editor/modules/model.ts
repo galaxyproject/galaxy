@@ -20,6 +20,7 @@ export interface LoadWorkflowOptions {
     appendData?: boolean;
     /** if set, overwrites the append data behavior of reassigning IDs */
     reassignIds?: boolean;
+    createConnections?: boolean;
     defaultPosition?: { top: number; left: number };
 }
 
@@ -82,7 +83,7 @@ export async function fromSimple(
     }
 
     Object.values(data.steps).map((step) => {
-        stepStore.addStep(step, appendData);
+        stepStore.addStep(step, appendData, options?.createConnections ?? true);
     });
 
     commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top], appendData);

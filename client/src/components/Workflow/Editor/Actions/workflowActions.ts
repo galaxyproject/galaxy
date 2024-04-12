@@ -1,4 +1,5 @@
 import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import {
     useWorkflowCommentStore,
     type WorkflowComment,
@@ -360,13 +361,25 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
 export class DeleteSelectionAction extends UndoRedoAction {
     storedSelectionAction: DuplicateSelectionAction;
     stateStore;
+    connectionStore;
+    storedConnections;
 
     constructor(workflowId: string) {
         super();
+
         this.stateStore = useWorkflowStateStore(workflowId);
+        this.connectionStore = useConnectionStore(workflowId);
+
         this.storedSelectionAction = new DuplicateSelectionAction(workflowId);
         this.storedSelectionAction.position = { top: 0, left: 0 };
-        this.storedSelectionAction.loadWorkflowOptions = { appendData: true, reassignIds: false };
+        this.storedSelectionAction.loadWorkflowOptions = {
+            appendData: true,
+            reassignIds: false,
+            createConnections: false,
+        };
+
+        const connectionsForSteps = this.stepIds.flatMap((id) => this.connectionStore.getConnectionsForStep(id));
+        this.storedConnections = new Set(connectionsForSteps);
     }
 
     get name() {
@@ -404,6 +417,7 @@ export class DeleteSelectionAction extends UndoRedoAction {
     }
 
     undo() {
-        this.storedSelectionAction.run();
+        this.storedSelectionAction.redo();
+        this.storedConnections.forEach((connection) => this.connectionStore.addConnection(connection));
     }
 }
