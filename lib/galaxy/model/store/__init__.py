@@ -1047,7 +1047,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         for invocation_attrs in invocations_attrs:
             assert not self.import_options.allow_edit
             imported_invocation = model.WorkflowInvocation()
-            imported_invocation.user = self.user
             imported_invocation.history = history
             ensure_object_added_to_session(imported_invocation, object_in_session=history)
             workflow_key = invocation_attrs["workflow"]

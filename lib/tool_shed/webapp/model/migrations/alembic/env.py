@@ -62,7 +62,7 @@ def _configure_and_run_migrations_offline(url: str) -> None:
 
 
 def _configure_and_run_migrations_online(url) -> None:
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

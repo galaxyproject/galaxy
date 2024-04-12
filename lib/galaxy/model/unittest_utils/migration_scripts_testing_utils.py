@@ -76,7 +76,7 @@ def get_db_heads(config: Config) -> Tuple[str, ...]:
     """Return revision ids (version heads) stored in the database."""
     dburl = config.get_main_option("sqlalchemy.url")
     assert dburl
-    engine = create_engine(dburl, future=True)
+    engine = create_engine(dburl)
     with engine.connect() as conn:
         context = MigrationContext.configure(conn)
         heads = context.get_current_heads()
