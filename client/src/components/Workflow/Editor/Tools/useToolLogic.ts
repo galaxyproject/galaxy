@@ -223,15 +223,17 @@ export function useToolLogic() {
 
         toolbarStore.resetBoxSelect();
 
-        const changedSelection = {
-            comments: commentsInRect.map((comment) => comment.id),
-            steps: stepsInRect.map((step) => step.id),
-        };
+        if (commentsInRect.length > 0 || stepsInRect.length > 0) {
+            const changedSelection = {
+                comments: commentsInRect.map((comment) => comment.id),
+                steps: stepsInRect.map((step) => step.id),
+            };
 
-        if (toolbarStore.boxSelectMode === "add") {
-            undoRedoStore.applyAction(new AddToSelectionAction(commentStore, stateStore, changedSelection));
-        } else {
-            undoRedoStore.applyAction(new RemoveFromSelectionAction(commentStore, stateStore, changedSelection));
+            if (toolbarStore.boxSelectMode === "add") {
+                undoRedoStore.applyAction(new AddToSelectionAction(commentStore, stateStore, changedSelection));
+            } else {
+                undoRedoStore.applyAction(new RemoveFromSelectionAction(commentStore, stateStore, changedSelection));
+            }
         }
     }
 
