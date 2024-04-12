@@ -5,7 +5,10 @@ from datetime import (
     date,
     datetime,
 )
-from typing import List
+from typing import (
+    cast,
+    List,
+)
 
 import sqlalchemy
 from boltons.iterutils import remap
@@ -1065,6 +1068,7 @@ def summarize_job_outputs(job: model.Job, tool, params):
         ("hdca", "dataset_collection_id", job.output_dataset_collection_instances),
     )
     for src, attribute, output_associations in possible_outputs:
+        output_associations = cast(List, output_associations)  # during iteration, mypy sees it as object
         for output_association in output_associations:
             output_name = output_association.name
             if output_name not in output_labels and tool:

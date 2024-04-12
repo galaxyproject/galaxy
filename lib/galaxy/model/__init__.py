@@ -1419,7 +1419,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     output_library_datasets: Mapped[List["JobToOutputLibraryDatasetAssociation"]] = relationship(back_populates="job")
     external_output_metadata: Mapped[List["JobExternalOutputMetadata"]] = relationship(back_populates="job")
     tasks: Mapped[List["Task"]] = relationship(back_populates="job")
-    output_datasets = relationship("JobToOutputDatasetAssociation", back_populates="job")
+    output_datasets: Mapped[List["JobToOutputDatasetAssociation"]] = relationship(back_populates="job")
     state_history: Mapped[List["JobStateHistory"]] = relationship()
     text_metrics: Mapped[List["JobMetricText"]] = relationship()
     numeric_metrics: Mapped[List["JobMetricNumeric"]] = relationship()
