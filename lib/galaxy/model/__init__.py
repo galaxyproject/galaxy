@@ -3587,10 +3587,10 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "history_user_share_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user: Mapped[User] = relationship()
-    history: Mapped[Optional["History"]] = relationship(back_populates="users_shared_with")
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    user: Mapped["User"] = relationship()
+    history: Mapped["History"] = relationship(back_populates="users_shared_with")
 
 
 class UserRoleAssociation(Base, RepresentById):
