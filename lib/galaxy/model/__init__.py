@@ -3782,8 +3782,8 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     type: Mapped[Optional[str]] = mapped_column(String(32))
-    quota_id: Mapped[Optional[int]] = mapped_column(ForeignKey("quota.id"), index=True)
-    quota: Mapped[Optional["Quota"]] = relationship(back_populates="default")
+    quota_id: Mapped[int] = mapped_column(ForeignKey("quota.id"), index=True, nullable=True)
+    quota: Mapped["Quota"] = relationship(back_populates="default")
 
     dict_element_visible_keys = ["type"]
 
