@@ -2338,7 +2338,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(255), nullable=True)
     dataset: Mapped["HistoryDatasetAssociation"] = relationship(
         lazy="joined", back_populates="creating_job_associations"
     )
