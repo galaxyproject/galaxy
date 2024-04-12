@@ -222,19 +222,10 @@ export class LazyMoveMultipleAction extends LazyUndoRedoAction {
     }
 }
 
-type SelectionState =
-    | {
-          comments: number[];
-          steps: number[];
-      }
-    | {
-          comments: number[];
-          steps: undefined;
-      }
-    | {
-          steps: number[];
-          comments: undefined;
-      };
+type SelectionState = {
+    comments: number[];
+    steps: number[];
+};
 
 function getCountName(count: number, type: "comment" | "step") {
     if (count === 0) {
@@ -282,8 +273,8 @@ export class ClearSelectionAction extends UndoRedoAction {
     }
 
     undo() {
-        this.selectionState.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, true));
-        this.selectionState.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
+        this.selectionState.comments.forEach((id) => this.commentStore.setCommentMultiSelected(id, true));
+        this.selectionState.steps.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
     }
 }
 
@@ -302,13 +293,13 @@ abstract class ModifySelectionAction extends UndoRedoAction {
     }
 
     run() {
-        this.selection.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, this.addToSelection));
-        this.selection.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, this.addToSelection));
+        this.selection.comments.forEach((id) => this.commentStore.setCommentMultiSelected(id, this.addToSelection));
+        this.selection.steps.forEach((id) => this.stateStore.setStepMultiSelected(id, this.addToSelection));
     }
 
     undo() {
-        this.selection.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, !this.addToSelection));
-        this.selection.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, !this.addToSelection));
+        this.selection.comments.forEach((id) => this.commentStore.setCommentMultiSelected(id, !this.addToSelection));
+        this.selection.steps.forEach((id) => this.stateStore.setStepMultiSelected(id, !this.addToSelection));
     }
 }
 
@@ -316,11 +307,7 @@ export class AddToSelectionAction extends ModifySelectionAction {
     addToSelection = true;
 
     get name() {
-        const combinedCountName = getCombinedCountName(
-            this.selection.steps?.length ?? 0,
-            this.selection.comments?.length ?? 0
-        );
-
+        const combinedCountName = getCombinedCountName(this.selection.steps.length, this.selection.comments.length);
         return `add ${combinedCountName} to selection`;
     }
 }
@@ -329,11 +316,7 @@ export class RemoveFromSelectionAction extends ModifySelectionAction {
     addToSelection = false;
 
     get name() {
-        const combinedCountName = getCombinedCountName(
-            this.selection.steps?.length ?? 0,
-            this.selection.comments?.length ?? 0
-        );
-
+        const combinedCountName = getCombinedCountName(this.selection.steps.length, this.selection.comments.length);
         return `remove ${combinedCountName} from selection`;
     }
 }
