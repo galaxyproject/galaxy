@@ -10357,10 +10357,10 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "visualization_user_share_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    visualization_id: Mapped[Optional[int]] = mapped_column(ForeignKey("visualization.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
-    visualization: Mapped[Optional["Visualization"]] = relationship(back_populates="users_shared_with")
+    visualization: Mapped["Visualization"] = relationship(back_populates="users_shared_with")
 
 
 class Tag(Base, RepresentById):
