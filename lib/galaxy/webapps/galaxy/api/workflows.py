@@ -32,7 +32,6 @@ from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
 from galaxy.files.uris import (
@@ -44,11 +43,9 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.workflows import (
-    MissingToolsException,
     RefactorRequest,
     RefactorResponse,
     WorkflowCreateOptions,
-    WorkflowUpdateOptions,
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
@@ -88,22 +85,20 @@ from galaxy.schema.workflows import (
     WorkflowDictFormat2WrappedYamlSummary,
     WorkflowDictPreviewSummary,
     WorkflowDictRunSummary,
+    WorkflowUpdatePayload,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-<<<<<<< HEAD
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
-=======
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import expose_api
->>>>>>> Remove unused imports
 from galaxy.webapps.base.controller import (
     SharableMixin,
     url_for,
@@ -307,145 +302,6 @@ class WorkflowsAPIController(
         payload the same way.
         """
         return self.__api_import_new_workflow(trans, payload, **kwd)
-
-    @expose_api
-    def update(self, trans: GalaxyWebTransaction, id, payload, **kwds):
-        """
-        PUT /api/workflows/{id}
-
-        Update the workflow stored with ``id``.
-
-        :type   id:      str
-        :param  id:      the encoded id of the workflow to update
-        :param  instance: true if fetch by Workflow ID instead of StoredWorkflow id, false by default.
-        :type   instance: boolean
-        :type   payload: dict
-        :param  payload: a dictionary containing any or all the
-
-            :workflow:
-
-                the json description of the workflow as would be
-                produced by GET workflows/<id>/download or
-                given to `POST workflows`
-
-                The workflow contents will be updated to target this.
-
-            :name:
-
-                optional string name for the workflow, if not present in payload,
-                name defaults to existing name
-
-            :annotation:
-
-                optional string annotation for the workflow, if not present in payload,
-                annotation defaults to existing annotation
-
-            :menu_entry:
-
-                optional boolean marking if the workflow should appear in the user\'s menu,
-                if not present, workflow menu entries are not modified
-
-            :tags:
-
-                optional list containing list of tags to add to the workflow (overwriting
-                existing tags), if not present, tags are not modified
-
-            :from_tool_form:
-
-                True iff encoded state coming in is encoded for the tool form.
-
-
-        :rtype:     dict
-        :returns:   serialized version of the workflow
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
-        workflow_dict = payload.get("workflow", {})
-        workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
-        if workflow_dict:
-            require_flush = False
-            raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
-            workflow_dict = raw_workflow_description.as_dict
-            new_workflow_name = workflow_dict.get("name")
-            old_workflow = stored_workflow.latest_workflow
-            name_updated = new_workflow_name and new_workflow_name != stored_workflow.name
-            steps_updated = "steps" in workflow_dict
-            if name_updated and not steps_updated:
-                sanitized_name = new_workflow_name or old_workflow.name
-                if not sanitized_name:
-                    raise exceptions.MessageException("Workflow must have a valid name.")
-                workflow = old_workflow.copy(user=trans.user)
-                workflow.stored_workflow = stored_workflow
-                workflow.name = sanitized_name
-                stored_workflow.name = sanitized_name
-                stored_workflow.latest_workflow = workflow
-                trans.sa_session.add(workflow, stored_workflow)
-                require_flush = True
-
-            if "hidden" in workflow_dict and stored_workflow.hidden != workflow_dict["hidden"]:
-                stored_workflow.hidden = workflow_dict["hidden"]
-                require_flush = True
-
-            if "published" in workflow_dict and stored_workflow.published != workflow_dict["published"]:
-                stored_workflow.published = workflow_dict["published"]
-                require_flush = True
-
-            if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
-                stored_workflow.importable = workflow_dict["importable"]
-                require_flush = True
-
-            if "annotation" in workflow_dict and not steps_updated:
-                newAnnotation = workflow_dict["annotation"]
-                self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
-                require_flush = True
-
-            if "menu_entry" in workflow_dict or "show_in_tool_panel" in workflow_dict:
-                show_in_panel = workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel")
-                stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
-                decoded_id = trans.security.decode_id(id)
-                if show_in_panel:
-                    workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
-                    if decoded_id not in workflow_ids:
-                        menu_entry = model.StoredWorkflowMenuEntry()
-                        menu_entry.stored_workflow = stored_workflow
-                        stored_workflow_menu_entries.append(menu_entry)
-                        trans.sa_session.add(menu_entry)
-                        require_flush = True
-                else:
-                    # remove if in list
-                    entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
-                    if decoded_id in entries:
-                        stored_workflow_menu_entries.remove(entries[decoded_id])
-                        require_flush = True
-            # set tags
-            if "tags" in workflow_dict:
-                trans.tag_handler.set_tags_from_list(
-                    user=trans.user,
-                    item=stored_workflow,
-                    new_tags_list=workflow_dict["tags"],
-                )
-
-            if require_flush:
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-
-            if "steps" in workflow_dict or "comments" in workflow_dict:
-                try:
-                    workflow_update_options = WorkflowUpdateOptions(**payload)
-                    workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
-                        trans,
-                        stored_workflow,
-                        raw_workflow_description,
-                        workflow_update_options,
-                    )
-                except MissingToolsException:
-                    raise exceptions.MessageException(
-                        "This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed."
-                    )
-
-        else:
-            message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
-            raise exceptions.RequestParameterInvalidException(message)
-        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
 
     @expose_api
     def build_module(self, trans: GalaxyWebTransaction, payload=None):
@@ -1030,6 +886,20 @@ class FastAPIWorkflows:
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, workflow_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/workflows/{workflow_id}",
+        summary="Update the workflow stored with the ``id``",
+        name="update_workflow",
+    )
+    def update(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        payload: WorkflowUpdatePayload,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        return self.service.update_workflow(trans, payload, instance, workflow_id)
 
     @router.delete(
         "/api/workflows/{workflow_id}",
