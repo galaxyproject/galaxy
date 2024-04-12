@@ -3893,11 +3893,11 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     action: Mapped[Optional[str]] = mapped_column(TEXT)
-    library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_dataset_association.id"), index=True
+    library_dataset_dataset_association_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
     role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
-    library_dataset_dataset_association: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
+    library_dataset_dataset_association: Mapped["LibraryDatasetDatasetAssociation"] = relationship(
         back_populates="actions"
     )
     role: Mapped[Optional["Role"]] = relationship()
