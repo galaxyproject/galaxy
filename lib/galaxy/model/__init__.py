@@ -10894,8 +10894,8 @@ class CleanupEventDatasetAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id"), index=True, nullable=True)
 
 
 class CleanupEventMetadataFileAssociation(Base):
@@ -10903,8 +10903,8 @@ class CleanupEventMetadataFileAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    metadata_file_id: Mapped[Optional[int]] = mapped_column(ForeignKey("metadata_file.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    metadata_file_id: Mapped[int] = mapped_column(ForeignKey("metadata_file.id"), index=True, nullable=True)
 
 
 class CleanupEventHistoryAssociation(Base):
@@ -10912,8 +10912,8 @@ class CleanupEventHistoryAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
 
 
 class CleanupEventHistoryDatasetAssociationAssociation(Base):
@@ -10921,8 +10921,8 @@ class CleanupEventHistoryDatasetAssociationAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    hda_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
 
 
 class CleanupEventLibraryAssociation(Base):
@@ -10930,8 +10930,8 @@ class CleanupEventLibraryAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    library_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    library_id: Mapped[int] = mapped_column(ForeignKey("library.id"), index=True, nullable=True)
 
 
 class CleanupEventLibraryFolderAssociation(Base):
@@ -10939,8 +10939,8 @@ class CleanupEventLibraryFolderAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    library_folder_id: Mapped[int] = mapped_column(ForeignKey("library_folder.id"), index=True, nullable=True)
 
 
 class CleanupEventLibraryDatasetAssociation(Base):
@@ -10948,8 +10948,8 @@ class CleanupEventLibraryDatasetAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    library_dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    library_dataset_id: Mapped[int] = mapped_column(ForeignKey("library_dataset.id"), index=True, nullable=True)
 
 
 class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base):
@@ -10957,8 +10957,10 @@ class CleanupEventLibraryDatasetDatasetAssociationAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    ldda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    ldda_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
+    )
 
 
 class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
@@ -10966,9 +10968,9 @@ class CleanupEventImplicitlyConvertedDatasetAssociationAssociation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    cleanup_event_id: Mapped[Optional[int]] = mapped_column(ForeignKey("cleanup_event.id"), index=True)
-    icda_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("implicitly_converted_dataset_association.id"), index=True
+    cleanup_event_id: Mapped[int] = mapped_column(ForeignKey("cleanup_event.id"), index=True, nullable=True)
+    icda_id: Mapped[int] = mapped_column(
+        ForeignKey("implicitly_converted_dataset_association.id"), index=True, nullable=True
     )
 
 
