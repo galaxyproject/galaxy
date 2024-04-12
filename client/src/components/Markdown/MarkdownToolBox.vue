@@ -259,17 +259,24 @@ export default {
                 });
             return steps;
         },
-        getOutputs() {
+        getOutputs(filterByType = undefined) {
             const outputLabels = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
                     step.workflow_outputs.forEach((workflowOutput) => {
                         if (workflowOutput.label) {
-                            outputLabels.push(workflowOutput.label);
+                            if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
+                                outputLabels.push(workflowOutput.label);
+                            }
                         }
                     });
                 });
             return outputLabels;
+        },
+        stepOutputMatchesType(step, workflowOutput, type) {
+            return Boolean(
+                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type)
+            );
         },
         getArgumentTitle(argumentName) {
             return (
@@ -331,13 +338,13 @@ export default {
         onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
-            this.selectedLabels = this.getOutputs();
+            this.selectedLabels = this.getOutputs("data");
             this.selectedShow = true;
         },
         onHistoryCollectionId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_collection_id";
-            this.selectedLabels = this.getOutputs();
+            this.selectedLabels = this.getOutputs("collection");
             this.selectedShow = true;
         },
         onWorkflowId(argumentName) {
