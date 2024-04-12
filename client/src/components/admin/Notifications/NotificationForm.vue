@@ -89,6 +89,8 @@ const expirationDate = computed({
     },
 });
 
+const isUrgent = computed(() => notificationData.value.notification.variant === "urgent");
+
 async function loadData<T>(
     getData: () => Promise<T[]>,
     target: Ref<SelectOption[]>,
@@ -161,12 +163,19 @@ async function sendNewNotification() {
                 type="select"
                 title="Variant"
                 :optional="false"
-                help="This will change the color of the notification"
+                help="This measures the urgency of the notification and will affect the color of the notification."
                 :options="[
                     ['Info', 'info'],
                     ['Warning', 'warning'],
                     ['Urgent', 'urgent'],
                 ]" />
+
+            <BAlert :show="isUrgent" variant="warning">
+                <span v-localize>
+                    Urgent notifications will ignore the user's notification preferences and will be sent to all
+                    available channels. Please use this option sparingly and only for critical notifications.
+                </span>
+            </BAlert>
 
             <FormElement
                 id="notification-recipients-user-ids"
