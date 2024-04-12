@@ -2425,13 +2425,13 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_library_dataset"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    ldda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    job: Mapped[Optional["Job"]] = relationship(back_populates="input_library_datasets")
-    dataset: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
-        lazy="joined", back_populates="dependent_jobs"
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    ldda_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
+    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    job: Mapped["Job"] = relationship(back_populates="input_library_datasets")
+    dataset: Mapped["LibraryDatasetDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
 
     def __init__(self, name, dataset):
         self.name = name
