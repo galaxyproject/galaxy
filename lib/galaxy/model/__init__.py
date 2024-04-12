@@ -2367,13 +2367,13 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
     __tablename__ = "job_to_input_dataset_collection_element"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    dataset_collection_element_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("dataset_collection_element.id"), index=True
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    dataset_collection_element_id: Mapped[int] = mapped_column(
+        ForeignKey("dataset_collection_element.id"), index=True, nullable=True
     )
     name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    dataset_collection_element: Mapped[Optional["DatasetCollectionElement"]] = relationship(lazy="joined")
-    job: Mapped[Optional["Job"]] = relationship(back_populates="input_dataset_collection_elements")
+    dataset_collection_element: Mapped["DatasetCollectionElement"] = relationship(lazy="joined")
+    job: Mapped["Job"] = relationship(back_populates="input_dataset_collection_elements")
 
     def __init__(self, name, dataset_collection_element):
         self.name = name
