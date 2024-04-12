@@ -1400,12 +1400,14 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     library_folder: Mapped[Optional["LibraryFolder"]] = relationship()
     parameters = relationship("JobParameter")
     input_datasets = relationship("JobToInputDatasetAssociation", back_populates="job")
-    input_dataset_collections = relationship("JobToInputDatasetCollectionAssociation", back_populates="job")
-    input_dataset_collection_elements = relationship(
-        "JobToInputDatasetCollectionElementAssociation", back_populates="job"
+    input_dataset_collections: Mapped[List["JobToInputDatasetCollectionAssociation"]] = relationship(
+        back_populates="job"
+    )
+    input_dataset_collection_elements: Mapped[List["JobToInputDatasetCollectionElementAssociation"]] = relationship(
+        back_populates="job"
     )
     output_dataset_collection_instances: Mapped[List["JobToOutputDatasetCollectionAssociation"]] = relationship(
-        "JobToOutputDatasetCollectionAssociation", back_populates="job"
+        back_populates="job"
     )
     output_dataset_collections: Mapped[List["JobToImplicitOutputDatasetCollectionAssociation"]] = relationship(
         back_populates="job"
@@ -1413,12 +1415,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     post_job_actions: Mapped[List["PostJobActionAssociation"]] = relationship(
         back_populates="job", cascade_backrefs=False
     )
-    input_library_datasets: Mapped[List["JobToInputLibraryDatasetAssociation"]] = relationship(
-        "JobToInputLibraryDatasetAssociation", back_populates="job"
-    )
-    output_library_datasets: Mapped[List["JobToOutputLibraryDatasetAssociation"]] = relationship(
-        "JobToOutputLibraryDatasetAssociation", back_populates="job"
-    )
+    input_library_datasets: Mapped[List["JobToInputLibraryDatasetAssociation"]] = relationship(back_populates="job")
+    output_library_datasets: Mapped[List["JobToOutputLibraryDatasetAssociation"]] = relationship(back_populates="job")
     external_output_metadata: Mapped[List["JobExternalOutputMetadata"]] = relationship(back_populates="job")
     tasks: Mapped[List["Task"]] = relationship(back_populates="job")
     output_datasets = relationship("JobToOutputDatasetAssociation", back_populates="job")
@@ -1428,16 +1426,18 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     interactivetool_entry_points: Mapped[List["InteractiveToolEntryPoint"]] = relationship(
         back_populates="job", uselist=True
     )
-    implicit_collection_jobs_association = relationship(
-        "ImplicitCollectionJobsJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
+    implicit_collection_jobs_association: Mapped[List["ImplicitCollectionJobsJobAssociation"]] = relationship(
+        back_populates="job", uselist=False, cascade_backrefs=False
     )
-    container = relationship("JobContainerAssociation", back_populates="job", uselist=False)
-    data_manager_association = relationship(
-        "DataManagerJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
+    container: Mapped[Optional["JobContainerAssociation"]] = relationship(back_populates="job", uselist=False)
+    data_manager_association: Mapped[Optional["DataManagerJobAssociation"]] = relationship(
+        back_populates="job", uselist=False, cascade_backrefs=False
     )
-    history_dataset_collection_associations = relationship("HistoryDatasetCollectionAssociation", back_populates="job")
-    workflow_invocation_step = relationship(
-        "WorkflowInvocationStep", back_populates="job", uselist=False, cascade_backrefs=False
+    history_dataset_collection_associations: Mapped[List["HistoryDatasetCollectionAssociation"]] = relationship(
+        back_populates="job"
+    )
+    workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
+        back_populates="job", uselist=False, cascade_backrefs=False
     )
 
     any_output_dataset_collection_instances_deleted = None
@@ -3733,7 +3733,9 @@ class Quota(Base, Dictifiable, RepresentById):
     operation: Mapped[Optional[str]] = mapped_column(String(8))
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), default=None)
-    default = relationship("DefaultQuotaAssociation", back_populates="quota", cascade_backrefs=False)
+    default: Mapped[List["DefaultQuotaAssociation"]] = relationship(
+        "DefaultQuotaAssociation", back_populates="quota", cascade_backrefs=False
+    )
     groups: Mapped[List["GroupQuotaAssociation"]] = relationship(back_populates="quota")
     users: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="quota")
 
