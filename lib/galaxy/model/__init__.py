@@ -10207,10 +10207,10 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "page_user_share_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     user: Mapped[User] = relationship()
-    page: Mapped[Optional["Page"]] = relationship(back_populates="users_shared_with")
+    page: Mapped["Page"] = relationship(back_populates="users_shared_with")
 
 
 class Visualization(Base, HasTags, Dictifiable, RepresentById):
