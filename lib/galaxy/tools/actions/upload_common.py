@@ -441,7 +441,6 @@ def active_folders(trans, folder):
         select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
         .options(joinedload(LibraryFolder.actions))
-        .unique()
         .order_by(LibraryFolder.name)
     )
     return trans.sa_session.scalars(stmt).all()
