@@ -2941,14 +2941,14 @@ class UserNotificationAssociation(Base, RepresentById):
     __tablename__ = "user_notification_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    notification_id: Mapped[Optional[int]] = mapped_column(ForeignKey("notification.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    notification_id: Mapped[int] = mapped_column(ForeignKey("notification.id"), index=True, nullable=True)
     seen_time: Mapped[Optional[datetime]]
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
-    user: Mapped[Optional["User"]] = relationship(back_populates="all_notifications")
-    notification: Mapped[Optional["Notification"]] = relationship(back_populates="user_notification_associations")
+    user: Mapped["User"] = relationship(back_populates="all_notifications")
+    notification: Mapped["Notification"] = relationship(back_populates="user_notification_associations")
 
     def __init__(self, user, notification):
         self.user = user
