@@ -664,6 +664,7 @@ class NotificationContext(BaseModel):
     date: str
     hostname: str
     contact_email: str
+    variant: str
     notification_settings_url: str
     content: AnyNotificationContent
     galaxy_url: Optional[str] = None
@@ -713,6 +714,7 @@ class EmailNotificationTemplateBuilder(Protocol):
             hostname=hostname,
             contact_email=contact_email,
             notification_settings_url=notification_settings_url,
+            variant=notification.variant,
             content=self.get_content(template_format),
             galaxy_url=self.notification.galaxy_url,
         )
