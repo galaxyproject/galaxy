@@ -264,7 +264,7 @@ class FastAPIJobs:
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
             if input_dataset_instance is None:
-                continue
+                continue  # type:ignore[unreachable]  # TODO if job_input_assoc.dataset is indeed never None, remove the above check
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
             input_instance_id = input_dataset_instance.id

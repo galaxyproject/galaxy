@@ -1399,7 +1399,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
     library_folder: Mapped[Optional["LibraryFolder"]] = relationship()
     parameters = relationship("JobParameter")
-    input_datasets = relationship("JobToInputDatasetAssociation", back_populates="job")
+    input_datasets: Mapped[List["JobToInputDatasetAssociation"]] = relationship(
+        "JobToInputDatasetAssociation", back_populates="job"
+    )
     input_dataset_collections: Mapped[List["JobToInputDatasetCollectionAssociation"]] = relationship(
         back_populates="job"
     )
