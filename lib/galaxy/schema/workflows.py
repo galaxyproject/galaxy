@@ -1029,3 +1029,34 @@ class WorkflowDictFormat2WrappedYamlSummary(Model):
         # description="Safe and ordered dump of YAML to stream",
         description="The content of the workflow in YAML .",
     )
+
+
+class WorkflowUpdatePayload(Model):
+    workflow: Any = Field(
+        ...,
+        title="Workflow",
+        description="The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="String name for the workflow, if not present in payload, name defaults to existing name",
+    )
+    annotation: Optional[str] = Field(
+        None,
+        title="Annotation",
+        description="String annotation for the workflow, if not present in payload, annotation defaults to existing annotation",
+    )
+    menu_entry: Optional[bool] = Field(
+        None,
+        title="Menu Entry",
+        description="Boolean marking if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified",
+    )
+    tags: Optional[List[str]] = Field(
+        None,
+        title="Tags",
+        description="List containing list of tags to add to the workflow (overwriting existing tags), if not present, tags are not modified",
+    )
+    from_tool_form: Optional[bool] = Field(
+        None, title="From Tool Form", description="True iff encoded state coming in is encoded for the tool form."
+    )
