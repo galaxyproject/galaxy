@@ -2410,11 +2410,11 @@ class JobToImplicitOutputDatasetCollectionAssociation(Base, RepresentById):
     __tablename__ = "job_to_implicit_output_dataset_collection"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    dataset_collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    dataset_collection: Mapped[Optional["DatasetCollection"]] = relationship()
-    job: Mapped[Optional["Job"]] = relationship(back_populates="output_dataset_collections")
+    dataset_collection: Mapped["DatasetCollection"] = relationship()
+    job: Mapped["Job"] = relationship(back_populates="output_dataset_collections")
 
     def __init__(self, name, dataset_collection):
         self.name = name
