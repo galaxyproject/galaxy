@@ -4,8 +4,6 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-import { useMultiSelect } from "../composables/multiSelect";
-
 export interface Workflow {
     name: string;
     annotation: string;
@@ -20,6 +18,8 @@ export interface Workflow {
 
 export interface LoadWorkflowOptions {
     appendData?: boolean;
+    /** if set, overwrites the append data behavior of reassigning IDs */
+    reassignIds?: boolean;
     defaultPosition?: { top: number; left: number };
 }
 
@@ -46,9 +46,7 @@ export async function fromSimple(
 
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
-    if (appendData) {
-        useMultiSelect(id).deselectAll();
-
+    if (options?.reassignIds ?? appendData) {
         const stepIdOffset = stepStore.getStepIndex + 1;
 
         Object.values(data.steps).forEach((step) => {

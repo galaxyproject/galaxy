@@ -6,6 +6,7 @@ import {
 } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
+import { ensureDefined } from "@/utils/assertions";
 
 import { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, Workflow } from "../modules/model";
@@ -91,8 +92,13 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     stepStore;
     commentStore;
     subAction;
+    loadWorkflowOptions: Parameters<typeof fromSimple>[2];
 
-    constructor(workflowId: string, data: Workflow, position: ReturnType<typeof defaultPosition>) {
+    constructor(
+        workflowId: string,
+        data: Pick<Workflow, "steps" | "comments" | "name">,
+        position: ReturnType<typeof defaultPosition>
+    ) {
         super();
 
         this.workflowId = workflowId;
@@ -104,6 +110,11 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         const stateStore = useWorkflowStateStore(this.workflowId);
 
         this.subAction = new ClearSelectionAction(this.commentStore, stateStore);
+
+        this.loadWorkflowOptions = {
+            defaultPosition: this.position,
+            appendData: true,
+        };
     }
 
     get name() {
@@ -111,13 +122,12 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     }
 
     run() {
+        this.subAction.run();
+
         const commentIdsBefore = new Set(this.commentStore.comments.map((comment) => comment.id));
         const stepIdsBefore = new Set(Object.values(this.stepStore.steps).map((step) => step.id));
 
-        fromSimple(this.workflowId, structuredClone(this.data), {
-            defaultPosition: structuredClone(this.position),
-            appendData: true,
-        });
+        fromSimple(this.workflowId, structuredClone(this.data), structuredClone(this.loadWorkflowOptions));
 
         const commentIdsAfter = this.commentStore.comments.map((comment) => comment.id);
         const stepIdsAfter = Object.values(this.stepStore.steps).map((step) => step.id);
@@ -127,10 +137,9 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
     }
 
     redo() {
-        fromSimple(this.workflowId, structuredClone(this.data), {
-            defaultPosition: structuredClone(this.position),
-            appendData: true,
-        });
+        this.subAction.redo();
+
+        fromSimple(this.workflowId, structuredClone(this.data), structuredClone(this.loadWorkflowOptions));
     }
 
     undo() {
@@ -318,5 +327,83 @@ export class RemoveFromSelectionAction extends ModifySelectionAction {
     get name() {
         const combinedCountName = getCombinedCountName(this.selection.steps.length, this.selection.comments.length);
         return `remove ${combinedCountName} from selection`;
+    }
+}
+
+export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
+    constructor(workflowId: string) {
+        const stateStore = useWorkflowStateStore(workflowId);
+        const commentStore = useWorkflowCommentStore(workflowId);
+        const stepStore = useWorkflowStepStore(workflowId);
+
+        const commentIds = [...commentStore.multiSelectedCommentIds];
+        const stepIds = [...stateStore.multiSelectedStepIds];
+
+        const comments = commentIds.map((id) =>
+            structuredClone(ensureDefined(commentStore.commentsRecord[id]))
+        ) as WorkflowComment[];
+
+        const steps = Object.fromEntries(
+            stepIds.map((id) => [id, structuredClone(ensureDefined(stepStore.steps[id]))])
+        );
+
+        const partialWorkflow = { comments, steps, name: "" };
+
+        super(workflowId, partialWorkflow, { left: 100, top: 200 });
+    }
+
+    get name() {
+        return "duplicate selection";
+    }
+}
+
+export class DeleteSelectionAction extends UndoRedoAction {
+    storedSelectionAction: DuplicateSelectionAction;
+    stateStore;
+
+    constructor(workflowId: string) {
+        super();
+        this.stateStore = useWorkflowStateStore(workflowId);
+        this.storedSelectionAction = new DuplicateSelectionAction(workflowId);
+        this.storedSelectionAction.position = { top: 0, left: 0 };
+        this.storedSelectionAction.loadWorkflowOptions = { appendData: true, reassignIds: false };
+    }
+
+    get name() {
+        return "delete selection";
+    }
+
+    get commentIds() {
+        return this.storedSelectionAction.data.comments.map((comment) => comment.id);
+    }
+
+    get stepIds() {
+        return Object.values(this.storedSelectionAction.data.steps).map((step) => step.id);
+    }
+
+    get commentStore() {
+        return this.storedSelectionAction.commentStore;
+    }
+
+    get stepStore() {
+        return this.storedSelectionAction.stepStore;
+    }
+
+    run() {
+        this.commentIds.forEach((id) => {
+            this.commentStore.deleteComment(id);
+        });
+
+        this.commentStore.clearMultiSelectedComments();
+
+        this.stepIds.forEach((id) => {
+            this.stepStore.removeStep(id);
+        });
+
+        this.stateStore.clearStepMultiSelection();
+    }
+
+    undo() {
+        this.storedSelectionAction.run();
     }
 }

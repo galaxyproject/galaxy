@@ -1,14 +1,12 @@
 import { computed, inject, type Ref, unref } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
-import { ensureDefined } from "@/utils/assertions";
 
+import { DeleteSelectionAction, DuplicateSelectionAction } from "../Actions/workflowActions";
 import { useMultiSelect } from "../composables/multiSelect";
-import { fromSimple } from "../modules/model";
 
 export function useSelectionOperations() {
-    const { commentStore, stateStore, stepStore } = useWorkflowStores();
+    const { undoRedoStore } = useWorkflowStores();
     const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
     const selectedCountText = computed(() => {
@@ -32,44 +30,14 @@ export function useSelectionOperations() {
     });
 
     function deleteSelection() {
-        commentStore.multiSelectedCommentIds.forEach((id) => {
-            commentStore.deleteComment(id);
-        });
-
-        commentStore.clearMultiSelectedComments();
-
-        stateStore.multiSelectedStepIds.forEach((id) => {
-            stepStore.removeStep(id);
-        });
-
-        stateStore.clearStepMultiSelection();
+        undoRedoStore.applyAction(new DeleteSelectionAction(id));
     }
 
     const workflowId = inject("workflowId") as Ref<string> | string;
     const id = unref(workflowId);
 
     function duplicateSelection() {
-        const commentIds = [...commentStore.multiSelectedCommentIds];
-        const stepIds = [...stateStore.multiSelectedStepIds];
-
-        deselectAll();
-
-        const comments = commentIds.map((id) =>
-            structuredClone(ensureDefined(commentStore.commentsRecord[id]))
-        ) as WorkflowComment[];
-
-        const steps = Object.fromEntries(
-            stepIds.map((id) => [id, structuredClone(ensureDefined(stepStore.steps[id]))])
-        );
-
-        fromSimple(
-            id,
-            { comments, steps },
-            {
-                defaultPosition: { top: 200, left: 100 },
-                appendData: true,
-            }
-        );
+        undoRedoStore.applyAction(new DuplicateSelectionAction(id));
     }
 
     return {

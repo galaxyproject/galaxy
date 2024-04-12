@@ -4,13 +4,10 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
-export function useMultiSelect(workflowId?: Ref<string> | string) {
-    const { commentStore, stateStore, stepStore } = useWorkflowStores(workflowId);
+import { ClearSelectionAction } from "../Actions/workflowActions";
 
-    function deselectAll() {
-        commentStore.clearMultiSelectedComments();
-        stateStore.clearStepMultiSelection();
-    }
+export function useMultiSelect(workflowId?: Ref<string> | string) {
+    const { commentStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores(workflowId);
 
     const selectedCommentsCount = computed(() => commentStore.multiSelectedCommentIds.length);
     const selectedStepsCount = computed(() => stateStore.multiSelectedStepIds.length);
@@ -19,6 +16,12 @@ export function useMultiSelect(workflowId?: Ref<string> | string) {
     const multiSelectedComments = computed(() =>
         commentStore.multiSelectedCommentIds.map((id) => ensureDefined(commentStore.commentsRecord[id]))
     );
+
+    function deselectAll() {
+        if (anySelected.value) {
+            undoRedoStore.applyAction(new ClearSelectionAction(commentStore, stateStore));
+        }
+    }
 
     type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
