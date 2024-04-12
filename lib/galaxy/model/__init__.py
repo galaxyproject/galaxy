@@ -3678,12 +3678,12 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     __tablename__ = "user_quota_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    quota_id: Mapped[Optional[int]] = mapped_column(ForeignKey("quota.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    quota_id: Mapped[int] = mapped_column(ForeignKey("quota.id"), index=True, nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user: Mapped[Optional["User"]] = relationship(back_populates="quotas")
-    quota: Mapped[Optional["Quota"]] = relationship(back_populates="users")
+    user: Mapped["User"] = relationship(back_populates="quotas")
+    quota: Mapped["Quota"] = relationship(back_populates="users")
 
     dict_element_visible_keys = ["user"]
 
