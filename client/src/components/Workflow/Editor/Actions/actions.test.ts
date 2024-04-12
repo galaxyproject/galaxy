@@ -25,12 +25,7 @@ import {
     RemoveStepAction,
     UpdateStepAction,
 } from "./stepActions";
-import {
-    ChangeSelectionAction,
-    CopyIntoWorkflowAction,
-    LazyMoveMultipleAction,
-    LazySetValueAction,
-} from "./workflowActions";
+import { CopyIntoWorkflowAction, LazyMoveMultipleAction, LazySetValueAction } from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -161,14 +156,6 @@ describe("Workflow Undo Redo Actions", () => {
                 { x: 0, y: 0 },
                 { x: 500, y: 500 }
             );
-            testUndoRedo(action);
-        });
-
-        it("ChangeSelectionAction", () => {
-            addComment();
-            addStep();
-
-            const action = new ChangeSelectionAction(commentStore, stateStore, { comments: [0], steps: [0] });
             testUndoRedo(action);
         });
     });

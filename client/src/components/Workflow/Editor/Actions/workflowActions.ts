@@ -103,7 +103,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         this.commentStore = useWorkflowCommentStore(this.workflowId);
         const stateStore = useWorkflowStateStore(this.workflowId);
 
-        this.subAction = new ChangeSelectionAction(this.commentStore, stateStore, { comments: [], steps: [] });
+        this.subAction = new ClearSelectionAction(this.commentStore, stateStore);
     }
 
     get name() {
@@ -236,96 +236,104 @@ type SelectionState =
           comments: undefined;
       };
 
-export class ChangeSelectionAction extends UndoRedoAction {
+function getCountName(count: number, type: "comment" | "step") {
+    if (count === 0) {
+        return null;
+    } else {
+        return `${count} ${count === 1 ? type : `${type}s`}`;
+    }
+}
+
+function getCombinedCountName(stepCount: number, commentCount: number) {
+    const stepName = getCountName(stepCount, "step");
+    const commentName = getCountName(commentCount, "comment");
+
+    if (stepName && commentName) {
+        return `${stepName} and ${commentName}`;
+    } else {
+        return (stepName ?? commentName) as string;
+    }
+}
+
+export class ClearSelectionAction extends UndoRedoAction {
     commentStore;
     stateStore;
-    fromState: SelectionState;
-    toState: SelectionState;
+    selectionState: SelectionState;
 
-    constructor(commentStore: WorkflowCommentStore, stateStore: WorkflowStateStore, changedSelection: SelectionState) {
+    constructor(commentStore: WorkflowCommentStore, stateStore: WorkflowStateStore) {
         super();
 
         this.commentStore = commentStore;
         this.stateStore = stateStore;
 
-        this.fromState = {
-            comments: changedSelection.comments ? [...commentStore.multiSelectedCommentIds] : undefined,
-            steps: changedSelection.steps ? [...stateStore.multiSelectedStepIds] : undefined,
-        } as SelectionState;
-
-        this.toState = structuredClone(changedSelection);
-    }
-
-    setCommentsSelection(commentIds: number[]) {
-        this.commentStore.clearMultiSelectedComments();
-        commentIds.forEach((id) => this.commentStore.setCommentMultiSelected(id, true));
-    }
-
-    setStepsSelection(stepIds: number[]) {
-        this.stateStore.clearStepMultiSelection();
-        stepIds.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
-    }
-
-    private getSelectionCountDifference() {
-        return {
-            comments: (this.toState.comments?.length ?? 0) - (this.fromState.comments?.length ?? 0),
-            steps: (this.toState.steps?.length ?? 0) - (this.fromState.steps?.length ?? 0),
+        this.selectionState = {
+            comments: [...this.commentStore.multiSelectedCommentIds],
+            steps: [...this.stateStore.multiSelectedStepIds],
         };
     }
 
-    private getCountName(count: number, type: "comment" | "step") {
-        if (count === 0) {
-            return null;
-        } else {
-            return `${count} ${count === 1 ? type : `${type}s`}`;
-        }
-    }
-
-    private getCombinedCountName(stepCount: number, commentCount: number) {
-        const stepName = this.getCountName(stepCount, "step");
-        const commentName = this.getCountName(commentCount, "comment");
-
-        if (stepName && commentName) {
-            return `${stepName} and ${commentName}`;
-        } else {
-            return (stepName ?? commentName) as string;
-        }
-    }
-
     get name() {
-        if ((this.toState.comments?.length ?? 0 === 0) && (this.toState.steps?.length ?? 0 === 0)) {
-            return "deselect all";
-        }
-
-        const counts = this.getSelectionCountDifference();
-        const combinedName = this.getCombinedCountName(Math.abs(counts.steps), Math.abs(counts.comments));
-
-        if (Math.sign(counts.comments) === -1 || Math.sign(counts.steps) === -1) {
-            return `remove ${combinedName} from selection`;
-        } else if ((this.fromState.comments?.length ?? 0 === 0) && (this.fromState.steps?.length ?? 0 === 0)) {
-            return `select ${combinedName}`;
-        } else {
-            return `add ${combinedName} to selection`;
-        }
+        return "clear selection";
     }
 
     run() {
-        if (this.toState.comments) {
-            this.setCommentsSelection(this.toState.comments);
-        }
-
-        if (this.toState.steps) {
-            this.setStepsSelection(this.toState.steps);
-        }
+        this.commentStore.clearMultiSelectedComments();
+        this.stateStore.clearStepMultiSelection();
     }
 
     undo() {
-        if (this.fromState.comments) {
-            this.setCommentsSelection(this.fromState.comments);
-        }
+        this.selectionState.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, true));
+        this.selectionState.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
+    }
+}
 
-        if (this.fromState.steps) {
-            this.setStepsSelection(this.fromState.steps);
-        }
+abstract class ModifySelectionAction extends UndoRedoAction {
+    commentStore;
+    stateStore;
+    selection;
+    abstract addToSelection: boolean;
+
+    constructor(commentStore: WorkflowCommentStore, stateStore: WorkflowStateStore, selection: SelectionState) {
+        super();
+
+        this.commentStore = commentStore;
+        this.stateStore = stateStore;
+        this.selection = selection;
+    }
+
+    run() {
+        this.selection.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, this.addToSelection));
+        this.selection.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, this.addToSelection));
+    }
+
+    undo() {
+        this.selection.comments?.forEach((id) => this.commentStore.setCommentMultiSelected(id, !this.addToSelection));
+        this.selection.steps?.forEach((id) => this.stateStore.setStepMultiSelected(id, !this.addToSelection));
+    }
+}
+
+export class AddToSelectionAction extends ModifySelectionAction {
+    addToSelection = true;
+
+    get name() {
+        const combinedCountName = getCombinedCountName(
+            this.selection.steps?.length ?? 0,
+            this.selection.comments?.length ?? 0
+        );
+
+        return `add ${combinedCountName} to selection`;
+    }
+}
+
+export class RemoveFromSelectionAction extends ModifySelectionAction {
+    addToSelection = false;
+
+    get name() {
+        const combinedCountName = getCombinedCountName(
+            this.selection.steps?.length ?? 0,
+            this.selection.comments?.length ?? 0
+        );
+
+        return `remove ${combinedCountName} from selection`;
     }
 }

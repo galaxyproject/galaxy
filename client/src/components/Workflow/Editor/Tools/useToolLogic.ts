@@ -7,6 +7,7 @@ import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
 import { AddCommentAction } from "../Actions/commentActions";
+import { AddToSelectionAction, RemoveFromSelectionAction } from "../Actions/workflowActions";
 import {
     AxisAlignedBoundingBox,
     vecMax,
@@ -220,12 +221,18 @@ export function useToolLogic() {
             }
         });
 
-        const selected = toolbarStore.boxSelectMode === "add";
-
-        commentsInRect.forEach((comment) => commentStore.setCommentMultiSelected(comment.id, selected));
-        stepsInRect.forEach((step) => stateStore.setStepMultiSelected(step.id, selected));
-
         toolbarStore.resetBoxSelect();
+
+        const changedSelection = {
+            comments: commentsInRect.map((comment) => comment.id),
+            steps: stepsInRect.map((step) => step.id),
+        };
+
+        if (toolbarStore.boxSelectMode === "add") {
+            undoRedoStore.applyAction(new AddToSelectionAction(commentStore, stateStore, changedSelection));
+        } else {
+            undoRedoStore.applyAction(new RemoveFromSelectionAction(commentStore, stateStore, changedSelection));
+        }
     }
 
     const positionComment = (pointA: Vector, pointB: Vector, comment: BaseWorkflowComment) => {
