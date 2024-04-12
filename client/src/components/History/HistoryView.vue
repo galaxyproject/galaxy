@@ -25,6 +25,8 @@
             </b-button>
         </div>
 
+        <b-alert :show="copySuccess"> History imported and set to your active history. </b-alert>
+
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
             :history="history"
@@ -38,7 +40,7 @@
             filterable
             @view-collection="onViewCollection" />
 
-        <CopyModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 
@@ -67,6 +69,7 @@ export default {
     data() {
         return {
             selectedCollections: [],
+            copySuccess: false,
         };
     },
     computed: {
@@ -126,6 +129,9 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentHistory"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
+        },
+        copyOkay() {
+            this.copySuccess = true;
         },
     },
 };
