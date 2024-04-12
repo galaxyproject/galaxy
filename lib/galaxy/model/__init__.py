@@ -1413,7 +1413,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     post_job_actions: Mapped[List["PostJobActionAssociation"]] = relationship(
         back_populates="job", cascade_backrefs=False
     )
-    input_library_datasets = relationship("JobToInputLibraryDatasetAssociation", back_populates="job")
+    input_library_datasets: Mapped[List["JobToInputLibraryDatasetAssociation"]] = relationship(
+        "JobToInputLibraryDatasetAssociation", back_populates="job"
+    )
     output_library_datasets = relationship("JobToOutputLibraryDatasetAssociation", back_populates="job")
     external_output_metadata: Mapped[List["JobExternalOutputMetadata"]] = relationship(back_populates="job")
     tasks: Mapped[List["Task"]] = relationship(back_populates="job")
@@ -2433,7 +2435,7 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
     ldda_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
     job: Mapped["Job"] = relationship(back_populates="input_library_datasets")
     dataset: Mapped["LibraryDatasetDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
 
