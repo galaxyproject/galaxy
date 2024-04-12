@@ -10683,10 +10683,10 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "history_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    history: Mapped[Optional["History"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    history: Mapped["History"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, history):
@@ -10698,12 +10698,12 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     __tablename__ = "history_dataset_association_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_association.id"), index=True
+    history_dataset_association_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    history_dataset_association: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    history_dataset_association: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, history_dataset_association):
@@ -10715,10 +10715,10 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "stored_workflow_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
+    stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, stored_workflow):
@@ -10730,10 +10730,10 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "page_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    page: Mapped[Optional["Page"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    page: Mapped["Page"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, page):
@@ -10745,10 +10745,10 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     __tablename__ = "visualization_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    visualization_id: Mapped[Optional[int]] = mapped_column(ForeignKey("visualization.id"), index=True)
+    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    visualization: Mapped[Optional["Visualization"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    visualization: Mapped["Visualization"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, visualization):
@@ -10760,12 +10760,12 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     __tablename__ = "history_dataset_collection_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_collection_association.id"), index=True
+    history_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    dataset_collection: Mapped[Optional["HistoryDatasetCollectionAssociation"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, dataset_collection):
@@ -10777,12 +10777,12 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     __tablename__ = "library_dataset_collection_rating_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_collection_association.id"), index=True
+    library_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    rating: Mapped[Optional[int]] = mapped_column(index=True)
-    dataset_collection: Mapped[Optional["LibraryDatasetCollectionAssociation"]] = relationship(back_populates="ratings")
+    rating: Mapped[int] = mapped_column(index=True, nullable=True)
+    dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
 
     def _set_item(self, dataset_collection):
