@@ -3615,12 +3615,12 @@ class GroupRoleAssociation(Base, RepresentById):
     __tablename__ = "group_role_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
+    role_id: Mapped[int] = mapped_column(ForeignKey("role.id"), index=True, nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    group: Mapped[Optional["Group"]] = relationship(back_populates="roles")
-    role: Mapped[Optional["Role"]] = relationship(back_populates="groups")
+    group: Mapped["Group"] = relationship(back_populates="roles")
+    role: Mapped["Role"] = relationship(back_populates="groups")
 
     def __init__(self, group, role):
         self.group = group
