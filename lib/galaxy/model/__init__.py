@@ -1404,7 +1404,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     input_dataset_collection_elements = relationship(
         "JobToInputDatasetCollectionElementAssociation", back_populates="job"
     )
-    output_dataset_collection_instances = relationship("JobToOutputDatasetCollectionAssociation", back_populates="job")
+    output_dataset_collection_instances: Mapped[List["JobToOutputDatasetCollectionAssociation"]] = relationship(
+        "JobToOutputDatasetCollectionAssociation", back_populates="job"
+    )
     output_dataset_collections = relationship("JobToImplicitOutputDatasetCollectionAssociation", back_populates="job")
     post_job_actions: Mapped[List["PostJobActionAssociation"]] = relationship(
         back_populates="job", cascade_backrefs=False
@@ -2390,7 +2392,7 @@ class JobToOutputDatasetCollectionAssociation(Base, RepresentById):
     dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
     dataset_collection_instance: Mapped["HistoryDatasetCollectionAssociation"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="output_dataset_collection_instances")
 
