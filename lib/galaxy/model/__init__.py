@@ -2759,13 +2759,13 @@ class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     container_type: Mapped[Optional[str]] = mapped_column(TEXT)
     container_name: Mapped[Optional[str]] = mapped_column(TEXT)
     container_info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     modified_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    job: Mapped[Optional["Job"]] = relationship(back_populates="container")
+    job: Mapped["Job"] = relationship(back_populates="container")
 
     def __init__(self, **kwd):
         if "job" in kwd:
