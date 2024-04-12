@@ -10554,11 +10554,11 @@ class HistoryAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_history_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    history: Mapped[Optional["History"]] = relationship(back_populates="annotations")
-    user: Mapped[Optional["User"]] = relationship()
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    history: Mapped["History"] = relationship(back_populates="annotations")
+    user: Mapped["User"] = relationship()
 
 
 class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
@@ -10566,12 +10566,12 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_history_dataset_anno_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_association.id"), index=True
+    history_dataset_association_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(back_populates="annotations")
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    hda: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10580,10 +10580,10 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_stored_workflow_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
+    stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship(back_populates="annotations")
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10592,10 +10592,10 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_workflow_step_ann_assoc_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(back_populates="annotations")
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    workflow_step: Mapped["WorkflowStep"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10604,10 +10604,10 @@ class PageAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_page_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    page: Mapped[Optional["Page"]] = relationship(back_populates="annotations")
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    page: Mapped["Page"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10616,10 +10616,10 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_visualization_annotation_association_annotation", "annotation", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    visualization_id: Mapped[Optional[int]] = mapped_column(ForeignKey("visualization.id"), index=True)
+    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    visualization: Mapped[Optional["Visualization"]] = relationship(back_populates="annotations")
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    visualization: Mapped["Visualization"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10627,12 +10627,12 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
     __tablename__ = "history_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_collection_association.id"), index=True
+    history_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    history_dataset_collection: Mapped[Optional["HistoryDatasetCollectionAssociation"]] = relationship(
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    history_dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(
         back_populates="annotations"
     )
     user: Mapped[Optional["User"]] = relationship()
@@ -10642,14 +10642,12 @@ class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     __tablename__ = "library_dataset_collection_annotation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_collection_association.id"), index=True
+    library_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    annotation: Mapped[Optional[str]] = mapped_column(TEXT)
-    dataset_collection: Mapped[Optional["LibraryDatasetCollectionAssociation"]] = relationship(
-        back_populates="annotations"
-    )
+    annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
+    dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
 
 
