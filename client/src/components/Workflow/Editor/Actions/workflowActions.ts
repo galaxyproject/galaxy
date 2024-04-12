@@ -6,7 +6,6 @@ import {
 } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore, type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step, useWorkflowStepStore, type WorkflowStepStore } from "@/stores/workflowStepStore";
-import { assertDefined } from "@/utils/assertions";
 
 import { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, Workflow } from "../modules/model";
@@ -267,37 +266,46 @@ export class ChangeSelectionAction extends UndoRedoAction {
         stepIds.forEach((id) => this.stateStore.setStepMultiSelected(id, true));
     }
 
-    get commentsText() {
-        assertDefined(this.toState.comments, "Invalid comments text getter. Comment Ids not in action state");
+    private getSelectionCountDifference() {
+        return {
+            comments: (this.toState.comments?.length ?? 0) - (this.fromState.comments?.length ?? 0),
+            steps: (this.toState.steps?.length ?? 0) - (this.fromState.steps?.length ?? 0),
+        };
+    }
 
-        if (this.toState.comments.length > 1) {
-            return `${this.toState.comments.length} comments`;
+    private getCountName(count: number, type: "comment" | "step") {
+        if (count === 0) {
+            return null;
         } else {
-            return `1 comment`;
+            return `${count} ${count === 1 ? type : `${type}s`}`;
         }
     }
 
-    get stepsText() {
-        assertDefined(this.toState.steps, "Invalid steps text getter. Step Ids not in action state");
+    private getCombinedCountName(stepCount: number, commentCount: number) {
+        const stepName = this.getCountName(stepCount, "step");
+        const commentName = this.getCountName(commentCount, "comment");
 
-        if (this.toState.steps.length > 1) {
-            return `${this.toState.steps.length} steps`;
+        if (stepName && commentName) {
+            return `${stepName} and ${commentName}`;
         } else {
-            return `1 step`;
+            return (stepName ?? commentName) as string;
         }
     }
 
     get name() {
-        if (this.toState.comments && this.toState.steps) {
-            return `select ${this.commentsText} and ${this.stepsText}`;
+        if ((this.toState.comments?.length ?? 0 === 0) && (this.toState.steps?.length ?? 0 === 0)) {
+            return "deselect all";
         }
 
-        if (this.toState.comments) {
-            return `select ${this.commentsText}`;
-        }
+        const counts = this.getSelectionCountDifference();
+        const combinedName = this.getCombinedCountName(Math.abs(counts.steps), Math.abs(counts.comments));
 
-        if (this.toState.steps) {
-            return `select ${this.stepsText}`;
+        if (Math.sign(counts.comments) === -1 || Math.sign(counts.steps) === -1) {
+            return `remove ${combinedName} from selection`;
+        } else if ((this.fromState.comments?.length ?? 0 === 0) && (this.fromState.steps?.length ?? 0 === 0)) {
+            return `select ${combinedName}`;
+        } else {
+            return `add ${combinedName} to selection`;
         }
     }
 
