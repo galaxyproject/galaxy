@@ -9498,7 +9498,7 @@ class MetadataFile(Base, StorableObject, Serializable):
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
 
     history_dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
-    library_dataset = relationship("LibraryDatasetDatasetAssociation")
+    library_dataset: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship()
 
     def __init__(self, dataset=None, name=None, uuid=None):
         self.uuid = get_uuid(uuid)
@@ -9509,7 +9509,7 @@ class MetadataFile(Base, StorableObject, Serializable):
         self.name = name
 
     @property
-    def dataset(self) -> Optional[Dataset]:
+    def dataset(self) -> Optional["DatasetInstance"]:
         da = self.history_dataset or self.library_dataset
         return da and da.dataset
 
