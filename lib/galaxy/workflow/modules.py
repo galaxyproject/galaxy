@@ -2516,13 +2516,13 @@ class WorkflowModuleInjector:
         If step_args is provided from a web form this is applied to generate
         'state' else it is just obtained from the database.
         """
-        step.upgrade_messages = {}  # type: ignore[assignment]
+        step.upgrade_messages = {}
 
         # Make connection information available on each step by input name.
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)  # type: ignore[assignment]
+        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
