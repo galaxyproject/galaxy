@@ -25,7 +25,16 @@ import {
     RemoveStepAction,
     UpdateStepAction,
 } from "./stepActions";
-import { CopyIntoWorkflowAction, LazyMoveMultipleAction, LazySetValueAction } from "./workflowActions";
+import {
+    AddToSelectionAction,
+    ClearSelectionAction,
+    CopyIntoWorkflowAction,
+    DeleteSelectionAction,
+    DuplicateSelectionAction,
+    LazyMoveMultipleAction,
+    LazySetValueAction,
+    RemoveFromSelectionAction,
+} from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -156,6 +165,45 @@ describe("Workflow Undo Redo Actions", () => {
                 { x: 0, y: 0 },
                 { x: 500, y: 500 }
             );
+            testUndoRedo(action);
+        });
+
+        function setupSelected() {
+            addComment();
+            addComment();
+            addStep();
+            addStep();
+            commentStore.setCommentMultiSelected(0, true);
+            stateStore.setStepMultiSelected(2, true);
+        }
+
+        it("ClearSelectionAction", () => {
+            setupSelected();
+            const action = new ClearSelectionAction(commentStore, stateStore);
+            testUndoRedo(action);
+        });
+
+        it("AddToSelectionAction", () => {
+            setupSelected();
+            const action = new AddToSelectionAction(commentStore, stateStore, { comments: [1], steps: [0] });
+            testUndoRedo(action);
+        });
+
+        it("RemoveFromSelectionAction", () => {
+            setupSelected();
+            const action = new RemoveFromSelectionAction(commentStore, stateStore, { comments: [0], steps: [1] });
+            testUndoRedo(action);
+        });
+
+        it("DuplicateSelectionAction", () => {
+            setupSelected();
+            const action = new DuplicateSelectionAction(workflowId);
+            testUndoRedo(action);
+        });
+
+        it("DeleteSelectionAction", () => {
+            setupSelected();
+            const action = new DeleteSelectionAction(workflowId);
             testUndoRedo(action);
         });
     });
