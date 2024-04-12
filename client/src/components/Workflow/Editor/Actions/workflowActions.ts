@@ -379,7 +379,7 @@ export class DeleteSelectionAction extends UndoRedoAction {
         };
 
         const connectionsForSteps = this.stepIds.flatMap((id) => this.connectionStore.getConnectionsForStep(id));
-        this.storedConnections = new Set(connectionsForSteps);
+        this.storedConnections = structuredClone(new Set(connectionsForSteps));
     }
 
     get name() {
@@ -418,6 +418,6 @@ export class DeleteSelectionAction extends UndoRedoAction {
 
     undo() {
         this.storedSelectionAction.redo();
-        this.storedConnections.forEach((connection) => this.connectionStore.addConnection(connection));
+        this.storedConnections.forEach((connection) => this.connectionStore.addConnection(structuredClone(connection)));
     }
 }
