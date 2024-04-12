@@ -219,9 +219,13 @@ class NotificationManager:
     def _dispatch_notification_to_users(self, notification: Notification):
         users = self._get_associated_users(notification)
         for user in users:
-            if self._is_user_subscribed_to_notification(user, notification):
-                settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
-                self._send_via_channels(notification, user, settings.channels)
+            try:
+                if self._is_user_subscribed_to_notification(user, notification):
+                    settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+                    self._send_via_channels(notification, user, settings.channels)
+            except Exception as e:
+                log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
+                continue
 
     def _get_associated_users(self, notification: Notification):
         stmt = (
@@ -251,8 +255,13 @@ class NotificationManager:
             user_opted_out = getattr(channel_settings, channel, False) is False
             if user_opted_out and not self._is_urgent(notification):
                 continue  # Skip sending to opted-out users unless it's an urgent notification
-            plugin = self.channel_plugins[channel]
-            plugin.send(notification, user)
+            try:
+                plugin = self.channel_plugins[channel]
+                plugin.send(notification, user)
+            except Exception as e:
+                log.error(
+                    f"Error sending notification to user {user.id} via channel '{channel}'. Reason: {util.unicodify(e)}"
+                )
 
     def _is_subscribed_to_category(self, category_settings: NotificationCategorySettings) -> bool:
         return category_settings.enabled
