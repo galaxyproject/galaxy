@@ -10403,13 +10403,13 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "history_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    history: Mapped[Optional["History"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    history: Mapped["History"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10417,15 +10417,15 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
     __tablename__ = "history_dataset_association_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_association.id"), index=True
+    history_dataset_association_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    history_dataset_association: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    history_dataset_association: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10433,17 +10433,17 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
     __tablename__ = "library_dataset_dataset_association_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_dataset_association.id"), index=True
+    library_dataset_dataset_association_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    library_dataset_dataset_association: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
+    library_dataset_dataset_association: Mapped["LibraryDatasetDatasetAssociation"] = relationship(
         back_populates="tags"
     )
-    tag: Mapped[Optional["Tag"]] = relationship()
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10451,13 +10451,13 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "page_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    page: Mapped[Optional["Page"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    page: Mapped["Page"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10465,13 +10465,13 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "workflow_step_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    workflow_step: Mapped["WorkflowStep"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10479,13 +10479,13 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "stored_workflow_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10493,13 +10493,13 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "visualization_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    visualization_id: Mapped[Optional[int]] = mapped_column(ForeignKey("visualization.id"), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    visualization: Mapped[Optional["Visualization"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    visualization: Mapped["Visualization"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10507,15 +10507,15 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     __tablename__ = "history_dataset_collection_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("history_dataset_collection_association.id"), index=True
+    history_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    dataset_collection: Mapped[Optional["HistoryDatasetCollectionAssociation"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10523,15 +10523,15 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
     __tablename__ = "library_dataset_collection_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_collection_association.id"), index=True
+    library_dataset_collection_id: Mapped[int] = mapped_column(
+        ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    dataset_collection: Mapped[Optional["LibraryDatasetCollectionAssociation"]] = relationship(back_populates="tags")
-    tag: Mapped[Optional["Tag"]] = relationship()
+    dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="tags")
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -10539,12 +10539,12 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     __tablename__ = "tool_tag_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    tool_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    tag_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"), index=True)
+    tool_id: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
+    tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    tag: Mapped[Optional["Tag"]] = relationship()
+    tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
