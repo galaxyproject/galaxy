@@ -2379,7 +2379,7 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
     dataset_collection_element_id: Mapped[int] = mapped_column(
         ForeignKey("dataset_collection_element.id"), index=True, nullable=True
     )
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
     dataset_collection_element: Mapped["DatasetCollectionElement"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collection_elements")
 
