@@ -186,7 +186,9 @@ class LengthValidator(InRangeValidator):
         super().__init__(message, range_min=length_min, range_max=length_max, negate=negate)
 
     def validate(self, value, trans=None):
-        super().validate(len(value), trans)
+        if value is None:
+            raise ValueError("No value provided")
+        super().validate(len(value) if value else 0, trans)
 
 
 class DatasetOkValidator(Validator):
