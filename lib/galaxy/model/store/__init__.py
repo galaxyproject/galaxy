@@ -2065,84 +2065,84 @@ class DirectoryModelExportStore(ModelExportStore):
                 output_dataset_collection_mapping: Dict[str, List[Union[str, int]]] = {}
                 implicit_output_dataset_collection_mapping: Dict[str, List[Union[str, int]]] = {}
 
-                for assoc in job.input_datasets:
+                for id_assoc in job.input_datasets:
                     # Optional data inputs will not have a dataset.
-                    if assoc.dataset:
-                        name = assoc.name
+                    if id_assoc.dataset:
+                        name = id_assoc.name
                         if name not in input_dataset_mapping:
                             input_dataset_mapping[name] = []
 
-                        input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+                        input_dataset_mapping[name].append(self.exported_key(id_assoc.dataset))
                         if include_job_data:
-                            self.add_dataset(assoc.dataset)
+                            self.add_dataset(id_assoc.dataset)
 
-                for assoc2 in job.output_datasets:
+                for od_assoc in job.output_datasets:
                     # Optional data inputs will not have a dataset.
-                    if assoc2.dataset:
-                        name = assoc2.name
+                    if od_assoc.dataset:
+                        name = od_assoc.name
                         if name not in output_dataset_mapping:
                             output_dataset_mapping[name] = []
 
-                        output_dataset_mapping[name].append(self.exported_key(assoc2.dataset))
+                        output_dataset_mapping[name].append(self.exported_key(od_assoc.dataset))
                         if include_job_data:
-                            self.add_dataset(assoc2.dataset)
+                            self.add_dataset(od_assoc.dataset)
 
-                for assoc3 in job.input_dataset_collections:
+                for idc_assoc in job.input_dataset_collections:
                     # Optional data inputs will not have a dataset.
-                    if assoc3.dataset_collection:
-                        name = assoc3.name
+                    if idc_assoc.dataset_collection:
+                        name = idc_assoc.name
                         if name not in input_dataset_collection_mapping:
                             input_dataset_collection_mapping[name] = []
 
-                        input_dataset_collection_mapping[name].append(self.exported_key(assoc3.dataset_collection))
+                        input_dataset_collection_mapping[name].append(self.exported_key(idc_assoc.dataset_collection))
                         if include_job_data:
-                            self.export_collection(assoc3.dataset_collection)
+                            self.export_collection(idc_assoc.dataset_collection)
 
-                for assoc4 in job.input_dataset_collection_elements:
-                    if assoc4.dataset_collection_element:
-                        name = assoc4.name
+                for idce_assoc in job.input_dataset_collection_elements:
+                    if idce_assoc.dataset_collection_element:
+                        name = idce_assoc.name
                         if name not in input_dataset_collection_element_mapping:
                             input_dataset_collection_element_mapping[name] = []
 
                         input_dataset_collection_element_mapping[name].append(
-                            self.exported_key(assoc4.dataset_collection_element)
+                            self.exported_key(idce_assoc.dataset_collection_element)
                         )
                         if include_job_data:
-                            if assoc4.dataset_collection_element.is_collection:
+                            if idce_assoc.dataset_collection_element.is_collection:
                                 assert isinstance(
-                                    assoc4.dataset_collection_element.element_object, model.DatasetCollection
+                                    idce_assoc.dataset_collection_element.element_object, model.DatasetCollection
                                 )
-                                self.export_collection(assoc4.dataset_collection_element.element_object)
+                                self.export_collection(idce_assoc.dataset_collection_element.element_object)
                             else:
                                 assert isinstance(
-                                    assoc4.dataset_collection_element.element_object, model.DatasetInstance
+                                    idce_assoc.dataset_collection_element.element_object, model.DatasetInstance
                                 )
-                                self.add_dataset(assoc4.dataset_collection_element.element_object)
+                                self.add_dataset(idce_assoc.dataset_collection_element.element_object)
 
-                for assoc5 in job.output_dataset_collection_instances:
+                for odci_assoc in job.output_dataset_collection_instances:
                     # Optional data outputs will not have a dataset.
                     # These are implicit outputs, we don't need to export them
-                    if assoc5.dataset_collection_instance:
-                        name = assoc5.name
+                    if odci_assoc.dataset_collection_instance:
+                        name = odci_assoc.name
                         if name not in output_dataset_collection_mapping:
                             output_dataset_collection_mapping[name] = []
 
                         output_dataset_collection_mapping[name].append(
-                            self.exported_key(assoc5.dataset_collection_instance)
+                            self.exported_key(odci_assoc.dataset_collection_instance)
                         )
 
-                for assoc6 in job.output_dataset_collections:
-                    if assoc6.dataset_collection:
-                        name = assoc6.name
+                for odc_assoc in job.output_dataset_collections:
+                    if odc_assoc.dataset_collection:
+                        name = odc_assoc.name
 
                         if name not in implicit_output_dataset_collection_mapping:
                             implicit_output_dataset_collection_mapping[name] = []
 
                         implicit_output_dataset_collection_mapping[name].append(
-                            self.exported_key(assoc6.dataset_collection)
+                            self.exported_key(odc_assoc.dataset_collection)
                         )
                         if include_job_data:
-                            self.export_collection(assoc6.dataset_collection)
+                            self.export_collection(odc_assoc.dataset_collection)
 
                 job_attrs["input_dataset_mapping"] = input_dataset_mapping
                 job_attrs["input_dataset_collection_mapping"] = input_dataset_collection_mapping
