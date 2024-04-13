@@ -1554,7 +1554,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def get_state(self) -> str:
         job = self.get_job()
         self.sa_session.refresh(job)
-        return job.state  # type:ignore[return-value]
+        return job.state
 
     def set_runner(self, runner_url, external_id):
         log.warning("set_runner() is deprecated, use set_job_destination()")

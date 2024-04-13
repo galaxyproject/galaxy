@@ -179,7 +179,7 @@ class SharableModelManager(
         """
         # precondition: user has been validated
         # get or create
-        existing = self.get_share_assocs(item, user=user)  # type:ignore[dict-item]
+        existing = self.get_share_assocs(item, user=user)
         if existing:
             return existing.pop(0)
         return self._create_user_share_assoc(item, user, flush=flush)

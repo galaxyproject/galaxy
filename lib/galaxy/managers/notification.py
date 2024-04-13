@@ -275,8 +275,8 @@ class NotificationManager:
     def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
         """Gets the user's current notification preferences or the default ones if no preferences are set."""
         current_notification_preferences = (
-            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]  # type:ignore[index]
-            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences  # type:ignore[operator]
+            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
+            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences
             else None
         )
         try:
@@ -291,9 +291,7 @@ class NotificationManager:
         """Updates the user's notification preferences with the requested changes."""
         notification_preferences = self.get_user_notification_preferences(user)
         notification_preferences.update(request.preferences)
-        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = (
-            notification_preferences.model_dump_json()
-        )  # type:ignore[index]
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.model_dump_json()
         with transaction(self.sa_session):
             self.sa_session.commit()
         return notification_preferences
