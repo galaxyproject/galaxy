@@ -4108,11 +4108,11 @@ class Dataset(Base, StorableObject, Serializable):
             if object_store.exists(self):
                 file_name = object_store.get_filename(self, sync_cache=sync_cache)
             else:
-                file_name = ""
-            if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
-                # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
-                # Anything after queued should have a file name.
-                log.warning(f"Failed to determine file name for dataset {self.id}")
+                if self.state not in (self.states.NEW, self.states.QUEUED):
+                    # Queued datasets can be assigned an object store and have a filename, but they aren't guaranteed to.
+                    # Anything after queued should have a file name.
+                    log.warning(f"Failed to determine file name for dataset {self.id}")
+                file_name = object_store.construct_path(self)
             return file_name
         else:
             filename = self.external_filename

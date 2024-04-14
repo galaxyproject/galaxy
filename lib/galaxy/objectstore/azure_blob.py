@@ -426,7 +426,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # s3_dir = '%s/' % rel_path
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
-            if not dir_only:
+            if not dir_only and kwargs.get("create_datasets_on_disk", True):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_os(rel_path, from_string="")

@@ -546,6 +546,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _create(self, obj, **kwargs):
         if not self._exists(obj, **kwargs):
             # Pull out locally used fields
+            create_datasets_on_disk = kwargs.get("create_datasets_on_disk", True)
             extra_dir = kwargs.get("extra_dir", None)
             extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
             dir_only = kwargs.get("dir_only", False)
@@ -572,7 +573,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # s3_dir = '%s/' % rel_path
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
-            if not dir_only:
+            if not dir_only and not create_datasets_on_disk:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_os(rel_path, from_string="")

@@ -298,7 +298,7 @@ class PithosObjectStore(ConcreteObjectStore):
 
             if dir_only:
                 self.pithos.upload_from_string(rel_path, "", content_type="application/directory")
-            else:
+            elif kwargs.get("create_datasets_on_disk", True):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, "w").close()

@@ -607,7 +607,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             if not os.path.exists(cache_dir):
                 os.makedirs(cache_dir, exist_ok=True)
 
-            if not dir_only:
+            if not dir_only and kwargs.get("create_datasets_on_disk", True):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_irods(rel_path, from_string="")

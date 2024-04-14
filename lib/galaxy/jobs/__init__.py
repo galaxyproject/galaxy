@@ -1628,7 +1628,10 @@ class MinimalJobWrapper(HasResourceParameters):
         # afterward. State below needs to happen the same way.
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
-            object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
+            create_datasets_on_disk = not self.get_destination_configuration("outputs_to_working_directory")
+            object_store_populator.set_object_store_id(
+                dataset, require_shareable=require_shareable, create_datasets_on_disk=create_datasets_on_disk
+            )
 
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
@@ -1695,9 +1698,13 @@ class MinimalJobWrapper(HasResourceParameters):
             if object_store_id:
                 object_store_populator.object_store_id = object_store_id
 
+            create_datasets_on_disk = not self.get_destination_configuration("outputs_to_working_directory")
+
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
-                object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
+                object_store_populator.set_object_store_id(
+                    dataset, require_shareable=require_shareable, create_datasets_on_disk=create_datasets_on_disk
+                )
 
             job.object_store_id = object_store_populator.object_store_id
             self._setup_working_directory(job=job)
