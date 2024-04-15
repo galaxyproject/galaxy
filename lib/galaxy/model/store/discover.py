@@ -470,8 +470,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if not job:
             return None
         default_object_store_id = job.object_store_id
-        object_store_id_overrides = job.object_store_id_overrides or {}  # type:ignore[var-annotated]
-        return object_store_id_overrides.get(output_name, default_object_store_id)  # type:ignore[union-attr]
+        if not output_name:
+            return default_object_store_id
+        object_store_id_overrides: Dict[str, str] = job.object_store_id_overrides or {}
+        return object_store_id_overrides.get(output_name, default_object_store_id)
 
     @property
     @abc.abstractmethod
