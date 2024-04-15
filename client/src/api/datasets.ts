@@ -1,3 +1,4 @@
+import axios from "axios";
 import type { FetchArgType } from "openapi-typescript-fetch";
 
 import { HDADetailed } from "@/api";
@@ -88,3 +89,9 @@ export function getCompositeDatasetLink(historyDatasetId: string, path: string) 
 
 export type DatasetExtraFiles = components["schemas"]["DatasetExtraFiles"];
 export const fetchDatasetExtraFiles = fetcher.path("/api/datasets/{dataset_id}/extra_files").method("get").create();
+
+export async function fetchDatasetAttributes(datasetId: string) {
+    const { data } = await axios.get(withPrefix(`/dataset/get_edit?dataset_id=${datasetId}`));
+
+    return data;
+}

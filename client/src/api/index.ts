@@ -235,3 +235,10 @@ export function userOwnsHistory(user: User | AnonymousUser | null, history: AnyH
 function hasOwner(history: AnyHistory): history is HistorySummaryExtended {
     return "user_id" in history && history.user_id !== null;
 }
+
+export type DatasetHash = components["schemas"]["DatasetHash"];
+
+export type DatasetTransform = {
+    action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
+    datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
+};

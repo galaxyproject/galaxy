@@ -1,28 +1,7 @@
-<template>
-    <span class="dataset-source-transform-display">
-        <div v-if="transform && transform.length > 0">
-            Upon ingestion into the Galaxy, the following {{ actions }} were performed that modified the dataset
-            contents:
-            <ul>
-                <li v-for="(transformAction, index) in transform" :key="index">
-                    <span
-                        v-b-tooltip.hover.noninteractive.nofade.bottom
-                        :title="actionLongDescription(transformAction)"
-                        class="dataset-source-transform-element"
-                        :data-transform-action="transformAction.action">
-                        {{ actionShortDescription(transformAction) }}
-                    </span>
-                </li>
-            </ul>
-        </div>
-    </span>
-</template>
+<script setup lang="ts">
+import { computed } from "vue";
 
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { type DatasetTransform } from "@/api";
 
 const TRANSFORM_ACTION_DESCRIPTIONS = {
     to_posix_lines: {
@@ -52,38 +31,58 @@ const UNKNOWN_ACTION_DESCRIPTION = {
     long: "",
 };
 
-export default {
-    props: {
-        transform: {
-            type: Array,
-            required: false,
-        },
-    },
-    computed: {
-        actions() {
-            return this.transform.length > 1 ? "actions" : "action";
-        },
-    },
-    methods: {
-        actionShortDescription(transformAction) {
-            return this.actionDescription(transformAction).short || "Unknown action.";
-        },
-        actionLongDescription(transformAction) {
-            let longDescription = this.actionDescription(transformAction).long || "";
-            if (transformAction.action == "datatype_groom") {
-                const datatypeDescription = DATATYPE_GROOMING_DESCRIPTIONS[transformAction.datatype_ext];
-                if (datatypeDescription) {
-                    longDescription += " " + datatypeDescription;
-                }
-            }
-            return longDescription;
-        },
-        actionDescription(transformAction) {
-            return TRANSFORM_ACTION_DESCRIPTIONS[transformAction.action] || UNKNOWN_ACTION_DESCRIPTION;
-        },
-    },
-};
+interface Props {
+    transform: DatasetTransform[];
+}
+
+const props = defineProps<Props>();
+
+const actions = computed(() => {
+    return props.transform.length > 1 ? "actions" : "action";
+});
+
+function actionDescription(transformAction: DatasetTransform) {
+    return TRANSFORM_ACTION_DESCRIPTIONS[transformAction.action] || UNKNOWN_ACTION_DESCRIPTION;
+}
+
+function actionShortDescription(transformAction: DatasetTransform) {
+    return actionDescription(transformAction).short || "Unknown action.";
+}
+
+function actionLongDescription(transformAction: DatasetTransform) {
+    let longDescription = actionDescription(transformAction).long || "";
+
+    if (transformAction.action == "datatype_groom") {
+        const datatypeDescription = DATATYPE_GROOMING_DESCRIPTIONS[transformAction.datatype_ext];
+
+        if (datatypeDescription) {
+            longDescription += " " + datatypeDescription;
+        }
+    }
+
+    return longDescription;
+}
 </script>
+
+<template>
+    <span class="dataset-source-transform-display">
+        <div v-if="transform && transform.length > 0">
+            Upon ingestion into the Galaxy, the following {{ actions }} were performed that modified the dataset
+            contents:
+            <ul>
+                <li v-for="(transformAction, index) in transform" :key="index">
+                    <span
+                        v-b-tooltip.hover.noninteractive.nofade.bottom
+                        :title="actionLongDescription(transformAction)"
+                        class="dataset-source-transform-element"
+                        :data-transform-action="transformAction.action">
+                        {{ actionShortDescription(transformAction) }}
+                    </span>
+                </li>
+            </ul>
+        </div>
+    </span>
+</template>
 
 <style scoped>
 .dataset-source-transform-element {
