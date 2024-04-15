@@ -57,7 +57,7 @@ class LibraryManager:
         :rtype:     galaxy.model.Library
         """
         try:
-            library = get_library(trans.sa_session, decoded_library_id)
+            library = trans.sa_session.get(Library, decoded_library_id)
         except MultipleResultsFound:
             raise exceptions.InconsistentDatabase("Multiple libraries found with the same id.")
         except NoResultFound:
@@ -360,8 +360,3 @@ def get_containing_library_from_library_dataset(trans, library_dataset) -> Optio
         if library.root_folder == folder:
             return library
     return None
-
-
-def get_library(session, library_id):
-    stmt = select(Library).where(Library.id == library_id)
-    return session.execute(stmt).scalar_one()
