@@ -1048,6 +1048,36 @@ class BaseDatasetPopulator(BasePopulator):
         assert output_details["state"] == "error", output_details
         return output_details["id"]
 
+    def report_job_error_raw(
+        self, job_id: str, dataset_id: str, message: str = "", email: Optional[str] = None
+    ) -> Response:
+        url = f"jobs/{job_id}/error"
+        payload = dict(
+            dataset_id=dataset_id,
+            message=message,
+        )
+        if email is not None:
+            payload["email"] = email
+        report_response = self._post(url, data=payload, json=True)
+        return report_response
+
+    def report_job_error(
+        self, job_id: str, dataset_id: str, message: str = "", email: Optional[str] = None
+    ) -> Response:
+        report_response = self.report_job_error_raw(job_id, dataset_id, message=message, email=email)
+        api_asserts.assert_status_code_is_ok(report_response)
+        return report_response.json()
+
+    def run_detect_errors(self, history_id: str, exit_code: int, stdout: str = "", stderr: str = "") -> dict:
+        inputs = {
+            "stdoutmsg": stdout,
+            "stderrmsg": stderr,
+            "exit_code": exit_code,
+        }
+        response = self.run_tool("detect_errors", inputs, history_id)
+        self.wait_for_history(history_id, assert_ok=False)
+        return response
+
     def run_exit_code_from_file(self, history_id: str, hdca_id: str) -> dict:
         exit_code_inputs = {
             "input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
