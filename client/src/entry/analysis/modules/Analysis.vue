@@ -8,15 +8,15 @@ import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import HelpModeDraggable from "@/components/Help/HelpModeDraggable.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import HelpModeText from "@/components/Panels/HelpModeText.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
-const { status: helpModeStatus } = storeToRefs(useHelpModeStore());
+const { draggableActive } = storeToRefs(useHelpModeStore());
 
 // methods
 function hideCenter() {
@@ -50,6 +50,6 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
-        <HelpModeText v-if="helpModeStatus" />
+        <HelpModeDraggable v-if="draggableActive" />
     </div>
 </template>

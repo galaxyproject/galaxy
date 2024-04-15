@@ -7,3 +7,6 @@ collection_builder:
 selector_modal_switch:
   title: History Selector
   file_path: histories/selector_modal_switch.md
+selector_modal_multiview:
+  title: History Selector
+  file_path: histories/selector_modal_multiview.md

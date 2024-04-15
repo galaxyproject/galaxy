@@ -11,9 +11,9 @@ import localize from "@/utils/localization";
 library.add(faQuestionCircle);
 
 const tooltip = localize("Enable/Disable Help Mode");
-const { status } = storeToRefs(useHelpModeStore());
+const { draggableActive } = storeToRefs(useHelpModeStore());
 function toggleEnabledStatus() {
-    status.value = !status.value;
+    draggableActive.value = !draggableActive.value;
 }
 </script>
 
@@ -22,14 +22,13 @@ function toggleEnabledStatus() {
         <BButton
             v-b-tooltip.hover.bottom
             class="help-mode-button nav-link"
-            :class="{ highlight: status }"
+            :class="{ highlight: draggableActive }"
             :title="tooltip"
             :aria-label="tooltip"
             variant="link"
             @click="toggleEnabledStatus"
             @keydown.enter="toggleEnabledStatus">
-            <!-- <i class="fas fa-question-circle fa-lg" :class="{ highlight: status }"> </i> Help Me -->
-            <FontAwesomeIcon :icon="faQuestionCircle" :class="{ highlight: status }" size="lg" />
+            <FontAwesomeIcon :icon="faQuestionCircle" :class="{ highlight: draggableActive }" size="lg" />
         </BButton>
     </div>
 </template>

@@ -3,34 +3,26 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
-import { BButton, BTab, BTabs } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { reactive, ref, watch } from "vue";
 
-import { useMarkdown } from "@/composables/markdown";
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
-import { DEFAULT_HELP_TEXT, useHelpModeStore } from "@/stores/helpmode/helpModeStore";
-import localize from "@/utils/localization";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
+import { useUserStore } from "@/stores/userStore";
 
+import HelpModeText from "./HelpModeText.vue";
 import Heading from "@/components/Common/Heading.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faTimes, faUndo);
 
-const { renderMarkdown } = useMarkdown({
-    openLinksInNewPage: true,
-    html: true,
-    appendHrRuleToDetails: true,
-    replaceCodeWithIcon: true,
-});
+const userStore = useUserStore();
 
 // local refs
-const { status, position, helpModeStyle, activeTab, contents, loading, currentTabs } = storeToRefs(useHelpModeStore());
+const { draggableActive, position, helpModeStyle } = storeToRefs(useHelpModeStore());
 const el = ref<HTMLElement | null>(null);
 const helpModeHeader = ref<HTMLElement | null>(null);
 const helpModeSize = reactive(useAnimationFrameSize(el));
-
-const noHelpTextMsg = localize("No help text available for this component");
 
 // draggable properties
 const { style } = useDraggable(helpModeHeader, { initialValue: position.value });
@@ -75,6 +67,15 @@ watch(
     }
 );
 
+/** Close the draggable help mode and toggle the sidebar */
+function closeDraggable() {
+    const panelActive = userStore.toggledSideBar !== "";
+    draggableActive.value = false;
+    if (!panelActive) {
+        userStore.toggleSideBar("help");
+    }
+}
+
 /** Reset the position of the help mode to default */
 function resetPosition() {
     helpModeStyle.value = {
@@ -93,22 +94,11 @@ function resetPosition() {
             <BButton size="sm" @click="resetPosition">
                 <FontAwesomeIcon :icon="faUndo" />
             </BButton>
-            <BButton size="sm" @click="status = false">
+            <BButton size="sm" @click="closeDraggable">
                 <FontAwesomeIcon :icon="faTimes" />
             </BButton>
         </div>
-        <span v-if="!activeTab" v-localize class="help-mode-container">{{ DEFAULT_HELP_TEXT }}</span>
-        <BTabs v-else class="help-mode-container">
-            <BTab v-for="helpId of currentTabs" :key="helpId" :active="activeTab === helpId">
-                <template v-slot:title>
-                    <FontAwesomeIcon v-if="contents[helpId]?.icon" :icon="contents[helpId]?.icon" />
-                    {{ contents[helpId]?.title }}
-                </template>
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-if="!loading" v-html="renderMarkdown(contents[helpId]?.content || noHelpTextMsg)" />
-                <LoadingSpan v-else message="Loading help text" />
-            </BTab>
-        </BTabs>
+        <HelpModeText />
     </div>
 </template>
 
@@ -136,11 +126,5 @@ function resetPosition() {
     align-items: center;
     border-bottom: 2px solid #868686;
     cursor: move;
-}
-.help-mode-container {
-    margin-top: 0;
-    padding: 10px;
-    overflow-y: auto;
-    height: 100%;
 }
 </style>

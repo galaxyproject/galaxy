@@ -139,9 +139,9 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem>
+            <!-- <BNavItem v-if="!isAnonymous && isConfigLoaded && config.enable_help_mode">
                 <HelpModeSwitch />
-            </BNavItem>
+            </BNavItem> -->
             <BNavItem
                 v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                 id="notifications-bell">

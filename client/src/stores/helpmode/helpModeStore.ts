@@ -3,11 +3,12 @@
  */
 
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { defineStore } from "pinia";
-import { ref, watch } from "vue";
+import { defineStore, storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
 
 import { rethrowSimple } from "@/utils/simple-error";
 
+import { useUserStore } from "../userStore";
 import config from "./helpTextConfig.yml";
 
 interface HelpContent {
@@ -28,7 +29,9 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
     // TODO: Maybe `status` should be tracked in local storage?
     // const status: Ref<boolean> = useUserLocalStorage("help-mode-status", false);
 
-    const status = ref(false);
+    const { toggledSideBar } = storeToRefs(useUserStore());
+
+    const draggableActive = ref(false);
     const position = ref({ x: 0, y: 0 });
     const helpModeStyle = ref<HelpModeStyle>({
         width: "25%",
@@ -42,6 +45,15 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
     const invalidIds = ref<string[]>([]);
     /** The ids of the components for which help text was requested while help mode was disabled */
     const idsToStore = ref<string[]>([]);
+
+    const status = computed(() => toggledSideBar.value === "help" || draggableActive.value);
+
+    // if side bar is toggled to help mode, if draggable is active, set it to false
+    watch(toggledSideBar, (newVal) => {
+        if (newVal === "help" && draggableActive.value) {
+            draggableActive.value = false;
+        }
+    });
 
     // when help mode is enabled, store help for the ids requested while help mode was disabled
     watch(status, async (newStatus) => {
@@ -129,6 +141,8 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
         position,
         /** Whether help mode is active or not */
         status,
+        /** Whether the draggble help mode is active or not */
+        draggableActive,
         /** Removes the tab from the stack for the given component `id` */
         clearHelpModeText,
         /** Adds help mode text for the given Galaxy component `id` if help mode is enabled */
