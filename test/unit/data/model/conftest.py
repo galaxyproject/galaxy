@@ -222,6 +222,39 @@ def make_job_import_history_archive(session):
 
 
 @pytest.fixture
+def make_library(session):
+    def f(**kwd):
+        model = m.Library(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_library_folder(session):
+    def f(**kwd):
+        model = m.LibraryFolder(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_library_permissions(session, make_library, make_role):
+    def f(**kwd):
+        action = kwd.get("action") or random_str()
+        library = kwd.get("library") or make_library()
+        role = kwd.get("role") or make_role()
+        model = m.LibraryPermissions(action, library, role)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_role(session):
     def f(**kwd):
         model = m.Role(**kwd)
