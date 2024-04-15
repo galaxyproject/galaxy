@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -12,9 +13,15 @@ from pydantic import (
     field_validator,
     UUID4,
 )
-from typing_extensions import Annotated
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnnotationField,
     InputDataCollectionStep,
@@ -30,6 +37,7 @@ from galaxy.schema.schema import (
     TagCollection,
     ToolStep,
 )
+from galaxy.schema.workflow.comments import WorkflowCommentModel
 
 WorkflowAnnotationField = Annotated[
     Optional[str],
@@ -47,6 +55,12 @@ WorkflowCreator = Annotated[
         description=("Additional information about the creator (or multiple creators) of this workflow."),
     ),
 ]
+
+
+class GalaxyWorkflowIdentifiers(str, Enum):
+    true = "true"
+    zero_point_one = "0.1"
+    galaxy_workflow = "GalaxyWorkflow"
 
 
 class Input(Model):
@@ -211,6 +225,7 @@ class PostJobAction(Model):
 
 class StepIn(Model):
     # TODO - add proper type and description - see _workflow_to_dict_export in manager for more details
+    # or class WorkflowStepInput
     default: Any = Field(
         ...,
         title="Default",
@@ -637,8 +652,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Tool Representation",
         description="The representation of the tool associated with the step.",
     )
-    # TODO - can also be WorkflowDictExportSummary see manager line 1512
-    subworkflow: Optional[Dict[str, Any]] = Field(
+    subworkflow: Optional["WorkflowDictExportSummary"] = Field(
         None,
         title="Sub Workflow",
         description="Full information about the subworkflow associated with this step.",
@@ -648,9 +662,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Inputs",
         description="The inputs of the step.",
     )
-    in_parameter: Optional[Dict[str, StepIn]] = Field(
-        None, title="In", description="The input connections of the step.", alias="in"
-    )
+    in_parameter: Optional[Dict[str, StepIn]] = Field(None, title="In", description="TODO", alias="in")
     input_connections: Optional[Dict[str, Union[InputConnection, List[InputConnection]]]] = Field(
         None,
         title="Input Connections",
@@ -685,25 +697,26 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
         title="Upgrade Messages",
         description="Upgrade messages for each step in the workflow.",
     )
+    # TODO - can this be modeled further? see manager method _workflow_to_dict_editor
     report: Dict[str, Any] = Field(
         ...,
         title="Report",
         description="The reports configuration for the workflow.",
     )
-    comments: List[Dict[str, Any]] = Field(
+    comments: List[WorkflowCommentModel] = Field(
         ...,
         title="Comments",
         description="Comments on the workflow.",
     )
     annotation: WorkflowAnnotationField
     license: Optional[str] = Field(
-        None,
+        ...,
         title="License",
         description="SPDX Identifier of the license associated with this workflow.",
     )
     creator: WorkflowCreator
     source_metadata: Optional[Dict[str, Any]] = Field(
-        None,
+        ...,
         title="Source Metadata",
         description="Metadata about the source of the workflow",
     )
@@ -715,30 +728,28 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictRunSummary(WorkflowDictBaseModel):
-    id: Optional[str] = Field(
-        None,
+    id: EncodedDatabaseIdField = Field(
+        ...,
         title="ID",
-        # description="The encoded ID of the stored workflow.",
-        description="TODO",
+        description="The encoded ID of the stored workflow.",
     )
-    history_id: Optional[str] = Field(
+    history_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="History ID",
-        # description="The encoded ID of the history associated with the workflow (or None if not applicable).",
-        description="TODO",
+        description="The encoded ID of the history associated with the workflow.",
     )
-    step_version_changes: Optional[List[Union[str, Dict[str, Any]]]] = Field(
-        None,
+    step_version_changes: List[Union[str, Dict[str, Any]]] = Field(
+        ...,
         title="Step Version Changes",
         description="Version changes for the workflow steps.",
     )
-    has_upgrade_messages: Optional[bool] = Field(
-        None,
+    has_upgrade_messages: bool = Field(
+        ...,
         title="Has Upgrade Messages",
         description="Whether the workflow has upgrade messages.",
     )
     workflow_resource_parameters: Optional[Dict[str, Any]] = Field(
-        None,
+        ...,
         title="Workflow Resource Parameters",
         description="The resource parameters of the workflow.",
     )
@@ -750,21 +761,22 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictExportSummary(WorkflowDictBaseModel):
-    a_galaxy_workflow: Optional[str] = Field(
-        None,
+    a_galaxy_workflow: Literal[GalaxyWorkflowIdentifiers.true] = Field(
+        # a_galaxy_workflow: str = Field(
+        ...,
         title="A Galaxy Workflow",
         description="Whether this workflow is a Galaxy Workflow.",
     )
-    format_version: Optional[str] = Field(
-        # "0.1",
-        None,
+    format_version: Literal[GalaxyWorkflowIdentifiers.zero_point_one] = Field(
+        # format_version: str = Field(
+        ...,
         alias="format-version",
         title="Format Version",
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: Optional[TagCollection] = Field(
-        None,
+    tags: TagCollection = Field(
+        ...,
         title="Tags",
         description="The tags associated with the workflow.",
     )
@@ -773,8 +785,8 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="UUID",
         description="The UUID (Universally Unique Identifier) of the workflow.",
     )
-    comments: Optional[List[Dict[str, Any]]] = Field(
-        None,
+    comments: List[Dict[str, Any]] = Field(
+        ...,
         title="Comments",
         description="Comments associated with the workflow.",
     )
@@ -802,7 +814,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictFormat2Summary(Model):
-    workflow_class: str = Field(
+    workflow_class: Literal[GalaxyWorkflowIdentifiers.galaxy_workflow] = Field(
         ...,
         title="Class",
         description="The class of the workflow.",
@@ -839,17 +851,17 @@ class WorkflowDictFormat2Summary(Model):
         title="Report",
         description="The configuration for generating a report for the workflow.",
     )
-    inputs: Optional[Dict[str, Any]] = Field(
-        None,
+    inputs: Dict[str, Any] = Field(
+        ...,
         title="Inputs",
         description="The inputs of the workflow.",
     )
-    outputs: Optional[Dict[str, Any]] = Field(
-        None,
+    outputs: Dict[str, Any] = Field(
+        ...,
         title="Outputs",
         description="The outputs of the workflow.",
     )
-    # TODO - step into line 888 in manager
+    # TODO - can be modeled further see manager method workflow_to_dict
     steps: Dict[str, Any] = Field(
         ...,
         title="Steps",
@@ -859,8 +871,10 @@ class WorkflowDictFormat2Summary(Model):
 
 
 class WorkflowDictFormat2WrappedYamlSummary(Model):
+    # TODO What type is this?
     yaml_content: Any = Field(
         ...,
         title="YAML Content",
-        description="The content of the workflow in YAML format.",
+        # description="Safe and ordered dump of YAML to stream",
+        description="The content of the workflow in YAML .",
     )
