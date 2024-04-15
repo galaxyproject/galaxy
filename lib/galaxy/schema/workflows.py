@@ -95,49 +95,41 @@ class WorkflowStepLayoutPosition(Model):
         None,
         title="Bottom",
         description="Position of the bottom of the box.",
-        # description="Position in pixels of the bottom of the box.",
     )
     top: Union[int, float] = Field(
         ...,
         title="Top",
         description="Position of the top of the box.",
-        # description="Position in pixels of the top of the box.",
     )
     left: Union[int, float] = Field(
         ...,
         title="Left",
         description="Left margin or left-most position of the box.",
-        # description="Left margin or left-most position of the box.",
     )
     right: Optional[Union[int, float]] = Field(
         None,
         title="Right",
         description="Right margin or right-most position of the box.",
-        # description="Right margin or right-most position of the box.",
     )
     x: Optional[Union[int, float]] = Field(
         None,
         title="X",
         description="Horizontal coordinate of the top right corner of the box.",
-        # description="Horizontal pixel coordinate of the top right corner of the box.",
     )
     y: Optional[Union[int, float]] = Field(
         None,
         title="Y",
         description="Vertical coordinate of the top right corner of the box.",
-        # description="Vertical pixel coordinate of the top right corner of the box.",
     )
     height: Optional[Union[int, float]] = Field(
         None,
         title="Height",
         description="Height of the box.",
-        # description="Height of the box in pixels.",
     )
     width: Optional[Union[int, float]] = Field(
         None,
         title="Width",
         description="Width of the box.",
-        # description="Width of the box in pixels.",
     )
 
 
@@ -238,19 +230,16 @@ class GetTargetHistoryPayload(Model):
     history: Optional[str] = Field(
         None,
         title="History",
-        # description="The encoded history id - passed exactly like this 'hist_id=...' -  to import the workflow into. Or the name of the new history to import the workflow into.",
         description="The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.",
     )
     history_id: Optional[str] = Field(
         None,
         title="History ID",
-        # description="The history to import the workflow into.",
         description="The encoded history id into which to import.",
     )
     new_history_name: Optional[str] = Field(
         None,
         title="New History Name",
-        # description="The name of the new history to import the workflow into.",
         description="The name of the new history into which to import.",
     )
 
