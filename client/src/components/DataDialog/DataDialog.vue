@@ -61,6 +61,22 @@ const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
 let urlTracker = new UrlTracker(getHistoryUrl());
 
+/** Specifies data columns to be shown in the dialog's table */
+const fields = [
+    {
+        key: "label",
+    },
+    {
+        key: "extension",
+    },
+    {
+        key: "tags",
+    },
+    {
+        key: "update_time",
+    },
+];
+
 /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
 function formatRows() {
     for (const item of items.value) {
@@ -168,6 +184,7 @@ watch(
     <SelectionDialog
         :error-message="errorMessage"
         :disable-ok="!hasValue"
+        :fields="fields"
         :items="items"
         :modal-show="modalShow"
         :multiple="multiple"

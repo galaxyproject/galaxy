@@ -100,6 +100,22 @@ function filtered(items: Array<SelectionItem>) {
     currentPage.value = 1;
 }
 
+/** Format time stamp */
+function formatTime(value: string) {
+    if (value) {
+        const date = new Date(value);
+        return date.toLocaleString("default", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            minute: "numeric",
+            hour: "numeric",
+        });
+    } else {
+        return "-";
+    }
+}
+
 watch(
     () => props.items,
     () => {
@@ -169,6 +185,9 @@ watch(
                     </template>
                     <template v-slot:cell(time)="data">
                         {{ data.value ? data.value : "-" }}
+                    </template>
+                    <template v-slot:cell(update_time)="data">
+                        {{ formatTime(data.value) }}
                     </template>
                 </BTable>
                 <div v-if="isBusy" class="text-center">
