@@ -50,13 +50,13 @@
                     @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
-                <div
-                    v-b-tooltip.hover.top
-                    :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
-                    class="truncate">
-                    <b-link href="#" @click.stop="swapRowDetails(data)">
+                <div class="truncate">
+                    <router-link
+                        v-b-tooltip.hover.top
+                        :title="`Go to detailed view for '${getStoredWorkflowNameByInstanceId(data.item.workflow_id)}'`"
+                        :to="invocationLink(data.item)">
                         {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
-                    </b-link>
+                    </router-link>
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">

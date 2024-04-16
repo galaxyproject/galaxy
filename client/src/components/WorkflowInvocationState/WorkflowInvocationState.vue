@@ -1,5 +1,5 @@
 <template>
-    <b-tabs v-if="invocation">
+    <b-tabs v-if="invocation" :class="{ 'position-relative': isInvocationRoute }">
         <b-tab title="Summary" active>
             <WorkflowInvocationSummary
                 class="invocation-summary"
@@ -25,6 +25,12 @@
                 <LoadingSpan message="Waiting to complete invocation" />
             </b-alert>
         </b-tab>
+        <router-link to="/workflows/invocations">
+            <b-button v-if="isInvocationRoute" class="position-absolute text-decoration-none" style="top: 0; right: 0">
+                <i class="fa fa-arrow-left mr-1" />
+                Go to Invocations List
+            </b-button>
+        </router-link>
     </b-tabs>
     <b-alert v-else variant="info" show>
         <LoadingSpan message="Loading invocation" />
@@ -103,6 +109,9 @@ export default {
         jobStatesSummary() {
             const jobsSummary = this.invocationStore.getInvocationJobsSummaryById(this.invocationId);
             return !jobsSummary ? null : jobsSummary;
+        },
+        isInvocationRoute() {
+            return this.$route.path.includes(`/workflows/invocations/${this.invocationId}`);
         },
     },
     created: function () {
