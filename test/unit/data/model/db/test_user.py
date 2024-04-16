@@ -4,6 +4,7 @@ from galaxy.model.db.user import (
     get_user_by_email,
     get_user_by_username,
     get_users_by_ids,
+    get_users_for_index,
 )
 from . import verify_items
 
@@ -41,3 +42,33 @@ def test_get_users_by_ids(session, make_random_users):
     users2 = get_users_by_ids(session, ids)
     expected = [u1, u2, u3]
     verify_items(users2, expected)
+
+
+def test_get_users_for_index(session, make_user):
+    u1 = make_user(email="a", username="b")
+    u2 = make_user(email="c", username="d")
+    u3 = make_user(email="e", username="f")
+    u4 = make_user(email="g", username="h")
+    u5 = make_user(email="i", username="z")
+    u6 = make_user(email="z", username="i")
+
+    users = get_users_for_index(session, False, f_email="a", expose_user_email=True)
+    verify_items(users, [u1])
+    users = get_users_for_index(session, False, f_email="c", is_admin=True)
+    verify_items(users, [u2])
+    users = get_users_for_index(session, False, f_name="f", expose_user_name=True)
+    verify_items(users, [u3])
+    users = get_users_for_index(session, False, f_name="h", is_admin=True)
+    verify_items(users, [u4])
+    users = get_users_for_index(session, False, f_any="i", is_admin=True)
+    verify_items(users, [u5, u6])
+    users = get_users_for_index(session, False, f_any="i", expose_user_email=True, expose_user_name=True)
+    verify_items(users, [u5, u6])
+    users = get_users_for_index(session, False, f_any="i", expose_user_email=True)
+    verify_items(users, [u5])
+    users = get_users_for_index(session, False, f_any="i", expose_user_name=True)
+    verify_items(users, [u6])
+
+    u1.deleted = True
+    users = get_users_for_index(session, True)
+    verify_items(users, [u1])
