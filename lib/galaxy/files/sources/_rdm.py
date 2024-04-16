@@ -25,6 +25,7 @@ OptionalUserContext = Optional[ProvidesUserFileSourcesUserContext]
 class RDMFilesSourceProperties(FilesSourceProperties):
     url: str
     token: str
+    public_name: str
 
 
 class RecordFilename(NamedTuple):
@@ -79,7 +80,9 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_record(self, title: str, user_context: OptionalUserContext = None):
+    def create_draft_record(
+        self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
+    ):
         """Creates a draft record (directory) in the repository with basic metadata.
 
         The metadata is usually just the title of the record and the user that created it.
@@ -200,3 +203,7 @@ class RDMFilesSource(BaseFilesSource):
                 f"Please provide a personal access token in your user's preferences for '{self.label}'"
             )
         return token
+
+    def get_public_name(self, user_context: OptionalUserContext) -> Optional[str]:
+        effective_props = self._serialization_props(user_context)
+        return effective_props.get("public_name")
