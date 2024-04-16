@@ -51,6 +51,10 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.themes import flatten_theme
 from ..version import (
     VERSION_MAJOR,
@@ -60,18 +64,13 @@ from ..version import (
 if TYPE_CHECKING:
     from galaxy.model import User
 
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
-
 log = logging.getLogger(__name__)
 
 DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 GALAXY_APP_NAME = "galaxy"
-GALAXY_SCHEMAS_PATH = files("galaxy.config") / "schemas"
+GALAXY_SCHEMAS_PATH = resource_path(__package__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
 REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
@@ -193,7 +192,7 @@ def configure_logging(config, facts=None):
         logging.config.dictConfig(logging_conf)
 
 
-def find_root(kwargs):
+def find_root(kwargs) -> str:
     return os.path.abspath(kwargs.get("root_dir", "."))
 
 
@@ -238,6 +237,7 @@ class BaseAppConfiguration(HasDynamicProperties):
     add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
     object_store_store_by: str
+    shed_tools_dir: str
 
     def __init__(self, **kwargs):
         self._preprocess_kwargs(kwargs)
@@ -835,7 +835,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.cookie_path = kwargs.get("cookie_path")
         if not running_from_source and kwargs.get("tool_path") is None:
             try:
-                self.tool_path = str(files("galaxy.tools") / "bundled")
+                with as_file(resource_path("galaxy.tools", "bundled")) as path:
+                    self.tool_path = os.fspath(path)
             except ModuleNotFoundError:
                 # Might not be a full galaxy installation
                 self.tool_path = self._in_root_dir(self.tool_path)

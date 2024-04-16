@@ -34,6 +34,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
+from pathlib import Path
 from typing import (
     Any,
     cast,
@@ -61,7 +62,7 @@ from boltons.iterutils import (
     remap,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped, unused-ignore]
 from typing_extensions import (
     Literal,
     Self,
@@ -116,7 +117,7 @@ try:
 
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+    import xml.etree.ElementTree as etree  # type: ignore[no-redef]
     from xml.etree.ElementTree import (  # type: ignore[assignment]  # noqa: F401
         Element,
         ElementTree,
@@ -134,7 +135,7 @@ from .path import (  # noqa: F401
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
-    shlex_join = shlex.join  # type: ignore[attr-defined]
+    shlex_join = shlex.join  # type: ignore[attr-defined, unused-ignore]
 except AttributeError:
     # Python < 3.8
     def shlex_join(split_command):
@@ -178,9 +179,10 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):  # type: ignore[unreachable]
+    elif s.startswith(prefix):
         return s[len(prefix) :]
-    return s
+    else:
+        return s
 
 
 def remove_protocol_from_url(url):
@@ -1132,7 +1134,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[misc]
+def unicodify(  # type: ignore[overload-overlap]
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",
@@ -1736,25 +1738,23 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  # type: ignore[name-defined]
+#  Don't use this directly, prefer method version that "works" with packaged Galaxy.
+galaxy_root_path = Path(__file__).parent.parent.parent.parent
 
 
-def galaxy_directory():
-    path = galaxy_root_path
+def galaxy_directory() -> str:
     if in_packages():
-        path = os.path.join(galaxy_root_path, "..")
+        # This will work only when running pytest from <galaxy_root>/packages/<package_name>/
+        cwd = Path.cwd()
+        path = cwd.parent.parent
+    else:
+        path = galaxy_root_path
     return os.path.abspath(path)
 
 
-def in_packages():
-    # Normalize first; otherwise basename will be `..`
-    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
-
-
-def galaxy_samples_directory():
-    return os.path.join(galaxy_directory(), "lib", "galaxy", "config", "sample")
+def in_packages() -> bool:
+    galaxy_lib_path = Path(__file__).parent.parent.parent
+    return galaxy_lib_path.name != "lib"
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

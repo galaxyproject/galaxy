@@ -88,7 +88,7 @@ class TestHistoryManager(BaseTestCase):
         name_first_then_time = (
             model.History.name,
             sqlalchemy.desc(model.History.create_time),
-        )  # type:ignore[var-annotated]
+        )
         assert self.history_manager.list(order_by=name_first_then_time) == [history2, history1, history3]
 
     def test_copy(self):

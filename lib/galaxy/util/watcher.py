@@ -13,9 +13,9 @@ try:
 
     can_watch = True
 except ImportError:
-    Observer = None  # type:ignore[assignment]
-    FileSystemEventHandler = object  # type:ignore[assignment, misc]
-    PollingObserver = None  # type:ignore[assignment, misc]
+    Observer = None  # type:ignore[assignment, unused-ignore]
+    FileSystemEventHandler = object  # type:ignore[assignment,misc, unused-ignore]
+    PollingObserver = None  # type:ignore[assignment, misc, unused-ignore]
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file

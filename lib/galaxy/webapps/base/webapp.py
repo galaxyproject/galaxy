@@ -8,6 +8,7 @@ import os
 import re
 import socket
 import time
+from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
@@ -51,6 +52,10 @@ from galaxy.util import (
     safe_makedirs,
     unicodify,
 )
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web.framework import (
@@ -59,12 +64,6 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 
@@ -183,16 +182,19 @@ class WebApplication(base.WebApplication):
         base_package = (
             "tool_shed.webapp" if galaxy_app.name == "tool_shed" else "galaxy.webapps.base"
         )  # reports has templates in galaxy package
-        base_template_path = files(base_package) / "templates"
-        # First look in webapp specific directory
-        if name is not None:
-            paths.append(base_template_path / "webapps" / name)
-        # Then look in root directory
-        paths.append(base_template_path)
-        # Create TemplateLookup with a small cache
-        return mako.lookup.TemplateLookup(
-            directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
-        )
+        base_template_path = resource_path(base_package, "templates")
+        with ExitStack() as stack:
+            # First look in webapp specific directory
+            if name is not None:
+                path = stack.enter_context(as_file(base_template_path / "webapps" / name))
+                paths.append(path)
+            # Then look in root directory
+            path = stack.enter_context(as_file(base_template_path))
+            paths.append(path)
+            # Create TemplateLookup with a small cache
+            return mako.lookup.TemplateLookup(
+                directories=paths, module_directory=galaxy_app.config.template_cache_path, collection_size=500
+            )
 
     def handle_controller_exception(self, e, trans, method, **kwargs):
         if isinstance(e, TypeError):
@@ -343,7 +345,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self._ensure_valid_session(session_cookie)
 
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)  # type: ignore[attr-defined]
+            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
 
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the

@@ -32,23 +32,23 @@ class AbstractTestCases:
 
         def test_read_write_secret(self):
             self.vault.write_secret("my/test/secret", "hello world")
-            assert self.vault.read_secret("my/test/secret") == "hello world"  # type: ignore
+            assert self.vault.read_secret("my/test/secret") == "hello world"
 
         def test_overwrite_secret(self):
             self.vault.write_secret("my/new/secret", "hello world")
             self.vault.write_secret("my/new/secret", "hello overwritten")
-            assert self.vault.read_secret("my/new/secret") == "hello overwritten"  # type: ignore
+            assert self.vault.read_secret("my/new/secret") == "hello overwritten"
 
         def test_valid_paths(self):
-            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+            with self.assertRaises(InvalidVaultKeyException):
                 self.vault.write_secret("", "hello world")
-            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+            with self.assertRaises(InvalidVaultKeyException):
                 self.vault.write_secret("my//new/secret", "hello world")
-            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+            with self.assertRaises(InvalidVaultKeyException):
                 self.vault.write_secret("my/ /new/secret", "hello world")
             # leading and trailing slashes should be ignored
             self.vault.write_secret("/my/new/secret with space/", "hello overwritten")
-            assert self.vault.read_secret("my/new/secret with space") == "hello overwritten"  # type: ignore
+            assert self.vault.read_secret("my/new/secret with space") == "hello overwritten"
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
@@ -94,7 +94,7 @@ class TestDatabaseVault(AbstractTestCases.VaultTestBase):
         vault.write_secret("my/rotated/secret", "hello rotated")
 
         # should succeed after rotation
-        app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED  # type: ignore
+        app.config.vault_config_file = VAULT_CONF_DATABASE_ROTATED  # type: ignore[attr-defined]
         vault = VaultFactory.from_app(app)
         assert vault.read_secret("my/rotated/secret") == "hello rotated"
 
@@ -105,7 +105,7 @@ class TestDatabaseVault(AbstractTestCases.VaultTestBase):
         vault.write_secret("my/incorrect/secret", "hello incorrect")
 
         # should fail because decryption keys are the wrong
-        app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID  # type: ignore
+        app.config.vault_config_file = VAULT_CONF_DATABASE_INVALID  # type: ignore[attr-defined]
         vault = VaultFactory.from_app(app)
         with self.assertRaises(InvalidToken):
             vault.read_secret("my/incorrect/secret")

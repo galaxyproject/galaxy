@@ -759,12 +759,12 @@ class User(Base, Dictifiable, RepresentById):
         back_populates="user", order_by=lambda: desc(History.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
     active_histories: Mapped[List["History"]] = relationship(
-        primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted)) & (not_(History.archived))),  # type: ignore[has-type]
+        primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted)) & (not_(History.archived))),
         viewonly=True,
         order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
     )
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
-        back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False  # type: ignore[has-type]
+        back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
     )
     quotas: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="user")
     quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(back_populates="user")
@@ -772,25 +772,23 @@ class User(Base, Dictifiable, RepresentById):
     stored_workflow_menu_entries: Mapped[List["StoredWorkflowMenuEntry"]] = relationship(
         primaryjoin=(
             lambda: (StoredWorkflowMenuEntry.user_id == User.id)
-            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)  # type: ignore[has-type]
-            & not_(StoredWorkflow.deleted)  # type: ignore[has-type]
+            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
+            & not_(StoredWorkflow.deleted)
         ),
         back_populates="user",
         cascade="all, delete-orphan",
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[Dict[str, "UserPreference"]] = relationship(collection_class=attribute_keyed_dict("name"))
-    values: Mapped[List["FormValues"]] = relationship(
-        primaryjoin=(lambda: User.form_values_id == FormValues.id)  # type: ignore[has-type]
-    )
+    values: Mapped[List["FormValues"]] = relationship(primaryjoin=(lambda: User.form_values_id == FormValues.id))
     # Add type hint (will this work w/SA?)
     api_keys: Mapped[List["APIKeys"]] = relationship(
         back_populates="user",
         order_by=lambda: desc(APIKeys.create_time),
         primaryjoin=(
             lambda: and_(
-                User.id == APIKeys.user_id,  # type: ignore[attr-defined]
-                not_(APIKeys.deleted == true()),  # type: ignore[has-type]
+                User.id == APIKeys.user_id,
+                not_(APIKeys.deleted == true()),
             )
         ),
     )
@@ -798,7 +796,7 @@ class User(Base, Dictifiable, RepresentById):
     roles: Mapped[List["UserRoleAssociation"]] = relationship(back_populates="user")
     stored_workflows: Mapped[List["StoredWorkflow"]] = relationship(
         back_populates="user",
-        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
         cascade_backrefs=False,
     )
     all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
@@ -807,9 +805,9 @@ class User(Base, Dictifiable, RepresentById):
     non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
         viewonly=True,
         primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
-            & not_(Role.name == User.email)  # type: ignore[has-type]
+            lambda: (User.id == UserRoleAssociation.user_id)
+            & (UserRoleAssociation.role_id == Role.id)
+            & not_(Role.name == User.email)
         ),
     )
 
@@ -2512,9 +2510,9 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
 
     input_dataset_collection: Mapped[Optional["HistoryDatasetCollectionAssociation"]] = relationship(
         primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id  # type: ignore[has-type]
+            lambda: HistoryDatasetCollectionAssociation.id
             == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id
-        ),  # type: ignore[has-type]
+        ),
     )
 
     def __init__(self, name, input_dataset_collection):
@@ -2578,7 +2576,7 @@ class PostJobAction(Base, RepresentById):
     action_arguments: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         back_populates="post_job_actions",
-        primaryjoin=(lambda: WorkflowStep.id == PostJobAction.workflow_step_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: WorkflowStep.id == PostJobAction.workflow_step_id),
     )
 
     def __init__(self, action_type, workflow_step=None, output_name=None, action_arguments=None):
@@ -3073,12 +3071,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         primaryjoin=(
             lambda: (
                 and_(
-                    HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore[has-type]
-                    not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[has-type, arg-type]
+                    HistoryDatasetCollectionAssociation.history_id == History.id,
+                    not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
                 )
             )
         ),
-        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore[has-type]
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
         viewonly=True,
     )
     visible_datasets: Mapped[List["HistoryDatasetAssociation"]] = relationship(
@@ -3095,12 +3093,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     visible_dataset_collections: Mapped[List["HistoryDatasetCollectionAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore[has-type]
-                not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[has-type, arg-type]
-                HistoryDatasetCollectionAssociation.visible,  # type: ignore[has-type, arg-type]
+                HistoryDatasetCollectionAssociation.history_id == History.id,
+                not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[arg-type]
+                HistoryDatasetCollectionAssociation.visible,  # type: ignore[arg-type]
             )
         ),
-        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore[has-type]
+        order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
         viewonly=True,
     )
     tags: Mapped[List["HistoryTagAssociation"]] = relationship(
@@ -3110,7 +3108,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         order_by=lambda: HistoryAnnotationAssociation.id, back_populates="history"
     )
     ratings: Mapped[List["HistoryRatingAssociation"]] = relationship(
-        order_by=lambda: HistoryRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: HistoryRatingAssociation.id,
         back_populates="history",
     )
     default_permissions: Mapped[List["DefaultHistoryPermissions"]] = relationship(back_populates="history")
@@ -4005,7 +4003,7 @@ class Dataset(Base, StorableObject, Serializable):
             lambda: and_(
                 Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
                 HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
-                HistoryDatasetAssociation.purged == false(),  # type: ignore[attr-defined, arg-type]
+                HistoryDatasetAssociation.purged == false(),  # type: ignore[arg-type]
             )
         ),
         viewonly=True,
@@ -4014,7 +4012,7 @@ class Dataset(Base, StorableObject, Serializable):
         primaryjoin=(
             lambda: and_(
                 Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
-                HistoryDatasetAssociation.purged == true(),  # type: ignore[attr-defined, arg-type]
+                HistoryDatasetAssociation.purged == true(),  # type: ignore[arg-type]
             )
         ),
         viewonly=True,
@@ -6113,7 +6111,7 @@ class LibraryInfoAssociation(Base, RepresentById):
         primaryjoin=lambda: LibraryInfoAssociation.form_definition_id == FormDefinition.id
     )
     info: Mapped[Optional["FormValues"]] = relationship(
-        primaryjoin=lambda: LibraryInfoAssociation.form_values_id == FormValues.id  # type: ignore[has-type]
+        primaryjoin=lambda: LibraryInfoAssociation.form_values_id == FormValues.id
     )
 
     def __init__(self, library, form_definition, info, inheritable=False):
@@ -6143,7 +6141,7 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
         primaryjoin=(lambda: LibraryFolderInfoAssociation.form_definition_id == FormDefinition.id)
     )
     info: Mapped[Optional["FormValues"]] = relationship(
-        primaryjoin=(lambda: LibraryFolderInfoAssociation.form_values_id == FormValues.id)  # type: ignore[has-type]
+        primaryjoin=(lambda: LibraryFolderInfoAssociation.form_values_id == FormValues.id)
     )
 
     def __init__(self, folder, form_definition, info, inheritable=False):
@@ -6177,7 +6175,7 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
         primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_definition_id == FormDefinition.id),
     )
     info: Mapped[Optional["FormValues"]] = relationship(
-        primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_values_id == FormValues.id)  # type: ignore[has-type]
+        primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_values_id == FormValues.id)
     )
 
     def __init__(self, library_dataset_dataset_association, form_definition, info):
@@ -6311,9 +6309,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
     elements: Mapped[List["DatasetCollectionElement"]] = relationship(
-        primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),
         back_populates="collection",
-        order_by=lambda: DatasetCollectionElement.element_index,  # type: ignore[has-type]
+        order_by=lambda: DatasetCollectionElement.element_index,
     )
 
     dict_collection_visible_keys = ["id", "collection_type"]
@@ -6811,7 +6809,7 @@ class HistoryDatasetCollectionAssociation(
         back_populates="history_dataset_collection",
     )
     ratings: Mapped[List["HistoryDatasetCollectionRatingAssociation"]] = relationship(
-        order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: HistoryDatasetCollectionRatingAssociation.id,
         back_populates="dataset_collection",
     )
     creating_job_associations: Mapped[List["JobToOutputDatasetCollectionAssociation"]] = relationship(viewonly=True)
@@ -7166,7 +7164,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
         back_populates="dataset_collection",
     )
     ratings: Mapped[List["LibraryDatasetCollectionRatingAssociation"]] = relationship(
-        order_by=lambda: LibraryDatasetCollectionRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: LibraryDatasetCollectionRatingAssociation.id,
         back_populates="dataset_collection",
     )
 
@@ -7489,14 +7487,14 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     workflows: Mapped[List["Workflow"]] = relationship(
         back_populates="stored_workflow",
         cascade="all, delete-orphan",
-        primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore[has-type]
-        order_by=lambda: -Workflow.id,  # type: ignore[has-type]
+        primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),
+        order_by=lambda: -Workflow.id,
         cascade_backrefs=False,
     )
     latest_workflow = relationship(
         "Workflow",
         post_update=True,
-        primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),  # type: ignore[has-type]
+        primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),
         lazy=False,
     )
     tags: Mapped[List["StoredWorkflowTagAssociation"]] = relationship(
@@ -7518,7 +7516,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         back_populates="stored_workflow",
     )
     ratings: Mapped[List["StoredWorkflowRatingAssociation"]] = relationship(
-        order_by=lambda: StoredWorkflowRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: StoredWorkflowRatingAssociation.id,
         back_populates="stored_workflow",
     )
     users_shared_with: Mapped[List["StoredWorkflowUserShareAssociation"]] = relationship(
@@ -7657,20 +7655,20 @@ class Workflow(Base, Dictifiable, RepresentById):
     steps = relationship(
         "WorkflowStep",
         back_populates="workflow",
-        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore[has-type]
-        order_by=lambda: asc(WorkflowStep.order_index),  # type: ignore[has-type]
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
+        order_by=lambda: asc(WorkflowStep.order_index),
         cascade="all, delete-orphan",
         lazy=False,
     )
     comments: Mapped[List["WorkflowComment"]] = relationship(
         back_populates="workflow",
-        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),
         cascade="all, delete-orphan",
         lazy=False,
     )
     parent_workflow_steps = relationship(
         "WorkflowStep",
-        primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
         back_populates="subworkflow",
         cascade_backrefs=False,
     )
@@ -9064,8 +9062,6 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
-    subworkflow_invocation_id = None
-
     dict_collection_visible_keys = [
         "id",
         "update_time",
@@ -9607,7 +9603,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     layout: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     form_definition_current: Mapped["FormDefinitionCurrent"] = relationship(
         back_populates="forms",
-        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id),
     )
 
     # The following form_builder classes are supported by the FormDefinition class.
@@ -10145,12 +10141,12 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
     user: Mapped["User"] = relationship()
     revisions: Mapped[List["PageRevision"]] = relationship(
         cascade="all, delete-orphan",
-        primaryjoin=(lambda: Page.id == PageRevision.page_id),  # type: ignore[has-type]
+        primaryjoin=(lambda: Page.id == PageRevision.page_id),
         back_populates="page",
     )
     latest_revision: Mapped[Optional["PageRevision"]] = relationship(
         post_update=True,
-        primaryjoin=(lambda: Page.latest_revision_id == PageRevision.id),  # type: ignore[has-type]
+        primaryjoin=(lambda: Page.latest_revision_id == PageRevision.id),
         lazy=False,
     )
     tags: Mapped[List["PageTagAssociation"]] = relationship(
@@ -10160,12 +10156,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
         order_by=lambda: PageAnnotationAssociation.id, back_populates="page"
     )
     ratings: Mapped[List["PageRatingAssociation"]] = relationship(
-        order_by=lambda: PageRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: PageRatingAssociation.id,
         back_populates="page",
     )
     users_shared_with: Mapped[List["PageUserShareAssociation"]] = relationship(back_populates="page")
-
-    average_rating = None
 
     # Set up proxy so that
     #   Page.users_shared_with
@@ -10282,7 +10276,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
         back_populates="visualization",
     )
     ratings: Mapped[List["VisualizationRatingAssociation"]] = relationship(
-        order_by=lambda: VisualizationRatingAssociation.id,  # type: ignore[has-type]
+        order_by=lambda: VisualizationRatingAssociation.id,
         back_populates="visualization",
     )
     users_shared_with: Mapped[List["VisualizationUserShareAssociation"]] = relationship(back_populates="visualization")
@@ -11317,7 +11311,7 @@ History.users_shared_with_count = column_property(  # type:ignore[assignment]
     deferred=True,
 )
 
-Page.average_rating = column_property(  # type:ignore[assignment]
+Page.average_rating = column_property(
     select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
     deferred=True,
 )
@@ -11340,7 +11334,7 @@ Workflow.step_count = column_property(  # type:ignore[assignment]
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(), deferred=True
 )
 
-WorkflowInvocationStep.subworkflow_invocation_id = column_property(  # type:ignore[assignment]
+WorkflowInvocationStep.subworkflow_invocation_id = column_property(
     select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
     .where(
         and_(

@@ -1,21 +1,8 @@
 import hashlib
-from typing import Optional
-
-from .caching import (
-    CacheTarget,
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-    parse_caching_config_dict_from_xml,
-)
-
-try:
-    from ..authnz.util import provider_name_to_backend
-except ImportError:
-    provider_name_to_backend = None  # type: ignore[misc,assignment]
-
 import logging
 import os
 import shutil
+from typing import Optional
 
 try:
     import rucio.common
@@ -30,6 +17,11 @@ try:
 except ImportError:
     Client = None
 
+try:
+    from galaxy.authnz.util import provider_name_to_backend
+except ImportError:
+    provider_name_to_backend = None  # type: ignore[assignment, unused-ignore]
+
 from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
@@ -41,7 +33,13 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import ConcreteObjectStore
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    enable_cache_monitor,
+    InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
+)
 
 log = logging.getLogger(__name__)
 

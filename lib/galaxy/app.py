@@ -687,7 +687,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.watchers = self._register_singleton(ConfigWatchers)
         self._configure_toolbox()
         # Load Data Manager
-        self.data_managers = self._register_singleton(DataManagers)  # type: ignore[type-abstract]
+        self.data_managers = self._register_singleton(DataManagers)
         # Load the update repository manager.
         self.update_repository_manager = self._register_singleton(
             UpdateRepositoryManager, UpdateRepositoryManager(self)

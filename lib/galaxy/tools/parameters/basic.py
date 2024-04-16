@@ -2178,7 +2178,7 @@ class DataToolParameter(BaseDataToolParameter):
         elif isinstance(value, HistoryDatasetCollectionAssociation) or isinstance(value, DatasetCollectionElement):
             rval.append(value)
         else:
-            rval.append(session.get(HistoryDatasetAssociation, int(value)))  # type:ignore[arg-type]
+            rval.append(session.get(HistoryDatasetAssociation, int(value)))
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:

@@ -413,7 +413,7 @@ class HistoryContentsManager(base.SortableManager):
         component_class = self.contained_class
         stmt = (
             select(component_class)
-            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
+            .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))  # type: ignore[attr-defined]

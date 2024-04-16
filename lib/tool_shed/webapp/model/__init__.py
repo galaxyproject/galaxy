@@ -115,12 +115,12 @@ class User(Base, Dictifiable):
     purged: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
     active_repositories = relationship(
         "Repository",
-        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore[has-type]
+        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),
         back_populates="user",
-        order_by=lambda: desc(Repository.name),  # type: ignore[has-type]
+        order_by=lambda: desc(Repository.name),
     )
     galaxy_sessions = relationship(
-        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)  # type: ignore[has-type]
+        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
     )
     api_keys = relationship("APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time))
     reset_tokens = relationship("PasswordResetToken", back_populates="user")
@@ -134,9 +134,9 @@ class User(Base, Dictifiable):
         "UserRoleAssociation",
         viewonly=True,
         primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
-            & not_(Role.name == User.email)  # type: ignore[has-type]
+            lambda: (User.id == UserRoleAssociation.user_id)
+            & (UserRoleAssociation.role_id == Role.id)
+            & not_(Role.name == User.email)
         ),
     )
 
@@ -379,7 +379,7 @@ class Repository(Base, Dictifiable):
     user = relationship("User", back_populates="active_repositories")
     downloadable_revisions = relationship(
         "RepositoryMetadata",
-        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[attr-defined,has-type]
+        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[has-type]
         viewonly=True,
         order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
     )

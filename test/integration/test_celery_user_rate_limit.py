@@ -89,7 +89,7 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
         results: Dict[int, List[AsyncResult]] = {}
         for user in users:
             user_results: List[AsyncResult] = []
-            for _ in range(num_calls):  # type: ignore
+            for _ in range(num_calls):
                 user_results.append(mock_user_id_task.delay(task_user_id=user))
             results[user] = user_results
         #  Collect results of each call

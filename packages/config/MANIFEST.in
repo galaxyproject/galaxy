@@ -1,3 +1,4 @@
 include *.rst *.txt LICENSE */py.typed
 include galaxy/config/schemas/*.yml
 include galaxy/config/sample/*.sample*
+graft galaxy/config/templates/
