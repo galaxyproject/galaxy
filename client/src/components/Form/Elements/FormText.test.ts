@@ -92,7 +92,7 @@ describe("FormText", () => {
     });
 
     it("should be able to accept an empty array as value", async () => {
-        const v = [];
+        const v: string[] = [];
         const wrapper = await mountFormText({ value: v });
 
         const el = wrapper.find("input");
