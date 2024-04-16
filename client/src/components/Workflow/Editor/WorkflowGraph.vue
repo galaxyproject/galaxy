@@ -213,7 +213,7 @@ const { comments } = storeToRefs(commentStore);
 
         /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
         &.fixed-window-height {
-            height: 50vh;
+            height: 60vh;
         }
     }
 

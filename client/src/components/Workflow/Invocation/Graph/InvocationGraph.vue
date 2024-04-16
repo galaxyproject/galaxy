@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSignInAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard } from "bootstrap-vue";
+import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { components } from "@/api/schema";
@@ -14,14 +14,17 @@ import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type Step } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
+import { withPrefix } from "@/utils/redirect";
 
+import Heading from "@/components/Common/Heading.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 
-library.add(faChevronDown, faChevronUp, faSignInAlt);
+library.add(faChevronDown, faChevronUp, faSignInAlt, faTimes);
 
 interface Props {
     /** The invocation to display */
@@ -180,9 +183,9 @@ function showStep(jobId: string) {
                 explicit-key="expanded-invocation-steps"
                 :scope-key="props.invocation.id"
                 :get-item-key="getStepKey">
-                <div class="workflow-invocation">
-                    <div class="workflow-preview d-flex flex-column">
-                        <BCard class="workflow-card">
+                <div class="d-flex">
+                    <div class="d-flex flex-column" style="width: 60%">
+                        <BCard>
                             <WorkflowGraph
                                 :steps="steps"
                                 :datatypes-mapper="datatypesMapper"
@@ -194,7 +197,7 @@ function showStep(jobId: string) {
                                 readonly />
                         </BCard>
                     </div>
-                    <BCard class="workflow-card">
+                    <aside class="overflow-auto" style="width: 40%; max-height: 65vh">
                         <!-- Input Steps grouped in a separate portlet -->
                         <div v-if="workflowInputSteps.length > 0" class="ui-portlet-section w-100">
                             <div
@@ -240,20 +243,33 @@ function showStep(jobId: string) {
                             :showing-job-id="showingJobId"
                             @show-job="showStep"
                             @update:expanded="focusOnStep(step.id)" />
-                    </BCard>
+                    </aside>
                 </div>
             </ExpandedItems>
-            <BCard v-if="showingJobId">
-                <JobProvider :id="showingJobId" v-slot="{ item, loading }">
-                    <div v-if="loading">
-                        <LoadingSpan message="Loading Job Information" />
-                    </div>
-                    <div v-else>
-                        <JobInformation v-if="item" :job_id="item.id" />
-                        <p></p>
-                        <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
-                    </div>
-                </JobProvider>
+            <BCard v-if="showingJobId" class="mt-1" no-body>
+                <BCardHeader class="d-flex justify-content-between align-items-center">
+                    <Heading inline size="md">
+                        Showing Job Details for
+                        <ExternalLink :href="withPrefix(`/jobs/${showingJobId}/view`)">
+                            <code>{{ showingJobId }}</code>
+                        </ExternalLink>
+                    </Heading>
+                    <BButton variant="secondary" @click="showingJobId = undefined">
+                        <FontAwesomeIcon :icon="faTimes" />
+                    </BButton>
+                </BCardHeader>
+                <BCardBody>
+                    <JobProvider :id="showingJobId" v-slot="{ item, loading }">
+                        <div v-if="loading">
+                            <LoadingSpan message="Loading Job Information" />
+                        </div>
+                        <div v-else>
+                            <JobInformation v-if="item" :job_id="item.id" />
+                            <p></p>
+                            <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
+                        </div>
+                    </JobProvider>
+                </BCardBody>
             </BCard>
         </div>
     </div>
@@ -264,32 +280,6 @@ function showStep(jobId: string) {
 
 .container-root {
     container-type: inline-size;
-}
-
-.workflow-invocation {
-    display: flex;
-    flex-grow: 1;
-    gap: 1rem;
-
-    .workflow-preview {
-        flex-grow: 1;
-
-        .workflow-card {
-            flex-grow: 1;
-        }
-    }
-}
-
-// TODO: This is a temporary fix for the invocation graph not fitting on smaller viewports
-@container (max-width: 900px) {
-    .workflow-invocation {
-        flex-direction: column;
-        height: unset;
-
-        .workflow-preview {
-            height: 450px;
-        }
-    }
 }
 
 .portlet-header {
