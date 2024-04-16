@@ -408,6 +408,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 panel_dict = self._tool_panel
             if integrated_panel_dict is None:
                 integrated_panel_dict = self._integrated_tool_panel
+            load_if = item.get("if")
+            if load_if == "interactivetools_enable":
+                if not self.app.config.interactivetools_enable:
+                    raise ValueError("Trying to load an InteractiveTool, but InteractiveTools are not enabled.")
+            elif load_if:
+                raise ValueError(f"Unknown conditional tool load condition '{load_if}'")
             if item_type == "tool":
                 self._load_tool_tag_set(
                     item,

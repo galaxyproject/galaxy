@@ -237,8 +237,8 @@
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
 
-  <tool file="interactivetool_simple.xml" />
-  <tool file="interactivetool_two_entry_points.xml" />
+  <tool file="interactivetool_simple.xml" if="interactivetools_enable" />
+  <tool file="interactivetool_two_entry_points.xml" if="interactivetools_enable" />
   <tool file="converter_target_datatype.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
