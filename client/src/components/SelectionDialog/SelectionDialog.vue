@@ -11,6 +11,7 @@ import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
@@ -182,6 +183,10 @@ watch(
                     </template>
                     <template v-slot:cell(details)="data">
                         <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                    </template>
+                    <template v-slot:cell(tags)="data">
+                        <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
+                        <span v-else>-</span>
                     </template>
                     <template v-slot:cell(time)="data">
                         {{ data.value ? data.value : "-" }}
