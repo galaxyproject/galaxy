@@ -7,7 +7,7 @@ import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getAllGroups } from "@/api/groups";
-import { sendNotification } from "@/api/notifications";
+import { NotificationCreateRequest, sendNotification } from "@/api/notifications";
 import { getAllRoles } from "@/api/roles";
 import { type components } from "@/api/schema";
 import { getAllUsers } from "@/api/users";
@@ -25,7 +25,6 @@ library.add(faInfoCircle);
 
 type SelectOption = [string, string];
 type NotificationCreateData = components["schemas"]["NotificationCreateData"];
-type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
 
 interface MessageNotificationCreateData extends NotificationCreateData {
     category: "message";

@@ -81,6 +81,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
                 user_ids=[user.id for user in users],
             ),
             notification=notification_data,
+            galaxy_url="https://test.galaxy.url",
         )
         created_notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return created_notification, notifications_sent

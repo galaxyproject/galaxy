@@ -1255,6 +1255,9 @@ export interface paths {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         get: operations["get_notification_preferences_api_notifications_preferences_get"];
         /**
@@ -9564,6 +9567,7 @@ export interface components {
              * Channels
              * @description The channels that the user wants to receive notifications from for this category.
              * @default {
+             *   "email": true,
              *   "push": true
              * }
              */
@@ -9580,6 +9584,12 @@ export interface components {
          * @description The settings for each channel of a notification category.
          */
         NotificationChannelSettings: {
+            /**
+             * Email
+             * @description Whether the user wants to receive email notifications for this category. This setting will be ignored unless the server supports asynchronous tasks.
+             * @default true
+             */
+            email?: boolean;
             /**
              * Push
              * @description Whether the user wants to receive push notifications in the browser for this category.
@@ -9628,10 +9638,7 @@ export interface components {
              */
             variant: components["schemas"]["NotificationVariant"];
         };
-        /**
-         * NotificationCreateRequest
-         * @description Contains the recipients and the notification to create.
-         */
+        /** NotificationCreateRequest */
         NotificationCreateRequest: {
             /**
              * Notification
@@ -9642,7 +9649,7 @@ export interface components {
              * Recipients
              * @description The recipients of the notification. Can be a combination of users, groups and roles.
              */
-            recipients: components["schemas"]["NotificationRecipients"];
+            recipients: components["schemas"]["NotificationRecipientsRequest"];
         };
         /** NotificationCreatedResponse */
         NotificationCreatedResponse: {
@@ -9657,11 +9664,8 @@ export interface components {
              */
             total_notifications_sent: number;
         };
-        /**
-         * NotificationRecipients
-         * @description The recipients of a notification. Can be a combination of users, groups and roles.
-         */
-        NotificationRecipients: {
+        /** NotificationRecipientsRequest */
+        NotificationRecipientsRequest: {
             /**
              * Group IDs
              * @description The list of encoded group IDs of the groups that should receive the notification.
@@ -19983,7 +19987,9 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                    "application/json":
+                        | components["schemas"]["NotificationCreatedResponse"]
+                        | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Validation Error */
@@ -20155,6 +20161,9 @@ export interface operations {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

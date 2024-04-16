@@ -5463,6 +5463,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``dispatch_notifications_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to dispatch notifications
+    to users (every 10 minutes by default). Runs in a Celery task.
+:Default: ``600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``help_forum_api_url``
 ~~~~~~~~~~~~~~~~~~~~~~

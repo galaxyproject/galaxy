@@ -450,6 +450,9 @@ export function getRouter(Galaxy) {
                         path: "user/notifications",
                         component: NotificationsList,
                         redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                        props: (route) => ({
+                            shouldOpenPreferences: Boolean(route.query.preferences),
+                        }),
                     },
                     {
                         path: "user/notifications/preferences",
