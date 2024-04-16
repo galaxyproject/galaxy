@@ -136,3 +136,10 @@ def test_populated_optimized_list_list_not_populated(session, make_dataset_colle
     assert not c1.populated_optimized
     assert not c2.populated
     assert not c2.populated_optimized
+
+
+def test_default_disk_usage(session, make_user):
+    u = make_user()
+    u.adjust_total_disk_usage(1, None)
+    user_reload = session.get(m.User, u.id)
+    assert user_reload.disk_usage == 1
