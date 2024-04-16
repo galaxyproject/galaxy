@@ -94,3 +94,45 @@ def test_dataset_action_tuples(
     make_dataset_collection_element(collection=c, element=hda1)
     make_dataset_collection_element(collection=c, element=hda2)
     assert c.dataset_action_tuples == [("action1", role.id), ("action3", role.id)]
+
+
+def test_dataset_dbkeys_and_extensions_summary(
+    session, make_hda, make_dataset_collection, make_dataset_collection_element, make_hdca
+):
+    d1 = make_hda(extension="bam", dbkey="hg19", create_dataset=True, sa_session=session)
+    d2 = make_hda(extension="txt", dbkey="hg19", create_dataset=True, sa_session=session)
+    c1 = make_dataset_collection(collection_type="paired")
+    make_dataset_collection_element(collection=c1, element=d1)
+    make_dataset_collection_element(collection=c1, element=d2)
+
+    hdca = make_hdca(collection=c1)
+    assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
+    assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
+
+
+def test_populated_optimized_ok(session, make_dataset_collection, make_dataset_collection_element, make_hda):
+    c1 = make_dataset_collection(collection_type="paired")
+    make_dataset_collection_element(collection=c1, element=make_hda(create_dataset=True, sa_session=session))
+    make_dataset_collection_element(collection=c1, element=make_hda(create_dataset=True, sa_session=session))
+    assert c1.populated
+    assert c1.populated_optimized
+
+
+def test_populated_optimized_empty_list_list_ok(session, make_dataset_collection, make_dataset_collection_element):
+    c1 = make_dataset_collection(collection_type="list")
+    c2 = make_dataset_collection(collection_type="list:list")
+    make_dataset_collection_element(collection=c2, element=c1)
+    assert c1.populated
+    assert c1.populated_optimized
+    assert c2.populated
+    assert c2.populated_optimized
+
+
+def test_populated_optimized_list_list_not_populated(session, make_dataset_collection, make_dataset_collection_element):
+    c1 = make_dataset_collection(collection_type="list", populated=False)
+    c2 = make_dataset_collection(collection_type="list:list")
+    make_dataset_collection_element(collection=c2, element=c1)
+    assert not c1.populated
+    assert not c1.populated_optimized
+    assert not c2.populated
+    assert not c2.populated_optimized
