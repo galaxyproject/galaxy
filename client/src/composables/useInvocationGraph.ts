@@ -3,6 +3,7 @@ import {
     faCheckCircle,
     faClock,
     faExclamationTriangle,
+    faForward,
     faPause,
     faSpinner,
     faTrash,
@@ -19,7 +20,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
-/** Type Definitions */
+// Type Definitions
 type StepJobSummary =
     | components["schemas"]["InvocationStepJobsResponseStepModel"]
     | components["schemas"]["InvocationStepJobsResponseJobModel"]
@@ -36,7 +37,8 @@ export interface GraphStep extends Step {
         | "deleted"
         | "hidden"
         | "setting_metadata"
-        | "paused";
+        | "paused"
+        | "skipped";
     jobs: StepJobSummary["states"];
     headerClass?: string;
     headerIcon?: IconDefinition;
@@ -46,7 +48,7 @@ interface InvocationGraph extends Workflow {
     steps: { [index: number]: GraphStep };
 }
 
-/** Fetchers */
+// Fetchers
 const stepJobsSummaryFetcher = fetcher
     .path("/api/invocations/{invocation_id}/step_jobs_summary")
     .method("get")
@@ -62,7 +64,13 @@ export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean;
     new: { icon: faClock },
     waiting: { icon: faClock },
     deleted: { icon: faTrash, class: "text-danger" },
+    skipped: { icon: faForward, class: "text-warning" },
 };
+
+/** Only one job needs to be in one of these states for the graph step to be in that state */
+const SINGLE_INSTANCE_STATES = ["error", "running", "paused"];
+/** All jobs need to be in one of these states for the graph step to be in that state */
+const ALL_INSTANCES_STATES = ["deleted", "skipped", "new"];
 
 /** Composable that creates a readonly invocation graph and loads it onto a workflow editor canvas for display.
  * @param invocation - The invocation to display in graph view
@@ -72,7 +80,7 @@ export function useInvocationGraph(
     invocation: Ref<components["schemas"]["WorkflowInvocationElementView"]>,
     workflowId: string | undefined
 ) {
-    library.add(faCheckCircle, faClock, faPause, faSpinner, faExclamationTriangle, faTrash);
+    library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
     const steps = ref<{ [index: string]: GraphStep }>({});
     const storeId = computed(() => `invocation-${invocation.value.id}`);
@@ -143,7 +151,7 @@ export function useInvocationGraph(
                             */
                         }
 
-                        // First, try setting the state of the graph step based on the states of the jobs for this step
+                        // First, try setting the state of the graph step based on its jobs' states or the populated state
                         else {
                             /** The step job summary for the invocation step (based on its job id) */
                             const invocationStepSummary = stepJobsSummary.find((stepJobSummary: StepJobSummary) => {
@@ -160,21 +168,8 @@ export function useInvocationGraph(
 
                                 if (invocationStepSummary.states) {
                                     const statesForThisStep = Object.keys(invocationStepSummary.states);
-
-                                    // for "error" and "paused" states, set the state based on at least one of the jobs being errored or paused
-                                    if (statesForThisStep.includes("error")) {
-                                        graphStepFromWfStep.state = "error";
-                                    } else if (statesForThisStep.includes("paused")) {
-                                        graphStepFromWfStep.state = "paused";
-                                    }
-                                    // if all jobs are "deleted", set the state to deleted
-                                    else if (statesForThisStep.every((key) => key === "deleted")) {
-                                        graphStepFromWfStep.state = "deleted";
-                                    }
-                                    // else if any of the keys of the states object are NOT "ok", set the state to running
-                                    else if (statesForThisStep.some((key) => key !== "ok")) {
-                                        graphStepFromWfStep.state = "running";
-                                    }
+                                    // set the state of the graph step based on the job states for this step
+                                    graphStepFromWfStep.state = getStepStateFromJobStates(statesForThisStep);
                                 }
                                 // now store the job states for this step in the graph step
                                 graphStepFromWfStep.jobs = invocationStepSummary.states;
@@ -194,7 +189,7 @@ export function useInvocationGraph(
                                 graphStepFromWfStep.state = "error";
                             } else if (populatedState === "deleting") {
                                 graphStepFromWfStep.state = "deleted";
-                            } else if (populatedState && !["stop", "stopped", "skipped"].includes(populatedState)) {
+                            } else if (populatedState && !["stop", "stopped"].includes(populatedState)) {
                                 graphStepFromWfStep.state = populatedState as GraphStep["state"];
                             }
                         }
@@ -229,6 +224,26 @@ export function useInvocationGraph(
         } catch (e) {
             rethrowSimple(e);
         }
+    }
+
+    /** Given the job states for a step, if the states fall into a single instance state
+     * or all instances state, return the state of the step.
+     * @param jobStates - The job states for a step
+     * @returns The state for the graph step or `undefined` if the states don't match any
+     *          single instance state or all instances state
+     * */
+    function getStepStateFromJobStates(jobStates: string[]): GraphStep["state"] | undefined {
+        for (const state of SINGLE_INSTANCE_STATES) {
+            if (jobStates.includes(state)) {
+                return state as GraphStep["state"];
+            }
+        }
+        for (const state of ALL_INSTANCES_STATES) {
+            if (jobStates.every((jobState) => jobState === state)) {
+                return state as GraphStep["state"];
+            }
+        }
+        return undefined;
     }
 
     // TODO: Maybe we can use this to layout the graph after the steps are loaded (for neatness)?

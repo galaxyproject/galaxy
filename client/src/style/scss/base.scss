@@ -199,6 +199,9 @@ $galaxy-state-bg: (
     &.header-paused {
         background-color: $state-info-bg !important;
     }
+    &.header-skipped {
+        background-color: map-get($galaxy-state-bg, "deleted") !important;
+    }
 }
 
 // Extra label colors
