@@ -65,7 +65,7 @@ const searchRegex = computed(() => {
 /** Wraps value prop so it can be set, and always returns an array */
 const selected = computed({
     get() {
-        return Array.isArray(props.value) ? props.value : [props.value];
+        return props.value === null ? [] : Array.isArray(props.value) ? props.value : [props.value];
     },
     set(value) {
         emit("input", value);
@@ -142,7 +142,15 @@ async function deselectOption(event: MouseEvent, index: number) {
         const [option] = selectedOptionsFiltered.value.splice(index, 1);
 
         if (option) {
-            const i = selected.value.indexOf(option.value);
+            const i = selected.value.findIndex((selectedValue) => {
+                if (typeof selectedValue === "string") {
+                    return selectedValue === option.value;
+                } else if (typeof selectedValue === "object" && typeof option.value === "object") {
+                    // in case values are objects, compare their ids (if they have the 'id' property)
+                    return selectedValue?.id === option.value?.id;
+                }
+                return false;
+            });
             selected.value = selected.value.flatMap((value, index) => (index === i ? [] : [value]));
         }
 
