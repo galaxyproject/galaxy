@@ -49,7 +49,6 @@ from galaxy.model.db.user import (
     get_user_by_email,
     get_user_by_username,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
@@ -876,8 +875,3 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         )
 
         self.fn_filter_parsers.update({})
-
-
-def get_users_by_ids(session: galaxy_scoped_session, user_ids):
-    stmt = select(User).where(User.id.in_(user_ids))
-    return session.scalars(stmt).all()

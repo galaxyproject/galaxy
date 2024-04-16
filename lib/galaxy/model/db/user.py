@@ -4,6 +4,12 @@ from sqlalchemy import (
 )
 
 from galaxy.model import User
+from galaxy.model.scoped_session import galaxy_scoped_session
+
+
+def get_users_by_ids(session: galaxy_scoped_session, user_ids):
+    stmt = select(User).where(User.id.in_(user_ids))
+    return session.scalars(stmt).all()
 
 
 # The get_user_by_email and get_user_by_username functions may be called from
