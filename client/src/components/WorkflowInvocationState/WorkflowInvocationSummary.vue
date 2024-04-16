@@ -117,6 +117,10 @@ const invocationPdfLink = computed<string | null>(() => {
     }
 });
 
+const hasMessages = computed<boolean>(() => {
+    return !!props.invocation?.messages.length;
+});
+
 const stepStatesStr = computed<string>(() => {
     return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
 });
@@ -173,14 +177,14 @@ function onCancel() {
                 <span class="fa fa-times mr-1" /> Cancel
             </BButton>
         </div>
-        <div class="d-flex justify-content-between align-items-center">
-            <div v-if="invocationAndJobTerminal" class="d-flex mr-1">
+        <div class="d-flex align-items-center">
+            <div v-if="invocationAndJobTerminal" class="mr-1" :class="{ 'd-flex': !hasMessages }">
                 <BButton
                     v-b-tooltip.hover
                     :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
-                    class="invocation-report-link text-nowrap"
+                    class="invocation-report-link text-nowrap w-100"
                     :href="invocationLink">
                     View Report
                 </BButton>
@@ -189,7 +193,8 @@ function onCancel() {
                     :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
-                    class="invocation-pdf-link text-nowrap"
+                    class="invocation-pdf-link text-nowrap w-100"
+                    :class="{ 'mt-1': hasMessages }"
                     :href="invocationPdfLink"
                     target="_blank">
                     Generate PDF
@@ -201,7 +206,7 @@ function onCancel() {
                     note="Loading step state summary..."
                     :loading="true"
                     class="steps-progress" />
-                <template v-if="invocation?.messages?.length">
+                <template v-if="invocation && hasMessages">
                     <InvocationMessage
                         v-for="message in invocation.messages"
                         :key="message.reason"
