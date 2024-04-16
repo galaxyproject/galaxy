@@ -35,6 +35,7 @@ from galaxy.model import (
     UserRoleAssociation,
 )
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_npns_roles
 from galaxy.security import (
     Action,
     get_permitted_actions,
@@ -80,22 +81,11 @@ class GalaxyRBACAgent(RBACAgent):
         intermed.sort()
         return [_[-1] for _ in intermed]
 
-    def _get_npns_roles(self, trans):
-        """
-        non-private, non-sharing roles
-        """
-        stmt = (
-            select(Role)
-            .where(and_(Role.deleted == false(), Role.type != Role.types.PRIVATE, Role.type != Role.types.SHARING))
-            .order_by(Role.name)
-        )
-        return trans.sa_session.scalars(stmt)
-
     def get_all_roles(self, trans, cntrller):
         admin_controller = cntrller in ["library_admin"]
         roles = set()
         if not trans.user:
-            return self._get_npns_roles(trans)
+            return get_npns_roles(trans.sa_session)
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             stmt = select(Role).where(Role.deleted == false()).order_by(Role.name)
@@ -108,7 +98,7 @@ class GalaxyRBACAgent(RBACAgent):
             for role in self.get_sharing_roles(trans.user):
                 roles.add(role)
             # Add all remaining non-private, non-sharing roles
-            for role in self._get_npns_roles(trans):
+            for role in get_npns_roles(trans.sa_session):
                 roles.add(role)
         return self.sort_by_attr(list(roles), "name")
 
@@ -189,7 +179,7 @@ class GalaxyRBACAgent(RBACAgent):
             for role in self.get_sharing_roles(trans.user):
                 roles.append(role)
             # Add all remaining non-private, non-sharing roles
-            for role in self._get_npns_roles(trans):
+            for role in get_npns_roles(trans.sa_session):
                 roles.append(role)
         # User will see all the roles derived from the access roles on the item
         else:
