@@ -2,7 +2,7 @@ Use this template to customize the text email your users will receive
 when a new notification of category "message" is sent to them.
 Copy the file to {{ templates_dir }}/mail/notifications/message-email.txt and modify as required.
 
-If you are adding URLs into this, remember that only absolute URLS (with
+If you are adding URLs, remember that only absolute URLs (with
 a domain name) make sense in email! They can be served from any stable
 location, including your Galaxy server or GitHub.
 
