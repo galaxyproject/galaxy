@@ -18,7 +18,7 @@ from galaxy import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
-from galaxy.managers.users import get_user_by_email
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname,
