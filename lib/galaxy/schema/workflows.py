@@ -57,10 +57,11 @@ WorkflowCreator = Annotated[
 ]
 
 
-class GalaxyWorkflowIdentifiers(str, Enum):
+class GalaxyWorkflowStrAttributes(str, Enum):
     true = "true"
     zero_point_one = "0.1"
     galaxy_workflow = "GalaxyWorkflow"
+    no_tags = ""
 
 
 class Input(Model):
@@ -639,6 +640,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Tool Representation",
         description="The representation of the tool associated with the step.",
     )
+    # subworkflow: Optional[Dict[str, Any]] = Field(
     subworkflow: Optional["WorkflowDictExportSummary"] = Field(
         None,
         title="Sub Workflow",
@@ -663,6 +665,9 @@ class WorkflowDictBaseModel(Model):
         title="Name",
         description="The name of the workflow.",
     )
+
+
+class WorkflowDictExtendedBaseModel(WorkflowDictBaseModel):
     version: int = Field(
         ...,
         title="Version",
@@ -670,7 +675,7 @@ class WorkflowDictBaseModel(Model):
     )
 
 
-class WorkflowDictPreviewSummary(WorkflowDictBaseModel):
+class WorkflowDictPreviewSummary(WorkflowDictExtendedBaseModel):
     steps: List[WorkflowDictPreviewSteps] = Field(
         ...,
         title="Steps",
@@ -678,7 +683,7 @@ class WorkflowDictPreviewSummary(WorkflowDictBaseModel):
     )
 
 
-class WorkflowDictEditorSummary(WorkflowDictBaseModel):
+class WorkflowDictEditorSummary(WorkflowDictExtendedBaseModel):
     upgrade_messages: Dict[int, str] = Field(
         ...,
         title="Upgrade Messages",
@@ -714,7 +719,7 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
     )
 
 
-class WorkflowDictRunSummary(WorkflowDictBaseModel):
+class WorkflowDictRunSummary(WorkflowDictExtendedBaseModel):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -748,13 +753,18 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictExportSummary(WorkflowDictBaseModel):
-    a_galaxy_workflow: Literal[GalaxyWorkflowIdentifiers.true] = Field(
+    a_galaxy_workflow: Literal[GalaxyWorkflowStrAttributes.true] = Field(
         # a_galaxy_workflow: str = Field(
         ...,
         title="A Galaxy Workflow",
         description="Whether this workflow is a Galaxy Workflow.",
     )
-    format_version: Literal[GalaxyWorkflowIdentifiers.zero_point_one] = Field(
+    version: Optional[int] = Field(
+        None,
+        title="Version",
+        description="The version of the workflow represented by an incremental number.",
+    )
+    format_version: Literal[GalaxyWorkflowStrAttributes.zero_point_one] = Field(
         # format_version: str = Field(
         ...,
         alias="format-version",
@@ -762,7 +772,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: TagCollection = Field(
+    tags: Union[TagCollection, Literal[GalaxyWorkflowStrAttributes.no_tags]] = Field(
         ...,
         title="Tags",
         description="The tags associated with the workflow.",
@@ -801,7 +811,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictFormat2Summary(Model):
-    workflow_class: Literal[GalaxyWorkflowIdentifiers.galaxy_workflow] = Field(
+    workflow_class: Literal[GalaxyWorkflowStrAttributes.galaxy_workflow] = Field(
         ...,
         title="Class",
         description="The class of the workflow.",
