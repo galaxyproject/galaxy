@@ -35,7 +35,10 @@ from galaxy.model import (
     UserRoleAssociation,
 )
 from galaxy.model.base import transaction
-from galaxy.model.db.role import get_npns_roles
+from galaxy.model.db.role import (
+    get_npns_roles,
+    get_private_user_role,
+)
 from galaxy.security import (
     Action,
     get_permitted_actions,
@@ -755,23 +758,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
-        stmt = (
-            select(Role)
-            .where(
-                and_(
-                    UserRoleAssociation.user_id == user.id,
-                    Role.id == UserRoleAssociation.role_id,
-                    Role.type == Role.types.PRIVATE,
-                )
-            )
-            .distinct()
-        )
-        role = self.sa_session.execute(stmt).scalar_one_or_none()
-        if not role:
-            if auto_create:
-                return self.create_private_user_role(user)
-            else:
-                return None
+        role = get_private_user_role(user, self.sa_session)
+        if not role and auto_create:
+            role = self.create_private_user_role(user)
         return role
 
     def get_role(self, name, type=None):

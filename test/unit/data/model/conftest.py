@@ -278,6 +278,15 @@ def make_user(session):
 
 
 @pytest.fixture
+def make_user_role_association(session):
+    def f(user, role):
+        model = m.UserRoleAssociation(user, role)
+        write_to_db(session, model)
+
+    return f
+
+
+@pytest.fixture
 def make_workflow(session):
     def f(**kwd):
         model = m.Workflow(**kwd)

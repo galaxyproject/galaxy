@@ -4,7 +4,10 @@ from sqlalchemy import (
     select,
 )
 
-from galaxy.model import Role
+from galaxy.model import (
+    Role,
+    UserRoleAssociation,
+)
 
 
 def get_npns_roles(session):
@@ -17,3 +20,18 @@ def get_npns_roles(session):
         .order_by(Role.name)
     )
     return session.scalars(stmt)
+
+
+def get_private_user_role(user, session):
+    stmt = (
+        select(Role)
+        .where(
+            and_(
+                UserRoleAssociation.user_id == user.id,
+                Role.id == UserRoleAssociation.role_id,
+                Role.type == Role.types.PRIVATE,
+            )
+        )
+        .distinct()
+    )
+    return session.execute(stmt).scalar_one_or_none()
