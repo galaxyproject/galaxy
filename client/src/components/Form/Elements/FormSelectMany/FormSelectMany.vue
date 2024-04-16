@@ -65,7 +65,13 @@ const searchRegex = computed(() => {
 /** Wraps value prop so it can be set, and always returns an array */
 const selected = computed({
     get() {
-        return props.value === null ? [] : Array.isArray(props.value) ? props.value : [props.value];
+        if (props.value === null) {
+            return [];
+        } else if (Array.isArray(props.value)) {
+            return props.value;
+        } else {
+            return [props.value];
+        }
     },
     set(value) {
         emit("input", value);
