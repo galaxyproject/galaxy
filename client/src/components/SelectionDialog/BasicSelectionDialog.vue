@@ -54,7 +54,7 @@ async function load() {
         const response = await props.getData();
         const incoming = response.data;
         items.value = incoming.map((item: any) => {
-            let timeStamp = item[props.timeKey];
+            const timeStamp = item[props.timeKey];
             showTime.value = !!timeStamp;
             return {
                 id: item.id,
