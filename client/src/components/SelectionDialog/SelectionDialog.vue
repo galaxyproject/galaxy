@@ -189,7 +189,7 @@ watch(
                         <span v-else>-</span>
                     </template>
                     <template v-slot:cell(time)="data">
-                        {{ data.value ? data.value : "-" }}
+                        {{ formatTime(data.value) }}
                     </template>
                     <template v-slot:cell(update_time)="data">
                         {{ formatTime(data.value) }}
