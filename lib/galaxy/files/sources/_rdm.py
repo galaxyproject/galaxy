@@ -138,7 +138,7 @@ class RDMFilesSource(BaseFilesSource):
 
     plugin_kind = PluginKind.rdm
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+    def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)
         base_url = props.get("url")
         if not base_url:

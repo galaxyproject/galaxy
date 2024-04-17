@@ -38,7 +38,19 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 URI_PREFIXES = [
-    f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp", "drs"]
+    f"{x}://"
+    for x in [
+        "http",
+        "https",
+        "ftp",
+        "file",
+        "gxfiles",
+        "gximport",
+        "gxuserimport",
+        "gxftp",
+        "drs",
+        "invenio",
+    ]
 ]
 
 
