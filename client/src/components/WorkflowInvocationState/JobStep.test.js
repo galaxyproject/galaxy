@@ -51,14 +51,29 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(wrapper.vm.toggledItems["1"]).toBeTruthy();
         expect(wrapper.find(".expanded").exists()).toBeTruthy();
         // 2 collapsed rows, plus 1 expanded row
-        expect(wrapper.find("tbody").findAll("tr").length).toBe(3);
+        expect(countVisibleRows(wrapper)).toBe(3);
         // update data
         const additionalJob = { ...jobs[0], id: 3 };
         await wrapper.setProps({ jobs: [...jobs, additionalJob] });
         // verify new data is displayed
-        expect(wrapper.find("tbody").findAll("tr").length).toBe(4);
+        expect(countVisibleRows(wrapper)).toBe(4);
         // verify first row is still expanded
         expect(wrapper.vm.toggledItems["1"]).toBeTruthy();
         expect(wrapper.find(".expanded").exists()).toBeTruthy();
     });
 });
+
+/** When expanding a row, a hidden `<tr>` may be added like:
+ * ```
+ * <tr aria-hidden="true" role="presentation" class="d-none"></tr>
+ * ```
+ * and this function will count rows other than these hidden ones.
+ */
+function countVisibleRows(wrapper) {
+    const rows = wrapper.find("tbody").find("tbody").findAll("tr");
+    const visibleRows = rows.filter((row) => {
+        // only count rows that are not hidden
+        return !(row.attributes("aria-hidden") && row.attributes("aria-hidden") === "true");
+    });
+    return visibleRows.length;
+}

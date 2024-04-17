@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -15,10 +16,12 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
             invocation: invocationData,
             invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
+            jobStatesSummary: {},
         };
         wrapper = shallowMount(WorkflowInvocationSummary, {
             propsData,
             localVue,
+            pinia: createTestingPinia(),
         });
     });
 
@@ -42,6 +45,7 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
             invocation: invocationData,
             invocationAndJobTerminal: false,
             invocationSchedulingTerminal: false,
+            jobStatesSummary: {},
         };
         wrapper = shallowMount(WorkflowInvocationSummary, {
             store,

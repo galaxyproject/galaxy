@@ -118,7 +118,7 @@ const invocationPdfLink = computed<string | null>(() => {
 });
 
 const hasMessages = computed<boolean>(() => {
-    return !!props.invocation?.messages.length;
+    return props.invocation?.messages.length ? true : false;
 });
 
 const stepStatesStr = computed<string>(() => {
