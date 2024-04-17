@@ -2134,6 +2134,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "add_input";
             /** Collection Type */
@@ -2169,6 +2170,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "add_step";
             /**
@@ -2276,6 +2278,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -2392,6 +2395,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -2556,6 +2560,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             /**
@@ -2578,6 +2583,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             /**
@@ -2620,6 +2626,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             content: components["schemas"]["BroadcastNotificationContent"];
@@ -2668,6 +2675,7 @@ export interface components {
             /**
              * Browsable
              * @constant
+             * @enum {boolean}
              */
             browsable: true;
             /**
@@ -2725,6 +2733,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_datatype";
         };
@@ -2735,6 +2744,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_dbkey";
         };
@@ -2948,6 +2958,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "composite";
             /** Tags */
@@ -3048,6 +3059,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "connect";
             /** Input */
@@ -3441,6 +3453,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -3507,6 +3520,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -3780,6 +3794,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollectionElement";
             /**
@@ -3829,6 +3844,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollection";
             /**
@@ -3934,6 +3950,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             tags: components["schemas"]["TagCollection"];
@@ -3996,6 +4013,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetHash";
         };
@@ -4335,6 +4353,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DefaultQuotaAssociation";
             /**
@@ -4562,6 +4581,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "disconnect";
             /** Input */
@@ -4748,6 +4768,7 @@ export interface components {
              * Source
              * @description The source of this dataset, which in the case of the model can only be `hdca`.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
         };
@@ -4834,6 +4855,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -5032,6 +5054,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "extract_input";
             /** Input */
@@ -5045,6 +5068,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "extract_untyped_parameter";
             /** Label */
@@ -5064,6 +5088,7 @@ export interface components {
         /**
          * FavoriteObjectType
          * @constant
+         * @enum {string}
          */
         FavoriteObjectType: "tools";
         /** FavoriteObjectsSummary */
@@ -5136,6 +5161,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "files";
             /** Tags */
@@ -5151,6 +5177,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "fill_defaults";
         };
@@ -5204,6 +5231,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "file";
             /**
@@ -5269,6 +5297,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "fill_step_defaults";
             /** Step */
@@ -5304,6 +5333,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "folder";
             /**
@@ -5360,6 +5390,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
@@ -5389,6 +5420,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
@@ -5432,6 +5464,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /**
@@ -5451,6 +5484,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "GroupQuotaAssociation";
         };
@@ -5468,6 +5502,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /** name of the group */
@@ -5791,6 +5826,7 @@ export interface components {
              * @description TODO
              * @default file
              * @constant
+             * @enum {string}
              */
             api_type?: "file";
             /** Copied From Ldda Id */
@@ -5892,6 +5928,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -5928,6 +5965,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -5976,6 +6014,7 @@ export interface components {
              * @description This is always `file` for datasets.
              * @default file
              * @constant
+             * @enum {string}
              */
             type?: "file";
             /**
@@ -6043,6 +6082,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -6097,6 +6137,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -6207,6 +6248,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -6243,6 +6285,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -6271,6 +6314,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type?: "collection";
             /**
@@ -6339,6 +6383,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -6370,6 +6415,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -6393,6 +6439,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type?: "collection";
             /**
@@ -6529,6 +6576,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "hdas";
         };
@@ -6592,6 +6640,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "hdca";
         };
@@ -7024,6 +7073,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -7138,6 +7188,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -7206,6 +7257,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -7249,6 +7301,7 @@ export interface components {
              * src
              * @description Indicates that the tool data should be resolved by a URI.
              * @constant
+             * @enum {string}
              */
             src: "uri";
             /**
@@ -7321,6 +7374,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "data_collection_input";
             /** When */
@@ -7363,6 +7417,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "data_input";
             /** When */
@@ -7405,6 +7460,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "parameter_input";
             /** When */
@@ -7502,6 +7558,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "ToolShedRepository";
             /**
@@ -7537,6 +7594,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "history_deleted";
         };
@@ -7545,6 +7603,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "cancelled_on_review";
             /**
@@ -7558,6 +7617,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "user_request";
         };
@@ -7571,6 +7631,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "workflow_output_not_found";
             /** Workflow step id of step that caused a warning. */
@@ -7592,6 +7653,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "collection_failed";
             /**
@@ -7616,6 +7678,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "dataset_failed";
             /**
@@ -7634,6 +7697,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "expression_evaluation_failed";
             /**
@@ -7658,6 +7722,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "job_failed";
             /**
@@ -7678,6 +7743,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "output_not_found";
             /**
@@ -7696,6 +7762,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "when_not_boolean";
             /**
@@ -7758,6 +7825,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**
@@ -7784,6 +7852,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset.
              * @constant
+             * @enum {string}
              */
             src: "hda";
             /**
@@ -7804,6 +7873,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset collection.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
             /**
@@ -7878,6 +7948,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Report";
             /**
@@ -7885,6 +7956,7 @@ export interface components {
              * @description Format of the invocation report.
              * @default markdown
              * @constant
+             * @enum {string}
              */
             render_format?: "markdown";
             /**
@@ -7945,6 +8017,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocationStep";
             /**
@@ -8010,6 +8083,7 @@ export interface components {
              * @description The source model of the output.
              * @default hdca
              * @constant
+             * @enum {string}
              */
             src?: "hdca";
         };
@@ -8024,6 +8098,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -8050,6 +8125,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "Job";
             /**
@@ -8076,6 +8152,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocationStep";
             /**
@@ -8104,6 +8181,7 @@ export interface components {
              * @description The source model of the output.
              * @default hda
              * @constant
+             * @enum {string}
              */
             src?: "hda";
             /**
@@ -8127,6 +8205,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "unexpected_failure";
             /**
@@ -8361,6 +8440,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8524,6 +8604,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8722,6 +8803,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "Job";
             /**
@@ -8793,6 +8875,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8926,6 +9009,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "library";
         };
@@ -8966,6 +9050,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "library_folder";
         };
@@ -9009,6 +9094,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryFolder";
             /**
@@ -9057,6 +9143,7 @@ export interface components {
         /**
          * LibraryFolderPermissionAction
          * @constant
+         * @enum {string}
          */
         LibraryFolderPermissionAction: "set_permissions";
         /** LibraryFolderPermissionsPayload */
@@ -9114,6 +9201,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -9224,6 +9312,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -9351,6 +9440,7 @@ export interface components {
          *
          * The user will always receive notifications from these categories.
          * @constant
+         * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
         /** MaterializeDatasetInstanceAPIRequest */
@@ -9376,6 +9466,7 @@ export interface components {
              * Category
              * @default message
              * @constant
+             * @enum {string}
              */
             category?: "message";
             /**
@@ -9503,6 +9594,7 @@ export interface components {
              * Category
              * @default new_shared_item
              * @constant
+             * @enum {string}
              */
             category?: "new_shared_item";
             /**
@@ -9922,6 +10014,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -9997,6 +10090,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -10087,6 +10181,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "pasted";
             /** Tags */
@@ -10146,6 +10241,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "path";
             /** Tags */
@@ -10193,6 +10289,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "pause";
             /** When */
@@ -10363,6 +10460,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -10415,6 +10513,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -10593,6 +10692,7 @@ export interface components {
             /**
              * Class
              * @constant
+             * @enum {string}
              */
             class: "Directory";
             /**
@@ -10616,6 +10716,7 @@ export interface components {
             /**
              * Class
              * @constant
+             * @enum {string}
              */
             class: "File";
             /**
@@ -10667,6 +10768,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "remove_unlabeled_workflow_outputs";
         };
@@ -10753,6 +10855,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Role";
             /**
@@ -10844,6 +10947,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "server_dir";
             /** Tags */
@@ -11275,6 +11379,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -11505,6 +11610,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "StoredWorkflow";
             /**
@@ -11615,6 +11721,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "subworkflow";
             /** When */
@@ -11806,6 +11913,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "tool";
             /** When */
@@ -11928,6 +12036,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_annotation";
             /** Annotation */
@@ -11966,6 +12075,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_creator";
             /** Creator */
@@ -12064,6 +12174,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_license";
             /** License */
@@ -12074,6 +12185,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_name";
             /** Name */
@@ -12092,6 +12204,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_output_label";
             /** Output */
@@ -12145,6 +12258,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_report";
             report: components["schemas"]["Report"];
@@ -12154,6 +12268,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_step_label";
             /**
@@ -12172,6 +12287,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_step_position";
             position_shift: components["schemas"]["Position"];
@@ -12199,6 +12315,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_all_steps";
         };
@@ -12207,6 +12324,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_subworkflow";
             /** Content Id */
@@ -12222,6 +12340,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_tool";
             /**
@@ -12277,6 +12396,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "url";
             /** Tags */
@@ -12372,6 +12492,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -12511,6 +12632,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "UserQuotaAssociation";
             /**
@@ -12655,6 +12777,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -12735,6 +12858,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -12799,6 +12923,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**

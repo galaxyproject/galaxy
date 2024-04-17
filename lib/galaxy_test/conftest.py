@@ -11,6 +11,8 @@ from galaxy.web import statsd_client as statsd
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 
+pytest_plugins = ("celery.contrib.pytest",)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def celery_includes():
