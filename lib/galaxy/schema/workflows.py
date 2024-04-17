@@ -496,7 +496,6 @@ class WorkflowDictStepsExtendedBase(WorkflowDictStepsBase):
     )
 
 
-# TODO - This is potentially missing some fields, when step type is tool - see manager line 1006 - TODO
 class WorkflowDictRunStep(WorkflowDictStepsBase):
     inputs: List[Dict[str, Any]] = Field(
         ...,
