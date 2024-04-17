@@ -12,8 +12,8 @@ import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
-const ACTIVE_POLLING_INTERVAL = 60000; // 1 minute
-const INACTIVE_POLLING_INTERVAL = ACTIVE_POLLING_INTERVAL * 10; // 10 minutes
+const ACTIVE_POLLING_INTERVAL = 30000; // 30 seconds
+const INACTIVE_POLLING_INTERVAL = ACTIVE_POLLING_INTERVAL * 20; // 10 minutes
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
     const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
