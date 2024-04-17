@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -18,10 +17,7 @@ from typing_extensions import (
     Literal,
 )
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnnotationField,
     InputDataCollectionStep,
@@ -55,13 +51,6 @@ WorkflowCreator = Annotated[
         description=("Additional information about the creator (or multiple creators) of this workflow."),
     ),
 ]
-
-
-class GalaxyWorkflowStrAttributes(str, Enum):
-    true = "true"
-    zero_point_one = "0.1"
-    galaxy_workflow = "GalaxyWorkflow"
-    no_tags = ""
 
 
 class Input(Model):
@@ -474,13 +463,11 @@ class WorkflowDictStepsBase(Model):
         title="Position",
         description="Layout position of this step in the graph",
     )
-    # TODO - can be modeled further see manager
     outputs: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Outputs",
         description="The outputs of the step.",
     )
-    # TODO - could be JSON type but works like
     tool_state: Optional[Union[Dict[str, Any], str]] = Field(
         None,
         title="Tool State",
@@ -512,7 +499,7 @@ class WorkflowDictStepsExtendedBase(WorkflowDictStepsBase):
 
 
 # TODO - This is potentially missing some fields, when step type is tool - see manager line 1006 - TODO
-class WorkflowDictRunSteps(WorkflowDictStepsBase):
+class WorkflowDictRunStep(WorkflowDictStepsBase):
     inputs: List[Dict[str, Any]] = Field(
         ...,
         title="Inputs",
@@ -557,7 +544,193 @@ class WorkflowDictRunSteps(WorkflowDictStepsBase):
     )
 
 
-class WorkflowDictPreviewSteps(WorkflowDictStepsExtendedBase):
+class WorkflowDictRunToolStep(WorkflowDictRunStep):
+    model_class: Literal["tool"] = Field(
+        ...,
+        title="Model Class",
+        description="The model class of the tool step.",
+        # description="The model class of the step, given it is a tool.",
+    )
+    id: str = Field(
+        ...,
+        title="ID",
+        description="The identifier of the tool step.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the tool step.",
+    )
+    version: str = Field(
+        ...,
+        title="Version",
+        description="The version of the tool step.",
+    )
+    description: str = Field(
+        ...,
+        title="Description",
+        description="The description of the tool step.",
+    )
+    labels: List[str] = Field(
+        ...,
+        title="Labels",
+        description="The labels of the tool step.",
+    )
+    edam_operations: List[str] = Field(
+        ...,
+        title="EDAM Operations",
+        description="The EDAM operations of the tool step.",
+    )
+    edam_topics: List[str] = Field(
+        ...,
+        title="EDAM Topics",
+        description="The EDAM topics of the tool step.",
+    )
+    hidden: str = Field(
+        ...,
+        title="Hidden",
+        description="The hidden status of the tool step.",
+    )
+    is_workflow_compatible: bool = Field(
+        ...,
+        title="Is Workflow Compatible",
+        description="Indicates if the tool step is compatible with workflows.",
+    )
+    xrefs: List[str] = Field(
+        ...,
+        title="XRefs",
+        description="The cross-references of the tool step.",
+    )
+    panel_section_id: str = Field(
+        ...,
+        title="Panel Section ID",
+        description="The panel section ID of the tool step.",
+    )
+    panel_section_name: str = Field(
+        ...,
+        title="Panel Section Name",
+        description="The panel section name of the tool step.",
+    )
+    form_style: str = Field(
+        ...,
+        title="Form Style",
+        description="The form style of the tool step.",
+    )
+    help: str = Field(
+        ...,
+        title="Help",
+        description="The help of the tool step.",
+    )
+    citations: bool = Field(
+        ...,
+        title="Citations",
+        description="The citations of the tool step.",
+    )
+    sharable_url: Optional[str] = Field(
+        None,
+        title="Sharable URL",
+        description="The sharable URL of the tool step.",
+    )
+    message: str = Field(
+        ...,
+        title="Message",
+        description="The message of the tool step.",
+    )
+    warnings: Optional[str] = Field(
+        None,
+        title="Warnings",
+        description="The warnings of the tool step.",
+    )
+    versions: List[str] = Field(
+        ...,
+        title="Versions",
+        description="The versions of the tool step.",
+    )
+    requirements: List[str] = Field(
+        ...,
+        title="Requirements",
+        description="The requirements of the tool step.",
+    )
+    tool_errors: Optional[str] = Field(
+        None,
+        title="Tool Errors",
+        description="An message indicating possible errors in the tool step.",
+    )
+    state_inputs: Dict[str, Any] = Field(
+        ...,
+        title="State Inputs",
+        description="The state inputs of the tool step.",
+    )
+    job_id: Optional[str] = Field(
+        None,
+        title="Job ID",
+        description="The ID of the job associated with the tool step.",
+    )
+    job_remap: Optional[str] = Field(
+        None,
+        title="Job Remap",
+        description="The remap of the job associated with the tool step.",
+    )
+    history_id: str = Field(
+        ...,
+        title="History ID",
+        description="The ID of the history associated with the tool step.",
+    )
+    display: bool = Field(
+        ...,
+        title="Display",
+        description="Indicates if the tool step should be displayed.",
+    )
+    action: str = Field(
+        ...,
+        title="Action",
+        description="The action of the tool step.",
+    )
+    license: Optional[str] = Field(
+        None,
+        title="License",
+        description="The license of the tool step.",
+    )
+    creator: Optional[str] = Field(
+        None,
+        title="Creator",
+        description="The creator of the tool step.",
+    )
+    method: str = Field(
+        ...,
+        title="Method",
+        description="The method of the tool step.",
+    )
+    enctype: str = Field(
+        ...,
+        title="Enctype",
+        description="The enctype of the tool step.",
+    )
+    tool_shed_repository: Optional[ToolShedRepositorySummary] = Field(
+        None,
+        title="Tool Shed Repository",
+        description="Information about the tool shed repository associated with the tool.",
+    )
+    link: Optional[str] = Field(
+        None,
+        title="Link",
+        description="The link of the tool step.",
+    )
+    # TODO - see lib/galaxy/tools/__init__.py - class Tool - to_dict for further typing
+    min_width: Optional[Any] = Field(
+        None,
+        title="Min Width",
+        description="The minimum width of the tool step.",
+    )
+    # TODO - see lib/galaxy/tools/__init__.py - class Tool - to_dict for further typing
+    target: Optional[Any] = Field(
+        None,
+        title="Target",
+        description="The target of the tool step.",
+    )
+
+
+class WorkflowDictPreviewStep(WorkflowDictStepsExtendedBase):
     order_index: int = Field(
         ...,
         title="Order Index",
@@ -576,7 +749,7 @@ class WorkflowDictPreviewSteps(WorkflowDictStepsExtendedBase):
     )
 
 
-class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
+class WorkflowDictEditorStep(WorkflowDictStepsExtendedBase):
     id: int = Field(
         ...,
         title="ID",
@@ -615,7 +788,7 @@ class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
     )
 
 
-class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
+class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
     id: int = Field(
         ...,
         title="ID",
@@ -642,7 +815,6 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Tool Representation",
         description="The representation of the tool associated with the step.",
     )
-    # subworkflow: Optional[Dict[str, Any]] = Field(
     subworkflow: Optional["WorkflowDictExportSummary"] = Field(
         None,
         title="Sub Workflow",
@@ -678,7 +850,7 @@ class WorkflowDictExtendedBaseModel(WorkflowDictBaseModel):
 
 
 class WorkflowDictPreviewSummary(WorkflowDictExtendedBaseModel):
-    steps: List[WorkflowDictPreviewSteps] = Field(
+    steps: List[WorkflowDictPreviewStep] = Field(
         ...,
         title="Steps",
         description="Information about all the steps of the workflow.",
@@ -714,7 +886,7 @@ class WorkflowDictEditorSummary(WorkflowDictExtendedBaseModel):
         title="Source Metadata",
         description="Metadata about the source of the workflow",
     )
-    steps: Dict[int, WorkflowDictEditorSteps] = Field(
+    steps: Dict[int, WorkflowDictEditorStep] = Field(
         ...,
         title="Steps",
         description="Information about all the steps of the workflow.",
@@ -722,12 +894,12 @@ class WorkflowDictEditorSummary(WorkflowDictExtendedBaseModel):
 
 
 class WorkflowDictRunSummary(WorkflowDictExtendedBaseModel):
-    id: EncodedDatabaseIdField = Field(
+    id: str = Field(
         ...,
         title="ID",
         description="The encoded ID of the stored workflow.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[str] = Field(
         None,
         title="History ID",
         description="The encoded ID of the history associated with the workflow.",
@@ -747,7 +919,7 @@ class WorkflowDictRunSummary(WorkflowDictExtendedBaseModel):
         title="Workflow Resource Parameters",
         description="The resource parameters of the workflow.",
     )
-    steps: List[WorkflowDictRunSteps] = Field(
+    steps: List[Union[WorkflowDictRunToolStep, WorkflowDictRunStep]] = Field(
         ...,
         title="Steps",
         description="Information about all the steps of the workflow.",
@@ -755,7 +927,7 @@ class WorkflowDictRunSummary(WorkflowDictExtendedBaseModel):
 
 
 class WorkflowDictExportSummary(WorkflowDictBaseModel):
-    a_galaxy_workflow: Literal[GalaxyWorkflowStrAttributes.true] = Field(
+    a_galaxy_workflow: Literal["true"] = Field(
         # a_galaxy_workflow: str = Field(
         ...,
         title="A Galaxy Workflow",
@@ -766,7 +938,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="Version",
         description="The version of the workflow represented by an incremental number.",
     )
-    format_version: Literal[GalaxyWorkflowStrAttributes.zero_point_one] = Field(
+    format_version: Literal["0.1"] = Field(
         # format_version: str = Field(
         ...,
         alias="format-version",
@@ -774,7 +946,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: Union[TagCollection, Literal[GalaxyWorkflowStrAttributes.no_tags]] = Field(
+    tags: Union[TagCollection, Literal[""]] = Field(
         ...,
         title="Tags",
         description="The tags associated with the workflow.",
@@ -805,7 +977,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="Source Metadata",
         description="Metadata about the source of the workflow.",
     )
-    steps: Dict[int, WorkflowDictExportSteps] = Field(
+    steps: Dict[int, WorkflowDictExportStep] = Field(
         ...,
         title="Steps",
         description="Information about all the steps of the workflow.",
@@ -813,7 +985,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictFormat2Summary(Model):
-    workflow_class: Literal[GalaxyWorkflowStrAttributes.galaxy_workflow] = Field(
+    workflow_class: Literal["GalaxyWorkflow"] = Field(
         ...,
         title="Class",
         description="The class of the workflow.",
