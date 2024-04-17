@@ -8,6 +8,7 @@ from galaxy.model import (
     Role,
     UserRoleAssociation,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 
 
 def get_npns_roles(session):
@@ -35,3 +36,8 @@ def get_private_user_role(user, session):
         .distinct()
     )
     return session.execute(stmt).scalar_one_or_none()
+
+
+def get_roles_by_ids(session: galaxy_scoped_session, role_ids):
+    stmt = select(Role).where(Role.id.in_(role_ids))
+    return session.scalars(stmt).all()

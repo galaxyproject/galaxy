@@ -2,6 +2,7 @@ from galaxy.model import Role
 from galaxy.model.db.role import (
     get_npns_roles,
     get_private_user_role,
+    get_roles_by_ids,
 )
 from . import verify_items
 
@@ -31,3 +32,13 @@ def test_get_private_user_role(session, make_user, make_role, make_user_role_ass
 
     role = get_private_user_role(u1, session)
     assert role is r1
+
+
+def test_get_roles_by_ids(session, make_role):
+    roles = [make_role() for _ in range(10)]  # create roles
+    r1, r2, r3 = roles[0], roles[3], roles[7]  # select some random roles
+    ids = [r1.id, r2.id, r3.id]
+
+    roles2 = get_roles_by_ids(session, ids)
+    expected = [r1, r2, r3]
+    verify_items(roles2, expected)

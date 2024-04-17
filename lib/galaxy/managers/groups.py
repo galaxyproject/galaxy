@@ -11,9 +11,9 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.managers.roles import get_roles_by_ids
 from galaxy.model import Group
 from galaxy.model.base import transaction
+from galaxy.model.db.role import get_roles_by_ids
 from galaxy.model.db.user import get_users_by_ids
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import Security
