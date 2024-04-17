@@ -23,6 +23,9 @@ import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 
+// require user to long click before dragging
+const DRAG_DELAY = 50;
+
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
@@ -150,6 +153,7 @@ watch(
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
+                    :delay="DRAG_DELAY"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
