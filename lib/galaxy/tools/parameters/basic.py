@@ -897,6 +897,11 @@ class BaseURLToolParameter(HiddenToolParameter):
         return d
 
 
+def iter_to_string(iterable: typing.Iterable[typing.Any]) -> typing.Generator[str, None, None]:
+    for item in iterable:
+        yield str(item)
+
+
 class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -1046,8 +1051,9 @@ class SelectToolParameter(ToolParameter):
             elif set(value).issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
+                invalid_options = iter_to_string(set(value) - set(legal_values))
                 raise ParameterValueError(
-                    f"invalid options ({','.join(set(value) - set(legal_values))!r}) were selected (valid options: {','.join(legal_values)})",
+                    f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
@@ -1071,7 +1077,7 @@ class SelectToolParameter(ToolParameter):
                 return value
             else:
                 raise ParameterValueError(
-                    f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})",
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     value,
                     is_dynamic=self.is_dynamic,

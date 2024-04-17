@@ -188,6 +188,14 @@ class TestParameterValidation(BaseParameterTestCase):
             p.validate("bar")
         p.validate("f")
         p.validate("foobarbaz")
+        p = self._parameter_for(
+            xml="""
+<param name="blah" type="text" optional="false">
+    <validator type="length" min="2" max="8"/>
+</param>"""
+        )
+        with self.assertRaisesRegex(ValueError, "No value provided"):
+            p.validate(None)
 
     def test_InRangeValidator(self):
         p = self._parameter_for(

@@ -68,6 +68,7 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
+from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
@@ -310,11 +311,13 @@ class HDAManager(
         # For now, cannot get data from non-text datasets.
         if not isinstance(hda.datatype, datatypes.data.Text):
             return truncated, hda_data
-        if not os.path.exists(hda.get_file_name()):
+        file_path = hda.get_file_name()
+        if not os.path.exists(file_path):
             return truncated, hda_data
 
-        truncated = preview and os.stat(hda.get_file_name()).st_size > MAX_PEEK_SIZE
-        hda_data = open(hda.get_file_name()).read(MAX_PEEK_SIZE)
+        truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
+        with get_fileobj(file_path) as fh:
+            hda_data = fh.read(MAX_PEEK_SIZE)
         return truncated, hda_data
 
     # .... annotatable

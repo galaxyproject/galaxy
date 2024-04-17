@@ -8096,10 +8096,20 @@ class WorkflowStep(Base, RepresentById):
             copied_step.annotations = annotations
 
         if subworkflow := self.subworkflow:
-            copied_subworkflow = subworkflow.copy()
-            copied_step.subworkflow = copied_subworkflow
-            for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
-                subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
+            stored_subworkflow = subworkflow.stored_workflow
+            if stored_subworkflow and stored_subworkflow.user == user:
+                # This should be fine and reduces the number of stored subworkflows
+                copied_step.subworkflow = subworkflow
+            else:
+                # Can this even happen, building a workflow with a subworkflow you don't own ?
+                copied_subworkflow = subworkflow.copy()
+                stored_workflow = StoredWorkflow(
+                    user, name=copied_subworkflow.name, workflow=copied_subworkflow, hidden=True
+                )
+                copied_subworkflow.stored_workflow = stored_workflow
+                copied_step.subworkflow = copied_subworkflow
+                for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
+                    subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
 
         for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
             new_conn.input_step_input = copied_step.get_or_add_input(old_conn.input_name)
@@ -8661,11 +8671,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         # That probably isn't good.
         workflow_output = self.workflow.workflow_output_for(label)
         if workflow_output:
-            raise Exception(
+            raise galaxy.exceptions.MessageException(
                 f"Failed to find workflow output named [{label}], one was defined but none registered during execution."
             )
         else:
-            raise Exception(
+            raise galaxy.exceptions.MessageException(
                 f"Failed to find workflow output named [{label}], workflow doesn't define output by that name - valid names are {self.workflow.workflow_output_labels}."
             )
 

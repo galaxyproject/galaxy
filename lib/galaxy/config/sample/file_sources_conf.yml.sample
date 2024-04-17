@@ -202,10 +202,14 @@
   doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.
 
 - type: inveniordm
-  id: invenio
-  doc: Invenio RDM turn-key research data management repository
-  label: Invenio RDM Demo Repository
+  id: invenio_sandbox
+  doc: This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Invenio RDM Sandbox Repository (TESTING ONLY)
   url: https://inveniordm.web.cern.ch/
+  token: ${user.user_vault.read_secret('preferences/invenio_sandbox/token')}
+  # token: ${user.preferences['invenio_sandbox|token']} # Alternatively use this for retrieving the token from user preferences instead of the Vault
+  public_name: ${user.preferences['invenio_sandbox|public_name']}
+  writable: true
 
 - type: onedata
   id: onedata1

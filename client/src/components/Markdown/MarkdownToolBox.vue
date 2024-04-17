@@ -252,6 +252,35 @@ export default {
         this.getVisualizations();
     },
     methods: {
+        getSteps() {
+            const steps = [];
+            this.steps &&
+                Object.values(this.steps).forEach((step) => {
+                    if (step.label) {
+                        steps.push(step.label);
+                    }
+                });
+            return steps;
+        },
+        getOutputs(filterByType = undefined) {
+            const outputLabels = [];
+            this.steps &&
+                Object.values(this.steps).forEach((step) => {
+                    step.workflow_outputs.forEach((workflowOutput) => {
+                        if (workflowOutput.label) {
+                            if (!filterByType || this.stepOutputMatchesType(step, workflowOutput, filterByType)) {
+                                outputLabels.push(workflowOutput.label);
+                            }
+                        }
+                    });
+                });
+            return outputLabels;
+        },
+        stepOutputMatchesType(step, workflowOutput, type) {
+            return Boolean(
+                step.outputs.find((output) => output.name === workflowOutput.output_name && output.type === type)
+            );
+        },
         getArgumentTitle(argumentName) {
             return (
                 argumentName[0].toUpperCase() +
@@ -311,11 +340,13 @@ export default {
         onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
+            this.selectedLabels = this.getOutputs("data");
             this.selectedShow = true;
         },
         onHistoryCollectionId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_collection_id";
+            this.selectedLabels = this.getOutputs("collection");
             this.selectedShow = true;
         },
         onWorkflowId(argumentName) {

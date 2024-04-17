@@ -727,7 +727,8 @@ class WorkflowContentsManager(UsesAnnotations):
             trans.tag_handler.set_tags_from_list(
                 trans.user,
                 stored_workflow,
-                data.get("tags", []),
+                data["tags"],
+                flush=False,
             )
 
         if workflow_update_options.update_stored_workflow_attributes:
