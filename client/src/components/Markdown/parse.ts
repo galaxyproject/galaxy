@@ -168,3 +168,48 @@ function namedArgumentRegex(argument: string): RegExp {
 function escapeRegExpReplacement(value: string): string {
     return value.replace(/\$/g, "$$$$");
 }
+
+class ReferencedObjects {
+    jobs: Set<string> = new Set();
+    historyDatasets: Set<string> = new Set();
+    historyDatasetCollections: Set<string> = new Set();
+    workflows: Set<string> = new Set();
+    invocations: Set<string> = new Set();
+}
+
+export function referencedObjects(markdown: string) {
+    const { sections } = splitMarkdown(markdown);
+    const objects = new ReferencedObjects();
+    for (const section of sections) {
+        if (!("args" in section)) {
+            continue;
+        }
+        const args = section.args;
+        if (!args) {
+            continue;
+        }
+        if ("job_id" in args) {
+            addToSetIfHasValue(args.job_id, objects.jobs);
+        }
+        if ("history_dataset_id" in args) {
+            addToSetIfHasValue(args.history_dataset_id, objects.historyDatasets);
+        }
+        if ("history_dataset_collection_id" in args) {
+            addToSetIfHasValue(args.history_dataset_collection_id, objects.historyDatasetCollections);
+        }
+        if ("invocation_id" in args) {
+            addToSetIfHasValue(args.invocation_id, objects.invocations);
+        }
+        if ("workflow_id" in args) {
+            addToSetIfHasValue(args.workflow_id, objects.workflows);
+        }
+        // TODO: implicit collect job ids
+    }
+    return objects;
+}
+
+function addToSetIfHasValue(value: string | undefined, toSet: Set<string>): void {
+    if (value) {
+        toSet.add(value);
+    }
+}
