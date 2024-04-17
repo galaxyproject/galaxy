@@ -82,7 +82,10 @@ watch(
         }
 
         if (newValue === "none") {
-            if ((Array.isArray(props.value) && props.value.length >= 15) || props.options.length >= 500) {
+            if (
+                (Array.isArray(props.value) && props.value.length >= 15) ||
+                (props.options && props.options.length >= 500)
+            ) {
                 useMany.value = true;
             } else {
                 useMany.value = false;
