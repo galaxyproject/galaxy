@@ -2,7 +2,14 @@
     <div class="invocations-list" aria-labelledby="invocations-title">
         <div class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                <Heading
+                    id="invocations-title"
+                    h1
+                    separator
+                    inline
+                    size="xl"
+                    class="flex-grow-1 m-0"
+                    data-description="grid title">
                     <span v-localize>{{ title }}</span>
                 </Heading>
             </div>
