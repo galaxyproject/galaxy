@@ -8576,11 +8576,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         # That probably isn't good.
         workflow_output = self.workflow.workflow_output_for(label)
         if workflow_output:
-            raise Exception(
+            raise galaxy.exceptions.MessageException(
                 f"Failed to find workflow output named [{label}], one was defined but none registered during execution."
             )
         else:
-            raise Exception(
+            raise galaxy.exceptions.MessageException(
                 f"Failed to find workflow output named [{label}], workflow doesn't define output by that name - valid names are {self.workflow.workflow_output_labels}."
             )
 
