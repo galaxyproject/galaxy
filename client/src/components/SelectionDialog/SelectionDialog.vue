@@ -11,6 +11,7 @@ import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
@@ -100,6 +101,22 @@ function filtered(items: Array<SelectionItem>) {
     currentPage.value = 1;
 }
 
+/** Format time stamp */
+function formatTime(value: string) {
+    if (value) {
+        const date = new Date(value);
+        return date.toLocaleString("default", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            minute: "numeric",
+            hour: "numeric",
+        });
+    } else {
+        return "-";
+    }
+}
+
 watch(
     () => props.items,
     () => {
@@ -167,8 +184,15 @@ watch(
                     <template v-slot:cell(details)="data">
                         <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                     </template>
+                    <template v-slot:cell(tags)="data">
+                        <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
+                        <span v-else>-</span>
+                    </template>
                     <template v-slot:cell(time)="data">
-                        {{ data.value ? data.value : "-" }}
+                        {{ formatTime(data.value) }}
+                    </template>
+                    <template v-slot:cell(update_time)="data">
+                        {{ formatTime(data.value) }}
                     </template>
                 </BTable>
                 <div v-if="isBusy" class="text-center">

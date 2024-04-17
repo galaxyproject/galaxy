@@ -54,18 +54,8 @@ async function load() {
         const response = await props.getData();
         const incoming = response.data;
         items.value = incoming.map((item: any) => {
-            let timeStamp = item[props.timeKey];
+            const timeStamp = item[props.timeKey];
             showTime.value = !!timeStamp;
-            if (timeStamp) {
-                const date = new Date(timeStamp);
-                timeStamp = date.toLocaleString("default", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    minute: "numeric",
-                    hour: "numeric",
-                });
-            }
             return {
                 id: item.id,
                 label: item[props.labelKey] || null,
