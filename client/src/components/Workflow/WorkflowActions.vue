@@ -20,6 +20,8 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
+import type { ColorVariant } from "../Common";
+
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 
 library.add(faCaretDown, faExternalLinkAlt, faEye, faFileExport, farStar, faStar, faTrash);
@@ -41,7 +43,7 @@ type BaseAction = {
     target?: "_blank";
     size: "sm" | "md" | "lg";
     component: "async" | "button";
-    variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
+    variant: ColorVariant | "link";
     onClick?: (e?: MouseEvent | KeyboardEvent) => void;
 };
 

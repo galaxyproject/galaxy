@@ -29,7 +29,7 @@ export interface ExportRecord {
     readonly stsDownloadId?: string;
     readonly isStsDownload: boolean;
     readonly canDownload: boolean;
-    readonly modelStoreFormat: string;
+    readonly modelStoreFormat: ModelStoreFormat;
     readonly exportParams?: ExportParams;
     readonly duration?: number | null;
     readonly canExpire: boolean;
@@ -62,17 +62,24 @@ export class ExportParamsModel implements ExportParams {
         return Boolean(this._params?.include_hidden);
     }
 
-    public equals(otherExportParams?: ExportParamsModel) {
+    public equals(otherExportParams?: ExportParams) {
         if (!otherExportParams) {
             return false;
         }
-        return (
-            this.modelStoreFormat === otherExportParams.modelStoreFormat &&
-            this.includeFiles === otherExportParams.includeFiles &&
-            this.includeDeleted === otherExportParams.includeDeleted &&
-            this.includeHidden === otherExportParams.includeHidden
-        );
+        return sameExportParams(this, otherExportParams);
     }
+}
+
+export function sameExportParams(params1?: ExportParams, params2?: ExportParams): boolean {
+    if (!params1 || !params2) {
+        return false;
+    }
+    return (
+        params1.modelStoreFormat === params2.modelStoreFormat &&
+        params1.includeFiles === params2.includeFiles &&
+        params1.includeDeleted === params2.includeDeleted &&
+        params1.includeHidden === params2.includeHidden
+    );
 }
 
 export class ExportRecordModel implements ExportRecord {

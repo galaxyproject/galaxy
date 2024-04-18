@@ -11,17 +11,18 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCardTitle } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { ExportRecordModel } from "./models/exportRecordModel";
+import type { ColorVariant } from ".";
+import { ExportRecord } from "./models/exportRecordModel";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faCheckCircle, faClock, faExclamationCircle, faExclamationTriangle, faLink);
 
 interface Props {
-    record: ExportRecordModel;
+    record: ExportRecord;
     objectType: string;
     actionMessage?: string;
-    actionMessageVariant?: string;
+    actionMessageVariant?: ColorVariant;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -31,9 +32,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "onActionMessageDismissed"): void;
-    (e: "onReimport", record: ExportRecordModel): void;
-    (e: "onDownload", record: ExportRecordModel): void;
-    (e: "onCopyDownloadLink", record: ExportRecordModel): void;
+    (e: "onReimport", record: ExportRecord): void;
+    (e: "onDownload", record: ExportRecord): void;
+    (e: "onCopyDownloadLink", record: ExportRecord): void;
 }>();
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
@@ -112,7 +113,7 @@ function onMessageDismissed() {
                 <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
 
                 <BAlert
-                    v-if="props.actionMessage !== null"
+                    v-if="props.actionMessage !== undefined"
                     :variant="props.actionMessageVariant"
                     show
                     fade
