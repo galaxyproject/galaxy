@@ -1,8 +1,12 @@
+import re
 from uuid import uuid4
 
 from pydantic import BaseModel
 
-from galaxy.schema.schema import DatasetStateField
+from galaxy.schema.schema import (
+    DatasetStateField,
+    TAG_ITEM_PATTERN,
+)
 from galaxy.schema.tasks import (
     GenerateInvocationDownload,
     RequestUser,
@@ -34,3 +38,43 @@ class StateModel(BaseModel):
 def test_dataset_state_coercion():
     assert StateModel(state="ok").state == "ok"
     assert StateModel(state="deleted").state == "discarded"
+
+
+class TestTagPattern:
+
+    def test_valid(self):
+        tag_strings = [
+            "a",
+            "aa",
+            "aa.aa",
+            "aa.aa.aa",
+            "~!@#$%^&*()_+`-=[]{};'\",./<>?",
+            "a.b:c",
+            "a.b:c.d:e.f",
+            "a.b:c.d:e..f",
+            "a.b:c.d:e.f:g",
+            "a.b:c.d:e.f::g",
+            "a.b:c.d:e.f::g:h",
+            "a::a",  # leading colon for tag value
+            "a:.a",  # leading period for tag value
+            "a:a:",  # training colon OK for tag value
+            "a:a.",  # training period OK for tag value
+        ]
+        for t in tag_strings:
+            assert re.match(TAG_ITEM_PATTERN, t)
+
+    def test_invalid(self):
+        tag_strings = [
+            " a",  # leading space for tag name
+            ":a",  # leading colon for tag name
+            ".a",  # leading period for tag name
+            "a ",  # trailing space for tag name
+            "a a",  # space inside tag name
+            "a: a",  # leading space for tag value
+            "a:a a",  # space inside tag value
+            "a:",  # trailing colon for tag name
+            "a.",  # trailing period for tag name
+            "a:b ",  # trailing space for tag value
+        ]
+        for t in tag_strings:
+            assert not re.match(TAG_ITEM_PATTERN, t)
