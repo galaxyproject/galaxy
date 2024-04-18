@@ -169,8 +169,9 @@ async function onOperation(operation: Operation, rowData: RowData) {
 /**
  * Handle router push request emitted by grid module
  */
-function onRouterPush(route: string) {
-    router.push(route);
+function onRouterPush(route: string, options = {}) {
+    // @ts-ignore
+    router.push(route, options);
 }
 
 /**

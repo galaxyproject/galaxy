@@ -488,6 +488,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             datasetId: route.query.dataset_id,
                             visualization: route.query.visualization,
+                            visualizationId: route.query.visualization_id,
                         }),
                     },
                     {
