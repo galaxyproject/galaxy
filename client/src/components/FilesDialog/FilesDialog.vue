@@ -33,6 +33,8 @@ interface FilesDialogProps {
     multiple?: boolean;
     /** Whether to show only writable sources */
     requireWritable?: boolean;
+    /** Optional selected item to start browsing from */
+    selectedItem?: SelectionItem;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -42,6 +44,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     mode: "file",
     multiple: false,
     requireWritable: false,
+    selectedItem: undefined,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -343,7 +346,7 @@ function onOk() {
 }
 
 onMounted(() => {
-    load();
+    load(props.selectedItem);
 });
 </script>
 
