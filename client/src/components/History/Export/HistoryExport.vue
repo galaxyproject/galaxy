@@ -38,7 +38,7 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["rdm"] });
+const { hasWritable: hasWritableRDMFileSources, getFileSourceById } = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,
@@ -92,6 +92,7 @@ const history = computed(() => {
 const errorMessage = ref<string | undefined>(undefined);
 const actionMessage = ref<string | undefined>(undefined);
 const actionMessageVariant = ref<ColorVariant | undefined>(undefined);
+const zenodoSource = computed(() => getFileSourceById("zenodo"));
 
 onMounted(async () => {
     updateExports();
@@ -260,6 +261,37 @@ function updateExportParams(newParams: ExportParams) {
                         :clear-input-after-export="true"
                         @export="doExportToFileSource" />
                 </BTab>
+                <BTab
+                    v-if="zenodoSource"
+                    id="zenodo-file-source-tab"
+                    title="to ZENODO"
+                    title-link-class="tab-export-to-zenodo-repo">
+                    <div class="zenodo-info">
+                        <img
+                            src="https://raw.githubusercontent.com/zenodo/zenodo/master/zenodo/modules/theme/static/img/logos/zenodo-gradient-square.svg"
+                            alt="ZENODO Logo" />
+                        <p>
+                            <ExternalLink href="https://zenodo.org"><b>Zenodo</b></ExternalLink> is a general-purpose
+                            open repository developed under the
+                            <ExternalLink href="https://www.openaire.eu">European OpenAIRE</ExternalLink> program and
+                            operated by <ExternalLink href="https://home.cern">CERN</ExternalLink>. It allows
+                            researchers to deposit research papers, data sets, research software, reports, and any other
+                            research related digital artefacts. For each submission, a persistent
+                            <b>digital object identifier (DOI)</b> is minted, which makes the stored items easily
+                            citeable.
+                        </p>
+                    </div>
+
+                    <RDMCredentialsInfo what="history export archive" selected-repository="ZENODO" />
+                    <ExportToRDMRepositoryForm
+                        what="history"
+                        :default-filename="defaultFileName"
+                        :default-record-name="historyName"
+                        :clear-input-after-export="true"
+                        :file-source="zenodoSource"
+                        @export="doExportToFileSource">
+                    </ExportToRDMRepositoryForm>
+                </BTab>
             </BTabs>
         </BCard>
 
@@ -292,3 +324,11 @@ function updateExportParams(newParams: ExportParams) {
             @onReimport="reimportFromRecord" />
     </span>
 </template>
+
+<style scoped>
+.zenodo-info {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+}
+</style>
