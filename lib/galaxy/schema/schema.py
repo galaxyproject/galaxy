@@ -1949,6 +1949,10 @@ class JobBaseModel(Model, WithModelClass):
         title="Tool ID",
         description="Identifier of the tool that generated this job.",
     )
+    tool_version: Optional[str] = Field(
+        None,
+        description="Version of the tool that generated this job.",
+    )
     state: JobState = Field(
         ...,
         title="State",
