@@ -294,8 +294,15 @@ class TagHandler:
             return self.sa_session.scalars(select(galaxy.model.Tag).filter_by(name=tag_name.lower()).limit(1)).first()
         return None
 
-    def _create_tag(self, tag_str: str):
-        """Create a Tag object from a tag string."""
+    def _create_tags(self, tag_str: str):
+        """
+        Create or retrieve one of more Tag objects from a tag string. If there are multiple
+        hierarchical tags in the tag string, the string will be split along `self.hierarchy_separator` chars.
+        A Tag instance will be created for each non-empty prefix. If a prefix corresponds to the
+        name of an existing tag, that tag will be retrieved; otherwise, a new Tag object will be created.
+        For example, for the tag string `a.b.c` 3 Tag isntances will be created: `a`, `a.b`, `a.b.c`.
+        Return the last tag created (`a.b.c`).
+        """
         tag_hierarchy = tag_str.split(self.hierarchy_separator)
         tag_prefix = ""
         parent_tag = None
@@ -344,7 +351,7 @@ class TagHandler:
         tag = self.get_tag_by_name(scrubbed_tag_str)
         # Create tag if necessary.
         if tag is None:
-            tag = self._create_tag(scrubbed_tag_str)
+            tag = self._create_tags(scrubbed_tag_str)
         return tag
 
     def _get_item_tag_assoc(self, user, item, tag_name):

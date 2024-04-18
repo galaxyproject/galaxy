@@ -112,3 +112,14 @@ class TestTagHandler(BaseTestCase):
         # Tag
         assert self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0].tag)
         assert not self.tag_handler.item_has_tag(self.user, item=hda, tag="tag2")
+
+    def test_get_name_value_pair(self):
+        """Test different combinations of tag and name/value delimiters via parse_tags()."""
+        assert self.tag_handler.parse_tags("a") == [("a", None)]
+        assert self.tag_handler.parse_tags("a.b") == [("a.b", None)]
+        assert self.tag_handler.parse_tags("a.b:c") == [("a.b", "c")]
+        assert self.tag_handler.parse_tags("a.b:c.d") == [("a.b", "c.d")]
+        assert self.tag_handler.parse_tags("a.b:c.d:e.f") == [("a.b", "c.d:e.f")]
+        assert self.tag_handler.parse_tags("a.b:c.d:e.f.") == [("a.b", "c.d:e.f.")]
+        assert self.tag_handler.parse_tags("a.b:c.d:e.f:") == [("a.b", "c.d:e.f:")]
+        assert self.tag_handler.parse_tags("a.b:c.d:e.f:::") == [("a.b", "c.d:e.f:::")]
