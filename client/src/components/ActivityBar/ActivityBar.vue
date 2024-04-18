@@ -9,6 +9,7 @@ import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 import { useUserStore } from "@/stores/userStore";
 
 import VisualizationPanel from "../Panels/VisualizationPanel.vue";
@@ -18,6 +19,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HelpModePanel from "@/components/Panels/HelpModePanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
@@ -38,6 +40,9 @@ const emit = defineEmits(["dragstart"]);
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
+
+// Galaxy help mode draggable status
+const { draggableActive } = storeToRefs(useHelpModeStore());
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -198,6 +203,14 @@ watch(
                 </draggable>
             </b-nav>
             <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+                <ActivityItem
+                    v-if="isConfigLoaded && config.enable_help_mode"
+                    id="help"
+                    icon="question"
+                    :is-active="isActiveSideBar('help') || draggableActive"
+                    title="Help Mode"
+                    tooltip="Get help on how to use the currently active interface"
+                    @click="onToggleSidebar('help')" />
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
@@ -227,6 +240,7 @@ watch(
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <HelpModePanel v-else-if="isActiveSideBar('help')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />

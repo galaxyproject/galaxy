@@ -1708,6 +1708,13 @@ mapping:
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
 
+      enable_help_mode:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables the Galaxy Help Mode for this Galaxy Instance.
+
       static_enabled:
         type: bool
         default: true

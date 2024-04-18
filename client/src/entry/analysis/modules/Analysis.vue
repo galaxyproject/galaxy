@@ -1,11 +1,14 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import HelpModeDraggable from "@/components/Help/HelpModeDraggable.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
@@ -13,6 +16,7 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
+const { draggableActive } = storeToRefs(useHelpModeStore());
 
 // methods
 function hideCenter() {
@@ -48,5 +52,6 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
+        <HelpModeDraggable v-if="draggableActive" />
     </div>
 </template>
