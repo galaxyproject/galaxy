@@ -10,7 +10,6 @@ from typing import (
     Union,
 )
 
-from fastapi import HTTPException
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -46,8 +45,8 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
+# Do not allow these tools to be called directly - they enforce extra security and
+# provide access via a different API endpoint.
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
 
 
@@ -136,11 +135,11 @@ class ToolsService(ServiceBase):
         tool_id = payload.tool_id
         tool_uuid = str(payload.tool_uuid) if payload.tool_uuid else None
         if tool_id in PROTECTED_TOOLS:
-            raise HTTPException(
-                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            raise exceptions.MessageException(
+                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
             )
         if tool_id is None and tool_uuid is None:
-            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
+            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         create_payload = payload.model_dump(exclude_unset=True)
         create_payload["tool_uuid"] = tool_uuid
         # process files, when they come in as multipart file data

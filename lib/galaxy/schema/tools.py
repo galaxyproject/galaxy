@@ -13,7 +13,10 @@ from pydantic import (
     field_validator,
     UUID4,
 )
-from typing_extensions import Annotated
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
@@ -43,28 +46,23 @@ ToolOutputName = Annotated[
 class ExecuteToolPayload(Model):
     tool_id: Optional[str] = Field(
         default=None,
-        title="Tool ID",
-        description="The ID of the tool to execute.",
+        description="",
     )
     tool_uuid: Optional[UUID4] = Field(
         default=None,
-        title="Tool UUID",
         description="The UUID of the tool to execute.",
     )
     action: Optional[str] = Field(
         default=None,
-        title="Action",
         description="The action to perform",
     )
     tool_version: Optional[str] = Field(
         default=None,
-        title="Tool Version",
-        description="The version of the tool",
+        description="",
     )
     history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
-        title="History ID",
-        description="The ID of the history",
+        description="",
     )
 
     @field_validator("inputs", mode="before", check_fields=False)
@@ -76,42 +74,35 @@ class ExecuteToolPayload(Model):
 
     inputs: Dict[str, Any] = Field(
         default={},
-        title="Inputs",
-        description="The input data",
+        description="The input parameters to use when executing a tool. Keys correspond to parameter names, values are the values set for these parameters. If parameter values are left unset defaults will be used if possible.",
     )
     use_cached_job: Optional[bool] = Field(
         default=False,
-        title="Use Cached Job",
-        description="Flag indicating whether to use a cached job",
+        description="If set to `true` an attempt is made to find an equivalent job and use its outputs, thereby skipping execution of the job on the compute infrastructure.",
     )
     preferred_object_store_id: Optional[str] = Field(
         default=None,
-        title="Preferred Object Store ID",
-        description="The ID of the preferred object store",
+        description="",
     )
-    input_format: Optional[str] = Field(
-        default="legacy",
-        title="Input Format",
-        description="The format of the input",
-    )
-    data_manager_mode: Optional[str] = Field(
+    input_format: Optional[Literal["legacy", "21.01"]] = Field(
         default=None,
-        title="Data Manager Mode",
-        description="The mode of the data manager",
+        title="Input Format",
+        description="""If set to `legacy` or parameter is not set, inputs are assumed to be objects with concatenated keys for nested parameter, e.g. `{"conditional|parameter_name": "parameter_value"}`. If set to `"21.01"` inputs can be provided as nested objects, e.g `{"conditional": {"parameter_name": "parameter_value"}}`.""",
+    )
+    data_manager_mode: Optional[Literal["populate", "dry_run", "bundle"]] = Field(
+        default=None,
+        description="",
     )
     send_email_notification: Optional[bool] = Field(
         default=None,
         title="Send Email Notification",
         description="Flag indicating whether to send email notification",
     )
-    upload_type: Optional[str] = Field(
-        default=None,
-        title="Upload Type",
-        description="TODO",
-    )
     model_config = ConfigDict(extra="allow")
 
 
+# The following models should eventually be removed as we move towards creating jobs asynchronously
+# xref: https://github.com/galaxyproject/galaxy/pull/17393
 class HDACustomWithOutputName(HDACustom):
     output_name: ToolOutputName
 
@@ -142,12 +133,12 @@ class ExecuteToolResponse(Model):
     outputs: List[AnyHDAWithOutputName] = Field(
         default=[],
         title="Outputs",
-        description="The outputs of the tool.",
+        description="The outputs of the job.",
     )
     output_collections: List[AnyHDCAWithOutputName] = Field(
         default=[],
         title="Output Collections",
-        description="The output dataset collections of the tool.",
+        description="The output dataset collections of the job.",
     )
     jobs: List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]] = Field(
         default=[],
@@ -157,11 +148,11 @@ class ExecuteToolResponse(Model):
     implicit_collections: List[AnyHDCAWithOutputName] = Field(
         default=[],
         title="Implicit Collections",
-        description="The implicit dataset collections of the tool.",
+        description="The implicit dataset collections of the job.",
     )
     produces_entry_points: bool = Field(
         default=...,
         title="Produces Entry Points",
         description="Flag indicating whether the creation of the tool produces entry points.",
     )
-    errors: List[Any] = Field(default=[], title="Errors", description="Job errors related to the creation of the tool.")
+    errors: List[Any] = Field(default=[], title="Errors", description="Errors encountered while executing the tool.")
