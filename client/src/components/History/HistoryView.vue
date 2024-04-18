@@ -25,7 +25,9 @@
             </b-button>
         </div>
 
-        <b-alert :show="copySuccess"> History imported and set to your active history. </b-alert>
+        <b-alert :show="copySuccess">
+            History imported and is now your active history. <b-link to="/histories/list">View here</b-link>.
+        </b-alert>
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
