@@ -10,6 +10,7 @@ export const URI_PREFIXES = [
     "gxftp://",
     "drs://",
     "invenio://",
+    "zenodo://",
 ];
 
 export function isUrl(content) {

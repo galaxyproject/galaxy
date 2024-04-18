@@ -50,6 +50,7 @@ URI_PREFIXES = [
         "gxftp",
         "drs",
         "invenio",
+        "zenodo",
     ]
 ]
 
