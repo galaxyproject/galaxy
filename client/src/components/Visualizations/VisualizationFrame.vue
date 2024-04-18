@@ -4,17 +4,17 @@ import { computed } from "vue";
 import { withPrefix } from "@/utils/redirect";
 
 export interface Props {
-    visualizationId: string;
     datasetId: string;
+    visualization: string;
 }
 
 const props = defineProps<Props>();
 
 const srcWithRoot = computed(() => {
-    if (props.visualizationId === "trackster") {
+    if (props.visualization === "trackster") {
         return withPrefix(`/visualization/trackster?dataset_id=${props.datasetId}`);
     } else {
-        return withPrefix(`/plugins/visualizations/${props.visualizationId}/show?dataset_id=${props.datasetId}`);
+        return withPrefix(`/plugins/visualizations/${props.visualization}/show?dataset_id=${props.datasetId}`);
     }
 });
 </script>

@@ -44,7 +44,7 @@ const filteredPlugins = computed(() => {
 function createVisualization(dataset: any) {
     showDataDialog.value = false;
     if (currentPlugin.value) {
-        router.push(`/visualizations/display?visualization_id=${currentPlugin.value.name}&dataset_id=${dataset.id}`, {
+        router.push(`/visualizations/display?visualization=${currentPlugin.value.name}&dataset_id=${dataset.id}`, {
             // @ts-ignore
             title: dataset.name,
         });
