@@ -238,23 +238,21 @@ watch(
             </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
         </div>
-        <span v-if="!blank">
-            <button
-                v-if="hasConnections && !readonly"
-                v-b-tooltip.hover
-                :title="reason"
-                class="delete-terminal-button"
-                @click="onRemove">
-                <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
-            </button>
-            {{ label }}
-            <span
-                v-if="!input.optional && !hasTerminals"
-                v-b-tooltip.hover
-                class="input-required"
-                title="Input is required">
-                *
-            </span>
+        <button
+            v-if="hasConnections && !readonly"
+            v-b-tooltip.hover
+            :title="reason"
+            class="delete-terminal-button"
+            @click="onRemove">
+            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+        </button>
+        <span v-if="!blank">{{ label }}</span>
+        <span
+            v-if="!input.optional && !hasTerminals"
+            v-b-tooltip.hover
+            class="input-required"
+            title="Input is required">
+            *
         </span>
     </div>
 </template>
