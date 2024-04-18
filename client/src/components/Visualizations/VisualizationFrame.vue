@@ -12,9 +12,9 @@ const props = defineProps<Props>();
 
 const srcWithRoot = computed(() => {
     if (props.visualizationId === "trackster") {
-        return withPrefix(`/visualization/${props.visualizationId}?id=${props.datasetId}`);
+        return withPrefix(`/visualization/trackster?dataset_id=${props.datasetId}`);
     } else {
-        return withPrefix(`/plugins/visualizations/${props.visualizationId}/saved?id=${props.datasetId}`);
+        return withPrefix(`/plugins/visualizations/${props.visualizationId}/show?dataset_id=${props.datasetId}`);
     }
 });
 </script>

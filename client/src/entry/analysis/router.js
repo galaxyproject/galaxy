@@ -484,7 +484,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "visualizations/display",
                         component: VisualizationFrame,
-                        props: true,
+                        name: "VisualizationsDisplay",
+                        props: (route) => ({
+                            datasetId: route.query.dataset_id,
+                            visualizationId: route.query.visualization_id,
+                        }),
                     },
                     {
                         path: "visualizations/edit",
