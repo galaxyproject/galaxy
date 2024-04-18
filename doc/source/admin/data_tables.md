@@ -1,12 +1,12 @@
 # Tool data
 
 Galaxy stores tool data in the path defined by `tool_data_path` (by default `tool-data/`).
-It's possible to separate tool data of ToolShed-installed tools by setting `shed_tool_data_path`.
+It's possible to separate tool data of toolshed-installed tools by setting `shed_tool_data_path`.
 
 Tool data consists of:
 
 1. the actual data
-2. one or more so called `loc` files
+2. one or more `loc` files
 3. entries in a tool data table (config) file
 
 
@@ -14,7 +14,7 @@ Tool data consists of:
 
 In order to understand the naming and structure of these three components it might be of advantage
 to look in the history. Tool data was organized in tabular `loc` that contained metadata and paths
-of the data. Those files were were installed with the tool and could be accessed with the
+of the data. Those files were installed with the tool and could be accessed with the
 [`from_file`](https://docs.galaxyproject.org/en/master/dev/schema.html#from-file) mechanism from tools.
 Since each tool version had it's own `loc` file the maintenance was difficult. With tool data tables
 an additional abstraction layer was introduced that is used from tools via
@@ -29,7 +29,7 @@ setting `galaxy_data_manager_data_path`.
 
 ## `loc` files
 
-In order to make tool data usable from Galaxy tools so called `loc` files are used. 
+In order to make tool data usable from Galaxy tools `loc` files are used. 
 Those are tabular (by default tab separated) files with the extension `.loc`.
 Besides the actual paths, the entries can contain IDs, names, or other metadata
 that can be used in tools to select reference data. The paths should be given as absolute paths,
@@ -40,8 +40,7 @@ are stored). By setting `shed_tool_data_path` this can be separated.
 ## Tool data tables
 
 The tool data tables that should be used in a Galaxy instance are listed
-in tool data table config files. In addition these contain some
-metadata.
+in tool data table config files. In addition these contain metadata.
 
 Tool data table config files are XML files listing tool data table configurations:
 
