@@ -7394,16 +7394,16 @@ or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
-For parameters that are nested in sections, conditionals, or repeats are accessed with dictionary access syntax,
-e.g. a parameter with name ``p`` that is in a conditinal with name ``c``that is in a section with name ``s``
-is referenced by ``s["c"]["p"].
+For parameters that are nested in sections, conditionals, or repeats are accessed with object access syntax,
+e.g. a parameter with name ``p`` that is in a conditional with name ``c``that is in a section with name ``s``
+is referenced by ``s.c.p``"].
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
     <xs:attribute name="input" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute should be the name of
-the desired input parameter (e.g. ``input="out_format"`` above). Parameters that are nested are accessed like a dictionarty.</xs:documentation>
+the desired input parameter (e.g. ``input="out_format"`` above). Parameters that are nested are accessed like an object.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
