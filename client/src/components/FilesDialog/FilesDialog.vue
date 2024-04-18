@@ -3,7 +3,6 @@ import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
 import {
-    BrowsableFilesSourcePlugin,
     browseRemoteFiles,
     FileSourceBrowsingMode,
     FilterFileSourcesOptions,
@@ -11,7 +10,7 @@ import {
     RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
-import { isSubPath } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -236,7 +235,7 @@ function load(record?: SelectionItem) {
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
-                    .map(fileSourcePluginToRecord);
+                    .map(fileSourcePluginToItem);
                 items.value = convertedItems;
                 formatRows();
                 optionsShow.value = true;
@@ -289,17 +288,6 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
-    };
-    return result;
-}
-
-function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): SelectionItem {
-    const result = {
-        id: plugin.id,
-        label: plugin.label,
-        details: plugin.doc,
-        isLeaf: false,
-        url: plugin.uri_root,
     };
     return result;
 }
