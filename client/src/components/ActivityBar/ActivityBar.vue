@@ -23,6 +23,9 @@ import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 
+// require user to long click before dragging
+const DRAG_DELAY = 50;
+
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
@@ -150,6 +153,7 @@ watch(
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
+                    :delay="DRAG_DELAY"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
@@ -197,7 +201,7 @@ watch(
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
@@ -253,6 +257,11 @@ watch(
 
 .activity-drag-class {
     display: none;
+}
+
+.activity-footer {
+    border-top: $border-default;
+    border-top-style: dotted;
 }
 
 .activity-popper-disabled {
