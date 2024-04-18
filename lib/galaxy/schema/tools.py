@@ -4,7 +4,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from pydantic import (
@@ -19,17 +18,10 @@ from typing_extensions import (
 )
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.jobs import (
-    EncodedJobDetails,
-    ShowFullJobResponse,
-)
 from galaxy.schema.schema import (
     HDACustom,
-    HDADetailed,
-    HDASummary,
     HDCADetailed,
-    HDCASummary,
-    JobSummary,
+    JobBaseModel,
     Model,
 )
 
@@ -103,49 +95,31 @@ class ExecuteToolPayload(Model):
 
 # The following models should eventually be removed as we move towards creating jobs asynchronously
 # xref: https://github.com/galaxyproject/galaxy/pull/17393
-class HDACustomWithOutputName(HDACustom):
+class HDAToolOutput(HDACustom):
     output_name: ToolOutputName
 
 
-class HDADetailedWithOutputName(HDADetailed):
+class HDCAToolOutput(HDCADetailed):
     output_name: ToolOutputName
-
-
-class HDASummaryWithOutputName(HDASummary):
-    output_name: ToolOutputName
-
-
-AnyHDAWithOutputName = Union[HDACustomWithOutputName, HDADetailedWithOutputName, HDASummaryWithOutputName]
-
-
-class HDCASummaryWithOutputName(HDCASummary):
-    output_name: ToolOutputName
-
-
-class HDCADetailedWithOutputName(HDCADetailed):
-    output_name: ToolOutputName
-
-
-AnyHDCAWithOutputName = Union[HDCADetailedWithOutputName, HDCASummaryWithOutputName]
 
 
 class ExecuteToolResponse(Model):
-    outputs: List[AnyHDAWithOutputName] = Field(
+    outputs: List[HDAToolOutput] = Field(
         default=[],
         title="Outputs",
         description="The outputs of the job.",
     )
-    output_collections: List[AnyHDCAWithOutputName] = Field(
+    output_collections: List[HDCAToolOutput] = Field(
         default=[],
         title="Output Collections",
         description="The output dataset collections of the job.",
     )
-    jobs: List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]] = Field(
+    jobs: List[JobBaseModel] = Field(
         default=[],
         title="Jobs",
         description="The jobs of the tool.",
     )
-    implicit_collections: List[AnyHDCAWithOutputName] = Field(
+    implicit_collections: List[HDCAToolOutput] = Field(
         default=[],
         title="Implicit Collections",
         description="The implicit dataset collections of the job.",
