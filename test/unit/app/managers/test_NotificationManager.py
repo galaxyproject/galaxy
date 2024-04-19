@@ -81,6 +81,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
                 user_ids=[user.id for user in users],
             ),
             notification=notification_data,
+            galaxy_url="https://test.galaxy.url",
         )
         created_notification, notifications_sent = self.notification_manager.send_notification_to_recipients(request)
         return created_notification, notifications_sent
@@ -264,8 +265,8 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         actual_user_notification = self.notification_manager.get_user_notification(user, notification.id)
 
         self._assert_notification_expected(actual_user_notification, expected_user_notification)
-        assert actual_user_notification["seen_time"] is None
-        assert actual_user_notification["deleted"] is False
+        assert actual_user_notification._mapping["seen_time"] is None
+        assert actual_user_notification._mapping["deleted"] is False
 
     def test_update_user_notifications(self):
         user = self._create_test_user()

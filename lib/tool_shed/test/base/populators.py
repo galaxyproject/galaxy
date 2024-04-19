@@ -2,6 +2,7 @@ import tarfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import (
+    Iterator,
     List,
     Optional,
     Union,
@@ -11,7 +12,7 @@ import requests
 from typing_extensions import Protocol
 
 from galaxy.util.resources import (
-    files,
+    as_file,
     resource_path,
     Traversable,
 )
@@ -50,31 +51,27 @@ from .api_util import (
 HasRepositoryId = Union[str, Repository]
 
 DEFAULT_PREFIX = "repofortest"
-COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
-COLUMN_MAKER_1_1_1_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
+TEST_DATA_REPO_FILES = resource_path(__package__, "../test_data")
+COLUMN_MAKER_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker.tar")
+COLUMN_MAKER_1_1_1_PATH = TEST_DATA_REPO_FILES.joinpath("column_maker/column_maker_1.1.1.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
-TEST_DATA_REPO_FILES = files("tool_shed.test.test_data")
 
 
-def repo_files(test_data_path: str) -> List[Path]:
+def repo_files(test_data_path: str) -> Iterator[Path]:
     repos = TEST_DATA_REPO_FILES.joinpath(f"repos/{test_data_path}")
-    paths = sorted(Path(str(x)) for x in repos.iterdir())
-    return paths
+    for child in sorted(_.name for _ in repos.iterdir()):
+        with as_file(repos.joinpath(child)) as path:
+            yield path
 
 
-def repo_tars(test_data_path: str) -> List[Path]:
-    tar_paths = []
+def repo_tars(test_data_path: str) -> Iterator[Path]:
     for path in repo_files(test_data_path):
-        if path.is_dir():
-            prefix = f"shedtest_{test_data_path}_{path.name}_"
-            tf = NamedTemporaryFile(delete=False, prefix=prefix)
+        assert path.is_dir()
+        prefix = f"shedtest_{test_data_path}_{path.name}_"
+        with NamedTemporaryFile(prefix=prefix) as tf:
             with tarfile.open(tf.name, "w:gz") as tar:
                 tar.add(str(path.absolute()), arcname=test_data_path or path.name)
-            tar_path = tf.name
-        else:
-            tar_path = str(path)
-        tar_paths.append(Path(tar_path))
-    return tar_paths
+            yield Path(tf.name)
 
 
 class HostsTestToolShed(Protocol):

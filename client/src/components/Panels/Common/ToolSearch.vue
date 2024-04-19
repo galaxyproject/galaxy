@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -12,6 +13,7 @@ import { type ToolSearchKeys } from "../utilities";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
 
@@ -67,8 +69,6 @@ const emit = defineEmits<{
     (e: "onQuery", query: string): void;
 }>();
 
-const searchWorker: Ref<Worker | undefined> = ref(undefined);
-
 const localFilterText = computed({
     get: () => {
         return props.query !== null ? props.query : "";
@@ -112,6 +112,7 @@ const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering
 
 const { currentFavorites } = storeToRefs(useUserStore());
 const toolStore = useToolStore();
+const { searchWorker } = storeToRefs(toolStore);
 
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
 const ontologyList = toolStore
@@ -119,8 +120,10 @@ const ontologyList = toolStore
     .concat(toolStore.sectionDatalist("ontology:edam_operations"));
 
 onMounted(() => {
-    searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
-
+    // initialize worker
+    if (!searchWorker.value) {
+        searchWorker.value = new Worker(new URL("components/Panels/toolSearch.worker.js", import.meta.url));
+    }
     searchWorker.value.onmessage = ({ data }) => {
         const { type, payload, sectioned, query, closestTerm } = data;
         if (type === "searchToolsByKeysResult" && query === props.query) {
@@ -134,7 +137,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    searchWorker.value?.terminate();
+    // The worker is not terminated but it will not be listening to messages
+    if (searchWorker.value?.onmessage) {
+        searchWorker.value.onmessage = null;
+    }
 });
 
 watch(
@@ -178,7 +184,7 @@ function onAdvancedSearch(filters: any) {
 </script>
 
 <template>
-    <div>
+    <div v-if="searchWorker">
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
@@ -245,4 +251,7 @@ function onAdvancedSearch(filters: any) {
             :placeholder="placeholder"
             @change="checkQuery" />
     </div>
+    <BAlert v-else class="mb-3" variant="info" show>
+        <LoadingSpan message="Loading Tool Search" />
+    </BAlert>
 </template>

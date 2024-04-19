@@ -194,6 +194,7 @@ class TagHandler:
     def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
         # Get tag name.
+        tag_name = None
         if isinstance(tag, str):
             tag_name = tag
         elif isinstance(tag, galaxy.model.Tag):

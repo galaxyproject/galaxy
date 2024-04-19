@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -181,7 +181,7 @@ gravity:
     # enable: false
 
     # gx-it-proxy version
-    # version: '>=0.0.5'
+    # version: '>=0.0.6'
 
     # Public-facing IP of the proxy
     # ip: localhost
@@ -247,6 +247,14 @@ gravity:
     # Directory to store uploads in.
     # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
     # upload_dir:
+
+    # Value of tusd -hooks-httpd option
+    #
+    # the default of is suitable for using tusd for Galaxy uploads and should not be changed unless you are using tusd for
+    # other purposes such as Pulsar staging.
+    #
+    # The value of galaxy_infrastructure_url is automatically prepended if the option starts with a `/`
+    # hooks_http: /api/upload/hooks
 
     # Comma-separated string of enabled tusd hooks.
     #
@@ -333,15 +341,9 @@ gravity:
     # names.
     # environment: {}
 
-  # Configure dynamic handlers in this section. Below is a simple example
+  # Configure dynamic handlers in this section.
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
-  #handlers:
-  #  handler:
-  #    processes: 3
-  #    pools:
-  #      - job-handlers
-  #      - workflow-schedulers
-
+  # handlers: {}
 galaxy:
 
   # The directory that will be prepended to relative paths in options
@@ -1030,7 +1032,7 @@ galaxy:
   # This option has no effect if the file specified by
   # object_store_config_file exists. Otherwise, if this option is set,
   # it overrides any other objectstore settings.
-  # The syntax, available instrumenters, and documentation of their
+  # The syntax, available storage plugins, and documentation of their
   # options is explained in detail in the object store sample
   # configuration file, `object_store_conf.sample.yml`
   #object_store_config: null
@@ -1066,6 +1068,13 @@ galaxy:
   # Default cache size for caching object stores if cache not configured
   # for that object store entry.
   #object_store_cache_size: -1
+
+  # Set this to true to indicate in the UI that a user's object store
+  # selection isn't simply a "preference" that job destinations often
+  # respect but in fact will always be respected. This should be set to
+  # true to simplify the UI as long as job destinations never override
+  # 'object_store_id's for a jobs.
+  #object_store_always_respect_user_selection: false
 
   # What Dataset attribute is used to reference files in an ObjectStore
   # implementation, this can be 'uuid' or 'id'. The default will depend
@@ -1304,9 +1313,6 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
-  # Note: the following config should still be used due to lack of
-  # support of data_dir resolution in gx-it-proxy and gravity:
-  #interactivetools_map: database/interactivetools_map.sqlite
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
@@ -1547,9 +1553,14 @@ galaxy:
   #nginx_upload_job_files_path: null
 
   # The upload store is a temporary directory in which files uploaded by
-  # the tus middleware or server will be placed. Defaults to
-  # new_file_path if not set.
+  # the tus middleware or server for user uploads will be placed.
+  # Defaults to new_file_path if not set.
   #tus_upload_store: null
+
+  # The upload store is a temporary directory in which files uploaded by
+  # the tus middleware or server for remote job files (Pulsar) will be
+  # placed. Defaults to tus_upload_store if not set.
+  #tus_upload_store_job_files: null
 
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
@@ -2189,12 +2200,13 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
-  # Sets the prefix for OIDC scopes specific to this Galaxy instance.
-  # If an API call is made against this Galaxy instance using an OIDC bearer token,
-  # any scopes must be prefixed with this value e.g. https://galaxyproject.org/api.
-  # More concretely, to request all permissions that the user has, the scope
-  # would have to be specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
-  # Currently, only * is recognised as a valid scope, and future iterations may
+  # Sets the prefix for OIDC scopes specific to this Galaxy instance. If
+  # an API call is made against this Galaxy instance using an OIDC
+  # bearer token, any scopes must be prefixed with this value e.g.
+  # https://galaxyproject.org/api. More concretely, to request all
+  # permissions that the user has, the scope would have to be specified
+  # as "<prefix>:*". e.g "https://galaxyproject.org/api:*". Currently,
+  # only * is recognised as a valid scope, and future iterations may
   # provide more fine-grained scopes.
   #oidc_scope_prefix: https://galaxyproject.org/api
 
@@ -2745,27 +2757,36 @@ galaxy:
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+  # Offload long-running tasks to a Celery task queue. Activate this
+  # only if you have setup a Celery worker for Galaxy and you have
+  # configured the `celery_conf` option below. Specifically, you need to
+  # set the `result_backend` option in the `celery_conf` option to a
+  # valid Celery result backend URL. By default, Galaxy uses an SQLite
+  # database at '<data_dir>/results.sqlite' for storing task results.
+  # For details, see
+  # https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
+  #enable_celery_tasks: false
+
   # Configuration options passed to Celery.
   # To refer to a task by name, use the template `galaxy.foo` where
   # `foo` is the function name of the task defined in the
   # galaxy.celery.tasks module.
-  # The `broker_url` option, if unset, defaults to the value of
-  # `amqp_internal_connection`. The `result_backend` option must be set
-  # if the `enable_celery_tasks` option is set.
+  # The `broker_url` option, if unset or null, defaults to the value of
+  # `amqp_internal_connection`. The `result_backend` option, if unset or
+  # null, defaults to an SQLite database at '<data_dir>/results.sqlite'
+  # for storing task results. Please use a more robust backend (e.g.
+  # Redis) for production setups.
   # The galaxy.fetch_data task can be disabled by setting its route to
   # "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
   # disabled on a per-task basis at this time.)
   # For details, see Celery documentation at
   # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
   #celery_conf:
+  #  broker_url: null
+  #  result_backend: null
   #  task_routes:
   #    galaxy.fetch_data: galaxy.external
   #    galaxy.set_job_metadata: galaxy.external
-
-  # Offload long-running tasks to a Celery task queue. Activate this
-  # only if you have setup a Celery worker for Galaxy. For details, see
-  # https://docs.galaxyproject.org/en/master/admin/production.html
-  #enable_celery_tasks: false
 
   # If set to a non-0 value, upper limit on number of tasks that can be
   # executed per user per second.
@@ -2890,6 +2911,10 @@ galaxy:
   # a Celery task.
   #expired_notifications_cleanup_interval: 86400
 
+  # The interval in seconds between attempts to dispatch notifications
+  # to users (every 10 minutes by default). Runs in a Celery task.
+  #dispatch_notifications_interval: 600
+
   # The URL pointing to the Galaxy Help Forum API base URL. The API must
   # be compatible with Discourse API (https://docs.discourse.org/).
   #help_forum_api_url: https://help.galaxyproject.org/
@@ -2897,3 +2922,4 @@ galaxy:
   # Enable the integration of the Galaxy Help Forum in the tool panel.
   # This requires the help_forum_api_url to be set.
   #enable_help_forum_tool_panel_integration: false
+

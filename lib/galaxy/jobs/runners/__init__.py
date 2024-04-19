@@ -203,9 +203,10 @@ class BaseJobRunner:
             queue_job = job_wrapper.enqueue()
         except Exception as e:
             queue_job = False
-            # Required for exceptions thrown by object store incompatiblity.
+            # Required for exceptions thrown by object store incompatibility.
             # tested by test/integration/objectstore/test_private_handling.py
-            job_wrapper.fail(str(e), exception=e)
+            message = e.client_message if hasattr(e, "client_message") else str(e)
+            job_wrapper.fail(message, exception=e)
             log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
             return
         if queue_job:

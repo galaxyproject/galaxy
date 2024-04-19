@@ -142,7 +142,7 @@ from galaxy.tools.parameters.grouping import (
 )
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
 from galaxy.util import (
@@ -3461,7 +3461,9 @@ class FilterDatasetsTool(DatabaseOperationTool):
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
-        return element.element_object.is_ok
+        element_object = element.element_object
+        assert isinstance(element_object, model.DatasetInstance)
+        return element_object.is_ok
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
@@ -3503,7 +3505,9 @@ class FilterFailedDatasetsTool(FilterDatasetsTool):
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
-        return element.element_object.is_ok
+        element_object = element.element_object
+        assert isinstance(element_object, model.DatasetInstance)
+        return element_object.is_ok
 
 
 class KeepSuccessDatasetsTool(FilterDatasetsTool):
@@ -3514,12 +3518,14 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
+        element_object = element.element_object
+        assert isinstance(element_object, model.DatasetInstance)
         if (
-            element.element_object.state != model.Dataset.states.PAUSED
-            and element.element_object.state in model.Dataset.non_ready_states
+            element_object.state != model.Dataset.states.PAUSED
+            and element_object.state in model.Dataset.non_ready_states
         ):
             raise ToolInputsNotReadyException("An input dataset is pending.")
-        return element.element_object.is_ok
+        return element_object.is_ok
 
 
 class FilterEmptyDatasetsTool(FilterDatasetsTool):
@@ -3528,10 +3534,11 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
-        dataset_instance: model.DatasetInstance = element.element_object
-        if dataset_instance.has_data():
+        element_object = element.element_object
+        assert isinstance(element_object, model.DatasetInstance)
+        if element_object.has_data():
             # We have data, but it might just be a compressed archive of nothing
-            file_name = dataset_instance.get_file_name()
+            file_name = element_object.get_file_name()
             _, fh = get_fileobj_raw(file_name, mode="rb")
             if len(fh.read(1)):
                 return True

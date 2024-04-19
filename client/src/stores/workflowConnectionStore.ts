@@ -89,6 +89,8 @@ export function getConnectionId(item: Connection): ConnectionId {
     return `${item.input.stepId}-${item.input.name}-${item.output.stepId}-${item.output.name}`;
 }
 
+export type WorkflowConnectionStore = ReturnType<typeof useConnectionStore>;
+
 export const useConnectionStore = defineScopedStore("workflowConnectionStore", (workflowId) => {
     const connections = ref<Readonly<Connection>[]>([]);
     const invalidConnections = ref<InvalidConnections>({});

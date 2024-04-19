@@ -126,7 +126,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     description: { placeholder: "description", type: String, handler: contains("desc"), menuItem: true },
     deleted: {
-        placeholder: "Filter on deleted entries",
+        placeholder: "Deleted",
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),

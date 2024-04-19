@@ -65,7 +65,7 @@ def test_collection_consists_of_objects(session):
     # contains wrong number of objects
     assert not collection_consists_of_objects([stored_foo1, stored_foo1, stored_foo2], foo1, foo2)
     # if an object's primary key is not set, it cannot be equal to another object
-    foo1.id, stored_foo1.id = None, None
+    foo1.id, stored_foo1.id = None, None  # type:ignore[assignment]
     assert not collection_consists_of_objects([stored_foo1], foo1)
 
 

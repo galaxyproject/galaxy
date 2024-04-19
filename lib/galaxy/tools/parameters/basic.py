@@ -42,7 +42,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -61,6 +61,12 @@ from . import (
 )
 from .dataset_matcher import get_dataset_matcher_factory
 from .sanitize import ToolParameterSanitizer
+from .workflow_utils import (
+    is_runtime_value,
+    runtime_to_json,
+    runtime_to_object,
+    RuntimeValue,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -90,12 +96,6 @@ def contains_workflow_parameter(value, search=False):
     if not search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.match(value):
         return True
     return False
-
-
-def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (
-        isinstance(value, MutableMapping) and value.get("__class__") in ["RuntimeValue", "ConnectedValue"]
-    )
 
 
 def is_runtime_context(trans, other_values):
@@ -897,6 +897,11 @@ class BaseURLToolParameter(HiddenToolParameter):
         return d
 
 
+def iter_to_string(iterable: typing.Iterable[typing.Any]) -> typing.Generator[str, None, None]:
+    for item in iterable:
+        yield str(item)
+
+
 class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -1046,8 +1051,9 @@ class SelectToolParameter(ToolParameter):
             elif set(value).issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
+                invalid_options = iter_to_string(set(value) - set(legal_values))
                 raise ParameterValueError(
-                    f"invalid options ({','.join(set(value) - set(legal_values))!r}) were selected (valid options: {','.join(legal_values)})",
+                    f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
@@ -1071,7 +1077,7 @@ class SelectToolParameter(ToolParameter):
                 return value
             else:
                 raise ParameterValueError(
-                    f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})",
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     value,
                     is_dynamic=self.is_dynamic,
@@ -1499,7 +1505,6 @@ class ColumnListParameter(SelectToolParameter):
                 and hasattr(dataset.metadata, "column_names")
                 and dataset.metadata.element_is_set("column_names")
             ):
-                log.error(f"column_names {dataset.metadata.column_names}")
                 column_list = [
                     ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
                 ]
@@ -1895,11 +1900,10 @@ class BaseDataToolParameter(ToolParameter):
         """
         Build list of classes for supported data formats
         """
-        self.extensions = input_source.get("format", "data").split(",")
+        self.extensions = [extension.strip().lower() for extension in input_source.get("format", "data").split(",")]
         formats = []
         if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
-            normalized_extensions = [extension.strip().lower() for extension in self.extensions]
-            for extension in normalized_extensions:
+            for extension in self.extensions:
                 datatype = self.datatypes_registry.get_datatype_by_extension(extension)
                 if datatype is not None:
                     formats.append(datatype)
@@ -2049,6 +2053,7 @@ def src_id_to_item(
         item = sa_session.get(src_to_class[value["src"]], decoded_id)
     except KeyError:
         raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
+    assert item
     item.extra_params = {k: v for k, v in value.items() if k not in ("src", "id")}
     return item
 
@@ -2179,7 +2184,7 @@ class DataToolParameter(BaseDataToolParameter):
         elif isinstance(value, HistoryDatasetCollectionAssociation) or isinstance(value, DatasetCollectionElement):
             rval.append(value)
         else:
-            rval.append(session.get(HistoryDatasetAssociation, int(value)))  # type:ignore[arg-type]
+            rval.append(session.get(HistoryDatasetAssociation, int(value)))
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
@@ -2647,8 +2652,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
-        if (target_name := self.data_ref) in other_values:
-            target = other_values[target_name]
+        if target := other_values.get(self.data_ref):
             if not is_runtime_value(target):
                 d["target"] = {
                     "src": "hdca" if hasattr(target, "collection") else "hda",
@@ -2778,36 +2782,6 @@ parameter_types = dict(
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
 )
-
-
-def runtime_to_json(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return {"__class__": "ConnectedValue"}
-    else:
-        return {"__class__": "RuntimeValue"}
-
-
-def runtime_to_object(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return ConnectedValue()
-    else:
-        return RuntimeValue()
-
-
-class RuntimeValue:
-    """
-    Wrapper to note a value that is not yet set, but will be required at runtime.
-    """
-
-
-class ConnectedValue(RuntimeValue):
-    """
-    Wrapper to note a value that is not yet set, but will be inferred from a connection.
-    """
 
 
 def history_item_dict_to_python(value, app, name):

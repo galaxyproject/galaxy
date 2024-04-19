@@ -403,7 +403,6 @@ published_histories:
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
     advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
     advanced_search_toggle: '#histories-published-grid [data-description="toggle advanced search"]'
-    advanced_search_submit: '#histories-advanced-filter-submit'
     search_input: '#histories-published-grid input.search-query[data-description="filter text input"]'
     tab: '#histories-published-tab'
 
@@ -435,8 +434,6 @@ histories:
   selectors:
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_filter: '#histories-grid [data-description="filter ${filter}"] .btn'
-    advanced_search_submit: '#histories-advanced-filter-submit'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
     advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
     histories: '.grid-table tr'
@@ -588,7 +585,6 @@ workflows:
     advanced_search_toggle: '.workflows-list [data-description="toggle advanced search"]'
     advanced_search_name_input: '#workflows-advanced-filter-name'
     advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
-    advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     workflows_list: '#workflows-list'
     workflows_list_empty: '#workflow-list-empty'
@@ -956,6 +952,7 @@ admin:
       allowlist: '#admin-link-allowlist'
 
   selectors:
+    activity: '#activity-admin'
     warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
     jobs_title: '#jobs-title'
@@ -1083,7 +1080,7 @@ upload:
     composite_close_button: '#composite #btn-close'
     create_button: '#btn-new'
     file_dialog: '#btn-remote-files'
-    file_dialog_ok: '.file-dialog-modal-ok'
+    file_dialog_ok: '[data-description="selection dialog ok"]'
     file_source_selector:
       type: xpath
       selector: '//span[contains(@title, "${path}")]'

@@ -8,7 +8,7 @@ import { computed, ref, watch } from "vue";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
-    UserNotificationPreferences,
+    UserNotificationPreferencesExtended,
 } from "@/api/notifications.preferences";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
@@ -39,14 +39,15 @@ const { config } = useConfig(true);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const pushNotificationsGranted = ref(pushNotificationsEnabled());
-const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
+const notificationsPreferences = ref<UserNotificationPreferencesExtended["preferences"]>({});
+const supportedChannels = ref<string[]>([]);
 
 const categories = computed(() => Object.keys(notificationsPreferences.value));
 const showPreferences = computed(() => {
     return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
 });
 
-const categoryDescriptionMap = {
+const categoryDescriptionMap: Record<string, string> = {
     message: "You will receive notifications when someone sends you a message.",
     new_shared_item: "You will receive notifications when someone shares an item with you.",
 };
@@ -55,6 +56,7 @@ async function getNotificationsPreferences() {
     loading.value = true;
     await getNotificationsPreferencesFromServer()
         .then((data) => {
+            supportedChannels.value = data.supportedChannels;
             notificationsPreferences.value = data.preferences;
         })
         .catch((error: any) => {
@@ -148,10 +150,7 @@ watch(
                         switch />
                 </div>
 
-                <div
-                    v-for="channel in Object.keys(notificationsPreferences[category].channels)"
-                    :key="channel"
-                    class="category-channel">
+                <div v-for="channel in supportedChannels" :key="channel" class="category-channel">
                     <BFormCheckbox
                         v-model="notificationsPreferences[category].channels[channel]"
                         v-localize

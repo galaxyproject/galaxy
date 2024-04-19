@@ -32,6 +32,14 @@
       <param name="in" value="im2_a.png" />
       <output name="out" value="im2_b.png" compare="image_diff" metric="mae" eps="0.25" />
     </test>
+    <test>
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" />
+    </test>
+    <test expect_test_failure="true">
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" pin_labels="2" />
+    </test>
     <!-- test RGB data -->
     <test>
       <param name="in" value="im3_a.png" />

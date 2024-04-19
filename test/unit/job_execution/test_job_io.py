@@ -29,7 +29,7 @@ USER_CONTEXT = {
 class FileSourcesMockApp(GalaxyDataTestApp):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.file_sources = ConfiguredFileSources(ConfiguredFileSourcesConfig.from_app_config(self.config))  # type: ignore[assignment]
+        self.file_sources = ConfiguredFileSources(ConfiguredFileSourcesConfig.from_app_config(self.config))
 
 
 @pytest.fixture

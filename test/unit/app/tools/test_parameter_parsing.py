@@ -3,7 +3,7 @@ from typing import (
     Dict,
 )
 
-from galaxy.tools.parameters.meta import process_key
+from galaxy.tools.parameters.wrapped import process_key
 from .util import BaseParameterTestCase
 
 

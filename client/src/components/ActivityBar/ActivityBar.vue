@@ -16,11 +16,15 @@ import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
+import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+
+// require user to long click before dragging
+const DRAG_DELAY = 50;
 
 const { config, isConfigLoaded } = useConfig();
 
@@ -31,7 +35,7 @@ const { hashedUserId } = useHashedUserId();
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
-const { isAnonymous } = storeToRefs(userStore);
+const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
 
@@ -149,6 +153,7 @@ watch(
                     :class="{ 'activity-popper-disabled': isDragging }"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
+                    :delay="DRAG_DELAY"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
@@ -173,7 +178,7 @@ watch(
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'visualizations', 'multiview'].includes(activity.id)"
+                                v-else-if="['admin', 'tools', 'visualizations', 'multiview'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -196,7 +201,7 @@ watch(
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
                 <NotificationItem
                     v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
@@ -211,6 +216,15 @@ watch(
                     title="Settings"
                     tooltip="Edit preferences"
                     @click="onToggleSidebar('settings')" />
+                <ActivityItem
+                    v-if="isAdmin"
+                    id="activity-admin"
+                    icon="user-cog"
+                    :is-active="isActiveSideBar('admin')"
+                    title="Admin"
+                    tooltip="Administer this Galaxy"
+                    variant="danger"
+                    @click="onToggleSidebar('admin')" />
             </b-nav>
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
@@ -219,6 +233,7 @@ watch(
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
+            <AdminPanel v-else-if="isActiveSideBar('admin')" />
         </FlexPanel>
     </div>
 </template>
@@ -242,6 +257,11 @@ watch(
 
 .activity-drag-class {
     display: none;
+}
+
+.activity-footer {
+    border-top: $border-default;
+    border-top-style: dotted;
 }
 
 .activity-popper-disabled {

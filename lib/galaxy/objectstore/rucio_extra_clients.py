@@ -1,11 +1,10 @@
 import copy
 import logging
 import time
-from abc import ABC
 
 try:
     from rucio.client.uploadclient import UploadClient
-    from rucio.common.exception import (  # type: ignore
+    from rucio.common.exception import (
         InputValidationError,
         NoFilesUploaded,
         NotAllFilesUploaded,
@@ -14,7 +13,7 @@ try:
     from rucio.common.utils import generate_uuid
     from rucio.rse import rsemanager as rsemgr
 except ImportError:
-    UploadClient = ABC
+    UploadClient = object
 
 
 class DeleteClient(UploadClient):

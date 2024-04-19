@@ -6,9 +6,6 @@ from typing import (
     Generic,
     List,
     Optional,
-    Tuple,
-    Type,
-    TypeVar,
     Union,
 )
 
@@ -20,7 +17,6 @@ from pydantic import (
     UUID1,
     UUID4,
 )
-from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -32,6 +28,10 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     literal_to_value,
     ModelClassField,
+)
+from galaxy.schema.generics import (
+    DatabaseIdT,
+    GenericModel,
 )
 from galaxy.schema.schema import (
     CreateTimeField,
@@ -86,37 +86,9 @@ class CancelReason(str, Enum):
     cancelled_on_review = "cancelled_on_review"
 
 
-DatabaseIdT = TypeVar("DatabaseIdT")
-
-ref_to_name = {}
-
-
-class InvocationMessageBase(BaseModel):
+class InvocationMessageBase(GenericModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
-    @classmethod
-    def model_parametrized_name(cls, params: Tuple[Type[Any], ...]) -> str:
-        suffix = "Response" if params[0] is EncodedDatabaseIdField else "Incoming"
-        class_name = cls.__name__.split("Generic", 1)[-1]
-        return f"{class_name}{suffix}"
-
-    @classmethod
-    def __get_pydantic_core_schema__(cls, *args, **kwargs):
-        result = super().__get_pydantic_core_schema__(*args, **kwargs)
-        ref_to_name[result["ref"]] = cls.__name__
-        return result
-
-
-class CustomJsonSchema(GenerateJsonSchema):
-    def get_defs_ref(self, core_mode_ref):
-        full_def = super().get_defs_ref(core_mode_ref)
-        choices = self._prioritized_defsref_choices[full_def]
-        ref, mode = core_mode_ref
-        if ref in ref_to_name:
-            for i, choice in enumerate(choices):
-                choices[i] = choice.replace(choices[0], ref_to_name[ref])  # type: ignore[call-overload]
-        return full_def
 
 
 class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):

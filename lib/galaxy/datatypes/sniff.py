@@ -49,8 +49,9 @@ BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedoc
 
 def get_test_fname(fname):
     """Returns test data filename"""
-    path, name = os.path.split(__file__)
+    path = os.path.dirname(__file__)
     full_path = os.path.join(path, "test", fname)
+    assert os.path.isfile(full_path), f"{full_path} is not a file"
     return full_path
 
 

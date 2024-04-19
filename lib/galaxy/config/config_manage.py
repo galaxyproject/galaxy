@@ -46,6 +46,7 @@ from galaxy.util.properties import (
     nice_config_parser,
     NicerConfigParser,
 )
+from galaxy.util.resources import Traversable
 from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
@@ -72,7 +73,7 @@ class App(NamedTuple):
     default_port: str
     expected_app_factories: List[str]
     destination: str
-    schema_path: str
+    schema_path: Traversable
 
     @property
     def app_name(self) -> str:
@@ -219,21 +220,21 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],
     "config/galaxy.yml",
-    str(GALAXY_CONFIG_SCHEMA_PATH),
+    GALAXY_CONFIG_SCHEMA_PATH,
 )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    str(REPORTS_CONFIG_SCHEMA_PATH),
+    REPORTS_CONFIG_SCHEMA_PATH,
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 

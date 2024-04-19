@@ -57,7 +57,7 @@ def test_against_production_shed(tmp_path: Path):
     assert tsr
     message, status = check_for_updates(
         install_target.tool_shed_registry,
-        install_model_context,
+        install_model_context,  # type:ignore[arg-type]
         tsr.id,
     )
     assert status

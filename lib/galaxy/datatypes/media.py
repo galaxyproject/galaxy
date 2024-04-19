@@ -193,8 +193,6 @@ class Mp4(Video):
     >>> from galaxy.datatypes.sniff import sniff_with_cls
     >>> sniff_with_cls(Mp4, 'video_1.mp4')
     True
-    >>> sniff_with_cls(Mp4, 'audio_1.mp4')
-    False
     """
 
     file_ext = "mp4"

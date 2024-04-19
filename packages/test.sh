@@ -49,11 +49,11 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
-        pip install -e '.[template,jstree]'
+        pip install '.[template,jstree]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[cwl,mulled,edam,extended-assertions]'
+        pip install '.[cwl,mulled,edam,extended-assertions]'
     else
-        pip install -e '.'
+        pip install .
     fi
 
     pip install -r test-requirements.txt

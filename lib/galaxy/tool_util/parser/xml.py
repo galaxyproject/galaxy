@@ -21,6 +21,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
     DEFAULT_EPS,
     DEFAULT_METRIC,
+    DEFAULT_PIN_LABELS,
 )
 from galaxy.util import (
     Element,
@@ -793,6 +794,7 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     # Parameters for "image_diff" comparison
     attributes["metric"] = attrib.pop("metric", DEFAULT_METRIC)
     attributes["eps"] = float(attrib.pop("eps", DEFAULT_EPS))
+    attributes["pin_labels"] = attrib.pop("pin_labels", DEFAULT_PIN_LABELS)
     if location and file is None:
         file = os.path.basename(location)  # If no file specified, try to get filename from URL last component
     attributes["location"] = location

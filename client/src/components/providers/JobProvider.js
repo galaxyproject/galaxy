@@ -33,19 +33,8 @@ async function jobConsoleOutput({
     }
 }
 
-async function jobProblems({ jobId }) {
-    const url = `${getAppRoot()}api/jobs/${jobId}/common_problems`;
-    try {
-        const { data } = await axios.get(url);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
 export const JobDetailsProvider = SingleQueryProvider(jobDetails, stateIsTerminal);
 export const JobConsoleOutputProvider = SingleQueryProvider(jobConsoleOutput, stateIsTerminal);
-export const JobProblemProvider = SingleQueryProvider(jobProblems, stateIsTerminal);
 
 export function jobsProvider(ctx, callback, extraParams = {}) {
     const { root, ...requestParams } = ctx;

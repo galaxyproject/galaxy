@@ -89,7 +89,7 @@ pillow = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2, !=2.6.0, !=2.6.1, !=2.6.2, !=2.6.3, !=2.6.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
+pydantic = {version = ">=2.7.0", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -108,7 +108,7 @@ Routes = "*"
 schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
 social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
 sortedcontainers = "*"
-SQLAlchemy = ">=1.4.25,<2"
+SQLAlchemy = "^2.0"
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
@@ -143,7 +143,6 @@ pkce = "*"
 playwright = "*"
 pytest = "*"
 pytest-asyncio = "*"
-pytest-celery = "*"
 pytest-cov = "*"
 pytest-html = "*"
 pytest-httpserver = "*"
@@ -158,7 +157,7 @@ selenium = "*"
 urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
+sphinx-rtd-theme = "*"
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"

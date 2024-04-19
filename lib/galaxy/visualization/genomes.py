@@ -269,7 +269,7 @@ class Genomes:
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
-        if user and "dbkeys" in user.preferences:
+        if user and user.preferences and "dbkeys" in user.preferences:
             user_keys_dict = loads(user.preferences["dbkeys"])
             dbkeys.extend([(attributes["name"], key) for key, attributes in user_keys_dict.items()])
 

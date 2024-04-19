@@ -384,6 +384,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s",
         summary="Returns the contents of the given history filtered by type.",
         operation_id="history_contents__index_typed",
+        response_model_exclude_unset=True,
     )
     def index_typed(
         self,
@@ -438,6 +439,7 @@ class FastAPIHistoryContents:
             },
         },
         operation_id="history_contents__index",
+        response_model_exclude_unset=True,
     )
     def index(
         self,
@@ -496,6 +498,7 @@ class FastAPIHistoryContents:
         name="history_content_typed",
         summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
         operation_id="history_contents__show",
+        response_model_exclude_unset=True,
     )
     def show(
         self,
@@ -525,6 +528,7 @@ class FastAPIHistoryContents:
         summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
         operation_id="history_contents__show_legacy",
+        response_model_exclude_unset=True,
     )
     def show_legacy(
         self,
@@ -674,6 +678,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s",
         summary="Create a new `HDA` or `HDCA` in the given History.",
         operation_id="history_contents__create_typed",
+        response_model_exclude_unset=True,
     )
     def create_typed(
         self,
@@ -691,6 +696,7 @@ class FastAPIHistoryContents:
         summary="Create a new `HDA` or `HDCA` in the given History.",
         deprecated=True,
         operation_id="history_contents__create",
+        response_model_exclude_unset=True,
     )
     def create(
         self,
@@ -737,6 +743,7 @@ class FastAPIHistoryContents:
     @router.put(
         "/api/histories/{history_id}/contents",
         summary="Batch update specific properties of a set items contained in the given History.",
+        response_model_exclude_unset=True,
     )
     def update_batch(
         self,
@@ -787,6 +794,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s/{id}",
         summary="Updates the values for the history content item with the given ``ID`` and path specified type.",
         operation_id="history_contents__update_typed",
+        response_model_exclude_unset=True,
     )
     def update_typed(
         self,
@@ -803,10 +811,33 @@ class FastAPIHistoryContents:
         )
 
     @router.put(
+        "/api/datasets/{dataset_id}",
+        summary="Updates the values for the history dataset (HDA) item with the given ``ID``.",
+        operation_id="datasets__update_dataset",
+    )
+    def update_dataset(
+        self,
+        dataset_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(
+            trans,
+            None,
+            dataset_id,
+            payload.model_dump(exclude_unset=True),
+            serialization_params,
+            contents_type=HistoryContentType.dataset,
+        )
+
+    @router.put(
         "/api/histories/{history_id}/contents/{id}",
         summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
         operation_id="history_contents__update_legacy",
+        response_model_exclude_unset=True,
     )
     def update_legacy(
         self,
@@ -894,6 +925,40 @@ class FastAPIHistoryContents:
             payload,
         )
 
+    @router.delete(
+        "/api/datasets/{dataset_id}",
+        summary="Delete the history dataset content with the given ``ID``.",
+        responses=CONTENT_DELETE_RESPONSES,
+        operation_id="datasets__delete",
+    )
+    def delete_dataset(
+        self,
+        response: Response,
+        dataset_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: Optional[bool] = PurgeQueryParam,
+        recursive: Optional[bool] = RecursiveQueryParam,
+        stop_job: Optional[bool] = StopJobQueryParam,
+        payload: DeleteHistoryContentPayload = Body(None),
+    ):
+        """
+        Delete the history content with the given ``ID`` and path specified type.
+
+        **Note**: Currently does not stop any active jobs for which this dataset is an output.
+        """
+        return self._delete(
+            response,
+            trans,
+            dataset_id,
+            HistoryContentType.dataset,
+            serialization_params,
+            purge,
+            recursive,
+            stop_job,
+            payload,
+        )
+
     def _delete(
         self,
         response: Response,
@@ -970,7 +1035,11 @@ class FastAPIHistoryContents:
             return archive
         return StreamingResponse(archive.response(), headers=archive.get_headers())
 
-    @router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
+    @router.post(
+        "/api/histories/{history_id}/contents_from_store",
+        summary="Create contents from store.",
+        response_model_exclude_unset=True,
+    )
     def create_from_store(
         self,
         history_id: HistoryIDPathParam,

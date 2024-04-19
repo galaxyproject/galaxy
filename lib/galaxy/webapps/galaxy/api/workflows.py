@@ -86,7 +86,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
@@ -541,15 +541,18 @@ class WorkflowsAPIController(
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if "tool_state" not in payload:
             module_state: Dict[str, Any] = {}
-            populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
+            errors: Dict[str, str] = {}
+            populate_state(trans, module.get_inputs(), inputs, module_state, errors=errors, check=True)
             module.recover_state(module_state, from_tool_form=True)
+            module.check_and_update_state()
         step_dict = {
             "name": module.get_name(),
-            "tool_state": module.get_state(),
+            "tool_state": module_state,
             "content_id": module.get_content_id(),
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
+            "errors": errors or None,
         }
         if payload["type"] == "tool":
             step_dict["tool_version"] = module.get_version()

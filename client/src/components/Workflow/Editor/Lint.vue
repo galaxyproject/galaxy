@@ -135,9 +135,10 @@ export default {
         },
     },
     setup() {
-        const { connectionStore, stepStore } = useWorkflowStores();
+        const stores = useWorkflowStores();
+        const { connectionStore, stepStore } = stores;
         const { hasActiveOutputs } = storeToRefs(stepStore);
-        return { connectionStore, stepStore, hasActiveOutputs };
+        return { stores, connectionStore, stepStore, hasActiveOutputs };
     },
     computed: {
         showRefactor() {
@@ -171,7 +172,7 @@ export default {
             return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
-            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.connectionStore, this.stepStore);
+            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.stores);
         },
         warningMissingMetadata() {
             return getMissingMetadata(this.steps);
@@ -227,13 +228,7 @@ export default {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
-            const actions = fixAllIssues(
-                this.steps,
-                this.untypedParameters,
-                this.datatypesMapper,
-                this.connectionStore,
-                this.stepStore
-            );
+            const actions = fixAllIssues(this.steps, this.untypedParameters, this.datatypesMapper, this.stores);
             this.$emit("onRefactor", actions);
         },
     },

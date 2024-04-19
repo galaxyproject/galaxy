@@ -388,7 +388,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.dataset = wrap_with_safe_string(dataset_instance, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset_instance, compute_environment)
             if isinstance(dataset_instance, HasTags):
-                self.groups = {tag.user_value.lower() for tag in dataset_instance.tags if tag.user_tname == "group"}
+                self.groups = {
+                    tag.user_value.lower()
+                    for tag in dataset_instance.tags  # type:ignore[unused-ignore, attr-defined]
+                    if tag.user_tname == "group"
+                }
             else:
                 # May be a 'FakeDatasetAssociation'
                 self.groups = set()
