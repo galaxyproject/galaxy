@@ -1,10 +1,19 @@
+from typing import (
+    List,
+    Type,
+)
+
 from galaxy import model
+from galaxy.model.dataset_collections.types import BaseDatasetCollectionType
 from .types import (
     list,
     paired,
 )
 
-PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollectionType]
+PLUGIN_CLASSES: List[Type[BaseDatasetCollectionType]] = [
+    list.ListDatasetCollectionType,
+    paired.PairedDatasetCollectionType,
+]
 
 
 class DatasetCollectionTypesRegistry:

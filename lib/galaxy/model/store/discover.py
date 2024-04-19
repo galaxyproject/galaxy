@@ -17,6 +17,7 @@ from typing import (
     NamedTuple,
     Optional,
     TYPE_CHECKING,
+    TypedDict,
     Union,
 )
 
@@ -44,6 +45,14 @@ log = logging.getLogger(__name__)
 
 UNSET = object()
 DEFAULT_CHUNK_SIZE = 1000
+
+
+class ElementDatasets(TypedDict):
+    element_identifiers: list[str]
+    datasets: list[galaxy.model.DatasetInstance]
+    tag_lists: list[str]
+    paths: list[str]
+    extra_files: list[str]
 
 
 class MaxDiscoveredFilesExceededError(ValueError):
@@ -152,17 +161,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if final_job_state == galaxy.model.Job.states.ERROR and not self.get_implicit_collection_jobs_association_id():
             primary_data.visible = True
 
-        for source_dict in sources:
-            source = galaxy.model.DatasetSource()
-            source.source_uri = source_dict["source_uri"]
-            source.transform = source_dict.get("transform")
-            primary_data.dataset.sources.append(source)
-
-        for hash_dict in hashes:
-            hash_object = galaxy.model.DatasetHash()
-            hash_object.hash_function = hash_dict["hash_function"]
-            hash_object.hash_value = hash_dict["hash_value"]
-            primary_data.dataset.hashes.append(hash_object)
+        primary_data.dataset.add_sources(sources)
+        primary_data.dataset.add_hashes(hashes)
 
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
@@ -318,7 +318,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def _populate_elements(
         self, chunk, name, root_collection_builder, metadata_source_name, final_job_state, change_datatype_actions
     ):
-        element_datasets: Dict[str, List[Any]] = {
+        element_datasets: ElementDatasets = {
             "element_identifiers": [],
             "datasets": [],
             "tag_lists": [],
@@ -407,6 +407,35 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             add_datasets_timer,
         )
         self.set_datasets_metadata(datasets=element_datasets["datasets"])
+
+    def update_collection_elements(self, collection: galaxy.model.DatasetCollection, chunk: List["DiscoveredResult"]):
+        elements_and_identifiers = {
+            element._identifiers: element.hda
+            for element in collection.dataset_elements_and_identifiers()
+            if hasattr(element, "_identifiers")
+        }
+        datasets: List[galaxy.model.DatasetInstance] = []
+        paths: List[str | None] = []
+        extra_files: List[str] = []
+        for discovered_file in chunk:
+            filename = discovered_file.path
+            fields_match = discovered_file.match
+            if not fields_match:
+                raise Exception(f"Problem parsing metadata fields for file {filename}:")
+            element_identifiers = fields_match.element_identifiers
+            dataset = elements_and_identifiers[tuple(element_identifiers)]
+            dataset.extension = discovered_file.match.ext
+            dataset.dataset.add_sources(discovered_file.match.sources)
+            dataset.dataset.add_hashes(discovered_file.match.sources)
+
+            if created_from_basename := discovered_file.match.created_from_basename is not None:
+                dataset.created_from_basename = created_from_basename
+            dataset.info, dataset.state = discovered_file.discovered_state({"info": dataset.info})
+            datasets.append(dataset)
+            paths.append(filename)
+            extra_files.append(fields_match.extra_files)
+        self.update_object_store_with_datasets(datasets, paths, extra_files, "unnamed_output")
+        self.set_datasets_metadata(datasets=datasets)
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
@@ -745,13 +774,16 @@ def persist_elements_to_hdca(
     add_to_discovered_files(elements)
 
     collection = hdca.collection
-    collection_builder = builder.BoundCollectionBuilder(collection)
-    model_persistence_context.populate_collection_elements(
-        collection,
-        collection_builder,
-        discovered_files,
-    )
-    collection_builder.populate()
+    if collection.populated_optimized:
+        model_persistence_context.update_collection_elements(collection, discovered_files)
+    else:
+        collection_builder = builder.BoundCollectionBuilder(collection)
+        model_persistence_context.populate_collection_elements(
+            collection,
+            collection_builder,
+            discovered_files,
+        )
+        collection_builder.populate()
 
 
 def persist_elements_to_folder(model_persistence_context, elements, library_folder):

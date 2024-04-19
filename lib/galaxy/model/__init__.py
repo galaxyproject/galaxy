@@ -4115,6 +4115,20 @@ class Dataset(Base, StorableObject, Serializable):
             object_store = self._assert_object_store_set()
             return not object_store.is_private(self)
 
+    def add_sources(self, sources: List[Dict[str, Any]]):
+        for source_dict in sources:
+            source = DatasetSource()
+            source.source_uri = source_dict["source_uri"]
+            source.transform = source_dict.get("transform")
+            self.sources.append(source)
+
+    def add_hashes(self, hashes: List[Dict[str, Any]]):
+        for hash_dict in hashes:
+            hash_object = galaxy.model.DatasetHash()
+            hash_object.hash_function = hash_dict["hash_function"]
+            hash_object.hash_value = hash_dict["hash_value"]
+            self.hashes.append(hash_object)
+
     def ensure_shareable(self):
         if not self.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
@@ -6601,7 +6615,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if element.is_collection:
                 elements.extend(element.child_collection.dataset_elements_and_identifiers(_identifiers))
             else:
-                element._identifiers = _identifiers
+                element._identifiers = tuple(_identifiers)
                 elements.append(element)
         return elements
 
