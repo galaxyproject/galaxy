@@ -16,7 +16,10 @@ import fs.errors
 from fs.base import FS
 from typing_extensions import Unpack
 
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -58,7 +61,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                     to_dict = functools.partial(self._resource_info_to_dict, path)
                     return list(map(to_dict, res))
         except fs.errors.PermissionDenied as e:
-            raise MessageException(
+            raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
             )
         except fs.errors.FSError as e:

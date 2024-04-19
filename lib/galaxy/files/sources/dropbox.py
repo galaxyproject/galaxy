@@ -8,7 +8,10 @@ from typing import (
     Union,
 )
 
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
 from . import (
     FilesSourceOptions,
     FilesSourceProperties,
@@ -35,7 +38,7 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
             # This plugin might raise dropbox.dropbox_client.BadInputException
             # which is not a subclass of fs.errors.FSError
             if "OAuth2" in str(e):
-                raise MessageException(
+                raise AuthenticationRequired(
                     f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
                 )
             raise MessageException(f"Error connecting to Dropbox. Reason: {e}")
