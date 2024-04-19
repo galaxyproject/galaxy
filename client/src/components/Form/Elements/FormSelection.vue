@@ -19,22 +19,25 @@ interface Props {
     display?: string;
     optional?: boolean;
     multiple?: boolean;
-    value?: string | string[];
-    options?: [string, string][];
-    data?: { label: string; value: string }[];
+    value?: string | string[] | number | number[];
+    options?: [string, string | number][];
+    data?: {
+        label: string;
+        value: string;
+    }[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    display: "select",
+    display: undefined,
     optional: false,
     multiple: false,
-    value: "",
-    options: () => [],
-    data: () => [],
+    value: undefined,
+    options: undefined,
+    data: undefined,
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string | string[]): void;
+    (e: "input", value: string | string[] | number | number[]): void;
 }>();
 
 const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
@@ -55,7 +58,7 @@ const currentOptions = computed(() => {
     const data = props.data;
     const options = props.options;
 
-    let result: { label: string; value: string }[] = [];
+    let result: { label: string; value?: string | number }[] = [];
 
     if (options && options.length > 0) {
         result = options.map((option) => ({ label: option[0], value: option[1] }));
@@ -66,7 +69,7 @@ const currentOptions = computed(() => {
     if (!props.display && !props.multiple && props.optional) {
         result.unshift({
             label: "Nothing selected",
-            value: "",
+            value: undefined,
         });
     }
 
