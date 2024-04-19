@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
+import { BAlert } from "bootstrap-vue";
+import { computed, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";
@@ -7,43 +8,34 @@ import { uid } from "@/utils/utils";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
-type SelectValue = Record<string, unknown> | string | number | null;
+type SelectValue = Record<string, unknown> | string | number | boolean;
 
 interface SelectOption {
     label: string;
     value: SelectValue;
 }
 
-const props = defineProps({
-    id: { type: String, default: `form-select-${uid()}` },
-    disabled: {
-        type: Boolean,
-        default: false,
-    },
-    multiple: {
-        type: Boolean,
-        default: false,
-    },
-    optional: {
-        type: Boolean,
-        default: false,
-    },
-    options: {
-        type: Array as PropType<Array<SelectOption>>,
-        required: true,
-    },
-    placeholder: {
-        type: String,
-        default: "Select Value",
-    },
-    value: {
-        type: String as PropType<SelectValue | SelectValue[]>,
-        default: null,
-    },
+interface Props {
+    options: SelectOption[];
+    id?: string;
+    disabled?: boolean;
+    multiple?: boolean;
+    optional?: boolean;
+    placeholder?: string;
+    value?: SelectValue | SelectValue[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    id: `form-select-${uid()}`,
+    disabled: false,
+    multiple: false,
+    optional: false,
+    placeholder: "Select Value",
+    value: undefined,
 });
 
 const emit = defineEmits<{
-    (e: "input", value: SelectValue | Array<SelectValue>): void;
+    (e: "input", value?: SelectValue | SelectValue[]): void;
 }>();
 
 /**
@@ -73,34 +65,36 @@ const reorderedOptions = computed(() => {
 /**
  * Configure deselect label
  */
-const deselectLabel: ComputedRef<string> = computed(() => {
+const deselectLabel = computed(() => {
     return props.multiple ? "Click to remove" : "";
 });
 
 /**
  * Tracks if the select field has options
  */
-const hasOptions: ComputedRef<Boolean> = computed(() => {
+const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
 /**
  * Provides initial value if necessary
  */
-const initialValue: ComputedRef<SelectValue> = computed(() => {
-    if (props.value === null && !props.optional && hasOptions.value) {
+const initialValue = computed(() => {
+    if (props.value === undefined && !props.optional && hasOptions.value) {
         const v = props.options[0];
+
         if (v) {
             return v.value;
         }
     }
-    return null;
+
+    return undefined;
 });
 
 /**
  * Configure selected label
  */
-const selectedLabel: ComputedRef<string> = computed(() => {
+const selectedLabel = computed(() => {
     return props.multiple ? "Selected" : "";
 });
 
@@ -114,16 +108,16 @@ const selectedValues = computed(() => (Array.isArray(props.value) ? props.value 
  */
 const currentValue = computed({
     get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
-    set: (val: Array<SelectOption> | SelectOption): void => {
+    set: (val: SelectOption | SelectOption[]) => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
                 const values: Array<SelectValue> = val.map((v: SelectOption) => v.value);
                 emit("input", values);
             } else {
-                emit("input", null);
+                emit("input", undefined);
             }
         } else {
-            emit("input", val ? val.value : null);
+            emit("input", val ? val.value : undefined);
         }
     },
 });
@@ -174,7 +168,7 @@ onMounted(() => {
             @open="onOpen"
             @close="onClose" />
         <slot v-else name="no-options">
-            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+            <BAlert v-localize class="w-100" variant="warning" show> No options available. </BAlert>
         </slot>
     </div>
 </template>
