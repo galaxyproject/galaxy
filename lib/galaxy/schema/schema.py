@@ -66,6 +66,8 @@ IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
 OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 
+TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
+
 
 class DatasetState(str, Enum):
     NEW = "new"
@@ -527,7 +529,7 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")]
+TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
 
 
 class TagCollection(RootModel):
