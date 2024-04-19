@@ -162,6 +162,9 @@ class RemoteFilesManager:
         file_source = file_source_path.file_source
         try:
             result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem creating entry {entry_data.name} in file source {entry_data.target}", exc_info=True)
+            raise
         except Exception:
             message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
             log.warning(message, exc_info=True)

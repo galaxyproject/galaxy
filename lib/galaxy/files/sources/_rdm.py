@@ -7,7 +7,7 @@ from typing import (
 
 from typing_extensions import Unpack
 
-from galaxy.exceptions import AuthenticationRequired
+from galaxy.exceptions import MessageException
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
@@ -199,7 +199,7 @@ class RDMFilesSource(BaseFilesSource):
             effective_props = self._serialization_props(user_context)
             token = effective_props.get("token")
         if not token:
-            raise AuthenticationRequired(
+            raise MessageException(
                 f"Please provide a personal access token in your user's preferences for '{self.label}'"
             )
         return token
