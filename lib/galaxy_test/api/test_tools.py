@@ -1659,9 +1659,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat1")
     def test_map_over_empty_collection(self, history_id):
-        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[]).json()["outputs"][
-            0
-        ]["id"]
+        response = self.dataset_collection_populator.create_list_in_history(history_id, contents=[], wait=True).json()
+        hdca_id = response["output_collections"][0]["id"]
         inputs = {
             "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
         }
