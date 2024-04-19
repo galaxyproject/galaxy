@@ -100,8 +100,9 @@ describe("ExportRDMForm", () => {
         });
     });
 
-    async function selectExportChoice(choice: string) {
-        const exportChoice = wrapper.find(`#radio-${choice}`);
+    async function selectExportChoice(choice: string, fileSourceId?: string) {
+        const suffix = fileSourceId ? `${fileSourceId}` : "any";
+        const exportChoice = wrapper.find(`#radio-${choice}-${suffix}`);
         await exportChoice.setChecked(true);
     }
 
