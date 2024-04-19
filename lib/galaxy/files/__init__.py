@@ -13,6 +13,7 @@ from typing import (
 from galaxy import exceptions
 from galaxy.files.sources import (
     BaseFilesSource,
+    FilesSourceProperties,
     PluginKind,
 )
 from galaxy.util import plugin_config
@@ -39,6 +40,8 @@ class NoMatchingFileSource(Exception):
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
+    _file_sources: List[BaseFilesSource]
+
     def __init__(
         self,
         file_sources_config: "ConfiguredFileSourcesConfig",
@@ -48,7 +51,7 @@ class ConfiguredFileSources:
     ):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
-        file_sources = []
+        file_sources: List[BaseFilesSource] = []
         if conf_file is not None:
             file_sources = self._load_plugins_from_file(conf_file)
         elif conf_dict is not None:
@@ -79,7 +82,7 @@ class ConfiguredFileSources:
 
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
-                # insert at begining instead of append so FTP and library import appear
+                # insert at beginning instead of append so FTP and library import appear
                 # at the top of the list (presumably the most common options). Admins can insert
                 # these explicitly for greater control.
                 file_sources = self._parse_plugin_source(stock_plugin_source) + file_sources
@@ -107,7 +110,7 @@ class ConfiguredFileSources:
             dict_to_list_key="id",
         )
 
-    def find_best_match(self, url: str):
+    def find_best_match(self, url: str) -> Optional[BaseFilesSource]:
         """Returns the best matching file source for handling a particular url. Each filesource scores its own
         ability to match a particular url, and the highest scorer with a score > 0 is selected."""
         scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
@@ -124,7 +127,7 @@ class ConfiguredFileSources:
         path = file_source.to_relative_path(uri)
         return FileSourcePath(file_source, path)
 
-    def validate_uri_root(self, uri, user_context):
+    def validate_uri_root(self, uri: str, user_context: "ProvidesUserFileSourcesUserContext"):
         # validate a URI against Galaxy's configuration, environment, and the current
         # user. Throw appropriate exception if there is a problem with the files source
         # referenced by the URI.
@@ -171,8 +174,8 @@ class ConfiguredFileSources:
         browsable_only: Optional[bool] = False,
         include_kind: Optional[Set[PluginKind]] = None,
         exclude_kind: Optional[Set[PluginKind]] = None,
-    ) -> List[Dict[str, Any]]:
-        rval = []
+    ) -> List[FilesSourceProperties]:
+        rval: List[FilesSourceProperties] = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
                 continue
