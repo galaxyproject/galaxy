@@ -57,7 +57,7 @@ class TestTagPattern:
             "a.b:c.d:e.f::g:h",
             "a::a",  # leading colon for tag value
             "a:.a",  # leading period for tag value
-            "a:a:",  # training colon OK for tag value
+            "a:a:",  # trailing colon OK for tag value
             "a:a.",  # training period OK for tag value
         ]
         for t in tag_strings:
