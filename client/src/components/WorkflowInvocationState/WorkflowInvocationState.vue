@@ -20,6 +20,12 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faArrowLeft);
 
+const TABS = {
+    SUMMARY: 0,
+    DETAILS: 1,
+    EXPORT: 2,
+};
+
 interface Props {
     invocationId: string;
     index?: number;
@@ -41,6 +47,7 @@ const invocationStore = useInvocationStore();
 
 const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
+const activeTab = ref(TABS.SUMMARY);
 
 const invocation = computed(
     () => invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView
@@ -101,8 +108,8 @@ function cancelWorkflowSchedulingLocal() {
 </script>
 
 <template>
-    <BTabs v-if="invocation" :class="{ 'position-relative': isInvocationRoute }">
-        <BTab title="Summary" active>
+    <BTabs v-if="invocation" v-model="activeTab" :class="{ 'position-relative': isInvocationRoute }">
+        <BTab title="Summary">
             <WorkflowInvocationSummary
                 class="invocation-summary"
                 :invocation="invocation"
@@ -111,6 +118,7 @@ function cancelWorkflowSchedulingLocal() {
                 :invocation-scheduling-terminal="invocationSchedulingTerminal"
                 :job-states-summary="jobStatesSummary"
                 :is-subworkflow="isSubworkflow"
+                :visible="activeTab === TABS.SUMMARY"
                 @invocation-cancelled="cancelWorkflowSchedulingLocal" />
         </BTab>
         <BTab title="Details">

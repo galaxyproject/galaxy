@@ -33,6 +33,7 @@ interface Props {
     jobStatesSummary: InvocationJobsSummary;
     index?: number;
     isSubworkflow?: boolean;
+    visible?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -250,7 +251,8 @@ function onCancel() {
                     :invocation="invocation"
                     :workflow="workflow"
                     :is-terminal="invocationAndJobTerminal"
-                    :is-scheduled="invocationSchedulingTerminal" />
+                    :is-scheduled="invocationSchedulingTerminal"
+                    :visible="visible" />
             </div>
             <BAlert v-else-if="isSubworkflow" variant="secondary" show>
                 This subworkflow is

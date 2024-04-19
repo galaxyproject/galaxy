@@ -45,6 +45,8 @@ interface Props {
     initialX?: number;
     /** The initial y position for the graph */
     initialY?: number;
+    /** Whether the parent component is visible */
+    visible?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -53,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
     showZoomControls: true,
     initialX: -40,
     initialY: -40,
+    visible: true,
 });
 
 const loadingGraph = ref(true);
@@ -168,7 +171,7 @@ function showStep(jobId: string) {
 </script>
 
 <template>
-    <div id="center" class="container-root m-3 w-100 overflow-auto d-flex flex-column">
+    <div class="container-root m-3 w-100 overflow-auto d-flex flex-column">
         <BAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
         </BAlert>
@@ -178,7 +181,7 @@ function showStep(jobId: string) {
             </BAlert>
             <BAlert v-else show variant="danger"> Unknown Error </BAlert>
         </div>
-        <div v-else-if="steps && datatypesMapper">
+        <div v-else-if="visible && steps && datatypesMapper">
             <ExpandedItems
                 explicit-key="expanded-invocation-steps"
                 :scope-key="props.invocation.id"
