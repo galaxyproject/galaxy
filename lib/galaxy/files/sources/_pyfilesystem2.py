@@ -12,9 +12,11 @@ from typing import (
 )
 
 import fs
+import fs.errors
 from fs.base import FS
 from typing_extensions import Unpack
 
+from galaxy.exceptions import MessageException
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -42,19 +44,25 @@ class PyFilesystem2FilesSource(BaseFilesSource):
 
     def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         """Return dictionary of 'Directory's and 'File's."""
-
-        with self._open_fs(user_context=user_context, opts=opts) as h:
-            if recursive:
-                res: List[Dict[str, Any]] = []
-                for p, dirs, files in h.walk(path):
-                    to_dict = functools.partial(self._resource_info_to_dict, p)
-                    res.extend(map(to_dict, dirs))
-                    res.extend(map(to_dict, files))
-                return res
-            else:
-                res = h.scandir(path, namespaces=["details"])
-                to_dict = functools.partial(self._resource_info_to_dict, path)
-                return list(map(to_dict, res))
+        try:
+            with self._open_fs(user_context=user_context, opts=opts) as h:
+                if recursive:
+                    res: List[Dict[str, Any]] = []
+                    for p, dirs, files in h.walk(path):
+                        to_dict = functools.partial(self._resource_info_to_dict, p)
+                        res.extend(map(to_dict, dirs))
+                        res.extend(map(to_dict, files))
+                    return res
+                else:
+                    res = h.scandir(path, namespaces=["details"])
+                    to_dict = functools.partial(self._resource_info_to_dict, path)
+                    return list(map(to_dict, res))
+        except fs.errors.PermissionDenied as e:
+            raise MessageException(
+                f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
+            )
+        except fs.errors.FSError as e:
+            raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         with open(native_path, "wb") as write_file:
