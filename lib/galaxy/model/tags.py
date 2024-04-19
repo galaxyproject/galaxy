@@ -351,7 +351,7 @@ class TagHandler:
         tag = self.get_tag_by_name(scrubbed_tag_str)
         # Create tag if necessary.
         if tag is None:
-            tag = self._create_tags(scrubbed_tag_str)
+            tag = self._create_tag(scrubbed_tag_str)
         return tag
 
     def _get_item_tag_assoc(self, user, item, tag_name):
