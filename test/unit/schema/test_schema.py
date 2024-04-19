@@ -58,7 +58,7 @@ class TestTagPattern:
             "a::a",  # leading colon for tag value
             "a:.a",  # leading period for tag value
             "a:a:",  # trailing colon OK for tag value
-            "a:a.",  # training period OK for tag value
+            "a:a.",  # trailing period OK for tag value
         ]
         for t in tag_strings:
             assert re.match(TAG_ITEM_PATTERN, t)
