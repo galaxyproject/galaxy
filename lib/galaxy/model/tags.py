@@ -296,7 +296,7 @@ class TagHandler:
 
     def _create_tags(self, tag_str: str):
         """
-        Create or retrieve one of more Tag objects from a tag string. If there are multiple
+        Create or retrieve one or more Tag objects from a tag string. If there are multiple
         hierarchical tags in the tag string, the string will be split along `self.hierarchy_separator` chars.
         A Tag instance will be created for each non-empty prefix. If a prefix corresponds to the
         name of an existing tag, that tag will be retrieved; otherwise, a new Tag object will be created.
