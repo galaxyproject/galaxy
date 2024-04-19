@@ -300,7 +300,7 @@ class TagHandler:
         hierarchical tags in the tag string, the string will be split along `self.hierarchy_separator` chars.
         A Tag instance will be created for each non-empty prefix. If a prefix corresponds to the
         name of an existing tag, that tag will be retrieved; otherwise, a new Tag object will be created.
-        For example, for the tag string `a.b.c` 3 Tag isntances will be created: `a`, `a.b`, `a.b.c`.
+        For example, for the tag string `a.b.c` 3 Tag instances will be created: `a`, `a.b`, `a.b.c`.
         Return the last tag created (`a.b.c`).
         """
         tag_hierarchy = tag_str.split(self.hierarchy_separator)
