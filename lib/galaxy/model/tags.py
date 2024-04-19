@@ -294,7 +294,7 @@ class TagHandler:
             return self.sa_session.scalars(select(galaxy.model.Tag).filter_by(name=tag_name.lower()).limit(1)).first()
         return None
 
-    def _create_tags(self, tag_str: str):
+    def _create_tag(self, tag_str: str):
         """
         Create or retrieve one or more Tag objects from a tag string. If there are multiple
         hierarchical tags in the tag string, the string will be split along `self.hierarchy_separator` chars.
