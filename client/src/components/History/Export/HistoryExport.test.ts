@@ -6,7 +6,7 @@ import { setActivePinia } from "pinia";
 
 import type { HistorySummary } from "@/api";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import type { components } from "@/api/schema";
+import type { FilesSourcePlugin } from "@/api/remoteFiles";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
@@ -32,8 +32,7 @@ const FAKE_HISTORY = {
 
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
 
-type FilesSourcePluginList = components["schemas"]["FilesSourcePlugin"][];
-const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
+const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
     {
         id: "test-posix-source",
         type: "posix",
@@ -57,7 +56,7 @@ async function mountHistoryExport() {
         (_history_id: string) => FAKE_HISTORY as HistorySummary
     );
 
-    const wrapper = shallowMount(HistoryExport, {
+    const wrapper = shallowMount(HistoryExport as object, {
         propsData: { historyId: FAKE_HISTORY_ID },
         localVue,
         pinia,
@@ -120,5 +119,23 @@ describe("HistoryExport.vue", () => {
 
         expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
         expect(wrapper.find("#file-source-tab").exists()).toBe(false);
+    });
+
+    it("should display the ZENODO tab if the Zenodo plugin is available", async () => {
+        const zenodoPlugin: FilesSourcePlugin = {
+            id: "zenodo",
+            type: "rdm",
+            label: "Zenodo",
+            doc: "For testing",
+            writable: true,
+            browsable: true,
+        };
+        mockFetcher
+            .path(REMOTE_FILES_API_ENDPOINT)
+            .method("get")
+            .mock({ data: [zenodoPlugin] });
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
     });
 });
