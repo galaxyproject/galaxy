@@ -66,11 +66,11 @@ export class ExportParamsModel implements ExportParams {
         if (!otherExportParams) {
             return false;
         }
-        return sameExportParams(this, otherExportParams);
+        return areEqual(this, otherExportParams);
     }
 }
 
-export function sameExportParams(params1?: ExportParams, params2?: ExportParams): boolean {
+export function areEqual(params1?: ExportParams, params2?: ExportParams): boolean {
     if (!params1 || !params2) {
         return false;
     }

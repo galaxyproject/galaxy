@@ -12,7 +12,7 @@ import {
     reimportHistoryFromRecord,
 } from "@/api/histories.export";
 import type { ColorVariant } from "@/components/Common";
-import { ExportParams, ExportRecord, sameExportParams } from "@/components/Common/models/exportRecordModel";
+import { areEqual, ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useFileSources } from "@/composables/fileSources";
 import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
@@ -69,7 +69,7 @@ const isLatestExportRecordReadyToDownload = computed(
         latestExportRecord.value &&
         latestExportRecord.value.isUpToDate &&
         latestExportRecord.value.canDownload &&
-        sameExportParams(latestExportRecord.value.exportParams, exportParams.value)
+        areEqual(latestExportRecord.value.exportParams, exportParams.value)
 );
 const canGenerateDownload = computed(() => !isPreparingDownload.value && !isLatestExportRecordReadyToDownload.value);
 const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : []));
