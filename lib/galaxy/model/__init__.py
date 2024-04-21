@@ -4736,7 +4736,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
         except KeyError:
             pass  # No deps
-        new_dataset = next(
+        return next(
             iter(
                 self.datatype.convert_dataset(
                     trans,
@@ -4750,7 +4750,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 ).values()
             )
         )
-        return self.attach_implicitly_converted_dataset(trans.sa_session, new_dataset, target_ext)
 
     def attach_implicitly_converted_dataset(self, session, new_dataset, target_ext: str):
         new_dataset.name = self.name
@@ -4760,9 +4759,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         )
         session.add(new_dataset)
         session.add(assoc)
-        with transaction(session):
-            session.commit()
-        return new_dataset
 
     def copy_attributes(self, new_dataset):
         """
@@ -5134,7 +5130,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 self.tags.append(copied_tag)
 
     def copy_attributes(self, new_dataset):
-        new_dataset.hid = self.hid
+        if new_dataset.hid is None:
+            new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association(
         self,
