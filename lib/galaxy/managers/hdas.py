@@ -221,12 +221,6 @@ class HDAManager(
 
         return copy
 
-    def copy_ldda(self, history, ldda, **kwargs):
-        """
-        Copy this HDA as a LDDA and return.
-        """
-        return ldda.to_history_dataset_association(history, add_to_history=True)
-
     # .... deletion and purging
     def purge(self, hda, flush=True, **kwargs):
         if self.app.config.enable_celery_tasks:
