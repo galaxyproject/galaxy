@@ -9,6 +9,7 @@ from typing import (
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
+    FileSourcePath,
     ProvidesUserFileSourcesUserContext,
 )
 from galaxy.files.sources import (
@@ -94,10 +95,10 @@ class RemoteFilesManager:
                 opts=opts,
             )
         except exceptions.MessageException:
-            log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
+            log.warning(self._get_error_message(file_source_path), exc_info=True)
             raise
         except Exception:
-            message = f"Problem listing file source path {file_source_path}"
+            message = self._get_error_message(file_source_path)
             log.warning(message, exc_info=True)
             raise exceptions.InternalServerError(message)
         if format == RemoteFilesFormat.flat:
@@ -131,6 +132,9 @@ class RemoteFilesManager:
 
         return index
 
+    def _get_error_message(self, file_source_path: FileSourcePath) -> str:
+        return f"Problem listing file source path {file_source_path.file_source.get_uri_root()}{file_source_path.path}"
+
     def get_files_source_plugins(
         self,
         user_context: ProvidesUserContext,
@@ -162,6 +166,9 @@ class RemoteFilesManager:
         file_source = file_source_path.file_source
         try:
             result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem creating entry {entry_data.name} in file source {entry_data.target}", exc_info=True)
+            raise
         except Exception:
             message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
             log.warning(message, exc_info=True)
