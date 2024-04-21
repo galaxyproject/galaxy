@@ -5818,11 +5818,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
 
         tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
-        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
+        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags, flush=False)
         sa_session.add(hda)
-        with transaction(sa_session):
-            sa_session.commit()
-        hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
+        hda.metadata = self.metadata
         if add_to_history and target_history:
             target_history.add_dataset(hda)
         with transaction(sa_session):
