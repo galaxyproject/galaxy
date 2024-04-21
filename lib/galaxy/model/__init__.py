@@ -7146,7 +7146,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         self.element_identifier = element_identifier or str(element_index)
 
     def __strict_check_before_flush__(self):
-        assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
+        if self.collection.populated_optimized:
+            assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
 
     @property
     def element_type(self):
