@@ -6359,6 +6359,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
+            if not self.id:
+                return self.populated
             _populated_optimized = True
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
