@@ -88,6 +88,9 @@ class ExecuteToolPayload(Model):
         title="Send Email Notification",
         description="Flag indicating whether to send email notification",
     )
+    state: Optional[str] = Field(
+        default=None,
+    )
     model_config = ConfigDict(extra="allow")
 
 
