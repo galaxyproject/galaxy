@@ -275,7 +275,6 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
 
 class BaseFilesSource(FilesSource):
-    plugin_type: ClassVar[str]
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
 
     def get_browsable(self) -> bool:
