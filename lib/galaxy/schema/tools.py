@@ -10,13 +10,16 @@ from pydantic import (
     ConfigDict,
     Field,
     field_validator,
+    model_validator,
     UUID4,
 )
 from typing_extensions import (
     Annotated,
     Literal,
+    Self,
 )
 
+from galaxy import exceptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     HDACustom,
@@ -38,7 +41,6 @@ ToolOutputName = Annotated[
 class ExecuteToolPayload(Model):
     tool_id: Optional[str] = Field(
         default=None,
-        description="",
     )
     tool_uuid: Optional[UUID4] = Field(
         default=None,
@@ -50,11 +52,9 @@ class ExecuteToolPayload(Model):
     )
     tool_version: Optional[str] = Field(
         default=None,
-        description="",
     )
     history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
-        description="",
     )
 
     @field_validator("inputs", mode="before", check_fields=False)
@@ -74,7 +74,6 @@ class ExecuteToolPayload(Model):
     )
     preferred_object_store_id: Optional[str] = Field(
         default=None,
-        description="",
     )
     input_format: Optional[Literal["legacy", "21.01"]] = Field(
         default=None,
@@ -83,7 +82,6 @@ class ExecuteToolPayload(Model):
     )
     data_manager_mode: Optional[Literal["populate", "dry_run", "bundle"]] = Field(
         default=None,
-        description="",
     )
     send_email_notification: Optional[bool] = Field(
         default=None,
@@ -127,6 +125,6 @@ class ExecuteToolResponse(Model):
     produces_entry_points: bool = Field(
         default=...,
         title="Produces Entry Points",
-        description="Flag indicating whether the creation of the tool produces entry points.",
+        description="Flag indicating whether the creation of the tool produces entry points for interactive tools.",
     )
     errors: List[Any] = Field(default=[], title="Errors", description="Errors encountered while executing the tool.")
