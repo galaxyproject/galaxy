@@ -7,7 +7,7 @@ import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore
 import SelectTemplate from "./SelectTemplate.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-const loadingTemplatesInfoMessage = "Loading object store templates";
+const loadingTemplatesInfoMessage = "Loading storage location templates";
 
 const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 objectStoreTemplatesStore.ensureTemplates();

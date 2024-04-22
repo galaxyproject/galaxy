@@ -10930,6 +10930,7 @@ class UserObjectStore(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
     create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
     # user specified name of the instance they've created
@@ -10937,30 +10938,26 @@ class UserObjectStore(Base, RepresentById):
     # user specified description of the instance they've created
     description: Mapped[Optional[str]] = mapped_column(Text)
     # the template store id
-    object_store_template_id: Mapped[str] = mapped_column(String(255), index=True)
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
     # the template store version (0, 1, ...)
-    object_store_template_version: Mapped[int] = mapped_column(Integer, index=True)
+    template_version: Mapped[int] = mapped_column(Integer, index=True)
     # Full template from object_store_templates.yml catalog.
     # For tools we just store references, so here we could easily just use
     # the id/version and not record the definition... as the templates change
     # over time this choice has some big consequences despite being easy to swap
     # implementations.
-    object_store_template_definition: Mapped[Optional[OBJECT_STORE_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    template_definition: Mapped[Optional[OBJECT_STORE_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
     # Big JSON blob of the variable name -> value mapping defined for the store's
     # variables by the user.
-    object_store_template_variables: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = (
-        mapped_column(JSONType)
-    )
+    template_variables: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
     # Track a list of secrets that were defined for this object store at creation
-    object_store_template_secrets: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = (
-        mapped_column(JSONType)
-    )
+    template_secrets: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
 
     user = relationship("User", back_populates="object_stores")
 
     @property
     def template(self) -> ObjectStoreTemplate:
-        return ObjectStoreTemplate(**self.object_store_template_definition or {})
+        return ObjectStoreTemplate(**self.template_definition or {})
 
     def object_store_configuration(self, secrets: Dict[str, Any]) -> ObjectStoreConfiguration:
         user = self.user
@@ -10969,7 +10966,7 @@ class UserObjectStore(Base, RepresentById):
             "email": user.email,
             "id": user.id,
         }
-        variables: OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.object_store_template_variables or {}
+        variables: OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
         return template_to_configuration(
             self.template,
             variables=variables,

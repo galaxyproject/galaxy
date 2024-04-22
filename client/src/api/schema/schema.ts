@@ -12520,7 +12520,7 @@ export interface components {
             /** Device */
             device?: string | null;
             /** Id */
-            id: number;
+            id: number | string;
             /** Name */
             name?: string | null;
             /** Object Store Id */
@@ -12539,6 +12539,8 @@ export interface components {
              * @enum {string}
              */
             type: "s3" | "azure_blob" | "disk" | "generic_s3";
+            /** Uuid */
+            uuid: string;
             /** Variables */
             variables: {
                 [key: string]: (string | boolean | number) | undefined;
@@ -20551,7 +20553,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The model ID for a persisted UserObjectStore object. */
+            /** @description The identifier used to index a persisted UserObjectStore object. */
             path: {
                 user_object_store_id: string;
             };
@@ -20578,7 +20580,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The model ID for a persisted UserObjectStore object. */
+            /** @description The identifier used to index a persisted UserObjectStore object. */
             path: {
                 user_object_store_id: string;
             };

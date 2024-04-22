@@ -60,6 +60,7 @@ const INSTANCE: UserConcreteObjectStore = {
     quota: { enabled: false },
     private: false,
     id: 4,
+    uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
 };
 
 describe("UpgradeForm", () => {
@@ -113,7 +114,7 @@ describe("UpgradeForm", () => {
         await flushPromises();
         const route = wrapper.vm.$route;
         expect(route.path).toBe("/object_store_instances/index");
-        expect(route.query.message).toBe("Upgraded object store moo");
+        expect(route.query.message).toBe("Upgraded storage location moo");
     });
 
     it("should indicate an error on failure", async () => {

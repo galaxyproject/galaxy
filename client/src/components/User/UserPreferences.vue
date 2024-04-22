@@ -92,13 +92,13 @@
             :preferred-object-store-id="currentUser.preferred_object_store_id"
             :user-id="userId">
         </UserPreferredObjectStore>
-        <UserPreferredObjectStore
+        <UserPreferencesElement
             v-if="hasTemplates"
             id="manage-object-stores"
             class="manage-object-stores"
             icon="fa-hdd"
-            title="Manage Your Object Stores"
-            description="Add, remove, or update your personal object store configured."
+            title="Manage Your Storage Locations"
+            description="Add, remove, or update your personally configured storage locations."
             to="/object_store_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"

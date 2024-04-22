@@ -26,7 +26,7 @@ async function handleSubmit() {
 </script>
 <template>
     <div>
-        <LoadingSpan v-if="inputs == null" message="Loading object store template and instance information" />
+        <LoadingSpan v-if="inputs == null" message="Loading storage location template and instance information" />
         <div v-else>
             <FormCard :title="title">
                 <template v-slot:body>

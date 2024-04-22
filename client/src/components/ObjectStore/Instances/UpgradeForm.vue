@@ -72,7 +72,7 @@ async function onSubmit(formData: any) {
 const { goToIndex } = useInstanceRouting();
 
 async function onUpgrade(objectStore: UserConcreteObjectStore) {
-    const message = `Upgraded object store ${objectStore.name}`;
+    const message = `Upgraded storage location ${objectStore.name}`;
     goToIndex({ message });
 }
 </script>

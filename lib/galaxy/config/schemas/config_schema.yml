@@ -566,6 +566,19 @@ mapping:
         desc: |
           Configured Object Store templates embedded into Galaxy's config.
 
+      user_object_store_index_by:
+        type: str
+        default: 'uuid'
+        required: false
+        enum: ['uuid', 'id']
+        desc: |
+          Configure URIs for user object stores to use either the object ID ('id')
+          or UUIDs ('uuid'). Either is fine really, Galaxy doesn't typically expose
+          database objects by 'id' but there isn't any obvious disadvantage to doing
+          it in this case and it keeps user exposed URIs much smaller. The default of
+          UUID feels a little more like a typical way to do this within Galaxy though.
+          Do not change this value once user object stores have been created.
+
       enable_mulled_containers:
         type: bool
         default: true

@@ -44,7 +44,7 @@ const inputs = computed(() => {
     return form;
 });
 
-const title = computed(() => `Edit Object Store ${instance.value?.name} Settings`);
+const title = computed(() => `Edit Storage Location ${instance.value?.name} Settings`);
 const hasSecrets = computed(() => instance.value?.secrets && instance.value?.secrets.length > 0);
 const submitTitle = "Update Settings";
 
@@ -69,7 +69,7 @@ async function onSubmit(formData: any) {
 const { goToIndex } = useInstanceRouting();
 
 async function onUpdate(objectStore: UserConcreteObjectStore) {
-    const message = `Updated object store ${objectStore.name}`;
+    const message = `Updated storage location ${objectStore.name}`;
     goToIndex({ message });
 }
 </script>

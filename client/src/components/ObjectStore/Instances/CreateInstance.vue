@@ -21,14 +21,14 @@ const props = defineProps<Props>();
 const template = computed(() => objectStoreTemplatesStore.getLatestTemplate(props.templateId));
 
 async function onCreated(objectStore: UserConcreteObjectStore) {
-    const message = `Created object store ${objectStore.name}`;
+    const message = `Created storage location ${objectStore.name}`;
     goToIndex({ message });
 }
 </script>
 
 <template>
     <div>
-        <LoadingSpan v-if="!template" message="Loading object store templates" />
+        <LoadingSpan v-if="!template" message="Loading storage location templates" />
         <CreateForm v-else :template="template" @created="onCreated"></CreateForm>
     </div>
 </template>
