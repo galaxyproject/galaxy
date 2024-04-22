@@ -14,7 +14,7 @@ import {
 import { capitalize } from "lodash";
 import { computed, ref, watch } from "vue";
 
-import { type ErrorType, type ValidFilter } from "@/utils/filtering";
+import { type ValidFilter } from "@/utils/filtering";
 
 library.add(faQuestion);
 
@@ -23,7 +23,7 @@ type FilterType = string | boolean | undefined;
 interface Props {
     name: string;
     identifier: any;
-    error?: ErrorType;
+    error?: string;
     filter: ValidFilter<any>;
     filters: {
         [k: string]: FilterType;
@@ -44,13 +44,6 @@ const localValue = ref(propValue.value);
 
 const helpToggle = ref(false);
 const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
-
-function hasError(field: string) {
-    if (props.error && props.error.index == field) {
-        return props.error.typeError || props.error.msg;
-    }
-    return "";
-}
 
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
@@ -81,10 +74,10 @@ watch(
                 :id="`${identifier}-advanced-filter-${props.name}`"
                 ref="filterMenuInput"
                 v-model="localValue"
-                v-b-tooltip.focus.v-danger="hasError(props.name)"
+                v-b-tooltip.focus.v-danger="props.error"
                 class="mw-100"
                 size="sm"
-                :state="hasError(props.name) ? false : null"
+                :state="props.error ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"
                 :list="props.filter.datalist ? `${identifier}-${props.name}-selectList` : null"
                 @keyup.enter="emit('on-enter')"
