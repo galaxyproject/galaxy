@@ -17,7 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const fromWhat = "This dataset location is";
-const toWhat = "This dataset will be moved to";
+const toWhat = "This dataset will be relocated to";
 </script>
 
 <template>
@@ -32,7 +32,7 @@ const toWhat = "This dataset will be moved to";
                 :object-store="fromObjectStore"
                 @click="emit('closeModal')" />
         </b-button-group>
-        <p class="move-to">Select new storage location for the dataset:</p>
+        <p class="relocate-to">Select new storage location for the dataset:</p>
         <b-button-group vertical size="lg" class="select-button-group">
             <ObjectStoreSelectButton
                 v-for="objectStore in targetObjectStores"
@@ -62,7 +62,7 @@ const toWhat = "This dataset will be moved to";
     margin: auto;
     width: 400px;
 }
-.move-to {
+.relocate-to {
     margin-top: 2em;
 }
 </style>

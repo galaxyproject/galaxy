@@ -89,13 +89,13 @@ async function relocate(objectStoreId: string) {
 
 <template>
     <span class="storage-relocate-link">
-        <SelectModal v-if="currentObjectStore" v-model="showModal" title="Move Dataset">
+        <SelectModal v-if="currentObjectStore" v-model="showModal" title="Relocate Dataset">
             <RelocateDialog
                 :from-object-store="currentObjectStore"
                 :target-object-stores="validTargets"
                 @relocate="relocate"
                 @closeModal="closeModal" />
         </SelectModal>
-        <BButton v-if="relocatable" @click="showModal = true">Move Dataset</BButton>
+        <BButton v-if="relocatable" @click="showModal = true">Relocate Dataset</BButton>
     </span>
 </template>
