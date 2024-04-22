@@ -45,7 +45,7 @@ library.add(
     faTrash
 );
 
-const { toolbarStore, commentStore, undoRedoStore } = useWorkflowStores();
+const { toolbarStore, commentStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;

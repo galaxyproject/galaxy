@@ -191,7 +191,7 @@ describe("Workflow Undo Redo Actions", () => {
 
         it("RemoveFromSelectionAction", () => {
             setupSelected();
-            const action = new RemoveFromSelectionAction(commentStore, stateStore, { comments: [0], steps: [1] });
+            const action = new RemoveFromSelectionAction(commentStore, stateStore, { comments: [0], steps: [2] });
             testUndoRedo(action);
         });
 
