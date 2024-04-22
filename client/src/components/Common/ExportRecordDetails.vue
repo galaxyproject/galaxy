@@ -60,7 +60,7 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <BCard class="export-record-details">
+    <div class="export-record-details">
         <BCardTitle>
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
         </BCardTitle>
@@ -149,5 +149,5 @@ function onMessageDismissed() {
                 </div>
             </div>
         </div>
-    </BCard>
+    </div>
 </template>
