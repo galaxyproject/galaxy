@@ -93,6 +93,14 @@ class ExecuteToolPayload(Model):
     )
     model_config = ConfigDict(extra="allow")
 
+    @model_validator(mode="after")
+    def validate_extra_fields(self) -> Self:
+        if self.model_extra is not None:
+            for field_name in self.model_extra.keys():
+                if not field_name.startswith("files_"):
+                    raise exceptions.RequestParameterInvalidException(f"Invalid field name: {field_name}")
+        return self
+
 
 # The following models should eventually be removed as we move towards creating jobs asynchronously
 # xref: https://github.com/galaxyproject/galaxy/pull/17393
