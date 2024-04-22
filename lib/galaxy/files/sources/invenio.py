@@ -1,5 +1,6 @@
 import datetime
 import json
+import re
 import urllib.request
 from typing import (
     Any,
@@ -13,9 +14,11 @@ import requests
 from typing_extensions import (
     Literal,
     TypedDict,
+    Unpack,
 )
 
 from galaxy.files.sources import (
+    DEFAULT_SCHEME,
     Entry,
     EntryData,
     FilesSourceOptions,
@@ -25,6 +28,7 @@ from galaxy.files.sources import (
 from galaxy.files.sources._rdm import (
     OptionalUserContext,
     RDMFilesSource,
+    RDMFilesSourceProperties,
     RDMRepositoryInteractor,
 )
 from galaxy.util import (
@@ -111,6 +115,26 @@ class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository."""
 
     plugin_type = "inveniordm"
+
+    def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
+        super().__init__(**kwd)
+        self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
+
+    def get_scheme(self) -> str:
+        return "invenio"
+
+    def score_url_match(self, url: str):
+        if match := self._scheme_regex.match(url):
+            return match.span()[1]
+        else:
+            return 0
+
+    def to_relative_path(self, url: str) -> str:
+        legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
+        if url.startswith(legacy_uri_root):
+            return url[len(legacy_uri_root) :]
+        else:
+            return super().to_relative_path(url)
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         return InvenioRepositoryInteractor(repository_url, self)

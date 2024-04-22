@@ -4,7 +4,6 @@ import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
-import { RouterLink } from "vue-router";
 
 import {
     exportHistoryToFileSource,
@@ -23,10 +22,12 @@ import { absPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportOptions from "./ExportOptions.vue";
+import RDMCredentialsInfo from "./RDMCredentialsInfo.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
@@ -37,7 +38,7 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["rdm"] });
+const { hasWritable: hasWritableRDMFileSources, getFileSourceById } = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,
@@ -63,6 +64,7 @@ const isLoadingRecords = ref(true);
 const exportRecords = ref<ExportRecord[]>([]);
 
 const historyName = computed(() => history.value?.name ?? props.historyId);
+const defaultFileName = computed(() => `(Galaxy History) ${historyName.value}`);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
 const isLatestExportRecordReadyToDownload = computed(
     () =>
@@ -90,6 +92,7 @@ const history = computed(() => {
 const errorMessage = ref<string | undefined>(undefined);
 const actionMessage = ref<string | undefined>(undefined);
 const actionMessageVariant = ref<ColorVariant | undefined>(undefined);
+const zenodoSource = computed(() => getFileSourceById("zenodo"));
 
 onMounted(async () => {
     updateExports();
@@ -203,11 +206,13 @@ function updateExportParams(newParams: ExportParams) {
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
+
                     <BAlert show variant="warning">
                         History archive downloads can expire and are removed at regular intervals. For permanent
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
                     </BAlert>
+
                     <BButton
                         class="gen-direct-download-btn"
                         :disabled="!canGenerateDownload"
@@ -215,6 +220,7 @@ function updateExportParams(newParams: ExportParams) {
                         @click="prepareDownload">
                         Generate direct download
                     </BButton>
+
                     <span v-if="isPreparingDownload">
                         <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
@@ -233,6 +239,7 @@ function updateExportParams(newParams: ExportParams) {
                         one of the available remote file sources here. You will be able to re-import it later as long as
                         it remains available on the remote server.
                     </p>
+
                     <ExportToFileSourceForm
                         what="history"
                         :clear-input-after-export="true"
@@ -244,24 +251,46 @@ function updateExportParams(newParams: ExportParams) {
                     title="to RDM repository"
                     title-link-class="tab-export-to-rdm-repo">
                     <p>You can <b>upload your history</b> to one of the available RDM repositories here.</p>
-                    <p>
-                        Your history export archive needs to be uploaded to an existing <i>draft</i> record. You will
-                        need to create a <b>new record</b> on the repository or select an existing
-                        <b>draft record</b> and then export your history to it.
-                    </p>
-                    <BAlert show variant="info">
-                        You may need to setup your credentials for the selected repository in your
-                        <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
-                        export. You can also define some default options for the export in those settings, like the
-                        public name you want to associate with your records or whether you want to publish them
-                        immediately or keep them as drafts after export.
-                    </BAlert>
+
+                    <RDMCredentialsInfo what="history export archive" />
+
                     <ExportToRDMRepositoryForm
                         what="history"
-                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-filename="defaultFileName"
                         :default-record-name="historyName"
                         :clear-input-after-export="true"
                         @export="doExportToFileSource" />
+                </BTab>
+                <BTab
+                    v-if="zenodoSource"
+                    id="zenodo-file-source-tab"
+                    title="to ZENODO"
+                    title-link-class="tab-export-to-zenodo-repo">
+                    <div class="zenodo-info">
+                        <img
+                            src="https://raw.githubusercontent.com/zenodo/zenodo/master/zenodo/modules/theme/static/img/logos/zenodo-gradient-square.svg"
+                            alt="ZENODO Logo" />
+                        <p>
+                            <ExternalLink href="https://zenodo.org"><b>Zenodo</b></ExternalLink> is a general-purpose
+                            open repository developed under the
+                            <ExternalLink href="https://www.openaire.eu">European OpenAIRE</ExternalLink> program and
+                            operated by <ExternalLink href="https://home.cern">CERN</ExternalLink>. It allows
+                            researchers to deposit research papers, data sets, research software, reports, and any other
+                            research related digital artefacts. For each submission, a persistent
+                            <b>digital object identifier (DOI)</b> is minted, which makes the stored items easily
+                            citeable.
+                        </p>
+                    </div>
+
+                    <RDMCredentialsInfo what="history export archive" selected-repository="ZENODO" />
+                    <ExportToRDMRepositoryForm
+                        what="history"
+                        :default-filename="defaultFileName"
+                        :default-record-name="historyName"
+                        :clear-input-after-export="true"
+                        :file-source="zenodoSource"
+                        @export="doExportToFileSource">
+                    </ExportToRDMRepositoryForm>
                 </BTab>
             </BTabs>
         </BCard>
@@ -295,3 +324,11 @@ function updateExportParams(newParams: ExportParams) {
             @onReimport="reimportFromRecord" />
     </span>
 </template>
+
+<style scoped>
+.zenodo-info {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+}
+</style>

@@ -3,7 +3,6 @@ import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
 import {
-    BrowsableFilesSourcePlugin,
     browseRemoteFiles,
     FileSourceBrowsingMode,
     FilterFileSourcesOptions,
@@ -11,7 +10,7 @@ import {
     RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
-import { isSubPath } from "@/components/FilesDialog/utilities";
+import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -33,6 +32,8 @@ interface FilesDialogProps {
     multiple?: boolean;
     /** Whether to show only writable sources */
     requireWritable?: boolean;
+    /** Optional selected item to start browsing from */
+    selectedItem?: SelectionItem;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -42,6 +43,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     mode: "file",
     multiple: false,
     requireWritable: false,
+    selectedItem: undefined,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -233,7 +235,7 @@ function load(record?: SelectionItem) {
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
-                    .map(fileSourcePluginToRecord);
+                    .map(fileSourcePluginToItem);
                 items.value = convertedItems;
                 formatRows();
                 optionsShow.value = true;
@@ -290,17 +292,6 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): SelectionItem {
-    const result = {
-        id: plugin.id,
-        label: plugin.label,
-        details: plugin.doc,
-        isLeaf: false,
-        url: plugin.uri_root,
-    };
-    return result;
-}
-
 /** select all files in current folder**/
 function onSelectAll() {
     if (!currentDirectory.value) {
@@ -343,7 +334,7 @@ function onOk() {
 }
 
 onMounted(() => {
-    load();
+    load(props.selectedItem);
 });
 </script>
 

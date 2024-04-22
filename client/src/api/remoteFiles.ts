@@ -7,6 +7,7 @@ import { fetcher } from "@/api/schema/fetcher";
  * - `source` - allows to select a source plugin root and doesn't list its contents
  */
 export type FileSourceBrowsingMode = "file" | "directory" | "source";
+export type FilesSourcePlugin = components["schemas"]["FilesSourcePlugin"];
 export type BrowsableFilesSourcePlugin = components["schemas"]["BrowsableFilesSourcePlugin"];
 export type RemoteFile = components["schemas"]["RemoteFile"];
 export type RemoteDirectory = components["schemas"]["RemoteDirectory"];
