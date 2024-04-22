@@ -41,5 +41,6 @@ def app_config(tmpdir) -> UserObjectStoresAppConfig:
         umask=0o077,
         object_store_cache_path=str(tmpdir / "cache"),
         object_store_cache_size=1,
+        user_object_store_index_by="uuid",
     )
     return app_config

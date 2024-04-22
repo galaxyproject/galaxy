@@ -9,11 +9,13 @@ To Test:
 
 import logging
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
     Union,
 )
+from uuid import uuid4
 
 from pydantic import BaseModel
 
@@ -78,7 +80,8 @@ class UpgradeInstancePayload(BaseModel):
 
 
 class UserConcreteObjectStoreModel(ConcreteObjectStoreModel):
-    id: int
+    id: Union[int, str]
+    uuid: str
     type: ObjectStoreTemplateType
     template_id: str
     template_version: int
@@ -92,16 +95,19 @@ ModifyInstancePayload = Union[UpdateInstanceSecretPayload, UpgradeInstancePayloa
 class ObjectStoreInstancesManager:
     _catalog: ConfiguredObjectStoreTemplates
     _sa_session: galaxy_scoped_session
+    _app_config: UserObjectStoresAppConfig
 
     def __init__(
         self,
         catalog: ConfiguredObjectStoreTemplates,
         sa_session: galaxy_scoped_session,
         vault: Vault,
+        app_config: UserObjectStoresAppConfig,
     ):
         self._catalog = catalog
         self._sa_session = sa_session
         self._app_vault = vault
+        self._app_config = app_config
 
     @property
     def summaries(self) -> ObjectStoreTemplateSummaries:
@@ -123,10 +129,10 @@ class ObjectStoreInstancesManager:
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         catalog = self._catalog
-        template = catalog.find_template_by(persisted_object_store.object_store_template_id, payload.template_version)
-        persisted_object_store.object_store_template_version = template.version
-        persisted_object_store.object_store_template_definition = template.model_dump()
-        old_variables = persisted_object_store.object_store_template_variables or {}
+        template = catalog.find_template_by(persisted_object_store.template_id, payload.template_version)
+        persisted_object_store.template_version = template.version
+        persisted_object_store.template_definition = template.model_dump()
+        old_variables = persisted_object_store.template_variables or {}
         updated_variables = payload.variables
         actual_variables: OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = {}
         for variable in template.variables or []:
@@ -136,11 +142,11 @@ class ObjectStoreInstancesManager:
             if updated_value:
                 actual_variables[variable_name] = updated_value
 
-        persisted_object_store.object_store_template_variables = actual_variables
-        old_secrets = persisted_object_store.object_store_template_secrets or []
+        persisted_object_store.template_variables = actual_variables
+        old_secrets = persisted_object_store.template_secrets or []
         new_secrets = payload.secrets
 
-        recorded_secrets = persisted_object_store.object_store_template_secrets or []
+        recorded_secrets = persisted_object_store.template_secrets or []
 
         user_vault = trans.user_vault
         upgraded_template_secrets = []
@@ -154,7 +160,7 @@ class ObjectStoreInstancesManager:
                 continue
 
             secret_value = new_secrets[secret_name]
-            key = user_vault_key(persisted_object_store, secret_name)
+            key = user_vault_key(persisted_object_store, secret_name, self._app_config)
             user_vault.write_secret(key, secret_value)
             if secret_name not in recorded_secrets:
                 recorded_secrets.append(secret_name)
@@ -162,7 +168,7 @@ class ObjectStoreInstancesManager:
         secrets_to_delete: List[str] = []
         for recorded_secret in recorded_secrets:
             if recorded_secret not in upgraded_template_secrets:
-                key = user_vault_key(persisted_object_store, recorded_secret)
+                key = user_vault_key(persisted_object_store, recorded_secret, self._app_config)
                 log.info(f"deleting {key} from user vault")
                 user_vault.delete_secret(key)
                 secrets_to_delete.append(recorded_secret)
@@ -170,7 +176,7 @@ class ObjectStoreInstancesManager:
         for secret_to_delete in secrets_to_delete:
             recorded_secrets.remove(secret_to_delete)
 
-        persisted_object_store.object_store_template_secrets = recorded_secrets
+        persisted_object_store.template_secrets = recorded_secrets
         self._save(persisted_object_store)
         rval = self._to_model(trans, persisted_object_store)
         return rval
@@ -188,7 +194,7 @@ class ObjectStoreInstancesManager:
             persisted_object_store.description = payload.description
         if payload.variables is not None:
             # maybe just record the valid variables according to template like in upgrade
-            persisted_object_store.object_store_template_variables = payload.variables
+            persisted_object_store.template_variables = payload.variables
         self._save(persisted_object_store)
         return self._to_model(trans, persisted_object_store)
 
@@ -197,7 +203,7 @@ class ObjectStoreInstancesManager:
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         user_vault = trans.user_vault
-        key = user_vault_key(persisted_object_store, payload.secret_name)
+        key = user_vault_key(persisted_object_store, payload.secret_name, self._app_config)
         user_vault.write_secret(key, payload.secret_value)
         return self._to_model(trans, persisted_object_store)
 
@@ -212,10 +218,11 @@ class ObjectStoreInstancesManager:
         persisted_object_store = UserObjectStore()
         persisted_object_store.user_id = trans.user.id
         assert persisted_object_store.user_id
-        persisted_object_store.object_store_template_definition = template.model_dump()
-        persisted_object_store.object_store_template_id = template.id
-        persisted_object_store.object_store_template_version = template.version
-        persisted_object_store.object_store_template_variables = payload.variables
+        persisted_object_store.uuid = uuid4().hex
+        persisted_object_store.template_definition = template.model_dump()
+        persisted_object_store.template_id = template.id
+        persisted_object_store.template_version = template.version
+        persisted_object_store.template_variables = payload.variables
         persisted_object_store.name = payload.name
         persisted_object_store.description = payload.description
         self._save(persisted_object_store)
@@ -231,13 +238,13 @@ class ObjectStoreInstancesManager:
         recorded_secrets = []
         try:
             for secret, value in payload.secrets.items():
-                key = user_vault_key(persisted_object_store, secret)
+                key = user_vault_key(persisted_object_store, secret, self._app_config)
                 user_vault.write_secret(key, value)
                 recorded_secrets.append(secret)
         except Exception:
             self._sa_session.delete(persisted_object_store)
             raise
-        persisted_object_store.object_store_template_secrets = recorded_secrets
+        persisted_object_store.template_secrets = recorded_secrets
         self._save(persisted_object_store)
         return self._to_model(trans, persisted_object_store)
 
@@ -255,12 +262,24 @@ class ObjectStoreInstancesManager:
         self._sa_session.commit()
 
     def _get(self, trans: ProvidesUserContext, id: Union[str, int]) -> UserObjectStore:
-        user_object_store = self._sa_session.query(UserObjectStore).get(int(id))
+        filter = self._index_filter(id)
+        user_object_store = self._sa_session.query(UserObjectStore).filter(filter).one_or_none()
         if user_object_store is None:
             raise RequestParameterInvalidException(f"Failed to fetch object store for id {id}")
         if user_object_store.user != trans.user:
             raise ItemOwnershipException()
         return user_object_store
+
+    def _index_filter(self, id: Union[str, int]):
+        index_by = self._app_config.user_object_store_index_by
+        index_filter: Any
+        if index_by == "id":
+            id_as_int = int(id)
+            index_filter = UserObjectStore.__table__.c.id == id_as_int
+        else:
+            id_as_str = str(id)
+            index_filter = UserObjectStore.__table__.c.uuid == id_as_str
+        return index_filter
 
     def _to_model(self, trans, persisted_object_store: UserObjectStore) -> UserConcreteObjectStoreModel:
         quota = QuotaModel(source=None, enabled=False)
@@ -274,32 +293,48 @@ class ObjectStoreInstancesManager:
             object_store_type in ["azure_blob", "s3"],
         )
         # These shouldn't be null but sometimes can be?
-        secrets = persisted_object_store.object_store_template_secrets or []
+        secrets = persisted_object_store.template_secrets or []
+        uos_id: str
+        response_id: Union[int, str]
+        if self._app_config.user_object_store_index_by == "id":
+            uos_id = str(persisted_object_store.id)
+            response_id = persisted_object_store.id
+        else:
+            uos_id = str(persisted_object_store.uuid)
+            response_id = uos_id
+        object_store_id = f"user_objects://{uos_id}"
+
         return UserConcreteObjectStoreModel(
-            id=persisted_object_store.id,
+            id=response_id,
+            uuid=str(persisted_object_store.uuid),
             type=object_store_type,
-            template_id=persisted_object_store.object_store_template_id,
-            template_version=persisted_object_store.object_store_template_version,
-            variables=persisted_object_store.object_store_template_variables,
+            template_id=persisted_object_store.template_id,
+            template_version=persisted_object_store.template_version,
+            variables=persisted_object_store.template_variables,
             secrets=secrets,
             name=persisted_object_store.name,
             description=persisted_object_store.description,
-            object_store_id=f"user_objects://{persisted_object_store.id}",
+            object_store_id=object_store_id,
             private=True,
             quota=quota,
             badges=badges,
         )
 
 
-def user_vault_key(user_object_store: UserObjectStore, secret: str) -> str:
-    uos_id = user_object_store.id
+def user_vault_key(user_object_store: UserObjectStore, secret: str, app_config: UserObjectStoresAppConfig) -> str:
+    if app_config.user_object_store_index_by == "id":
+        uos_id = str(user_object_store.id)
+    else:
+        uos_id = str(user_object_store.uuid)
     assert uos_id
     user_vault_id_prefix = f"object_store_config/{uos_id}"
     key = f"{user_vault_id_prefix}/{secret}"
     return key
 
 
-def recover_secrets(user_object_store: UserObjectStore, vault: Vault) -> Dict[str, str]:
+def recover_secrets(
+    user_object_store: UserObjectStore, vault: Vault, app_config: UserObjectStoresAppConfig
+) -> Dict[str, str]:
     user: User = user_object_store.user
     user_vault = UserVaultWrapper(vault, user)
     secrets: Dict[str, str] = {}
@@ -307,9 +342,9 @@ def recover_secrets(user_object_store: UserObjectStore, vault: Vault) -> Dict[st
     # ones recorded as written in the persisted object, the ones
     # expected in the catalog, or the ones expected in the definition
     # persisted.
-    persisted_secret_names = user_object_store.object_store_template_secrets or []
+    persisted_secret_names = user_object_store.template_secrets or []
     for secret in persisted_secret_names:
-        vault_key = user_vault_key(user_object_store, secret)
+        vault_key = user_vault_key(user_object_store, secret, app_config)
         secret_value = user_vault.read_secret(vault_key)
         # assert secret_value
         if secret_value is not None:
@@ -325,8 +360,13 @@ class UserObjectStoreResolverImpl(BaseUserObjectStoreResolver):
 
     def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
         user_object_store_id = uri.split("://", 1)[1]
-        id_filter = UserObjectStore.__table__.c.id == user_object_store_id
-        user_object_store: UserObjectStore = self._sa_session.query(UserObjectStore).filter(id_filter).one()
-        secrets = recover_secrets(user_object_store, self._vault)
+        index_by = self._app_config.user_object_store_index_by
+        index_filter: Any
+        if index_by == "id":
+            index_filter = UserObjectStore.__table__.c.id == user_object_store_id
+        else:
+            index_filter = UserObjectStore.__table__.c.uuid == user_object_store_id
+        user_object_store: UserObjectStore = self._sa_session.query(UserObjectStore).filter(index_filter).one()
+        secrets = recover_secrets(user_object_store, self._vault, self._app_config)
         object_store_configuration = user_object_store.object_store_configuration(secrets=secrets)
         return object_store_configuration

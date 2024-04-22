@@ -14,7 +14,7 @@ interface Props {
     template: ObjectStoreTemplateSummary;
 }
 const props = defineProps<Props>();
-const title = computed(() => `Update Object Store ${props.objectStore?.name} Secrets`);
+const title = computed(() => `Update Storage Location ${props.objectStore?.name} Secrets`);
 
 async function onUpdate(secretName: string, secretValue: string) {
     const payload = {

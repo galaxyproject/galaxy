@@ -22,6 +22,6 @@ const latestTemplate = computed(
 );
 </script>
 <template>
-    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading object store instance and templates" />
+    <LoadingSpan v-if="!instance || !latestTemplate" message="Loading storage location instance and templates" />
     <UpgradeForm v-else :instance="instance" :latest-template="latestTemplate" />
 </template>

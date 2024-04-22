@@ -8,10 +8,6 @@ const getObjectStoreInstances = fetcher.path("/api/object_store_instances").meth
 
 type UserConcreteObjectStoreModel = components["schemas"]["UserConcreteObjectStoreModel"];
 
-function _asNumber(x: number | string): number {
-    return +x;
-}
-
 export const useObjectStoreInstancesStore = defineStore("objectStoreInstances", {
     state: () => ({
         instances: [] as UserConcreteObjectStoreModel[],
@@ -26,7 +22,7 @@ export const useObjectStoreInstancesStore = defineStore("objectStoreInstances", 
             return !state.fetched;
         },
         getInstance: (state) => {
-            return (id: number | string) => state.instances.find((i) => i.id == _asNumber(id));
+            return (id: number | string) => state.instances.find((i) => i.id.toString() == id.toString());
         },
     },
     actions: {

@@ -418,6 +418,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             umask=self.config.umask,
             object_store_cache_size=self.config.object_store_cache_size,
             object_store_cache_path=self.config.object_store_cache_path,
+            user_object_store_index_by=self.config.user_object_store_index_by,
         )
         self._register_singleton(UserObjectStoresAppConfig, app_config)
         user_object_store_resolver = self._register_abstract_singleton(

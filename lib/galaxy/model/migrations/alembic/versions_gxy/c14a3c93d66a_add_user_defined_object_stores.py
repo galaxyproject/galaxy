@@ -15,7 +15,10 @@ from sqlalchemy import (
     Text,
 )
 
-from galaxy.model.custom_types import JSONType
+from galaxy.model.custom_types import (
+    JSONType,
+    UUIDType,
+)
 from galaxy.model.migrations.util import (
     create_table,
     drop_table,
@@ -37,15 +40,16 @@ def upgrade():
         table_name,
         Column("id", Integer, primary_key=True),
         Column("user_id", Integer, ForeignKey("galaxy_user.id"), nullable=False, index=True),
+        Column("uuid", UUIDType, nullable=False, index=True),
         Column("name", String(255), index=True),
         Column("description", Text, index=True),
         Column("create_time", DateTime),
         Column("update_time", DateTime),
-        Column("object_store_template_id", String(255), index=True),
-        Column("object_store_template_version", Integer, index=True),
-        Column("object_store_template_definition", JSONType),
-        Column("object_store_template_variables", JSONType),
-        Column("object_store_template_secrets", JSONType),
+        Column("template_id", String(255), index=True),
+        Column("template_version", Integer, index=True),
+        Column("template_definition", JSONType),
+        Column("template_variables", JSONType),
+        Column("template_secrets", JSONType),
     )
 
 

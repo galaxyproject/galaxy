@@ -19,7 +19,7 @@ interface CreateFormProps {
 }
 const error = ref<string | null>(null);
 const props = defineProps<CreateFormProps>();
-const title = "Create a new object store for your data";
+const title = "Create a new storage location for your data";
 const submitTitle = "Submit";
 
 const inputs = computed(() => {

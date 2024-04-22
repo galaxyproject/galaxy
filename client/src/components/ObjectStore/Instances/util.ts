@@ -39,7 +39,3 @@ export function templateSecretFormEntry(secret: ObjectStoreTemplateSecret) {
         value: "",
     };
 }
-
-export function asNumber(x: number | string): number {
-    return +x;
-}

@@ -7,7 +7,10 @@ interface SelectTemplateProps {
     templates: ObjectStoreTemplateSummaries;
 }
 
-withDefaults(defineProps<SelectTemplateProps>(), {});
+defineProps<SelectTemplateProps>();
+
+const selectText =
+    "Select storage location template to create new storage location with. These templates are configured by your Galaxy administrator.";
 
 const emit = defineEmits<{
     (e: "onSubmit", id: string): void;
@@ -36,8 +39,7 @@ async function handleSubmit(templateId: string) {
             </b-col>
             <b-col cols="5">
                 <p v-localize style="float: right">
-                    Select object store template to create new object store with. These templates are configured by your
-                    Galaxy administrator.
+                    {{ selectText }}
                 </p>
             </b-col>
         </b-row>
