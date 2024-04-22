@@ -1,15 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { useConfirmDialog } from "composables/confirmDialog";
-import { useFileSources } from "composables/fileSources";
-import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "composables/shortTermStorage";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { copy as sendToClipboard } from "utils/clipboard";
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
 import {
@@ -17,14 +11,23 @@ import {
     fetchHistoryExportRecords,
     reimportHistoryFromRecord,
 } from "@/api/histories.export";
+import type { ColorVariant } from "@/components/Common";
+import { areEqual, ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useFileSources } from "@/composables/fileSources";
+import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
+import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useHistoryStore } from "@/stores/historyStore";
+import { copy as sendToClipboard } from "@/utils/clipboard";
 import { absPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportOptions from "./ExportOptions.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
     isRunning: isExportTaskRunning,
@@ -45,20 +48,19 @@ const {
 
 const { confirm } = useConfirmDialog();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    historyId: string;
+}
+
+const props = defineProps<Props>();
 
 library.add(faFileExport);
 
 const POLLING_DELAY = 3000;
 
-const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
+const exportParams = ref(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
-const exportRecords = ref(null);
+const exportRecords = ref<ExportRecord[]>([]);
 
 const historyName = computed(() => history.value?.name ?? props.historyId);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
@@ -67,10 +69,10 @@ const isLatestExportRecordReadyToDownload = computed(
         latestExportRecord.value &&
         latestExportRecord.value.isUpToDate &&
         latestExportRecord.value.canDownload &&
-        latestExportRecord.value.exportParams?.equals(exportParams)
+        areEqual(latestExportRecord.value.exportParams, exportParams.value)
 );
 const canGenerateDownload = computed(() => !isPreparingDownload.value && !isLatestExportRecordReadyToDownload.value);
-const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
+const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : []));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const availableRecordsMessage = computed(() =>
     isLoadingRecords.value
@@ -85,9 +87,9 @@ const history = computed(() => {
     return history;
 });
 
-const errorMessage = ref(null);
-const actionMessage = ref(null);
-const actionMessageVariant = ref(null);
+const errorMessage = ref<string | undefined>(undefined);
+const actionMessage = ref<string | undefined>(undefined);
+const actionMessageVariant = ref<ColorVariant | undefined>(undefined);
 
 onMounted(async () => {
     updateExports();
@@ -103,7 +105,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function updateExports() {
     isLoadingRecords.value = true;
     try {
-        errorMessage.value = null;
+        errorMessage.value = undefined;
         exportRecords.value = await fetchHistoryExportRecords(props.historyId);
         const shouldWaitForTask =
             latestExportRecord.value?.isPreparing &&
@@ -120,36 +122,36 @@ async function updateExports() {
             errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
         }
     } catch (error) {
-        errorMessage.value = error;
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         isLoadingRecords.value = false;
     }
 }
 
-async function doExportToFileSource(exportDirectory, fileName) {
-    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams);
+async function doExportToFileSource(exportDirectory: string, fileName: string) {
+    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams.value);
     updateExports();
 }
 
 async function prepareDownload() {
-    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
+    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams.value });
     updateExports();
 }
 
-function downloadFromRecord(record) {
+function downloadFromRecord(record: ExportRecord) {
     if (record.canDownload) {
-        downloadObjectByRequestId(record.stsDownloadId);
+        downloadObjectByRequestId(record.stsDownloadId!);
     }
 }
 
-function copyDownloadLinkFromRecord(record) {
+function copyDownloadLinkFromRecord(record: ExportRecord) {
     if (record.canDownload) {
-        const relativeLink = getDownloadObjectUrl(record.stsDownloadId);
+        const relativeLink = getDownloadObjectUrl(record.stsDownloadId!);
         sendToClipboard(absPath(relativeLink), "Download link copied to your clipboard");
     }
 }
 
-async function reimportFromRecord(record) {
+async function reimportFromRecord(record: ExportRecord) {
     const confirmed = await confirm(
         `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
     );
@@ -168,15 +170,14 @@ async function reimportFromRecord(record) {
 }
 
 function onActionMessageDismissedFromRecord() {
-    actionMessage.value = null;
-    actionMessageVariant.value = null;
+    actionMessage.value = undefined;
+    actionMessageVariant.value = undefined;
 }
 
-function updateExportParams(newParams) {
-    exportParams.modelStoreFormat = newParams.modelStoreFormat;
-    exportParams.includeFiles = newParams.includeFiles;
-    exportParams.includeDeleted = newParams.includeDeleted;
-    exportParams.includeHidden = newParams.includeHidden;
+function updateExportParams(newParams: ExportParams) {
+    exportParams.value = {
+        ...newParams,
+    };
 }
 </script>
 <template>

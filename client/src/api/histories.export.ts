@@ -1,7 +1,10 @@
 import type { components } from "@/api/schema";
 import { fetcher } from "@/api/schema";
-import type { ObjectExportTaskResponse } from "@/components/Common/models/exportRecordModel";
-import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
+import {
+    type ExportRecord,
+    ExportRecordModel,
+    type ObjectExportTaskResponse,
+} from "@/components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 
 type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
@@ -69,7 +72,7 @@ export async function exportHistoryToFileSource(
  * @param record The export record to be imported
  * @returns A promise with the request response
  */
-export async function reimportHistoryFromRecord(record: ExportRecordModel) {
+export async function reimportHistoryFromRecord(record: ExportRecord) {
     return _importFromStoreAsync({
         store_content_uri: record.importUri,
         model_store_format: record.modelStoreFormat,
