@@ -198,6 +198,10 @@ def add_exception_handler(app: FastAPI) -> None:
 
     @app.exception_handler(MessageException)
     async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
+        # Intentionally not logging traceback here as the full context will be
+        # dispatched to Sentry if configured.  This just makes logs less opaque
+        # when one sees a 500.
+        log.error(f"MessageException: {exc}")
         return get_error_response_for_request(request, exc)
 
 
