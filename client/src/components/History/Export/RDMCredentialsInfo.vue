@@ -18,6 +18,6 @@ withDefaults(defineProps<Props>(), {
         You may need to setup your credentials for {{ selectedRepository }} in your
         <RouterLink to="/user/information" target="_blank">preferences page</RouterLink> to be able to export. You can
         also define some default options for the export in those settings, like the public name you want to associate
-        with your records or whether you want to publish them immediately or keep them as drafts after export.
+        with your records.
     </BAlert>
 </template>
