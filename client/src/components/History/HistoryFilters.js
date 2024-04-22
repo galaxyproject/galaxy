@@ -30,7 +30,7 @@ const validFilters = {
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
     state: {
         placeholder: "state",
-        type: String,
+        type: "Dropdown",
         handler: equals("state"),
         datalist: states,
         helpInfo: StatesInfo,
