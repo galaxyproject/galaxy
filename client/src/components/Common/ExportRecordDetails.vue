@@ -8,12 +8,13 @@ import {
     faLink,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BCardTitle } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ColorVariant } from ".";
 import { ExportRecord } from "./models/exportRecordModel";
 
+import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faCheckCircle, faClock, faExclamationCircle, faExclamationTriangle, faLink);
@@ -60,10 +61,10 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <BCard class="export-record-details">
-        <BCardTitle>
+    <div class="export-record-details">
+        <Heading size="sm">
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
-        </BCardTitle>
+        </Heading>
 
         <p v-if="!props.record.isPreparing">
             Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
@@ -149,5 +150,5 @@ function onMessageDismissed() {
                 </div>
             </div>
         </div>
-    </BCard>
+    </div>
 </template>

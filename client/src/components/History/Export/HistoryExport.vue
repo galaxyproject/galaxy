@@ -299,29 +299,29 @@ function updateExportParams(newParams: ExportParams) {
             {{ errorMessage }}
         </BAlert>
         <div v-else-if="latestExportRecord">
-            <h2 class="h-md mt-3">Latest Export Record</h2>
-            <ExportRecordDetails
-                :record="latestExportRecord"
-                object-type="history"
-                class="mt-3"
-                :action-message="actionMessage"
-                :action-message-variant="actionMessageVariant"
-                @onDownload="downloadFromRecord"
-                @onCopyDownloadLink="copyDownloadLinkFromRecord"
-                @onReimport="reimportFromRecord"
-                @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+            <h2 class="h-md mt-3">Export Records</h2>
+            <BCard>
+                <ExportRecordDetails
+                    :record="latestExportRecord"
+                    object-type="history"
+                    :action-message="actionMessage"
+                    :action-message-variant="actionMessageVariant"
+                    @onDownload="downloadFromRecord"
+                    @onCopyDownloadLink="copyDownloadLinkFromRecord"
+                    @onReimport="reimportFromRecord"
+                    @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+                <ExportRecordTable
+                    v-if="hasPreviousExports"
+                    id="previous-export-records"
+                    :records="previousExportRecords"
+                    class="mt-3"
+                    @onDownload="downloadFromRecord"
+                    @onReimport="reimportFromRecord" />
+            </BCard>
         </div>
         <BAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </BAlert>
-
-        <ExportRecordTable
-            v-if="hasPreviousExports"
-            id="previous-export-records"
-            :records="previousExportRecords"
-            class="mt-3"
-            @onDownload="downloadFromRecord"
-            @onReimport="reimportFromRecord" />
     </span>
 </template>
 
