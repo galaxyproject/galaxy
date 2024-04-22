@@ -15,7 +15,6 @@ import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
 import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
 import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
-import FilterMenuQuotaSource from "@/components/Common/FilterMenuQuotaSource.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
 
 library.add(faAngleDoubleUp, faQuestion, faSearch);
@@ -260,15 +259,11 @@ function updateFilterText(newFilterText: string) {
                             :filter="getValidFilter(filter)"
                             :filters="filters"
                             @change="onOption" />
-                        <FilterMenuQuotaSource
-                            v-else-if="validFilters[filter]?.type == 'QuotaSource'"
-                            :name="filter"
-                            :filter="getValidFilter(filter)"
-                            :filters="filters"
-                            :identifier="identifier"
-                            @change="onOption" />
                         <FilterMenuDropdown
-                            v-else-if="validFilters[filter]?.type == 'Dropdown'"
+                            v-else-if="
+                                validFilters[filter]?.type == 'Dropdown' || validFilters[filter]?.type == 'QuotaSource'
+                            "
+                            :type="validFilters[filter]?.type"
                             :name="filter"
                             :error="errorForField(filter) || undefined"
                             :filter="getValidFilter(filter)"

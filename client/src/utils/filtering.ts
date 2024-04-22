@@ -40,7 +40,7 @@ export type ErrorType = {
 type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
-type FilterType =
+export type FilterType =
     | typeof String
     | typeof Number
     | typeof Boolean

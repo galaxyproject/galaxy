@@ -4,21 +4,31 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import { capitalize } from "lodash";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, type UnwrapRef, watch } from "vue";
 
-import { type ValidFilter } from "@/utils/filtering";
+import { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { type FilterType, type ValidFilter } from "@/utils/filtering";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { fetch } from "../User/DiskUsage/Quota/services";
+
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 library.add(faQuestion);
 
-type FilterType = string | boolean | undefined;
+type QuotaUsageUnwrapped = UnwrapRef<QuotaUsage>;
+
+type FilterValue = QuotaUsageUnwrapped | string | boolean | undefined;
+
 type DatalistItem = { value: string; text: string };
 
 interface Props {
+    type?: FilterType;
     name: string;
     error?: string;
     filter: ValidFilter<any>;
     filters: {
-        [k: string]: FilterType;
+        [k: string]: FilterValue;
     };
     identifier: string;
 }
@@ -26,12 +36,25 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: FilterType): void;
+    (e: "change", name: string, value: FilterValue): void;
 }>();
 
-const propValue = computed<FilterType>(() => props.filters[props.name]);
+const propValue = computed<FilterValue>(() => props.filters[props.name]);
 
-const localValue = ref<FilterType>(propValue.value);
+const localValue = ref<FilterValue>(propValue.value);
+
+watch(
+    () => localValue.value,
+    () => {
+        emit("change", props.name, localValue.value);
+    }
+);
+watch(
+    () => propValue.value,
+    () => {
+        localValue.value = propValue.value;
+    }
+);
 
 // datalist refs
 const datalist = computed<(DatalistItem[] | string[]) | undefined>(() => props.filter.datalist);
@@ -56,20 +79,39 @@ function onHelp(_: string, value: string) {
     localValue.value = value;
 }
 
-watch(
-    () => localValue.value,
-    () => {
-        emit("change", props.name, localValue.value);
+// Quota Source refs and operations
+const quotaUsages = ref<QuotaUsage[]>([] as QuotaUsage[]);
+const errorMessage = ref<string>();
+async function loadQuotaUsages() {
+    try {
+        quotaUsages.value = await fetch();
+
+        // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
+        if (propValue.value && typeof propValue.value === "string") {
+            localValue.value = quotaUsages.value.find(
+                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value
+            );
+        }
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
     }
-);
-watch(
-    () => propValue.value,
-    () => {
-        localValue.value = propValue.value;
+}
+const hasMultipleQuotaSources = computed<boolean>(() => {
+    return !!(quotaUsages.value && quotaUsages.value.length > 1);
+});
+onMounted(async () => {
+    if (props.type === "QuotaSource") {
+        await loadQuotaUsages();
     }
-);
+});
+function isQuotaUsageVal(value: FilterValue): value is QuotaUsageUnwrapped {
+    return !!(value && value instanceof Object && "rawSourceLabel" in value);
+}
 
 const dropDownText = computed<string>(() => {
+    if (props.type === "QuotaSource" && isQuotaUsageVal(localValue.value)) {
+        return localValue.value.sourceLabel;
+    }
     if (localValue.value) {
         const stringMatch = stringDatalist.value.find((item) => item === localValue.value);
         const objectMatch = objectDatalist.value.find((item) => item.value === localValue.value);
@@ -82,13 +124,13 @@ const dropDownText = computed<string>(() => {
     return "(any)";
 });
 
-function setValue(val: string | undefined) {
+function setValue(val: string | QuotaUsage | undefined) {
     localValue.value = val;
 }
 </script>
 
 <template>
-    <div v-if="datalist">
+    <div v-if="datalist || hasMultipleQuotaSources">
         <small>Filter by {{ props.filter.placeholder }}:</small>
         <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`" class="flex-nowrap">
             <BDropdown
@@ -117,6 +159,20 @@ function setValue(val: string | undefined) {
                         href="#"
                         @click="setValue(listItem.value)">
                         {{ listItem.text }}
+                    </BDropdownItem>
+                </span>
+                <span v-else-if="props.type === 'QuotaSource'">
+                    <BDropdownItem
+                        v-for="quotaUsage in quotaUsages"
+                        :key="quotaUsage.id"
+                        href="#"
+                        @click="setValue(quotaUsage)">
+                        {{ quotaUsage.sourceLabel }}
+                        <QuotaUsageBar
+                            :quota-usage="quotaUsage"
+                            class="quota-usage-bar"
+                            :compact="true"
+                            :embedded="true" />
                     </BDropdownItem>
                 </span>
             </BDropdown>
