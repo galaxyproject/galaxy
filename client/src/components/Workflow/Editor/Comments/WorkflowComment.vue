@@ -11,6 +11,7 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
+    ToggleCommentSelectedAction,
 } from "../Actions/commentActions";
 
 import FrameComment from "./FrameComment.vue";
@@ -83,7 +84,7 @@ function toggleSelect(e: MouseEvent) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopImmediatePropagation();
-            commentStore.toggleCommentMultiSelected(props.comment.id);
+            undoRedoStore.applyAction(new ToggleCommentSelectedAction(commentStore, props.comment));
         }
     }
 }

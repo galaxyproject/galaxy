@@ -14,6 +14,7 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
+    ToggleCommentSelectedAction,
 } from "./commentActions";
 import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
 import {
@@ -23,6 +24,7 @@ import {
     LazySetLabelAction,
     LazySetOutputLabelAction,
     RemoveStepAction,
+    ToggleStepSelectedAction,
     UpdateStepAction,
 } from "./stepActions";
 import {
@@ -131,6 +133,12 @@ describe("Workflow Undo Redo Actions", () => {
         it("LazyChangeSizeAction", () => {
             const comment = addComment();
             const action = new LazyChangeSizeAction(commentStore, comment, [1000, 1000]);
+            testUndoRedo(action);
+        });
+
+        it("ToggleCommentSelectedAction", () => {
+            const comment = addComment();
+            const action = new ToggleCommentSelectedAction(commentStore, comment);
             testUndoRedo(action);
         });
     });
@@ -273,6 +281,12 @@ describe("Workflow Undo Redo Actions", () => {
                 },
             ]);
 
+            testUndoRedo(action);
+        });
+
+        it("ToggleStepSelectedAction", () => {
+            const step = addStep();
+            const action = new ToggleStepSelectedAction(stateStore, stepStore, step.id);
             testUndoRedo(action);
         });
     });

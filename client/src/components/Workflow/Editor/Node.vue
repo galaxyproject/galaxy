@@ -161,6 +161,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -220,7 +221,7 @@ const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLEle
 
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const { connectionStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
     elHtml,
@@ -327,7 +328,7 @@ function makeActive() {
 }
 
 function toggleSelected() {
-    stateStore.toggleStepMultiSelected(props.id);
+    undoRedoStore.applyAction(new ToggleStepSelectedAction(stateStore, stepStore, props.id));
 }
 </script>
 

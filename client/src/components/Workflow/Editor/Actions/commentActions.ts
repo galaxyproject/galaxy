@@ -145,3 +145,35 @@ export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
         return `resize ${this.type} comment`;
     }
 }
+
+export class ToggleCommentSelectedAction extends UndoRedoAction {
+    store;
+    commentId;
+    type;
+    toggleTo: boolean;
+
+    constructor(store: WorkflowCommentStore, comment: WorkflowComment) {
+        super();
+
+        this.store = store;
+        this.commentId = comment.id;
+        this.type = comment.type;
+        this.toggleTo = !store.getCommentMultiSelected(this.commentId);
+    }
+
+    get name() {
+        if (this.toggleTo === true) {
+            return `add ${this.type} comment to selection`;
+        } else {
+            return `remove ${this.type} comment from selection`;
+        }
+    }
+
+    run() {
+        this.store.setCommentMultiSelected(this.commentId, this.toggleTo);
+    }
+
+    undo() {
+        this.store.setCommentMultiSelected(this.commentId, !this.toggleTo);
+    }
+}

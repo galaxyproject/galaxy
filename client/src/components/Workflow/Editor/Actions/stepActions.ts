@@ -362,6 +362,43 @@ export class CopyStepAction extends UndoRedoAction {
     }
 }
 
+export class ToggleStepSelectedAction extends UndoRedoAction {
+    stateStore;
+    stepStore;
+    stepId;
+    toggleTo: boolean;
+
+    constructor(stateStore: WorkflowStateStore, stepStore: WorkflowStepStore, stepId: number) {
+        super();
+
+        this.stateStore = stateStore;
+        this.stepStore = stepStore;
+        this.stepId = stepId;
+        this.toggleTo = !this.stateStore.getStepMultiSelected(stepId);
+    }
+
+    get stepLabel() {
+        const label = this.stepStore.getStep(this.stepId)?.label;
+        return label ?? `${this.stepId + 1}`;
+    }
+
+    get name() {
+        if (this.toggleTo === true) {
+            return `add step ${this.stepLabel} to selection`;
+        } else {
+            return `remove step ${this.stepLabel} from selection`;
+        }
+    }
+
+    run() {
+        this.stateStore.setStepMultiSelected(this.stepId, this.toggleTo);
+    }
+
+    undo() {
+        this.stateStore.setStepMultiSelected(this.stepId, !this.toggleTo);
+    }
+}
+
 export function useStepActions(
     stepStore: WorkflowStepStore,
     undoRedoStore: UndoRedoStore,
