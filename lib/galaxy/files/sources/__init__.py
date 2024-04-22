@@ -267,13 +267,14 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
     implements the `SupportsBrowsing` interface.
     """
 
+    plugin_type: ClassVar[str]
+
     @abc.abstractmethod
     def get_browsable(self) -> bool:
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
 class BaseFilesSource(FilesSource):
-    plugin_type: ClassVar[str]
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
 
     def get_browsable(self) -> bool:
