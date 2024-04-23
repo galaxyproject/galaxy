@@ -37,6 +37,7 @@ from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
+DEFAULT_PAGE_LIMIT = 25
 
 if TYPE_CHECKING:
     from galaxy.files import (

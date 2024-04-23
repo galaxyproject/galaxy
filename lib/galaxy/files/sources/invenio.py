@@ -8,6 +8,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 from urllib.parse import quote
 
@@ -21,6 +22,7 @@ from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
+    DEFAULT_PAGE_LIMIT,
     DEFAULT_SCHEME,
     Entry,
     EntryData,
@@ -118,6 +120,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
     """A files source for Invenio turn-key research data management repository."""
 
     plugin_type = "inveniordm"
+    supports_pagination = True
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -154,7 +157,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records = self.repository.get_records(writeable, user_context)
+            records = self.repository.get_records(writeable, user_context, limit=limit, offset=offset)
             return cast(List[AnyRemoteEntry], records)
         record_id = self.get_record_id_from_path(path)
         files = self.repository.get_files_in_record(record_id, writeable, user_context)
@@ -210,17 +213,29 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
-    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
+    def get_records(
+        self,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> List[RemoteDirectory]:
         params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
             # Only draft records owned by the user can be written to.
             params["is_published"] = "false"
             request_url = self.user_records_url
-        # TODO: Add pagination support to FileSources. This is limited to 100 records by default for now.
-        params["size"] = 100
+        size, page = self._to_size_page(limit, offset)
+        params["size"] = size
+        params["page"] = page
         response_data = self._get_response(user_context, request_url, params=params)
         return self._get_records_from_response(response_data)
+
+    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[int, int]:
+        size = limit or DEFAULT_PAGE_LIMIT
+        page = (offset or 0) // size + 1
+        return size, page
 
     def get_files_in_record(
         self, record_id: str, writeable: bool, user_context: OptionalUserContext = None
