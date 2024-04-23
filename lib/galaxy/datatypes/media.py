@@ -382,5 +382,5 @@ class Wma(Audio):
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             is_audio = "video" not in [stream["codec_type"] for stream in streams]
-            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] == is_audio
+            return "asf" in metadata["format_name"].split(",") and is_audio
         return False
