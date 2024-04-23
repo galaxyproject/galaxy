@@ -842,7 +842,11 @@ class Data(metaclass=DataMeta):
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         # Run converter, job is dispatched through Queue
-        job, converted_datasets, *_ = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)
+        job, converted_datasets, *_ = converter.execute(
+            trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
+        )
+        for converted_dataset in converted_datasets.values():
+            original_dataset.attach_implicitly_converted_dataset(trans.sa_session, converted_dataset, target_type)
         trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
             trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)

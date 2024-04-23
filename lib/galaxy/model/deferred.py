@@ -165,7 +165,7 @@ class DatasetInstanceMaterializer:
             if transient_paths:
                 metadata_tmp_files_dir = transient_paths.metadata_files_dir
             else:
-                # If metadata_tmp_files_dir is set we generate a MetdataTempFile,
+                # If metadata_tmp_files_dir is set we generate a MetadataTempFile,
                 # which we don't want when we're generating an attached materialized dataset instance
                 metadata_tmp_files_dir = None
             materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)
