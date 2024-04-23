@@ -70,7 +70,7 @@ export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean;
 /** Only one job needs to be in one of these states for the graph step to be in that state */
 const SINGLE_INSTANCE_STATES = ["error", "running", "paused"];
 /** All jobs need to be in one of these states for the graph step to be in that state */
-const ALL_INSTANCES_STATES = ["deleted", "skipped", "new"];
+const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
 
 /** Composable that creates a readonly invocation graph and loads it onto a workflow editor canvas for display.
  * @param invocation - The invocation to display in graph view

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faSignInAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -8,7 +8,6 @@ import { computed, onUnmounted, ref, watch } from "vue";
 import { components } from "@/api/schema";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { JobProvider } from "@/components/providers";
-import { isWorkflowInput } from "@/components/Workflow/constants";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -16,15 +15,15 @@ import { type Step } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
+import WorkflowInvocationSteps from "./WorkflowInvocationSteps.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
-import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
 
-library.add(faChevronDown, faChevronUp, faSignInAlt, faTimes);
+library.add(faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
 
 interface Props {
     /** The invocation to display */
@@ -50,7 +49,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    zoom: 0.5,
+    zoom: 0.75,
     showMinimap: true,
     showZoomControls: true,
     initialX: -40,
@@ -64,8 +63,8 @@ const errored = ref(false);
 const expandInvocationInputs = ref(false);
 const errorMessage = ref("");
 const showingJobId = ref<string | undefined>(undefined);
-const scrollToId = ref<number | null>(null);
 const pollTimeout = ref<any>(null);
+const hideGraph = ref(false);
 
 const invocationRef = computed(() => props.invocation);
 
@@ -74,10 +73,6 @@ const { datatypesMapper } = useDatatypesMapper();
 const workflowId = computed(() => props.workflow?.id);
 
 const { steps, storeId, loadInvocationGraph } = useInvocationGraph(invocationRef, workflowId.value);
-
-const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => isWorkflowInput(step.type));
-
-const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
 
 // Equivalent to onMounted; this is where the graph is initialized, and the polling is started
 watch(
@@ -98,14 +93,26 @@ watch(
     { immediate: true }
 );
 
+// on loading the steps, if any of the steps (an obj) has state === "error", toggleActiveNode
 watch(
-    () => stateStore.activeNodeId,
+    () => initialLoading.value,
     (newVal) => {
-        if (newVal !== null) {
-            // if the active node id is an input step, expand the inputs section
-            expandInvocationInputs.value = workflowInputSteps.findIndex((step) => step.id === newVal) !== -1;
+        if (!newVal && steps.value) {
+            const errorStep = Object.values(steps.value).find((step) => step.state === "error");
+            if (errorStep) {
+                stateStore.activeNodeId = errorStep.id;
+            }
         }
+    },
+    { immediate: true }
+);
+
+// when the graph is hidden/visible, reset the active node and showingJobId
+watch(
+    () => hideGraph.value,
+    () => {
         showingJobId.value = undefined;
+        stateStore.activeNodeId = null;
     }
 );
 
@@ -152,26 +159,21 @@ async function pollInvocationGraph() {
     }
 }
 
-function focusOnStep(stepId: number) {
+function toggleActiveNode(stepId: number) {
     if (stateStore.activeNodeId === stepId) {
         stateStore.activeNodeId = null;
     } else {
         stateStore.activeNodeId = stepId;
-        scrollToId.value = stepId;
     }
 }
 
 function getStepKey(step: Step) {
     return step.id;
 }
-
-function showStep(jobId: string) {
-    showingJobId.value = jobId;
-}
 </script>
 
 <template>
-    <div class="container-root m-3 w-100 overflow-auto d-flex flex-column">
+    <div class="container-root w-100 overflow-auto d-flex flex-column">
         <BAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
         </BAlert>
@@ -187,66 +189,41 @@ function showStep(jobId: string) {
                 :scope-key="props.invocation.id"
                 :get-item-key="getStepKey">
                 <div class="d-flex">
-                    <div class="d-flex flex-column" style="width: 60%">
-                        <BCard>
+                    <div v-if="!hideGraph" class="position-relative" style="width: 60%">
+                        <BCard no-body>
                             <WorkflowGraph
                                 :steps="steps"
                                 :datatypes-mapper="datatypesMapper"
                                 :initial-position="initialPosition"
-                                :scroll-to-id="scrollToId"
+                                :scroll-to-id="stateStore.activeNodeId"
                                 :show-minimap="props.showMinimap"
                                 :show-zoom-controls="props.showZoomControls"
                                 is-invocation
                                 readonly />
                         </BCard>
+                        <BButton
+                            class="position-absolute text-decoration-none m-2"
+                            style="top: 0; right: 0"
+                            size="sm"
+                            @click="hideGraph = true">
+                            <FontAwesomeIcon :icon="faTimes" class="mr-1" />
+                            <span v-localize>Hide Graph</span>
+                        </BButton>
                     </div>
-                    <aside class="overflow-auto" style="width: 40%; max-height: 65vh">
-                        <!-- Input Steps grouped in a separate portlet -->
-                        <div v-if="workflowInputSteps.length > 0" class="ui-portlet-section w-100">
-                            <div
-                                class="portlet-header portlet-operations"
-                                role="button"
-                                tabindex="0"
-                                @keyup.enter="expandInvocationInputs = !expandInvocationInputs"
-                                @click="expandInvocationInputs = !expandInvocationInputs">
-                                <span :id="`step-icon-invocation-inputs-section`">
-                                    <FontAwesomeIcon class="portlet-title-icon" :icon="faSignInAlt" />
-                                </span>
-                                <span class="portlet-title-text">
-                                    <u v-localize class="step-title ml-2">Workflow Inputs</u>
-                                </span>
-                                <FontAwesomeIcon
-                                    class="float-right"
-                                    :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
-                            </div>
-
-                            <div v-if="expandInvocationInputs" class="portlet-content m-1">
-                                <WorkflowInvocationStep
-                                    v-for="step in workflowInputSteps"
-                                    :key="step.id"
-                                    :invocation="invocationRef"
-                                    :workflow="props.workflow"
-                                    :workflow-step="step"
-                                    :graph-step="steps[step.id]"
-                                    :expanded="stateStore.activeNodeId === step.id"
-                                    :showing-job-id="showingJobId"
-                                    @show-job="showStep"
-                                    @update:expanded="focusOnStep(step.id)" />
-                            </div>
-                        </div>
-                        <!-- Non-Input (Tool/Subworkflow) Steps -->
-                        <WorkflowInvocationStep
-                            v-for="step in workflowRemainingSteps"
-                            :key="step.id"
-                            :invocation="invocationRef"
-                            :workflow="props.workflow"
-                            :workflow-step="step"
-                            :graph-step="steps[step.id]"
-                            :expanded="stateStore.activeNodeId === step.id"
-                            :showing-job-id="showingJobId"
-                            @show-job="showStep"
-                            @update:expanded="focusOnStep(step.id)" />
-                    </aside>
+                    <BButton v-else size="sm" class="p-0" @click="hideGraph = false">
+                        <FontAwesomeIcon :icon="faSitemap" />
+                        <div v-localize>Show Graph</div>
+                    </BButton>
+                    <WorkflowInvocationSteps
+                        :steps="steps"
+                        :store-id="storeId"
+                        :invocation="invocationRef"
+                        :workflow="props.workflow"
+                        :hide-graph="hideGraph"
+                        :showing-job-id="showingJobId || ''"
+                        :expand-invocation-inputs.sync="expandInvocationInputs"
+                        @update:showing-job-id="(jobId) => (showingJobId = jobId)"
+                        @focus-on-step="toggleActiveNode" />
                 </div>
             </ExpandedItems>
             <BCard v-if="showingJobId" class="mt-1" no-body>

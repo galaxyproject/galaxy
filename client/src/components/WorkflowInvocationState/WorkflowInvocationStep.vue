@@ -38,7 +38,7 @@
                             <details
                                 v-if="Object.values(stepDetails.outputs).length > 0"
                                 class="invocation-step-output-details"
-                                :open="!isDataStep && graphStep !== undefined">
+                                :open="!isDataStep && inGraphView">
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
@@ -48,7 +48,7 @@
                             <details
                                 v-if="Object.values(stepDetails.output_collections).length > 0"
                                 class="invocation-step-output-collection-details"
-                                :open="!isDataStep && graphStep !== undefined">
+                                :open="!isDataStep && inGraphView">
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
@@ -59,13 +59,16 @@
                                 <details
                                     v-if="workflowStepType == 'tool'"
                                     class="invocation-step-job-details"
-                                    :open="graphStep !== undefined">
+                                    :open="inGraphView">
                                     <summary><b>Jobs</b></summary>
                                     <JobStep
+                                        v-if="stepDetails.jobs?.length"
+                                        :key="inGraphView"
                                         :jobs="stepDetails.jobs"
-                                        :invocation-graph="graphStep !== undefined"
+                                        :invocation-graph="inGraphView"
                                         :showing-job-id="showingJobId"
                                         @row-clicked="showJob" />
+                                    <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
                                 </details>
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
@@ -151,6 +154,7 @@ export default {
         graphStep: { type: Object, default: undefined },
         expanded: { type: Boolean, default: undefined },
         showingJobId: { type: String, default: null },
+        inGraphView: { type: Boolean, default: false },
     },
     data() {
         return {
