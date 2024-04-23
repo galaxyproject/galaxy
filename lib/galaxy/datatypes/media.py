@@ -287,3 +287,93 @@ class Wav(Audio):
                 dataset.metadata.nchannels = fd.getnchannels()
         except wave.Error:
             pass
+
+
+class Ogg(Audio):
+    file_ext = "ogg"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "ogg" in metadata["format_name"].split(",")
+        return False
+
+
+class Webm(Video):
+    file_ext = "webm"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "webm" in metadata["format_name"].split(",")
+        return False
+
+
+class Mpeg(Video):
+    file_ext = "mpeg"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "mpeg" in metadata["format_name"].split(",")
+        return False
+
+
+class Mpga(Audio):
+    file_ext = "mpga"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "mp3" in metadata["format_name"].split(",")
+        return False
+
+
+class M4a(Audio):
+    file_ext = "m4a"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "m4a" in metadata["format_name"].split(",")
+        return False
+
+
+class Mov(Video):
+    file_ext = "mov"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "mov" in metadata["format_name"].split(",")
+        return False
+
+
+class Avi(Video):
+    file_ext = "avi"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "avi" in metadata["format_name"].split(",")
+        return False
+
+
+class Wmv(Video):
+    file_ext = "wmv"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "asf" in metadata["format_name"].split(",")
+        return False
+
+
+class Wma(Audio):
+    file_ext = "wma"
+
+    def sniff(self, filename: str) -> bool:
+        if which("ffprobe"):
+            metadata, streams = ffprobe(filename)
+            return "asf" in metadata["format_name"].split(",")
+        return False
