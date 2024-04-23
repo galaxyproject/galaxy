@@ -1743,6 +1743,10 @@ galaxy:
   # job is complete.
   #debug: false
 
+  # Log request start as well as request end. Disables uvicorn access
+  # log handler.
+  #use_access_logging_middleware: false
+
   # Check for WSGI compliance.
   #use_lint: false
 
