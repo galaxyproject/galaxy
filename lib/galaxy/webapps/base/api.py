@@ -201,7 +201,8 @@ def add_exception_handler(app: FastAPI) -> None:
         # Intentionally not logging traceback here as the full context will be
         # dispatched to Sentry if configured.  This just makes logs less opaque
         # when one sees a 500.
-        log.info(f"MessageException: {exc}")
+        if exc.status_code >= 500:
+            log.info(f"MessageException: {exc}")
         return get_error_response_for_request(request, exc)
 
 
