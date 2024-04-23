@@ -3738,7 +3738,7 @@ export interface components {
              * Element Type
              * @description The type of the element. Used to interpret the `object` field.
              */
-            element_type: components["schemas"]["DCEType"];
+            element_type?: components["schemas"]["DCEType"] | null;
             /**
              * Dataset Collection Element ID
              * @example 0123456789ABCDEF
@@ -3755,10 +3755,11 @@ export interface components {
              * Object
              * @description The element's specific data depending on the value of `element_type`.
              */
-            object:
+            object?:
                 | components["schemas"]["HDAObject"]
                 | components["schemas"]["HDADetailed"]
-                | components["schemas"]["DCObject"];
+                | components["schemas"]["DCObject"]
+                | null;
         };
         /**
          * DCEType

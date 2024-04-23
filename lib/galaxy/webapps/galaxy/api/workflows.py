@@ -813,10 +813,11 @@ SortDescQueryParam: Optional[bool] = Query(
     description="Sort in descending order?",
 )
 
-LimitQueryParam: Optional[int] = Query(default=None, title="Limit number of queries.")
+LimitQueryParam: Optional[int] = Query(default=None, ge=1, title="Limit number of queries.")
 
 OffsetQueryParam: Optional[int] = Query(
     default=0,
+    ge=0,
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
@@ -1227,6 +1228,7 @@ InvocationsIncludeTerminalQueryParam = Annotated[
 InvocationsLimitQueryParam = Annotated[
     Optional[int],
     Query(
+        ge=1,
         title="Limit",
         description="Limit the number of invocations to return.",
     ),
@@ -1235,6 +1237,7 @@ InvocationsLimitQueryParam = Annotated[
 InvocationsOffsetQueryParam = Annotated[
     Optional[int],
     Query(
+        ge=0,
         title="Offset",
         description="Number of invocations to skip.",
     ),

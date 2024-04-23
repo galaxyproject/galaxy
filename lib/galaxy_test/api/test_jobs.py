@@ -182,14 +182,19 @@ steps:
 
     @pytest.mark.require_new_history
     def test_index_limit_and_offset_filter(self, history_id):
+        # create 2 datasets
+        self.__history_with_new_dataset(history_id)
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
         assert len(jobs) > 0
         length = len(jobs)
         jobs = self.__jobs_index(data={"history_id": history_id, "offset": 1})
         assert len(jobs) == length - 1
-        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
-        assert len(jobs) == 0
+        jobs = self.__jobs_index(data={"history_id": history_id, "limit": 1})
+        assert len(jobs) == 1
+        response = self._get("jobs", data={"history_id": history_id, "limit": -1})
+        assert response.status_code == 400
+        assert response.json()["err_msg"] == "Input should be greater than or equal to 1 in ('query', 'limit')"
 
     @pytest.mark.require_new_history
     def test_index_search_filter_tool_id(self, history_id):

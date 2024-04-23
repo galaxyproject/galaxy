@@ -4844,7 +4844,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
         except KeyError:
             pass  # No deps
-        new_dataset = next(
+        return next(
             iter(
                 self.datatype.convert_dataset(
                     trans,
@@ -4858,7 +4858,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 ).values()
             )
         )
-        return self.attach_implicitly_converted_dataset(trans.sa_session, new_dataset, target_ext)
 
     def attach_implicitly_converted_dataset(self, session, new_dataset, target_ext: str):
         new_dataset.name = self.name
@@ -4868,9 +4867,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         )
         session.add(new_dataset)
         session.add(assoc)
-        with transaction(session):
-            session.commit()
-        return new_dataset
 
     def copy_attributes(self, new_dataset):
         """
@@ -5244,7 +5240,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 self.tags.append(copied_tag)
 
     def copy_attributes(self, new_dataset):
-        new_dataset.hid = self.hid
+        if new_dataset.hid is None:
+            new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association(
         self,
@@ -5932,11 +5929,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
 
         tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
-        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
+        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags, flush=False)
         sa_session.add(hda)
-        with transaction(sa_session):
-            sa_session.commit()
-        hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
+        hda.metadata = self.metadata
         if add_to_history and target_history:
             target_history.add_dataset(hda)
         with transaction(sa_session):
@@ -6469,6 +6464,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
+            if not self.id:
+                return self.populated
             _populated_optimized = True
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
@@ -7253,7 +7250,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         self.element_identifier = element_identifier or str(element_index)
 
     def __strict_check_before_flush__(self):
-        assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
+        if self.collection.populated_optimized:
+            assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
 
     @property
     def element_type(self):

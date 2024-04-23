@@ -206,7 +206,7 @@ class HDAManager(
             parent_id=kwargs.get("parent_id"),
             copy_hid=False,
             copy_tags=hda.tags,  # type:ignore[attr-defined]
-            flush=flush,
+            flush=False,
         )
         if hide_copy:
             copy.visible = False
@@ -226,12 +226,6 @@ class HDAManager(
                 session.commit()
 
         return copy
-
-    def copy_ldda(self, history, ldda, **kwargs):
-        """
-        Copy this HDA as a LDDA and return.
-        """
-        return ldda.to_history_dataset_association(history, add_to_history=True)
 
     # .... deletion and purging
     def purge(self, hda, flush=True, **kwargs):
@@ -569,6 +563,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
         serializers: Dict[str, base.Serializer] = {
+            "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",

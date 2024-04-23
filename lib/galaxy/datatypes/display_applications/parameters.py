@@ -11,7 +11,6 @@ from urllib.parse import quote_plus
 
 from galaxy.datatypes.data import Data
 from galaxy.model import DatasetInstance
-from galaxy.model.base import transaction
 from galaxy.schema.schema import DatasetState
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
@@ -182,22 +181,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 if target_ext and not converted_dataset:
                     if isinstance(data, DisplayDataValueWrapper):
                         data = data.value
-                    new_data = next(
-                        iter(
-                            data.datatype.convert_dataset(
-                                trans, data, target_ext, return_output=True, visible=False
-                            ).values()
-                        )
-                    )
-                    new_data.hid = data.hid
-                    new_data.name = data.name
-                    trans.sa_session.add(new_data)
-                    assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
-                        parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False
-                    )
-                    trans.sa_session.add(assoc)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
+                    data.datatype.convert_dataset(trans, data, target_ext, return_output=True, visible=False)
                 elif converted_dataset and converted_dataset.state == DatasetState.ERROR:
                     raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)

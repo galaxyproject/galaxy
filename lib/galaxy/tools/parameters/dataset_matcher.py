@@ -262,7 +262,7 @@ class DatasetCollectionMatcher:
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it
         # would be a valid match for this parameter.
-        if not dataset_collection.populated:
+        if not dataset_collection.populated_optimized:
             return False
 
         valid = True
