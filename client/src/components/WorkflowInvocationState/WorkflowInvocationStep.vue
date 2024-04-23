@@ -38,7 +38,7 @@
                             <details
                                 v-if="Object.values(stepDetails.outputs).length > 0"
                                 class="invocation-step-output-details"
-                                :open="graphStep !== undefined">
+                                :open="!isDataStep && graphStep !== undefined">
                                 <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
@@ -48,7 +48,7 @@
                             <details
                                 v-if="Object.values(stepDetails.output_collections).length > 0"
                                 class="invocation-step-output-collection-details"
-                                :open="graphStep !== undefined">
+                                :open="!isDataStep && graphStep !== undefined">
                                 <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
