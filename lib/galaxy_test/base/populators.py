@@ -1829,11 +1829,6 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(create_response)
         return create_response.json()
 
-    def get_biocompute_object(self, invocation_id):
-        bco_response = self._get(f"invocations/{invocation_id}/biocompute")
-        bco_response.raise_for_status()
-        return bco_response.json()
-
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
