@@ -36,10 +36,11 @@ FolderIdPathParam = Annotated[
     Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
 ]
 
-LimitQueryParam: int = Query(default=10, title="Limit", description="Maximum number of contents to return.")
+LimitQueryParam: int = Query(default=10, ge=1, title="Limit", description="Maximum number of contents to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return contents from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, contents between position 200-299 will be returned.",
 )

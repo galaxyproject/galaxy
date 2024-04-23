@@ -72,10 +72,11 @@ SortDescQueryParam: bool = Query(
     description="Sort in descending order?",
 )
 
-LimitQueryParam: int = Query(default=100, lt=1000, title="Limit number of queries.")
+LimitQueryParam: int = Query(default=100, ge=1, lt=1000, title="Limit number of queries.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
