@@ -17,6 +17,10 @@ from galaxy.datatypes.metadata import (
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import which
 
+import magic
+
+mime = magic.Magic(mime=True)
+
 
 @lru_cache(maxsize=128)
 def _ffprobe(path):
@@ -183,7 +187,8 @@ class Mkv(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "matroska" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "matroska" in metadata["format_name"].split(",") and mime_type == "video/x-matroska"
         return False
 
 
@@ -200,7 +205,8 @@ class Mp4(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "mp4" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "mp4" in metadata["format_name"].split(",") and mime_type == "video/mp4"
         return False
 
 
@@ -210,7 +216,8 @@ class Flv(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "flv" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "flv" in metadata["format_name"].split(",") and mime_type == "video/x-flv"
         return False
 
 
@@ -220,7 +227,8 @@ class Mpg(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "mpegvideo" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "mpegvideo" in metadata["format_name"].split(",") and mime_type == "video/mpeg"
         return False
 
 
@@ -239,7 +247,8 @@ class Mp3(Audio):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "mp3" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "mp3" in metadata["format_name"].split(",") and mime_type == "audio/mpeg"
         return False
 
 
@@ -295,7 +304,8 @@ class Ogg(Audio):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "ogg" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "ogg" in metadata["format_name"].split(",") and mime_type == "audio/ogg"
         return False
 
 
@@ -305,7 +315,8 @@ class Webm(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "webm" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "webm" in metadata["format_name"].split(",") and mime_type == "video/webm"
         return False
 
 
@@ -315,17 +326,8 @@ class Mpeg(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "mpeg" in metadata["format_name"].split(",")
-        return False
-
-
-class Mpga(Audio):
-    file_ext = "mpga"
-
-    def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "mp3" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "mpeg" in metadata["format_name"].split(",") and mime_type == "video/mpeg"
         return False
 
 
@@ -335,7 +337,8 @@ class M4a(Audio):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "m4a" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "m4a" in metadata["format_name"].split(",") and mime_type == "audio/x-m4a"
         return False
 
 
@@ -345,7 +348,8 @@ class Mov(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "mov" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "mov" in metadata["format_name"].split(",") and mime_type == "video/quicktime"
         return False
 
 
@@ -355,7 +359,8 @@ class Avi(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "avi" in metadata["format_name"].split(",")
+            mime_type = mime.from_file(filename)
+            return "avi" in metadata["format_name"].split(",") and mime_type == "video/x-msvideo"
         return False
 
 
@@ -365,7 +370,7 @@ class Wmv(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "asf" in metadata["format_name"].split(",")
+            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] > 1
         return False
 
 
@@ -375,5 +380,5 @@ class Wma(Audio):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "asf" in metadata["format_name"].split(",")
+            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] == 1
         return False
