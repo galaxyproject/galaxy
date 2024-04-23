@@ -3356,9 +3356,15 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         if how == "first":
             extracted_element = collection.first_dataset_element
         elif how == "by_identifier":
-            extracted_element = collection[incoming["which"]["identifier"]]
+            try:
+                extracted_element = collection[incoming["which"]["identifier"]]
+            except KeyError as e:
+                raise exceptions.MessageException(e.args[0])
         elif how == "by_index":
-            extracted_element = collection[int(incoming["which"]["index"])]
+            try:
+                extracted_element = collection[int(incoming["which"]["index"])]
+            except KeyError as e:
+                raise exceptions.MessageException(e.args[0])
         else:
             raise exceptions.MessageException("Invalid tool parameters.")
         extracted = extracted_element.element_object
