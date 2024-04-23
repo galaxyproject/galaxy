@@ -370,7 +370,8 @@ class Wmv(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] > 1
+            is_video = "video" in [stream["codec_type"] for stream in streams]
+            return "asf" in metadata["format_name"].split(",") and is_video
         return False
 
 
@@ -380,5 +381,6 @@ class Wma(Audio):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] == 1
+            is_audio = "video" not in [stream["codec_type"] for stream in streams]
+            return "asf" in metadata["format_name"].split(",") and metadata["nb_streams"] == is_audio
         return False
