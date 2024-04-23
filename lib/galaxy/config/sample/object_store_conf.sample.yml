@@ -61,7 +61,7 @@ backends:
 # Sample Distributed Object Store with disk backends configuration
 #
 
-# In the distributed object store, existing dataests will be located by the `object_store_id` column in the `dataset`
+# In the distributed object store, existing datasets will be located by the `object_store_id` column in the `dataset`
 # table of the Galaxy database, which corresponds to the `id` option on the backend. New datasets are created based on
 # the `weight` option: a backend with weight "2" has twice the chance of being (randomly) selected for new datasets as a
 # backend with weight "1". A weight of "0" will still allow datasets in that backend to be read, but no new datasets
@@ -299,20 +299,25 @@ extra_dirs:
 # The admin is responsible for routinely cleaning that storage using Galaxy's admin scripts - this object store
 # configuration just allows the user selection and communicates expectations to the user. Training related to Galaxy
 # cleanup scripts can be found in the Galaxy Training Network:
-# 
+#
 # Slides: https://gxy.io/GTN:S00103
 # Tutorial: https://gxy.io/GTN:T00324
 #
 # In this example, the scratch storage is marked as user-private by setting the `private` option to "true" on the
-# backend definition. This means it cannot be used in public datasets, shared between users, etc.. This is more example
+# backend definition. This means it cannot be used in public datasets, shared between users, etc.. This is for example
 # purposes - you may very well not want scratch storage to be defined as private as it prevents a lot of regular
 # functionality and Galaxy handles regularly cleaned datasets fairly gracefully when the appropriate admin scripts are
 # used.
+#
+# It is safe to just relabel the object store that a dataset belongs to if the underlying paths mapped to by the object
+# stores are the same and the dataset has not been copied. To enable users to relocate datasets this way set the
+# backends' `device` property to the same value.
 
 type: distributed
 backends:
   - id: default
     type: disk
+    device: device1
     weight: 1
     allow_selection: true
     name: Default Galaxy Storage
@@ -329,6 +334,7 @@ backends:
           found on our [Archive Tier Storage](https://www.msi.umn.edu/content/archive-tier-storage) page.
   - id: scratch
     type: disk
+    device: device2
     weight: 0
     allow_selection: true
     private: true
