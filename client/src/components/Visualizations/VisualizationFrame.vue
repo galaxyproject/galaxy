@@ -32,6 +32,7 @@ const srcWithRoot = computed(() => {
 
 <template>
     <iframe
+        id="galaxy_visualization"
         :src="srcWithRoot"
         class="center-frame"
         frameborder="0"

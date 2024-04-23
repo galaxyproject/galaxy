@@ -54,6 +54,7 @@ RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = 0.1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 GALAXY_MAIN_FRAME_ID = "galaxy_main"
+GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
@@ -302,6 +303,15 @@ class NavigatesGalaxy(HasDriver):
         """Decorator to operate within the context of Galaxy's main frame."""
         try:
             self.switch_to_main_panel()
+            yield
+        finally:
+            self.driver.switch_to.default_content()
+
+    @contextlib.contextmanager
+    def visualization_panel(self):
+        """Decorator to operate within the context of Galaxy's visualization frame."""
+        try:
+            self.driver.switch_to.frame(GALAXY_VISUALIZATION_FRAME_ID)
             yield
         finally:
             self.driver.switch_to.default_content()
