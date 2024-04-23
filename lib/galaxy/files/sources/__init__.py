@@ -26,6 +26,7 @@ from typing_extensions import (
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
+    RequestParameterInvalidException,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.util.bool_expressions import (
@@ -99,6 +100,7 @@ class FilesSourceProperties(TypedDict):
     type: NotRequired[str]
     browsable: NotRequired[bool]
     url: NotRequired[Optional[str]]
+    supports_pagination: NotRequired[bool]
 
 
 @dataclass
@@ -309,6 +311,7 @@ def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
 
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
+    supports_pagination: ClassVar[bool] = False
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -387,6 +390,7 @@ class BaseFilesSource(FilesSource):
             "requires_groups": self.requires_groups,
             "disable_templating": self.disable_templating,
             "scheme": self.get_scheme(),
+            "supports_pagination": self.supports_pagination,
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
@@ -420,6 +424,9 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
     ) -> List[AnyRemoteEntry]:
         self._check_user_access(user_context)
+        if not self.supports_pagination and (limit is not None or offset is not None):
+            raise RequestParameterInvalidException("Pagination is not supported by this file source.")
+
         return self._list(path, recursive, user_context, opts, limit, offset)
 
     def _list(
