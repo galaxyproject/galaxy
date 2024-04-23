@@ -401,7 +401,7 @@ const removeTagsAction = computed(() => {
             ref="terminalComponent"
             v-b-tooltip.hover="!props.blank ? outputDetails : ''"
             class="output-terminal prevent-zoom"
-            :class="{ 'mapped-over': isMultiple }"
+            :class="{ 'mapped-over': isMultiple, 'blank-output': props.blank }"
             :output-name="output.name"
             :root-offset="rootOffset"
             :prevent-default="false"
@@ -451,12 +451,14 @@ const removeTagsAction = computed(() => {
 .output-terminal {
     @include node-terminal-style(right);
 
-    &:hover {
-        color: $brand-success;
-    }
+    &:not(.blank-output) {
+        &:hover {
+            color: $brand-success;
+        }
 
-    button:focus + .terminal-icon {
-        color: $brand-success;
+        button:focus + .terminal-icon {
+            color: $brand-success;
+        }
     }
 }
 
