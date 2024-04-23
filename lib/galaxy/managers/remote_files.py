@@ -50,6 +50,8 @@ class RemoteFilesManager:
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
         writeable: Optional[bool] = False,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
@@ -93,6 +95,8 @@ class RemoteFilesManager:
                 recursive=recursive,
                 user_context=user_file_source_context,
                 opts=opts,
+                limit=limit,
+                offset=offset,
             )
         except exceptions.MessageException:
             log.warning(self._get_error_message(file_source_path), exc_info=True)

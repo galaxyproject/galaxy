@@ -148,6 +148,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[AnyRemoteEntry]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"

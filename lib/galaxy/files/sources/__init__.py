@@ -283,6 +283,8 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[AnyRemoteEntry]:
         """Return dictionary of 'Directory's and 'File's."""
 
@@ -414,9 +416,11 @@ class BaseFilesSource(FilesSource):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[AnyRemoteEntry]:
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context, opts)
+        return self._list(path, recursive, user_context, opts, limit, offset)
 
     def _list(
         self,
@@ -424,6 +428,8 @@ class BaseFilesSource(FilesSource):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ):
         pass
 

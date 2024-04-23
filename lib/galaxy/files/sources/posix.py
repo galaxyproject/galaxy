@@ -59,6 +59,8 @@ class PosixFilesSource(BaseFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
     ) -> List[AnyRemoteEntry]:
         if not self.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")
