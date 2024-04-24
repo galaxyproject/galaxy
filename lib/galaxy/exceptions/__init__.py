@@ -16,6 +16,8 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
+from typing import Optional
+
 from .error_codes import (
     error_codes_by_name,
     ErrorCode,
