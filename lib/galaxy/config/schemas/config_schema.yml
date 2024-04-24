@@ -2193,6 +2193,13 @@ mapping:
           causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
 
+      use_access_logging_middleware:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Log request start as well as request end. Disables uvicorn access log handler.
+
       use_lint:
         type: bool
         default: false
