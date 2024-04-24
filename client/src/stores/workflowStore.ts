@@ -11,6 +11,7 @@ export interface Workflow {
     steps: Steps;
     step_count?: number;
     latest_id?: string;
+    version: number;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

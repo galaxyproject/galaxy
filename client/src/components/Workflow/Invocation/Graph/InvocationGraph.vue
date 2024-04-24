@@ -70,8 +70,13 @@ const invocationRef = computed(() => props.invocation);
 const { datatypesMapper } = useDatatypesMapper();
 
 const workflowId = computed(() => props.workflow?.id);
+const workflowVersion = computed(() => props.workflow?.version);
 
-const { steps, storeId, loadInvocationGraph } = useInvocationGraph(invocationRef, workflowId.value);
+const { steps, storeId, loadInvocationGraph } = useInvocationGraph(
+    invocationRef,
+    workflowId.value,
+    workflowVersion.value
+);
 
 // Equivalent to onMounted; this is where the graph is initialized, and the polling is started
 watch(

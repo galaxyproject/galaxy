@@ -78,7 +78,8 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  */
 export function useInvocationGraph(
     invocation: Ref<components["schemas"]["WorkflowInvocationElementView"]>,
-    workflowId: string | undefined
+    workflowId: string | undefined,
+    workflowVersion: number | undefined
 ) {
     library.add(faCheckCircle, faClock, faExclamationTriangle, faForward, faPause, faSpinner, faTrash);
 
@@ -98,10 +99,13 @@ export function useInvocationGraph(
             if (!workflowId) {
                 throw new Error("Workflow Id is not defined");
             }
+            if (workflowVersion === undefined) {
+                throw new Error("Workflow Version is not defined");
+            }
 
             // initialize the original full workflow and invocation graph refs (only on the first load)
             if (!loadedWorkflow.value) {
-                loadedWorkflow.value = await getWorkflowFull(workflowId);
+                loadedWorkflow.value = await getWorkflowFull(workflowId, workflowVersion);
             }
             if (!invocationGraph.value) {
                 invocationGraph.value = {
