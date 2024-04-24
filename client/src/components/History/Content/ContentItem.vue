@@ -255,11 +255,9 @@ function onDisplay() {
         // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
-            // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name, force: true });
+            router.push({ path: itemUrls.value.display, params: { __title__: props.name, __force__: "true" } });
         } else if (itemUrls.value.display) {
-            // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(itemUrls.value.display, { title: props.name });
+            router.push({ path: itemUrls.value.display, params: { __title__: props.name } });
         }
     }
 }

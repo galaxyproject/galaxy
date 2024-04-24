@@ -1,5 +1,6 @@
-import { getGalaxyInstance } from "app";
-import { addSearchParams } from "utils/url";
+import { getGalaxyInstance } from "@/app";
+import { addSearchParams } from "@/utils/url";
+import { Route } from 'vue-router';
 
 /**
  * Is called before the regular router.push() and allows us to provide logs,
@@ -9,13 +10,15 @@ import { addSearchParams } from "utils/url";
  * @param {String} Location as parsed to original router.push()
  * @param {Object} Custom options, to provide a title and/or force reload
  */
-export function patchRouterPush(VueRouter) {
+export function patchRouterPush(VueRouter: any) {
     const originalPush = VueRouter.prototype.push;
-    VueRouter.prototype.push = function push(location, options = {}) {
+    VueRouter.prototype.push = function push(route: Route) {
+        let location: string = route.path;
+        const title = route.params?.__title__;
+        const force = route.params?.__force__;
         // add key to location to force component refresh
-        const { title, force } = options;
         if (force) {
-            location = addSearchParams(location, { __vkey__: Date.now() });
+            location = addSearchParams(location, { __vkey__: String(Date.now()) });
         }
         // verify if confirmation is required
         if (this.confirmation) {
@@ -34,7 +37,7 @@ export function patchRouterPush(VueRouter) {
         // always emit event, even when a duplicate route is pushed
         this.app.$emit("router-push");
         // avoid console warning when user clicks to revisit same route
-        return originalPush.call(this, location).catch((err) => {
+        return originalPush.call(this, location).catch((err: any) => {
             if (err.name !== "NavigationDuplicated") {
                 throw err;
             }
