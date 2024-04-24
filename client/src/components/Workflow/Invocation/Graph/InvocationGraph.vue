@@ -60,7 +60,6 @@ const props = withDefaults(defineProps<Props>(), {
 const loadingGraph = ref(true);
 const initialLoading = ref(true);
 const errored = ref(false);
-const expandInvocationInputs = ref(false);
 const errorMessage = ref("");
 const showingJobId = ref<string | undefined>(undefined);
 const pollTimeout = ref<any>(null);
@@ -221,7 +220,6 @@ function getStepKey(step: Step) {
                         :workflow="props.workflow"
                         :hide-graph="hideGraph"
                         :showing-job-id="showingJobId || ''"
-                        :expand-invocation-inputs.sync="expandInvocationInputs"
                         @update:showing-job-id="(jobId) => (showingJobId = jobId)"
                         @focus-on-step="toggleActiveNode" />
                 </div>

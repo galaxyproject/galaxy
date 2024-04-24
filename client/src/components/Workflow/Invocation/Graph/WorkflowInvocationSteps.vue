@@ -27,15 +27,12 @@ interface Props {
     workflow: Workflow;
     /** Whether the invocation graph is hidden */
     hideGraph?: boolean;
-    /** Whether the inputs are expanded */
-    expandInvocationInputs: boolean;
     /** The id for the currently shown job */
     showingJobId: string;
 }
 
 const emit = defineEmits<{
     (e: "focus-on-step", stepId: number): void;
-    (e: "update:expand-invocation-inputs", value: boolean): void;
     (e: "update:showing-job-id", value: string | undefined): void;
 }>();
 
@@ -44,6 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const stepsCard = ref<BCard>();
+const expandInvocationInputs = ref(false);
 
 const stateStore = useWorkflowStateStore(props.storeId);
 const { activeNodeId } = storeToRefs(stateStore);
@@ -55,10 +53,10 @@ const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step)
 watch(
     () => [activeNodeId.value, stepsCard.value],
     ([nodeId, card]) => {
-        if (nodeId && card) {
+        if (nodeId !== undefined && card) {
             // if the active node id is an input step, expand the inputs section, else, collapse it
             const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
-            emit("update:expand-invocation-inputs", isAnInput);
+            expandInvocationInputs.value = isAnInput;
             if (isAnInput) {
                 const inputHeader = stepsCard.value?.querySelector(`.portlet-header`);
                 inputHeader?.scrollIntoView();
@@ -77,10 +75,6 @@ watch(
 function showStep(jobId: string | undefined) {
     emit("update:showing-job-id", jobId);
 }
-
-function toggleInputsSection() {
-    emit("update:expand-invocation-inputs", !props.expandInvocationInputs);
-}
 </script>
 
 <template>
@@ -91,8 +85,8 @@ function toggleInputsSection() {
                 class="portlet-header portlet-operations"
                 role="button"
                 tabindex="0"
-                @keyup.enter="toggleInputsSection()"
-                @click="toggleInputsSection()">
+                @keyup.enter="expandInvocationInputs = !expandInvocationInputs"
+                @click="expandInvocationInputs = !expandInvocationInputs">
                 <span :id="`step-icon-invocation-inputs-section`">
                     <FontAwesomeIcon class="portlet-title-icon" :icon="faSignInAlt" />
                 </span>
@@ -101,10 +95,10 @@ function toggleInputsSection() {
                 </span>
                 <FontAwesomeIcon
                     class="float-right"
-                    :icon="props.expandInvocationInputs ? faChevronUp : faChevronDown" />
+                    :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
             </div>
 
-            <div v-if="props.expandInvocationInputs" class="portlet-content m-1">
+            <div v-if="expandInvocationInputs" class="portlet-content m-1">
                 <WorkflowInvocationStep
                     v-for="step in workflowInputSteps"
                     :key="step.id"
