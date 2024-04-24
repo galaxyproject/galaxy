@@ -187,7 +187,11 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
 
-        self._initialize()
+        try:
+            self._initialize()
+        except Exception:
+            # don't die for now, need to stop serializing object stores that a job isn't going to use
+            pass
 
     def _initialize(self):
         if boto is None:
