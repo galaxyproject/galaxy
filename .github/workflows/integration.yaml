@@ -62,7 +62,7 @@ jobs:
         id: minikube
         uses: CodingNagger/minikube-setup-action@v1.0.6
         with:
-          k8s-version: '1.19.16'
+          k8s-version: '1.23.0'
       - name: Launch Minikube
         run: eval ${{ steps.minikube.outputs.launcher }}
       - name: Check pods
