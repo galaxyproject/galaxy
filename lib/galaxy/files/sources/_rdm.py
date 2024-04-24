@@ -8,7 +8,7 @@ from typing import (
 from typing_extensions import Unpack
 
 from galaxy.exceptions import AuthenticationRequired
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
     FilesSourceProperties,
@@ -18,8 +18,6 @@ from galaxy.files.sources import (
 )
 
 log = logging.getLogger(__name__)
-
-OptionalUserContext = Optional[ProvidesUserFileSourcesUserContext]
 
 
 class RDMFilesSourceProperties(FilesSourceProperties):

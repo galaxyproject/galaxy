@@ -25,7 +25,7 @@ from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
     cached_id,
@@ -2633,7 +2633,7 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         file_source = file_source_path.file_source
         if file_source is None:
             raise ParameterValueError(f"'{value}' is not a valid file source uri.", self.name)
-        user_context = ProvidesUserFileSourcesUserContext(trans)
+        user_context = ProvidesFileSourcesUserContext(trans)
         user_has_access = file_source.user_has_access(user_context)
         if not user_has_access:
             raise ParameterValueError(f"The user cannot access {value}.", self.name)
