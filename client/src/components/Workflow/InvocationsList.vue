@@ -78,6 +78,18 @@
             <template v-slot:cell(state)="data">
                 <HelpText :uri="`galaxy.invocations.states.${data.value}`" :text="data.value" />
             </template>
+            <template v-slot:cell(view)="data">
+                <BButton
+                    id="invocation-view-button"
+                    v-b-tooltip.hover.top.noninteractive
+                    title="Go to invocation overview"
+                    :data-invocation-view="data.item.id"
+                    variant="primary"
+                    size="sm"
+                    :to="invocationLink(data.item)">
+                    <span class="fa fa-eye" />
+                </BButton>
+            </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
                     v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
@@ -133,6 +145,8 @@ export default {
         const fields = [{ key: "expand", label: "", class: "col-button" }];
         if (!this.storedWorkflowId) {
             fields.push({ key: "workflow_id", label: "Workflow", class: "col-name" });
+        } else {
+            fields.push({ key: "view", label: "View", class: "col-button" });
         }
         if (!this.historyId) {
             fields.push({ key: "history_id", label: "History", class: "col-history" });
