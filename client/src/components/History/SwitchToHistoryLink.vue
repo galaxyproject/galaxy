@@ -58,8 +58,13 @@ function viewHistoryInNewTab(history: HistorySummary) {
 <template>
     <div>
         <LoadingSpan v-if="!history" />
-        <div v-else v-b-tooltip.hover.top.html :title="`<b>${actionText}</b><br>${history.name}`" class="history-link">
-            <BLink class="truncate" href="#" @click.stop="onClick(history)">
+        <div v-else class="history-link">
+            <BLink
+                v-b-tooltip.hover.top.noninteractive.html
+                class="truncate"
+                href="#"
+                :title="`<b>${actionText}</b><br>${history.name}`"
+                @click.stop="onClick(history)">
                 {{ history.name }}
             </BLink>
 
