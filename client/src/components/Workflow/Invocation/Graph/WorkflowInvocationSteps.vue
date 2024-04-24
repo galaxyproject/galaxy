@@ -29,6 +29,8 @@ interface Props {
     hideGraph?: boolean;
     /** The id for the currently shown job */
     showingJobId: string;
+    /** Whether the steps are being rendered on the dedicated invocation page/route */
+    isInvocationRoute?: boolean;
 }
 
 const emit = defineEmits<{
@@ -50,27 +52,30 @@ const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => 
 
 const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
 
-watch(
-    () => [activeNodeId.value, stepsCard.value],
-    ([nodeId, card]) => {
-        if (nodeId !== undefined && card) {
-            // if the active node id is an input step, expand the inputs section, else, collapse it
-            const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
-            expandInvocationInputs.value = isAnInput;
-            if (isAnInput) {
-                const inputHeader = stepsCard.value?.querySelector(`.portlet-header`);
-                inputHeader?.scrollIntoView();
-            }
+// on invocation route, scroll to the active step card in the steps section
+if (props.isInvocationRoute) {
+    watch(
+        () => [activeNodeId.value, stepsCard.value],
+        ([nodeId, card]) => {
+            if (nodeId !== undefined && card) {
+                // if the active node id is an input step, expand the inputs section, else, collapse it
+                const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
+                expandInvocationInputs.value = isAnInput;
+                if (isAnInput) {
+                    const inputHeader = stepsCard.value?.querySelector(`.portlet-header`);
+                    inputHeader?.scrollIntoView({ behavior: "smooth" });
+                }
 
-            // scroll to the active step card
-            const stepCard = stepsCard.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
-            stepCard?.scrollIntoView();
-        }
-        // clear any job being shown
-        emit("update:showing-job-id", undefined);
-    },
-    { immediate: true }
-);
+                // scroll to the active step card
+                const stepCard = stepsCard.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
+                stepCard?.scrollIntoView();
+            }
+            // clear any job being shown
+            emit("update:showing-job-id", undefined);
+        },
+        { immediate: true }
+    );
+}
 
 function showStep(jobId: string | undefined) {
     emit("update:showing-job-id", jobId);
@@ -93,9 +98,7 @@ function showStep(jobId: string | undefined) {
                 <span class="portlet-title-text">
                     <u v-localize class="step-title ml-2">Workflow Inputs</u>
                 </span>
-                <FontAwesomeIcon
-                    class="float-right"
-                    :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
+                <FontAwesomeIcon class="float-right" :icon="expandInvocationInputs ? faChevronUp : faChevronDown" />
             </div>
 
             <div v-if="expandInvocationInputs" class="portlet-content m-1">

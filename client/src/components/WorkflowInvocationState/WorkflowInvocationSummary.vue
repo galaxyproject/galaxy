@@ -30,6 +30,7 @@ interface Props {
     invocation?: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
+    isInvocationRoute?: boolean;
     jobStatesSummary: InvocationJobsSummary;
     index?: number;
     isSubworkflow?: boolean;
@@ -253,6 +254,7 @@ function onCancel() {
                     :workflow="workflow"
                     :is-terminal="invocationAndJobTerminal"
                     :is-scheduled="invocationSchedulingTerminal"
+                    :is-invocation-route="isInvocationRoute"
                     :visible="visible" />
             </div>
             <BAlert v-else-if="isSubworkflow" variant="secondary" show>

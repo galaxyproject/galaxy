@@ -14,6 +14,7 @@ interface Props {
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
+    truncate?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -35,7 +36,9 @@ const element = computed(() => {
 <template>
     <div v-if="props.separator" class="separator heading">
         <div class="stripe"></div>
-        <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
+        <component
+            :is="element"
+            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.truncate ? 'truncate' : '']">
             <slot />
         </component>
         <div class="stripe"></div>
@@ -59,13 +62,21 @@ const element = computed(() => {
 
 // prettier-ignore
 h1, h2, h3, h4, h5, h6 {
-    display: flex;
+    &:not(.truncate) {
+        display: flex;
+    }
     align-items: center;
     gap: 0.4em;
 
     &.inline {
         display: inline-flex;
         margin-bottom: 0;
+    }
+
+    &.truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 

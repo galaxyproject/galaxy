@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowDown,
+    faChevronDown,
+    faChevronUp,
+    faSignInAlt,
+    faSitemap,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -23,7 +30,7 @@ import JobParameters from "@/components/JobParameters/JobParameters.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
-library.add(faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
+library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
 
 interface Props {
     /** The invocation to display */
@@ -46,6 +53,8 @@ interface Props {
     initialY?: number;
     /** Whether the parent component is visible */
     visible?: boolean;
+    /** Whether the graph is being rendered on the dedicated invocation page/route */
+    isInvocationRoute?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,6 +64,7 @@ const props = withDefaults(defineProps<Props>(), {
     initialX: -40,
     initialY: -40,
     visible: true,
+    isInvocationRoute: false,
 });
 
 const loadingGraph = ref(true);
@@ -64,6 +74,8 @@ const errorMessage = ref("");
 const showingJobId = ref<string | undefined>(undefined);
 const pollTimeout = ref<any>(null);
 const hideGraph = ref(false);
+const jobCard = ref<BCard | null>(null);
+const loadedJobInfo = ref<HTMLDivElement | null>(null);
 
 const invocationRef = computed(() => props.invocation);
 
@@ -120,6 +132,19 @@ watch(
     }
 );
 
+// scroll to the job card when it is loaded (only on invocation route)
+if (props.isInvocationRoute) {
+    watch(
+        () => loadedJobInfo.value,
+        async (jobInfo) => {
+            if (jobInfo) {
+                scrollJobToView();
+            }
+        },
+        { immediate: true }
+    );
+}
+
 onUnmounted(() => {
     clearTimeout(pollTimeout.value);
 });
@@ -163,6 +188,11 @@ async function pollInvocationGraph() {
     }
 }
 
+function scrollJobToView() {
+    const jobCardHeader = jobCard.value?.querySelector(".card-header");
+    jobCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function toggleActiveNode(stepId: number) {
     if (stateStore.activeNodeId === stepId) {
         stateStore.activeNodeId = null;
@@ -177,7 +207,7 @@ function getStepKey(step: Step) {
 </script>
 
 <template>
-    <div class="container-root w-100 overflow-auto d-flex flex-column">
+    <div>
         <BAlert v-if="initialLoading" show variant="info">
             <LoadingSpan message="Loading Invocation Graph" />
         </BAlert>
@@ -223,13 +253,14 @@ function getStepKey(step: Step) {
                         :store-id="storeId"
                         :invocation="invocationRef"
                         :workflow="props.workflow"
+                        :is-invocation-route="props.isInvocationRoute"
                         :hide-graph="hideGraph"
                         :showing-job-id="showingJobId || ''"
                         @update:showing-job-id="(jobId) => (showingJobId = jobId)"
                         @focus-on-step="toggleActiveNode" />
                 </div>
             </ExpandedItems>
-            <BCard v-if="showingJobId" class="mt-1" no-body>
+            <BCard v-if="showingJobId" ref="jobCard" class="mt-1" no-body :data-index="showingJobId">
                 <BCardHeader class="d-flex justify-content-between align-items-center">
                     <Heading inline size="md">
                         Showing Job Details for
@@ -237,16 +268,21 @@ function getStepKey(step: Step) {
                             <code>{{ showingJobId }}</code>
                         </ExternalLink>
                     </Heading>
-                    <BButton variant="secondary" @click="showingJobId = undefined">
-                        <FontAwesomeIcon :icon="faTimes" />
-                    </BButton>
+                    <div>
+                        <BButton v-b-tooltip.hover.noninteractive title="Scroll to Job" @click="scrollJobToView()">
+                            <FontAwesomeIcon :icon="faArrowDown" />
+                        </BButton>
+                        <BButton v-b-tooltip.hover.noninteractive title="Hide Job" @click="showingJobId = undefined">
+                            <FontAwesomeIcon :icon="faTimes" />
+                        </BButton>
+                    </div>
                 </BCardHeader>
                 <BCardBody>
                     <JobProvider :id="showingJobId" v-slot="{ item, loading }">
                         <div v-if="loading">
                             <LoadingSpan message="Loading Job Information" />
                         </div>
-                        <div v-else>
+                        <div v-else ref="loadedJobInfo">
                             <JobInformation v-if="item" :job_id="item.id" />
                             <p></p>
                             <JobParameters v-if="item" :job-id="item.id" :include-title="false" />

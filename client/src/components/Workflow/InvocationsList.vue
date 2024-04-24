@@ -32,7 +32,10 @@
             </template>
             <template v-slot:row-details="row">
                 <b-card>
-                    <small class="float-right" :data-invocation-id="row.item.id">
+                    <small
+                        class="float-right position-absolute mr-4"
+                        style="right: 0"
+                        :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
                         <b
                             >Invocation ID:
@@ -59,8 +62,8 @@
             <template v-slot:cell(workflow_id)="data">
                 <div class="truncate">
                     <router-link
-                        v-b-tooltip.hover.top
-                        :title="`Go to detailed view for '${getStoredWorkflowNameByInstanceId(data.item.workflow_id)}'`"
+                        v-b-tooltip.hover.html
+                        :title="`<b>View run for</b><br />${getStoredWorkflowNameByInstanceId(data.item.workflow_id)}`"
                         :to="invocationLink(data.item)">
                         {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
                     </router-link>
