@@ -6,6 +6,7 @@ from typing import (
     ClassVar,
     List,
     Optional,
+    Tuple,
     Type,
 )
 
@@ -22,6 +23,7 @@ from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
+    DEFAULT_PAGE_LIMIT,
     FilesSourceOptions,
     FilesSourceProperties,
 )
@@ -34,6 +36,7 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 p
 class PyFilesystem2FilesSource(BaseFilesSource):
     required_module: ClassVar[Optional[Type[FS]]]
     required_package: ClassVar[str]
+    supports_pagination = True
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
@@ -65,7 +68,8 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                         res.extend(map(to_dict, files))
                     return res
                 else:
-                    res = h.scandir(path, namespaces=["details"])
+                    page = self._to_page(limit, offset)
+                    res = h.filterdir(path, namespaces=["details"], page=page)
                     to_dict = functools.partial(self._resource_info_to_dict, path)
                     return list(map(to_dict, res))
         except fs.errors.PermissionDenied as e:
@@ -74,6 +78,12 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             )
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
+
+    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Tuple[int, int]:
+        limit = limit or DEFAULT_PAGE_LIMIT
+        start = offset or 0
+        end = start + limit
+        return (start, end)
 
     def _realize_to(
         self,
