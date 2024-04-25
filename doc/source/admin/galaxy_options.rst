@@ -3030,6 +3030,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``use_access_logging_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log request start as well as request end. Disables uvicorn access
+    log handler.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~
 ``use_lint``
 ~~~~~~~~~~~~
@@ -5495,6 +5506,3 @@
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
-
-
-

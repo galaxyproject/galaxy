@@ -242,6 +242,8 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
             subcollection_type = None
     hdc_id = trans.app.security.decode_id(encoded_hdc_id)
     hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
+    if not hdc.collection.populated_optimized:
+        raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)

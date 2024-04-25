@@ -174,18 +174,32 @@ def versioned_objects_strict(iter):
             yield obj
 
 
-if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
-    log.debug("Using strict flush checks")
-    versioned_objects = versioned_objects_strict  # noqa: F811
+def get_before_flush_handler():
+    if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+        log.debug("Using strict flush checks")
+
+        def before_flush(session, flush_context, instances):
+            for obj in session.new:
+                if hasattr(obj, "__strict_check_before_flush__"):
+                    obj.__strict_check_before_flush__()
+            for obj in versioned_objects_strict(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects_strict(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    else:
+
+        def before_flush(session, flush_context, instances):
+            for obj in versioned_objects(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    return before_flush
 
 
 def versioned_session(session):
-    @event.listens_for(session, "before_flush")
-    def before_flush(session, flush_context, instances):
-        for obj in versioned_objects(session.dirty):
-            obj.__create_version__(session)
-        for obj in versioned_objects(session.deleted):
-            obj.__create_version__(session, deleted=True)
+    event.listens_for(session, "before_flush")(get_before_flush_handler())
 
 
 def ensure_object_added_to_session(object_to_add, *, object_in_session=None, session=None) -> bool:

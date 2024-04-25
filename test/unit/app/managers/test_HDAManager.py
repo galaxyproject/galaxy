@@ -133,13 +133,6 @@ class TestHDAManager(HDATestCase):
         hda3_annotation = self.hda_manager.annotation(hda3)
         assert annotation == hda3_annotation
 
-    # def test_copy_from_ldda( self ):
-    #    owner = self.user_manager.create( self.trans, **user2_data )
-    #    history1 = self.history_mgr.create( self.trans, name='history1', user=owner )
-    #
-    #    self.log( "should be able to copy an HDA" )
-    #    hda2 = self.hda_manager.copy_ldda( history1, hda1 )
-
     def test_delete(self):
         owner = self.user_manager.create(**user2_data)
         history1 = self.history_manager.create(name="history1", user=owner)

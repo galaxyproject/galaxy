@@ -16,6 +16,7 @@ from galaxy.schema.generics import CustomJsonSchema
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
+    add_raw_context_middlewares,
     add_request_id_middleware,
     GalaxyFileResponse,
     include_all_package_routers,
@@ -179,7 +180,10 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = get_fastapi_instance(root_path=root_path)
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
-    add_request_id_middleware(app)
+    if gx_app.config.use_access_logging_middleware:
+        add_raw_context_middlewares(app)
+    else:
+        add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
