@@ -4,7 +4,6 @@ import { faArrowLeft, faClock, faEdit, faEye, faHdd, faSitemap } from "@fortawes
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { useRoute } from "vue-router/composables";
 
 import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { components } from "@/api/schema";
@@ -37,6 +36,7 @@ interface Props {
     invocationId: string;
     index?: number;
     isSubworkflow?: boolean;
+    isFullPage?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,8 +47,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "invocation-cancelled"): void;
 }>();
-
-const route = useRoute();
 
 const invocationStore = useInvocationStore();
 
@@ -79,7 +77,6 @@ const jobStatesSummary = computed(() => {
     const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
     return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
 });
-const isInvocationRoute = computed(() => route.path.includes(`/workflows/invocations/${props.invocationId}`));
 
 const workflowStore = useWorkflowStore();
 
@@ -139,7 +136,7 @@ function getWorkflowName() {
 
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100">
-        <div v-if="isInvocationRoute" class="d-flex flex-gapx-1">
+        <div v-if="props.isFullPage" class="d-flex flex-gapx-1">
             <Heading h1 separator inline truncate size="xl" class="flex-grow-1">
                 Invoked Workflow: "{{ getWorkflowName() }}"
             </Heading>
@@ -157,7 +154,7 @@ function getWorkflowName() {
                 </BButton>
             </div>
         </div>
-        <BCard v-if="isInvocationRoute" class="py-2 px-3" no-body>
+        <BCard v-if="props.isFullPage" class="py-2 px-3" no-body>
             <div class="d-flex justify-content-between align-items-center">
                 <span class="d-flex flex-gapx-1 align-items-center">
                     <FontAwesomeIcon :icon="faHdd" />History:
@@ -195,12 +192,11 @@ function getWorkflowName() {
                     class="invocation-summary"
                     :invocation="invocation"
                     :index="index"
-                    :is-invocation-route="isInvocationRoute"
+                    :is-invocation-route="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :invocation-scheduling-terminal="invocationSchedulingTerminal"
                     :job-states-summary="jobStatesSummary"
                     :is-subworkflow="isSubworkflow"
-                    :visible="activeTab === TABS.SUMMARY"
                     @invocation-cancelled="cancelWorkflowSchedulingLocal" />
             </BTab>
             <BTab title="Details">

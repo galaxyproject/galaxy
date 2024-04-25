@@ -545,7 +545,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/invocations/:invocationId",
                         component: WorkflowInvocationState,
-                        props: true,
+                        props: (route) => ({
+                            invocationId: route.params.invocationId,
+                            isFullPage: true,
+                        }),
                     },
                     {
                         path: "workflows/list",

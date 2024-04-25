@@ -15,12 +15,17 @@
                 <a class="workflow-new-history-target-link" :href="newHistoryTarget">Switch to that history now</a>.
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
+            <p>
+                View all of your workflow invocations in the
+                <router-link to="/workflows/invocations">Invocations List</router-link>.
+            </p>
         </div>
         <WorkflowInvocationState
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"
-            :invocation-id="invocation.id" />
+            :invocation-id="invocation.id"
+            full-page />
         <div id="webhook-view"></div>
     </div>
 </template>
