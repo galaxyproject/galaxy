@@ -7707,6 +7707,25 @@ class Workflow(Base, Dictifiable, RepresentById):
         for old_step, new_step in zip(self.steps, copied_steps):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
+
+        copied_comments = []
+        for comment in self.comments:
+            copied_comments.append(comment.copy())
+
+        # copy comment relationships
+        for old_comment, new_comment in zip(self.comments, copied_comments):
+            for step_id in [step.order_index for step in old_comment.child_steps]:
+                child_step = copied_workflow.steps[step_id]
+                if child_step:
+                    child_step.parent_comment = new_comment
+
+            for comment_id in [comment.order_index for comment in old_comment.child_comments]:
+                child_comment = copied_workflow.comments[comment_id]
+                if child_comment:
+                    child_comment.parent_comment = new_comment
+
+        copied_workflow.comments = copied_comments
+
         return copied_workflow
 
     @property
@@ -8264,6 +8283,17 @@ class WorkflowComment(Base, RepresentById):
         comment.size = dict.get("size", None)
         comment.color = dict.get("color", "none")
         comment.data = dict.get("data", None)
+        return comment
+
+    def copy(self):
+        comment = WorkflowComment()
+        comment.order_index = self.order_index
+        comment.type = self.type
+        comment.position = self.position
+        comment.size = self.size
+        comment.color = self.color
+        comment.data = self.data
+
         return comment
 
 
