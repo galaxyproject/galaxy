@@ -52,7 +52,7 @@ class HistoryTablePruner:
         Due to the very large size of some tables, we run operations in batches, using low/high history id as boundaries.
         """
         if self.min_id is None:
-            logging.info(f"No histories exist")
+            logging.info("No histories exist")
             return
 
         low = self.min_id
@@ -90,7 +90,9 @@ class HistoryTablePruner:
             self._drop_tmp_table()
 
     def _get_min_max_ids(self):
-        stmt = text(f"SELECT min(id), max(id) FROM history WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time")
+        stmt = text(
+            "SELECT min(id), max(id) FROM history WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time"
+        )
         params = {"create_time": self.max_create_time}
         with self.engine.begin() as conn:
             minmax = conn.execute(stmt, params).all()
@@ -100,7 +102,7 @@ class HistoryTablePruner:
         """Mark target histories as deleted and purged to prevent their further usage."""
         logging.info(f"Marking histories {low}-{high} as deleted and purged")
         stmt = text(
-            f"""
+            """
             UPDATE history
             SET deleted = TRUE, purged = TRUE
             WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time AND id >= :low AND id < :high

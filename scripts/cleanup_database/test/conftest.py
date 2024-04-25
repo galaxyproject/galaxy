@@ -10,8 +10,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
-from galaxy.datatypes.registry import Registry as DatatypesRegistry
-from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 
 # utility fixtures
 
