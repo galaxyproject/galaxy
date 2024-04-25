@@ -18,6 +18,7 @@ import Heading from "../Common/Heading.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import UtcDate from "../UtcDate.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
+import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
@@ -182,6 +183,7 @@ function getWorkflowName() {
                         <FontAwesomeIcon :icon="faSitemap" />
                         Workflow Version: {{ workflowVersion + 1 }}
                     </span>
+                    <WorkflowInvocationsCount :workflow="getWorkflow()" />
                     <BButtonGroup>
                         <BButton
                             v-b-tooltip.hover.html
