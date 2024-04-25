@@ -2006,7 +2006,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             if len(file_list):
                 extra_files_target_filename = get_export_dataset_extra_files_dir_name(
-                    as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
+                    as_dict["encoded_id"], conversion_key=conversion_key
                 )
                 arcname = os.path.join(dir_name, extra_files_target_filename)
                 add(extra_files_path, os.path.join(export_directory, arcname))
@@ -2982,7 +2982,7 @@ def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion
         return f"{base}_{encoded_id}_conversion_{conversion_key}.{ext}"
 
 
-def get_export_dataset_extra_files_dir_name(name: str, ext: str, encoded_id: str, conversion_key: Optional[str]) -> str:
+def get_export_dataset_extra_files_dir_name(encoded_id: str, conversion_key: Optional[str]) -> str:
     if not conversion_key:
         return f"extra_files_path_{encoded_id}"
     else:
