@@ -337,7 +337,10 @@ export interface components {
          * @enum {string}
          */
         DescriptorType: "CWL" | "WDL" | "NFL" | "GALAXY" | "SMK"
-        /** DescriptorTypeVersion */
+        /**
+         * DescriptorTypeVersion
+         * @description The language version for a given descriptor type. The version should correspond to the actual declared version of the descriptor. For example, tools defined in CWL could have a version of `v1.0.2` whereas WDL tools may have a version of `1.0` or `draft-2`
+         */
         DescriptorTypeVersion: string
         /** DetailedRepository */
         DetailedRepository: {

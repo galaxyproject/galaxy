@@ -61,5 +61,5 @@ weasyprint
 # AWS Batch runner
 boto3
 
-#For Rucio storage plugin
-rucio-clients==33.6.0
+# For Rucio storage plugin
+rucio-clients>=33.6.0

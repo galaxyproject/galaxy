@@ -153,6 +153,7 @@ pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 responses = "*"
+rucio-clients = {version = ">=33.6.0", python = ">=3.9"}  # https://github.com/galaxyproject/galaxy/pull/17156
 selenium = "*"
 urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
 seletools = "*"

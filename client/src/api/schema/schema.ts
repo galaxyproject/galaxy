@@ -3555,7 +3555,10 @@ export interface components {
              */
             name: string;
         };
-        /** CustomBuildsCollection */
+        /**
+         * CustomBuildsCollection
+         * @description The custom builds associated with the user.
+         */
         CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
         /** CustomBuildsMetadataResponse */
         CustomBuildsMetadataResponse: {
@@ -9381,11 +9384,13 @@ export interface components {
         /**
          * ListJstreeResponse
          * @deprecated
+         * @description List of files in Jstree format.
          * @default []
          */
         ListJstreeResponse: Record<string, never>[];
         /**
          * ListUriResponse
+         * @description List of directories and files.
          * @default []
          */
         ListUriResponse: (components["schemas"]["RemoteFile"] | components["schemas"]["RemoteDirectory"])[];
