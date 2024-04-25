@@ -77,7 +77,7 @@ if (props.isFullPage) {
     );
 }
 
-function showStep(jobId: string | undefined) {
+function showJob(jobId: string | undefined) {
     emit("update:showing-job-id", jobId);
 }
 </script>
@@ -113,7 +113,7 @@ function showStep(jobId: string | undefined) {
                     :graph-step="steps[step.id]"
                     :expanded="props.hideGraph ? undefined : activeNodeId === step.id"
                     :showing-job-id="props.showingJobId"
-                    @show-job="showStep"
+                    @show-job="showJob"
                     @update:expanded="emit('focus-on-step', step.id)" />
             </div>
         </div>
@@ -129,7 +129,7 @@ function showStep(jobId: string | undefined) {
             :graph-step="steps[step.id]"
             :expanded="props.hideGraph ? undefined : activeNodeId === step.id"
             :showing-job-id="props.showingJobId"
-            @show-job="showStep"
+            @show-job="showJob"
             @update:expanded="emit('focus-on-step', step.id)" />
     </BCard>
 </template>
