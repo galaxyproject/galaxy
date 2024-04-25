@@ -107,7 +107,7 @@ watch(
     { immediate: true }
 );
 
-// on loading the steps, if any of the steps (an obj) has state === "error", toggleActiveNode
+// on loading steps, toggle the first one with state === "error" or last one if none are errored
 watch(
     () => initialLoading.value,
     (newVal) => {
@@ -115,6 +115,8 @@ watch(
             const errorStep = Object.values(steps.value).find((step) => step.state === "error");
             if (errorStep) {
                 stateStore.activeNodeId = errorStep.id;
+            } else {
+                stateStore.activeNodeId = Object.values(steps.value)?.slice(-1)[0]?.id || null;
             }
         }
     },
@@ -191,7 +193,7 @@ function scrollJobToView() {
     jobCardHeader?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function toggleActiveNode(stepId: number) {
+function toggleActiveStep(stepId: number) {
     if (stateStore.activeNodeId === stepId) {
         stateStore.activeNodeId = null;
     } else {
@@ -242,7 +244,7 @@ function getStepKey(step: Step) {
                             <span v-localize>Hide Graph</span>
                         </BButton>
                     </div>
-                    <BButton v-else size="sm" class="p-0" @click="hideGraph = false">
+                    <BButton v-else size="sm" class="p-0" style="width: min-content" @click="hideGraph = false">
                         <FontAwesomeIcon :icon="faSitemap" />
                         <div v-localize>Show Graph</div>
                     </BButton>
@@ -255,7 +257,7 @@ function getStepKey(step: Step) {
                         :hide-graph="hideGraph"
                         :showing-job-id="showingJobId || ''"
                         @update:showing-job-id="(jobId) => (showingJobId = jobId)"
-                        @focus-on-step="toggleActiveNode" />
+                        @focus-on-step="toggleActiveStep" />
                 </div>
             </ExpandedItems>
             <BCard v-if="showingJobId" ref="jobCard" class="mt-1" no-body :data-index="showingJobId">
