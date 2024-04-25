@@ -62,7 +62,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             with self._open_fs(user_context=user_context, opts=opts) as h:
                 if recursive:
                     res: List[AnyRemoteEntry] = []
-                    for p, dirs, files in h.walk(path):
+                    for p, dirs, files in h.walk(path, namespaces=["details"]):
                         to_dict = functools.partial(self._resource_info_to_dict, p)
                         res.extend(map(to_dict, dirs))
                         res.extend(map(to_dict, files))
