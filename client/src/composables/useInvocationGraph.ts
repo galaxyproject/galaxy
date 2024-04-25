@@ -63,6 +63,7 @@ export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean;
     running: { icon: faSpinner, spin: true },
     new: { icon: faClock },
     waiting: { icon: faClock },
+    queued: { icon: faClock },
     deleted: { icon: faTrash, class: "text-danger" },
     skipped: { icon: faForward, class: "text-warning" },
 };
