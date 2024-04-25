@@ -115,7 +115,7 @@ watch(
             const errorStep = Object.values(steps.value).find((step) => step.state === "error");
             if (errorStep) {
                 stateStore.activeNodeId = errorStep.id;
-            } else {
+            } else if (props.isTerminal) {
                 stateStore.activeNodeId = Object.values(steps.value)?.slice(-1)[0]?.id || null;
             }
         }
