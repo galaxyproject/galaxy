@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { shallowMount, Wrapper } from "@vue/test-utils";
+import { mount, shallowMount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -11,12 +11,8 @@ import WorkflowInvocationState from "./WorkflowInvocationState.vue";
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-jest.mock("vue-router/composables", () => ({
-    useRoute: jest.fn().mockReturnValue({ path: "" }),
-}));
-
 const selectors = {
-    invocationSummary: ".invocation-summary",
+    invocationSummary: ".invocation-overview",
 };
 
 /** Invocation data to be expected in the store */
@@ -43,7 +39,7 @@ const invocationDataJobsSummary = {
 const invocationJobsSummaryById = {
     [invocationData.id]: invocationDataJobsSummary,
     "not-fetched-invocation": null,
-    "non-terminal-invocation": invocationDataJobsSummary,
+    "non-terminal-id": invocationDataJobsSummary,
     "non-terminal-jobs": {
         ...invocationDataJobsSummary,
         states: {
@@ -79,22 +75,33 @@ jest.mock("@/stores/invocationStore", () => {
  * @param invocationId The invocation ID to be passed as a prop
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationState(invocationId: string) {
+async function mountWorkflowInvocationState(invocationId: string, shallow = true) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const wrapper = shallowMount(WorkflowInvocationState as object, {
-        propsData: {
-            invocationId,
-        },
-        pinia,
-        localVue,
-    });
+    let wrapper;
+    if (shallow) {
+        wrapper = shallowMount(WorkflowInvocationState as object, {
+            propsData: {
+                invocationId,
+            },
+            pinia,
+            localVue,
+        });
+    } else {
+        wrapper = mount(WorkflowInvocationState as object, {
+            propsData: {
+                invocationId,
+            },
+            pinia,
+            localVue,
+        });
+    }
     await flushPromises();
     return wrapper;
 }
 
-describe("WorkflowInvocationState.vue", () => {
+describe("WorkflowInvocationState check invocation and job terminal states", () => {
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
@@ -114,7 +121,7 @@ describe("WorkflowInvocationState.vue", () => {
     });
 
     it("determines that invocation is not terminal with non-terminal state", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-invocation");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
         // Only the invocation should be fetched for non-terminal invocations
@@ -129,6 +136,19 @@ describe("WorkflowInvocationState.vue", () => {
         // Only the jobs summary should be fetched, not the invocation since it is in scheduled/terminal state
         assertInvocationFetched(0);
         assertJobsSummaryFetched(1);
+    });
+});
+
+describe("WorkflowInvocationState check 'Report' tab disabled state", () => {
+    it("determines that 'Report' tab is disabled for non-terminal invocation", async () => {
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id", false);
+        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
+        expect(reportTab.classes()).toContain("disabled");
+    });
+    it("determines that 'Report' tab is not disabled for terminal invocation", async () => {
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, false);
+        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
+        expect(reportTab.classes()).not.toContain("disabled");
     });
 });
 

@@ -30,7 +30,7 @@ interface Props {
     /** The id for the currently shown job */
     showingJobId: string;
     /** Whether the steps are being rendered on the dedicated invocation page/route */
-    isInvocationRoute?: boolean;
+    isFullPage?: boolean;
 }
 
 const emit = defineEmits<{
@@ -53,7 +53,7 @@ const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => 
 const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
 
 // on invocation route, scroll to the active step card in the steps section
-if (props.isInvocationRoute) {
+if (props.isFullPage) {
     watch(
         () => [activeNodeId.value, stepsCard.value],
         ([nodeId, card]) => {

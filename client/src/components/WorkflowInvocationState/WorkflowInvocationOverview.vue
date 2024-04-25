@@ -30,16 +30,14 @@ interface Props {
     invocation?: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
-    isInvocationRoute?: boolean;
+    isFullPage?: boolean;
     jobStatesSummary: InvocationJobsSummary;
     index?: number;
     isSubworkflow?: boolean;
-    visible?: boolean;
 }
 
 const props = defineProps<Props>();
 
-const reportTooltip = "View report for this workflow invocation";
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
 
 const { workflow } = useWorkflowInstance(props.invocation?.workflow_id ?? "");
@@ -99,15 +97,6 @@ const stepStates = computed<StepStateType>(() => {
         }
     }
     return stepStates;
-});
-
-const invocationLink = computed<string | null>(() => {
-    const id = invocationId.value;
-    if (id) {
-        return getUrl(`workflows/invocations/report?id=${id}`);
-    } else {
-        return null;
-    }
 });
 
 const invocationPdfLink = computed<string | null>(() => {
@@ -183,15 +172,6 @@ function onCancel() {
             <div v-if="invocationAndJobTerminal" class="mr-1" :class="{ 'd-flex': !hasMessages }">
                 <BButton
                     v-b-tooltip.hover
-                    :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
-                    :disabled="!invocationStateSuccess"
-                    size="sm"
-                    class="invocation-report-link text-nowrap w-100"
-                    :href="invocationLink">
-                    View Report
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover
                     :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
@@ -254,8 +234,7 @@ function onCancel() {
                     :workflow="workflow"
                     :is-terminal="invocationAndJobTerminal"
                     :is-scheduled="invocationSchedulingTerminal"
-                    :is-invocation-route="isInvocationRoute"
-                    :visible="visible" />
+                    :is-full-page="isFullPage" />
             </div>
             <BAlert v-else-if="isSubworkflow" variant="secondary" show>
                 This subworkflow is

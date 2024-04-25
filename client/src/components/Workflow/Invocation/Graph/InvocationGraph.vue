@@ -51,10 +51,8 @@ interface Props {
     initialX?: number;
     /** The initial y position for the graph */
     initialY?: number;
-    /** Whether the parent component is visible */
-    visible?: boolean;
     /** Whether the graph is being rendered on the dedicated invocation page/route */
-    isInvocationRoute?: boolean;
+    isFullPage?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,7 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
     initialX: -40,
     initialY: -40,
     visible: true,
-    isInvocationRoute: false,
+    isFullPage: false,
 });
 
 const loadingGraph = ref(true);
@@ -133,7 +131,7 @@ watch(
 );
 
 // scroll to the job card when it is loaded (only on invocation route)
-if (props.isInvocationRoute) {
+if (props.isFullPage) {
     watch(
         () => loadedJobInfo.value,
         async (jobInfo) => {
@@ -217,7 +215,7 @@ function getStepKey(step: Step) {
             </BAlert>
             <BAlert v-else show variant="danger"> Unknown Error </BAlert>
         </div>
-        <div v-else-if="visible && steps && datatypesMapper">
+        <div v-else-if="steps && datatypesMapper">
             <ExpandedItems
                 explicit-key="expanded-invocation-steps"
                 :scope-key="props.invocation.id"
@@ -253,7 +251,7 @@ function getStepKey(step: Step) {
                         :store-id="storeId"
                         :invocation="invocationRef"
                         :workflow="props.workflow"
-                        :is-invocation-route="props.isInvocationRoute"
+                        :is-full-page="props.isFullPage"
                         :hide-graph="hideGraph"
                         :showing-job-id="showingJobId || ''"
                         @update:showing-job-id="(jobId) => (showingJobId = jobId)"

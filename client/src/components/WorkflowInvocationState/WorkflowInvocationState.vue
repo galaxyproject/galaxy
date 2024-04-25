@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faClock, faEdit, faEye, faHdd, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { BAlert, BButton, BButtonGroup, BCard, BTab, BTabs } from "bootstrap-vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { components } from "@/api/schema";
@@ -12,25 +12,20 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
 import { cancelWorkflowScheduling } from "./services";
-import { isTerminal, jobCount } from "./util";
+import { isTerminal, jobCount, runningCount } from "./util";
 
 import Heading from "../Common/Heading.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import UtcDate from "../UtcDate.vue";
-import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
+import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
+import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faSitemap);
+library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
 
 type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
-
-const TABS = {
-    SUMMARY: 0,
-    DETAILS: 1,
-    EXPORT: 2,
-};
 
 interface Props {
     invocationId: string;
@@ -52,7 +47,18 @@ const invocationStore = useInvocationStore();
 
 const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
-const activeTab = ref(TABS.SUMMARY);
+
+// after the report tab is first activated, no longer lazy-render it from then on
+const reportActive = ref(false);
+const reportLazy = ref(true);
+watch(
+    () => reportActive.value,
+    (newValue) => {
+        if (newValue) {
+            reportLazy.value = false;
+        }
+    }
+);
 
 const invocation = computed(
     () => invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView
@@ -76,6 +82,13 @@ const jobStatesTerminal = computed(() => {
 const jobStatesSummary = computed(() => {
     const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
     return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
+});
+const invocationStateSuccess = computed(() => {
+    return (
+        invocationState.value == "scheduled" &&
+        runningCount(jobStatesSummary.value) === 0 &&
+        invocationAndJobTerminal.value
+    );
 });
 
 const workflowStore = useWorkflowStore();
@@ -169,43 +182,65 @@ function getWorkflowName() {
                         <FontAwesomeIcon :icon="faSitemap" />
                         Workflow Version: {{ workflowVersion + 1 }}
                     </span>
-                    <BButton
-                        v-b-tooltip.hover.html
-                        :title="
-                            !isDeletedWorkflow
-                                ? `<b>Edit</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        size="sm"
-                        variant="secondary"
-                        :disabled="isDeletedWorkflow"
-                        :to="`/workflows/edit?id=${getWorkflowId()}`">
-                        <FontAwesomeIcon :icon="faEdit" />
-                        <span v-localize>Edit</span>
-                    </BButton>
+                    <BButtonGroup>
+                        <BButton
+                            v-b-tooltip.hover.html
+                            :title="
+                                !isDeletedWorkflow
+                                    ? `<b>Edit</b><br>${getWorkflowName()}`
+                                    : 'This workflow has been deleted.'
+                            "
+                            size="sm"
+                            variant="secondary"
+                            :disabled="isDeletedWorkflow"
+                            :to="`/workflows/edit?id=${getWorkflowId()}`">
+                            <FontAwesomeIcon :icon="faEdit" />
+                            <span v-localize>Edit</span>
+                        </BButton>
+                        <BButton
+                            v-b-tooltip.hover.html
+                            :title="
+                                !isDeletedWorkflow
+                                    ? `<b>Rerun</b><br>${getWorkflowName()}`
+                                    : 'This workflow has been deleted.'
+                            "
+                            size="sm"
+                            variant="secondary"
+                            :disabled="isDeletedWorkflow"
+                            :to="`/workflows/run?id=${getWorkflowId()}`">
+                            <FontAwesomeIcon :icon="faPlay" />
+                            <span v-localize>Run</span>
+                        </BButton>
+                    </BButtonGroup>
                 </div>
             </div>
         </BCard>
-        <BTabs v-model="activeTab" class="mt-1 d-flex flex-column overflow-auto" content-class="overflow-auto">
-            <BTab title="Summary">
-                <WorkflowInvocationSummary
-                    class="invocation-summary"
+        <BTabs class="mt-1 d-flex flex-column overflow-auto" content-class="overflow-auto">
+            <BTab key="0" title="Overview" active>
+                <WorkflowInvocationOverview
+                    class="invocation-overview"
                     :invocation="invocation"
                     :index="index"
-                    :is-invocation-route="props.isFullPage"
+                    :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
                     :invocation-scheduling-terminal="invocationSchedulingTerminal"
                     :job-states-summary="jobStatesSummary"
                     :is-subworkflow="isSubworkflow"
                     @invocation-cancelled="cancelWorkflowSchedulingLocal" />
             </BTab>
-            <BTab title="Details">
-                <WorkflowInvocationDetails :invocation="invocation" />
-            </BTab>
+            <WorkflowInvocationInputOutputTabs :invocation="invocation" />
             <!-- <BTab title="Workflow Overview">
                 <p>TODO: Insert readonly version of workflow editor here</p>
             </BTab> -->
-            <BTab title="Export">
+            <BTab
+                title="Report"
+                title-item-class="invocation-report-tab"
+                :disabled="!invocationStateSuccess"
+                :lazy="reportLazy"
+                :active.sync="reportActive">
+                <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
+            </BTab>
+            <BTab title="Export" lazy>
                 <div v-if="invocationAndJobTerminal">
                     <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
                 </div>

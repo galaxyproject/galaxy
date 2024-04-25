@@ -3,11 +3,11 @@ import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import invocationData from "../Workflow/test/json/invocation.json";
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary";
+import WorkflowInvocationOverview from "./WorkflowInvocationOverview";
 
 const localVue = getLocalVue();
 
-describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
+describe("WorkflowInvocationOverview.vue with terminal invocation", () => {
     let wrapper;
     let propsData;
 
@@ -18,16 +18,15 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
             invocationSchedulingTerminal: true,
             jobStatesSummary: {},
         };
-        wrapper = shallowMount(WorkflowInvocationSummary, {
+        wrapper = shallowMount(WorkflowInvocationOverview, {
             propsData,
             localVue,
             pinia: createTestingPinia(),
         });
     });
 
-    it("displays report links", async () => {
+    it("displays pdf report links", async () => {
         expect(wrapper.find(".invocation-pdf-link").exists()).toBeTruthy();
-        expect(wrapper.find(".invocation-report-link").exists()).toBeTruthy();
     });
 
     it("doesn't show cancel invocation button", async () => {
@@ -35,7 +34,7 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
     });
 });
 
-describe("WorkflowInvocationSummary.vue with invocation scheduling running", () => {
+describe("WorkflowInvocationOverview.vue with invocation scheduling running", () => {
     let wrapper;
     let propsData;
     let store;
@@ -47,16 +46,15 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
             invocationSchedulingTerminal: false,
             jobStatesSummary: {},
         };
-        wrapper = shallowMount(WorkflowInvocationSummary, {
+        wrapper = shallowMount(WorkflowInvocationOverview, {
             store,
             propsData,
             localVue,
         });
     });
 
-    it("does not display report links", async () => {
+    it("does not display pdf report links", async () => {
         expect(wrapper.find(".invocation-pdf-link").exists()).toBeFalsy();
-        expect(wrapper.find(".invocation-report-link").exists()).toBeFalsy();
     });
 
     it("shows cancel invocation button", async () => {
