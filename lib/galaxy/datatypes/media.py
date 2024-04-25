@@ -5,9 +5,9 @@ import subprocess
 import wave
 from functools import lru_cache
 from typing import (
+    cast,
     List,
     Tuple,
-    cast,
 )
 
 from galaxy.datatypes.binary import Binary
