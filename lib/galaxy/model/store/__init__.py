@@ -1972,8 +1972,6 @@ class DirectoryModelExportStore(ModelExportStore):
 
         dir_name = "datasets"
         dir_path = os.path.join(export_directory, dir_name)
-        dataset_hid = as_dict["hid"]
-        assert dataset_hid, as_dict
 
         if dataset.dataset.id in self.dataset_id_to_path:
             file_name, extra_files_path = self.dataset_id_to_path[dataset.dataset.id]
@@ -1992,7 +1990,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 self.serialization_options.get_identifier(self.security, conversion) if conversion else None
             )
             target_filename = get_export_dataset_filename(
-                as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
             )
             arcname = os.path.join(dir_name, target_filename)
             src = file_name
@@ -2008,7 +2006,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             if len(file_list):
                 extra_files_target_filename = get_export_dataset_extra_files_dir_name(
-                    as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                    as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
                 )
                 arcname = os.path.join(dir_name, extra_files_target_filename)
                 add(extra_files_path, os.path.join(export_directory, arcname))
@@ -2973,22 +2971,22 @@ def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: boo
             store_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
 
 
-def get_export_dataset_filename(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion_key: Optional[str]) -> str:
     """
     Builds a filename for a dataset using its name an extension.
     """
     base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)
     if not conversion_key:
-        return f"{base}_{hid}.{ext}"
+        return f"{base}_{encoded_id}.{ext}"
     else:
-        return f"{base}_{hid}_conversion_{conversion_key}.{ext}"
+        return f"{base}_{encoded_id}_conversion_{conversion_key}.{ext}"
 
 
-def get_export_dataset_extra_files_dir_name(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_extra_files_dir_name(name: str, ext: str, encoded_id: str, conversion_key: Optional[str]) -> str:
     if not conversion_key:
-        return f"extra_files_path_{hid}"
+        return f"extra_files_path_{encoded_id}"
     else:
-        return f"extra_files_path_{hid}_conversion_{conversion_key}"
+        return f"extra_files_path_{encoded_id}_conversion_{conversion_key}"
 
 
 def imported_store_for_metadata(
