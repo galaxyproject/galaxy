@@ -1,6 +1,5 @@
 <template>
     <b-card v-if="jobs">
-        <div>Click on any job to expand its details below:</div>
         <b-table
             small
             caption-top
@@ -11,19 +10,28 @@
             :striped="!invocationGraph"
             @row-clicked="rowClicked">
             <template v-slot:cell(showing_job)="data">
-                <FontAwesomeIcon
-                    v-if="showingJobId === data.item.id || data.item._showDetails"
-                    icon="caret-down"
-                    size="lg" />
-                <FontAwesomeIcon v-else icon="caret-right" size="lg" />
+                <span v-if="showingJobId === data.item.id || data.item._showDetails">
+                    <FontAwesomeIcon v-if="!invocationGraph" icon="caret-down" size="lg" />
+                    <span v-else>
+                        <FontAwesomeIcon class="text-primary" icon="fa-eye" />
+                    </span>
+                </span>
+                <span v-else>
+                    <FontAwesomeIcon v-if="!invocationGraph" icon="caret-right" size="lg" />
+                    <span v-else>
+                        <FontAwesomeIcon icon="fa-eye" />
+                    </span>
+                </span>
             </template>
             <template v-slot:row-details="row">
                 <JobProvider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <JobInformation v-if="item" :job_id="item.id" />
-                        <p></p>
-                        <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
+                        <b-card>
+                            <JobInformation v-if="item" :job_id="item.id" />
+                            <p></p>
+                            <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
+                        </b-card>
                     </div>
                 </JobProvider>
             </template>
@@ -106,9 +114,6 @@ export default {
             }
         },
         showingJobCls(item, type) {
-            if (!this.invocationGraph) {
-                return "";
-            }
             let cls = "job-tr-class cursor-pointer unselectable";
             if (this.showingJobId === item.id) {
                 cls += " showing-job";

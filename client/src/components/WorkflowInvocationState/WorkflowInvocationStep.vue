@@ -60,7 +60,9 @@
                                     v-if="workflowStepType == 'tool'"
                                     class="invocation-step-job-details"
                                     :open="inGraphView">
-                                    <summary><b>Jobs</b></summary>
+                                    <summary>
+                                        <b>Jobs <i>(Click on any job to view its details)</i></b>
+                                    </summary>
                                     <JobStep
                                         v-if="stepDetails.jobs?.length"
                                         :key="inGraphView"

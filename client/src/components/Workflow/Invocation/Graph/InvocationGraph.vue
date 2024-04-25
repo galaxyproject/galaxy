@@ -260,34 +260,46 @@ function getStepKey(step: Step) {
                         @focus-on-step="toggleActiveStep" />
                 </div>
             </ExpandedItems>
-            <BCard v-if="showingJobId" ref="jobCard" class="mt-1" no-body :data-index="showingJobId">
+            <BCard v-if="!hideGraph" ref="jobCard" class="mt-1" no-body>
                 <BCardHeader class="d-flex justify-content-between align-items-center">
                     <Heading inline size="md">
-                        Showing Job Details for
-                        <ExternalLink :href="withPrefix(`/jobs/${showingJobId}/view`)">
-                            <code>{{ showingJobId }}</code>
-                        </ExternalLink>
+                        <span v-if="showingJobId">
+                            Showing Job Details for
+                            <ExternalLink :href="withPrefix(`/jobs/${showingJobId}/view`)">
+                                <code>{{ showingJobId }}</code>
+                            </ExternalLink>
+                        </span>
+                        <span v-else>No Job Selected</span>
                     </Heading>
                     <div>
-                        <BButton v-b-tooltip.hover.noninteractive title="Scroll to Job" @click="scrollJobToView()">
+                        <BButton
+                            v-if="showingJobId"
+                            v-b-tooltip.hover.noninteractive
+                            title="Scroll to Job"
+                            @click="scrollJobToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton v-b-tooltip.hover.noninteractive title="Hide Job" @click="showingJobId = undefined">
+                        <BButton
+                            v-if="showingJobId"
+                            v-b-tooltip.hover.noninteractive
+                            title="Hide Job"
+                            @click="showingJobId = undefined">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
                 </BCardHeader>
                 <BCardBody>
-                    <JobProvider :id="showingJobId" v-slot="{ item, loading }">
-                        <div v-if="loading">
+                    <JobProvider v-if="showingJobId" :id="showingJobId" v-slot="{ item, loading }">
+                        <BAlert v-if="loading" show>
                             <LoadingSpan message="Loading Job Information" />
-                        </div>
+                        </BAlert>
                         <div v-else ref="loadedJobInfo">
                             <JobInformation v-if="item" :job_id="item.id" />
                             <p></p>
                             <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
                         </div>
                     </JobProvider>
+                    <BAlert v-else show>Select a job from a step in the invocation to view its details here.</BAlert>
                 </BCardBody>
             </BCard>
         </div>
