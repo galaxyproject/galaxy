@@ -17,10 +17,6 @@ from galaxy.datatypes.metadata import (
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import which
 
-import magic
-
-mime = magic.Magic(mime=True)
-
 
 @lru_cache(maxsize=128)
 def _ffprobe(path):
@@ -34,6 +30,92 @@ def ffprobe(path):
     completed_process.check_returncode()
     data = json.loads(completed_process.stdout.decode("utf-8"))
     return data["format"], data["streams"]
+
+
+magic_number = {
+    "mp4": {
+        "offset": 4,
+        "hex": [
+            "66 74 79 70 69",
+            "66 74 79 70 6D",
+            "66 74 79 70 4D",
+        ],
+    },
+    "flv": {"offset": 0, "hex": ["46 4C 56 01"]},
+    "mkv": {"offset": 0, "hex": ["1A 45 DF A3"]},
+    "webm": {"offset": 0, "hex": ["1A 45 DF A3"]},
+    "mov": {"offset": 4, "hex": ["66 74 79 70 71", "6D 6F 6F 76"]},
+    "wav": {"offset": 8, "hex": ["57 41 56 45"]},
+    "mp3": {
+        "offset": 0,
+        "hex": [
+            "49 44 33",
+            "FF E0",
+            "FF E1",
+            "FF E2",
+            "FF E3",
+            "FF E4",
+            "FF E5",
+            "FF E6",
+            "FF E7",
+            "FF E8",
+            "FF E9",
+            "FF EA",
+            "FF EB",
+            "FF EC",
+            "FF ED",
+            "FF EE",
+            "FF EF",
+            "FF F0",
+            "FF F1",
+            "FF F2",
+            "FF F3",
+            "FF F4",
+            "FF F5",
+            "FF F6",
+            "FF F7",
+            "FF F8",
+            "FF F9",
+            "FF FA",
+            "FF FB",
+            "FF FC",
+            "FF FD",
+            "FF FE",
+            "FF FF",
+        ],
+    },
+    "ogg": {"offset": 0, "hex": ["4F 67 67"]},
+    "wma": {"offset": 0, "hex": ["30 26 B2 75"]},
+    "wmv": {"offset": 0, "hex": ["30 26 B2 75"]},
+    "avi": {"offset": 8, "hex": ["41 56 49"]},
+    "mpeg": {
+        "offset": 0,
+        "hex": [
+            "00 00 01 B0",
+            "00 00 01 B1",
+            "00 00 01 B3",
+            "00 00 01 B4",
+            "00 00 01 B5",
+            "00 00 01 B6",
+            "00 00 01 B7",
+            "00 00 01 B8",
+            "00 00 01 B9",
+            "00 00 01 BA",
+            "00 00 01 BB",
+            "00 00 01 BC",
+            "00 00 01 BD",
+            "00 00 01 BE",
+            "00 00 01 BF",
+        ],
+    },
+}
+
+
+def file_format(filename: str, ff: str):
+    with open(filename, "rb") as f:
+        f.seek(magic_number[ff]["offset"])
+        head = f.read(8)
+        return any(head.startswith(bytes.fromhex(hex_code)) for hex_code in magic_number[ff]["hex"])
 
 
 class Audio(Binary):
@@ -187,8 +269,10 @@ class Mkv(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "matroska" in metadata["format_name"].split(",") and mime_type == "video/x-matroska"
+            vp_check = any(
+                stream["codec_name"] in ["vp8", "vp9"] for stream in streams if stream["codec_type"] == "video"
+            )
+            return file_format(filename, "mkv") and not vp_check
         return False
 
 
@@ -203,33 +287,21 @@ class Mp4(Video):
     file_ext = "mp4"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "mp4" in metadata["format_name"].split(",") and mime_type == "video/mp4"
-        return False
+        return file_format(filename, "mp4")
 
 
 class Flv(Video):
     file_ext = "flv"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "flv" in metadata["format_name"].split(",") and mime_type == "video/x-flv"
-        return False
+        return file_format(filename, "flv")
 
 
 class Mpg(Video):
     file_ext = "mpg"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "mpegvideo" in metadata["format_name"].split(",") and mime_type == "video/mpeg"
-        return False
+        return file_format(filename, "mpg")
 
 
 class Mp3(Audio):
@@ -245,11 +317,7 @@ class Mp3(Audio):
     file_ext = "mp3"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "mp3" in metadata["format_name"].split(",") and mime_type == "audio/mpeg"
-        return False
+        return file_format(filename, "mp3")
 
 
 class Wav(Audio):
@@ -283,8 +351,7 @@ class Wav(Audio):
         return "audio/wav"
 
     def sniff(self, filename: str) -> bool:
-        with wave.open(filename, "rb"):
-            return True
+        return file_format(filename, "wav")
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents."""
@@ -302,11 +369,7 @@ class Ogg(Audio):
     file_ext = "ogg"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "ogg" in metadata["format_name"].split(",") and mime_type == "audio/ogg"
-        return False
+        return file_format(filename, "ogg")
 
 
 class Webm(Video):
@@ -315,8 +378,10 @@ class Webm(Video):
     def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "webm" in metadata["format_name"].split(",") and mime_type == "video/webm"
+            vp_check = any(
+                stream["codec_name"] in ["vp8", "vp9"] for stream in streams if stream["codec_type"] == "video"
+            )
+            return file_format(filename, "webm") and vp_check
         return False
 
 
@@ -324,44 +389,21 @@ class Mpeg(Video):
     file_ext = "mpeg"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "mpeg" in metadata["format_name"].split(",") and mime_type == "video/mpeg"
-        return False
-
-
-class M4a(Audio):
-    file_ext = "m4a"
-
-    def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "m4a" in metadata["format_name"].split(",") and mime_type == "audio/x-m4a"
-        return False
+        return file_format(filename, "mpeg")
 
 
 class Mov(Video):
     file_ext = "mov"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "mov" in metadata["format_name"].split(",") and mime_type == "video/quicktime"
-        return False
+        return file_format(filename, "mov")
 
 
 class Avi(Video):
     file_ext = "avi"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            mime_type = mime.from_file(filename)
-            return "avi" in metadata["format_name"].split(",") and mime_type == "video/x-msvideo"
-        return False
+        return file_format(filename, "avi")
 
 
 class Wmv(Video):
@@ -371,7 +413,7 @@ class Wmv(Video):
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             is_video = "video" in [stream["codec_type"] for stream in streams]
-            return "asf" in metadata["format_name"].split(",") and is_video
+            return file_format(filename, "wmv") and is_video
         return False
 
 
@@ -382,5 +424,5 @@ class Wma(Audio):
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             is_audio = "video" not in [stream["codec_type"] for stream in streams]
-            return "asf" in metadata["format_name"].split(",") and is_audio
+            return file_format(filename, "wma") and is_audio
         return False
