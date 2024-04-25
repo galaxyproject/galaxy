@@ -6,6 +6,7 @@ import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 import Heading from "../Common/Heading.vue";
+import DatasetError from "../DatasetInformation/DatasetError.vue";
 import DatasetAttributes from "@/components/DatasetInformation/DatasetAttributes.vue";
 import DatasetDetails from "@/components/DatasetInformation/DatasetDetails.vue";
 import VisualizationsList from "@/components/Visualizations/Index.vue";
@@ -17,7 +18,7 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    // Move toplevel routes to this component with subrouting
+    // Move toplevel routes to this component with subrouting?
 });
 
 const dataset = computed(() => datasetStore.getDataset(props.datasetId));
@@ -26,11 +27,15 @@ const isLoading = computed(() => datasetStore.isLoadingDataset(props.datasetId))
 const stateText = computed(() => dataset.value && STATES[dataset.value.state] && STATES[dataset.value.state].text);
 const activeTab = ref("activeTab");
 const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview=true`);
+
+const showError = computed(
+    () => dataset.value && (dataset.value.state === "error" || dataset.value.state === "failed_metadata")
+);
 </script>
 <template>
     <div v-if="dataset && !isLoading">
         <header class="dataset-header">
-            <Heading h2>{{ dataset.name }}</Heading>
+            <Heading h1 separator>{{ dataset.name }}</Heading>
             <div v-if="stateText" class="mb-1">{{ stateText }}</div>
             <div v-else-if="dataset.misc_blurb" class="blurb">
                 <span class="value">{{ dataset.misc_blurb }}</span>
@@ -68,6 +73,9 @@ const displayUrl = computed(() => `/datasets/${props.datasetId}/display/?preview
                 </BTab>
                 <BTab title="Edit">
                     <DatasetAttributes :dataset-id="datasetId" />
+                </BTab>
+                <BTab v-if="showError" title="Error Report">
+                    <DatasetError :dataset-id="datasetId" />
                 </BTab>
             </BTabs>
         </div>

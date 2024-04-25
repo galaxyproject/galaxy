@@ -46,6 +46,8 @@ const editDisabled = computed(() =>
 
 const displayUrl = computed(() => prependPath(props.itemUrls.display));
 
+const rerunUrl = computed(() => prependPath(props.itemUrls.rerun));
+
 const viewUrl = computed(() => prependPath(props.itemUrls.view));
 
 const editUrl = computed(() => prependPath(props.itemUrls.edit));
@@ -96,7 +98,7 @@ function onDisplay($event: MouseEvent) {
     // Wrap display handler to allow ctrl/meta click to open in new tab
     // instead of triggering display.
     if ($event.ctrlKey || $event.metaKey) {
-        window.open(displayUrl.value, "_blank");
+        window.open(viewUrl.value, "_blank");
     } else {
         emit("display");
     }
@@ -132,17 +134,14 @@ function onDisplay($event: MouseEvent) {
             <icon icon="eye" />
         </BButton>
         <BButton
-            v-if="writable && isHistoryItem"
-            v-b-tooltip.hover
-            :disabled="editDisabled"
-            :title="editButtonTitle"
-            tabindex="0"
-            class="edit-btn px-1"
+            v-if="writable && isDataset && !displayDisabled"
+            class="rerun-btn px-1"
+            title="Run Job Again"
             size="sm"
             variant="link"
-            :href="editUrl"
-            @click.prevent.stop="emit('edit')">
-            <icon icon="pen" />
+            :href="rerunUrl"
+            @click.prevent.stop="onRerun">
+            <icon icon="redo" />
         </BButton>
         <BButton
             v-if="isRunningInteractiveTool"

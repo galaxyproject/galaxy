@@ -176,7 +176,7 @@ const itemUrls = computed<ItemUrls>(() => {
                     : null,
         };
     }
-    let display = `/datasets/${id}/preview`;
+    let display = `/datasets/${id}`;
     if (props.item.extension == "tool_markdown") {
         display = `/datasets/${id}/report`;
     }
@@ -187,7 +187,6 @@ const itemUrls = computed<ItemUrls>(() => {
         reportError: `/datasets/${id}/error`,
         rerun: `/tool_runner/rerun?id=${id}`,
         visualize: `/visualizations?dataset_id=${id}`,
-        view: `/datasets/${id}`,
     };
 });
 
