@@ -90,9 +90,10 @@ class HistoryTablePruner:
             self._drop_tmp_table()
 
     def _get_min_max_ids(self):
-        stmt = text(f"SELECT min(id), max(id) FROM history")
+        stmt = text(f"SELECT min(id), max(id) FROM history WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time")
+        params = {"create_time": self.max_create_time}
         with self.engine.begin() as conn:
-            minmax = conn.execute(stmt).all()
+            minmax = conn.execute(stmt, params).all()
         return minmax[0][0], minmax[0][1]
 
     def _mark_histories_as_deleted_and_purged(self, low, high):
