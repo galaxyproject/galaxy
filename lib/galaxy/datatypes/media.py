@@ -297,13 +297,6 @@ class Flv(Video):
         return file_format(filename, "flv")
 
 
-class Mpg(Video):
-    file_ext = "mpg"
-
-    def sniff(self, filename: str) -> bool:
-        return file_format(filename, "mpg")
-
-
 class Mp3(Audio):
     """
     Class that reads MP3 audio file.
