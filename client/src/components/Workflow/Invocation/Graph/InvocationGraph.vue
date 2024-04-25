@@ -244,7 +244,13 @@ function getStepKey(step: Step) {
                             <span v-localize>Hide Graph</span>
                         </BButton>
                     </div>
-                    <BButton v-else size="sm" class="p-0" style="width: min-content" @click="hideGraph = false">
+                    <BButton
+                        v-else
+                        v-b-tooltip.noninteractive.hover.right="'Show Graph'"
+                        size="sm"
+                        class="p-0"
+                        style="width: min-content"
+                        @click="hideGraph = false">
                         <FontAwesomeIcon :icon="faSitemap" />
                         <div v-localize>Show Graph</div>
                     </BButton>
