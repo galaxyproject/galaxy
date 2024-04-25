@@ -5,4 +5,5 @@ export type ItemUrls = {
     visualize?: string;
     reportError?: string;
     showDetails: string | null;
+    view?: string;
 };
