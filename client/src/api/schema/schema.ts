@@ -15564,12 +15564,16 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -21880,12 +21884,16 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
