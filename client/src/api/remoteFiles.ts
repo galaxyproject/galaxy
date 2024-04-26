@@ -51,10 +51,18 @@ export const remoteFilesFetcher = fetcher.path("/api/remote_files").method("get"
  * @param uri The file source URI to browse.
  * @param isRecursive Whether to recursively retrieve all files inside subdirectories.
  * @param writeable Whether to return only entries that can be written to.
+ * @param limit The maximum number of entries to return.
+ * @param offset The number of entries to skip before returning the rest.
  * @returns The list of files and directories from the server for the given URI.
  */
-export async function browseRemoteFiles(uri: string, isRecursive = false, writeable = false): Promise<RemoteEntry[]> {
-    const { data } = await remoteFilesFetcher({ target: uri, recursive: isRecursive, writeable });
+export async function browseRemoteFiles(
+    uri: string,
+    isRecursive = false,
+    writeable = false,
+    limit?: number,
+    offset?: number
+): Promise<RemoteEntry[]> {
+    const { data } = await remoteFilesFetcher({ target: uri, recursive: isRecursive, writeable, limit, offset });
     return data as RemoteEntry[];
 }
 
