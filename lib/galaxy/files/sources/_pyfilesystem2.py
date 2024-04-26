@@ -79,7 +79,9 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
-    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Tuple[int, int]:
+    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
+        if limit is None and offset is None:
+            return None
         limit = limit or DEFAULT_PAGE_LIMIT
         start = offset or 0
         end = start + limit

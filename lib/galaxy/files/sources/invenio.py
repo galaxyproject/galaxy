@@ -232,7 +232,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         response_data = self._get_response(user_context, request_url, params=params)
         return self._get_records_from_response(response_data)
 
-    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[int, int]:
+    def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
+        if limit is None and offset is None:
+            return None, None
         size = limit or DEFAULT_PAGE_LIMIT
         page = (offset or 0) // size + 1
         return size, page
