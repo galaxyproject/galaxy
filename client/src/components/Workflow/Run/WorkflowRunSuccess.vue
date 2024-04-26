@@ -8,11 +8,13 @@
 
             <p v-if="multipleHistoryTargets">
                 This workflow will generate results in multiple histories. You can observe progress in the
-                <a :href="multiHistoryView">history multi-view</a>.
+                <router-link to="/histories/view_multiple">history multi-view</router-link>.
             </p>
             <p v-else-if="wasNewHistoryTarget">
                 This workflow will generate results in a new history.
-                <a class="workflow-new-history-target-link" :href="newHistoryTarget">Switch to that history now</a>.
+                <a class="workflow-new-history-target-link" href="javascript:void(0)" @click="switchHistory"
+                    >Switch to that history now</a
+                >.
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
             <p>
@@ -33,7 +35,7 @@
 <script>
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { getAppRoot } from "onload/loadConfig";
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import { refreshContentsWrapper } from "utils/data";
 import Webhooks from "utils/webhooks";
 
@@ -75,9 +77,6 @@ export default {
         multiHistoryView() {
             return `${getAppRoot()}histories/view_multiple`;
         },
-        newHistoryTarget() {
-            return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
-        },
         wasNewHistoryTarget() {
             if (this.invocations.length < 1) {
                 return false;
@@ -92,6 +91,12 @@ export default {
             toolVersion: null,
         });
         refreshContentsWrapper();
+    },
+    methods: {
+        ...mapActions(useHistoryStore, ["setCurrentHistory"]),
+        async switchHistory() {
+            await this.setCurrentHistory(this.invocations[0].history_id);
+        },
     },
 };
 </script>
