@@ -18,7 +18,7 @@ const outputFormats = Object.freeze({
 interface Props {
     id: string;
     source: string;
-    simple: boolean;
+    simple?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
