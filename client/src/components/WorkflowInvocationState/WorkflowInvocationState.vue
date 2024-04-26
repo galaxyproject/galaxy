@@ -7,6 +7,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
 import { components } from "@/api/schema";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
@@ -60,6 +61,13 @@ watch(
         }
     }
 );
+
+const invocationTabs = ref<BTabs>();
+const scrollableDiv = computed(() => invocationTabs.value?.$el.querySelector(".tab-content") as HTMLElement);
+const isScrollable = ref(false);
+useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.height >= clientSize.height + 1;
+});
 
 const invocation = computed(
     () => invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView
@@ -219,7 +227,10 @@ function getWorkflowName() {
                 </BButtonGroup>
             </div>
         </div>
-        <BTabs class="mt-1 d-flex flex-column overflow-auto" content-class="overflow-auto">
+        <BTabs
+            ref="invocationTabs"
+            class="mt-1 d-flex flex-column overflow-auto"
+            :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
             <BTab key="0" title="Overview" active>
                 <WorkflowInvocationOverview
                     class="invocation-overview"
