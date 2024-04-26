@@ -5,9 +5,9 @@ import tempfile
 
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
@@ -126,7 +126,7 @@ def write_from(file_sources, uri, content, user_context=None):
 
 
 def configured_file_sources(conf_file):
-    file_sources_config = ConfiguredFileSourcesConfig()
+    file_sources_config = FileSourcePluginsConfig()
     return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
 
 

@@ -11,7 +11,6 @@ from typing import (
     ClassVar,
     Optional,
     Set,
-    TYPE_CHECKING,
 )
 
 from typing_extensions import (
@@ -24,6 +23,7 @@ from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
     TokenContainedEvaluator,
@@ -32,9 +32,6 @@ from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
-
-if TYPE_CHECKING:
-    from galaxy.files import ConfiguredFileSourcesConfig
 
 
 class PluginKind(str, Enum):
@@ -78,7 +75,7 @@ class FilesSourceProperties(TypedDict):
     filesource specific properties.
     """
 
-    file_sources_config: NotRequired["ConfiguredFileSourcesConfig"]
+    file_sources_config: NotRequired[FileSourcePluginsConfig]
     id: NotRequired[str]
     label: NotRequired[str]
     doc: NotRequired[Optional[str]]
