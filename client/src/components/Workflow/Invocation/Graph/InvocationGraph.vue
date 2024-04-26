@@ -9,6 +9,7 @@ import {
     faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useElementBounding } from "@vueuse/core";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
@@ -28,6 +29,7 @@ import ExternalLink from "@/components/ExternalLink.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
 import JobParameters from "@/components/JobParameters/JobParameters.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faTimes);
@@ -145,6 +147,12 @@ if (props.isFullPage) {
     );
 }
 
+// properties for handling the flex-draggable steps panel
+const invocationContainer = ref<HTMLDivElement | null>(null);
+const { width: containerWidth } = useElementBounding(invocationContainer);
+const minWidth = computed(() => containerWidth.value * 0.3);
+const maxWidth = computed(() => 0.7 * containerWidth.value);
+
 onUnmounted(() => {
     clearTimeout(pollTimeout.value);
 });
@@ -222,8 +230,8 @@ function getStepKey(step: Step) {
                 explicit-key="expanded-invocation-steps"
                 :scope-key="props.invocation.id"
                 :get-item-key="getStepKey">
-                <div class="d-flex">
-                    <div v-if="!hideGraph" class="position-relative" style="width: 60%">
+                <div ref="invocationContainer" class="d-flex">
+                    <div v-if="!hideGraph" class="position-relative w-100">
                         <BCard no-body>
                             <WorkflowGraph
                                 :steps="steps"
@@ -254,16 +262,28 @@ function getStepKey(step: Step) {
                         <FontAwesomeIcon :icon="faSitemap" />
                         <div v-localize>Show Graph</div>
                     </BButton>
-                    <WorkflowInvocationSteps
-                        :steps="steps"
-                        :store-id="storeId"
-                        :invocation="invocationRef"
-                        :workflow="props.workflow"
-                        :is-full-page="props.isFullPage"
-                        :hide-graph="hideGraph"
-                        :showing-job-id="showingJobId || ''"
-                        @update:showing-job-id="(jobId) => (showingJobId = jobId)"
-                        @focus-on-step="toggleActiveStep" />
+                    <component
+                        :is="!hideGraph ? FlexPanel : 'div'"
+                        v-if="containerWidth"
+                        side="right"
+                        :collapsible="false"
+                        class="ml-2"
+                        :class="{ 'w-100': hideGraph }"
+                        :min-width="minWidth"
+                        :max-width="maxWidth"
+                        :default-width="containerWidth * 0.4">
+                        <WorkflowInvocationSteps
+                            class="graph-steps-aside"
+                            :steps="steps"
+                            :store-id="storeId"
+                            :invocation="invocationRef"
+                            :workflow="props.workflow"
+                            :is-full-page="props.isFullPage"
+                            :hide-graph="hideGraph"
+                            :showing-job-id="showingJobId || ''"
+                            @update:showing-job-id="(jobId) => (showingJobId = jobId)"
+                            @focus-on-step="toggleActiveStep" />
+                    </component>
                 </div>
             </ExpandedItems>
             <BCard v-if="!hideGraph" ref="jobCard" class="mt-1" no-body>
@@ -323,5 +343,11 @@ function getStepKey(step: Step) {
     &:hover {
         opacity: 0.8;
     }
+}
+
+.graph-steps-aside {
+    overflow-y: scroll;
+    scroll-behavior: smooth;
+    max-height: 60vh;
 }
 </style>

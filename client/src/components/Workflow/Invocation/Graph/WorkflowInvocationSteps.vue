@@ -84,7 +84,7 @@ function showJob(jobId: string | undefined) {
 </script>
 
 <template>
-    <div ref="stepsDiv" class="ml-2" :class="!props.hideGraph ? 'graph-steps-aside' : 'w-100'">
+    <div ref="stepsDiv" class="d-flex flex-column w-100">
         <!-- Input Steps grouped in a separate portlet -->
         <div v-if="workflowInputSteps.length > 1" class="ui-portlet-section w-100">
             <div
@@ -134,12 +134,3 @@ function showJob(jobId: string | undefined) {
             @update:expanded="emit('focus-on-step', step.id)" />
     </div>
 </template>
-
-<style scoped>
-.graph-steps-aside {
-    overflow-y: scroll;
-    scroll-behavior: smooth;
-    width: 40%;
-    max-height: 60vh;
-}
-</style>
