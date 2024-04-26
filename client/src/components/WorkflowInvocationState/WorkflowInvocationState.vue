@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BCard, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BTab, BTabs } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
@@ -168,55 +168,57 @@ function getWorkflowName() {
                 </BButton>
             </div>
         </div>
-        <BCard v-if="props.isFullPage" class="py-2 px-3" no-body>
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
-                    <SwitchToHistoryLink :history-id="invocation.history_id" />
-                </span>
+        <div v-if="props.isFullPage" class="py-2 pl-3 d-flex justify-content-between align-items-center">
+            <div>
                 <i>
                     <FontAwesomeIcon :icon="faClock" class="mr-1" />invoked
                     <UtcDate :date="invocation.update_time" mode="elapsed" />
                 </i>
-                <div v-if="getWorkflow()" class="d-flex flex-gapx-1 align-items-center">
-                    <span v-if="workflowVersion !== undefined" class="mr-2">
+                <span class="d-flex flex-gapx-1 align-items-center">
+                    <FontAwesomeIcon :icon="faHdd" />History:
+                    <SwitchToHistoryLink :history-id="invocation.history_id" />
+                </span>
+            </div>
+            <div v-if="getWorkflow()" class="d-flex flex-gapx-1 align-items-center">
+                <div class="d-flex flex-column align-items-end mr-2">
+                    <span v-if="workflowVersion !== undefined" class="mb-1">
                         <FontAwesomeIcon :icon="faSitemap" />
                         Workflow Version: {{ workflowVersion + 1 }}
                     </span>
-                    <WorkflowInvocationsCount :workflow="getWorkflow()" />
-                    <BButtonGroup>
-                        <BButton
-                            v-b-tooltip.hover.html
-                            :title="
-                                !isDeletedWorkflow
-                                    ? `<b>Edit</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
-                            "
-                            size="sm"
-                            variant="secondary"
-                            :disabled="isDeletedWorkflow"
-                            :to="`/workflows/edit?id=${getWorkflowId()}`">
-                            <FontAwesomeIcon :icon="faEdit" />
-                            <span v-localize>Edit</span>
-                        </BButton>
-                        <BButton
-                            v-b-tooltip.hover.html
-                            :title="
-                                !isDeletedWorkflow
-                                    ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                    : 'This workflow has been deleted.'
-                            "
-                            size="sm"
-                            variant="secondary"
-                            :disabled="isDeletedWorkflow"
-                            :to="`/workflows/run?id=${getWorkflowId()}`">
-                            <FontAwesomeIcon :icon="faPlay" />
-                            <span v-localize>Run</span>
-                        </BButton>
-                    </BButtonGroup>
+                    <WorkflowInvocationsCount class="float-right" :workflow="getWorkflow()" />
                 </div>
+                <BButtonGroup vertical>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.html
+                        :title="
+                            !isDeletedWorkflow
+                                ? `<b>Edit</b><br>${getWorkflowName()}`
+                                : 'This workflow has been deleted.'
+                        "
+                        size="sm"
+                        variant="secondary"
+                        :disabled="isDeletedWorkflow"
+                        :to="`/workflows/edit?id=${getWorkflowId()}`">
+                        <FontAwesomeIcon :icon="faEdit" />
+                        <span v-localize>Edit</span>
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.html
+                        :title="
+                            !isDeletedWorkflow
+                                ? `<b>Rerun</b><br>${getWorkflowName()}`
+                                : 'This workflow has been deleted.'
+                        "
+                        size="sm"
+                        variant="secondary"
+                        :disabled="isDeletedWorkflow"
+                        :to="`/workflows/run?id=${getWorkflowId()}`">
+                        <FontAwesomeIcon :icon="faPlay" />
+                        <span v-localize>Run</span>
+                    </BButton>
+                </BButtonGroup>
             </div>
-        </BCard>
+        </div>
         <BTabs class="mt-1 d-flex flex-column overflow-auto" content-class="overflow-auto">
             <BTab key="0" title="Overview" active>
                 <WorkflowInvocationOverview

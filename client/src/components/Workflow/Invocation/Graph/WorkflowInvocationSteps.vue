@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCard } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
@@ -42,7 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
     hideGraph: true,
 });
 
-const stepsCard = ref<BCard>();
+const stepsDiv = ref<HTMLDivElement>();
 const expandInvocationInputs = ref(false);
 
 const stateStore = useWorkflowStateStore(props.storeId);
@@ -55,19 +54,19 @@ const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step)
 // on invocation route, scroll to the active step card in the steps section
 if (props.isFullPage) {
     watch(
-        () => [activeNodeId.value, stepsCard.value],
+        () => [activeNodeId.value, stepsDiv.value],
         ([nodeId, card]) => {
             if (nodeId !== undefined && card) {
                 // if the active node id is an input step, expand the inputs section, else, collapse it
                 const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
                 expandInvocationInputs.value = isAnInput;
                 if (isAnInput) {
-                    const inputHeader = stepsCard.value?.querySelector(`.portlet-header`);
+                    const inputHeader = stepsDiv.value?.querySelector(`.portlet-header`);
                     inputHeader?.scrollIntoView({ behavior: "smooth" });
                 }
 
                 // scroll to the active step card
-                const stepCard = stepsCard.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
+                const stepCard = stepsDiv.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
                 stepCard?.scrollIntoView();
             }
             // clear any job being shown
@@ -83,7 +82,7 @@ function showJob(jobId: string | undefined) {
 </script>
 
 <template>
-    <BCard ref="stepsCard" class="ml-2" :class="!props.hideGraph ? 'graph-steps-aside overflow-auto' : 'w-100'" no-body>
+    <div ref="stepsDiv" class="ml-2" :class="!props.hideGraph ? 'graph-steps-aside' : 'w-100'">
         <!-- Input Steps grouped in a separate portlet -->
         <div v-if="workflowInputSteps.length > 0" class="ui-portlet-section w-100">
             <div
@@ -131,11 +130,13 @@ function showJob(jobId: string | undefined) {
             :showing-job-id="props.showingJobId"
             @show-job="showJob"
             @update:expanded="emit('focus-on-step', step.id)" />
-    </BCard>
+    </div>
 </template>
 
 <style scoped>
 .graph-steps-aside {
+    overflow-y: scroll;
+    scroll-behavior: smooth;
     width: 40%;
     max-height: 60vh;
 }
