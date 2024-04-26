@@ -29,7 +29,7 @@ const { config } = useConfig(true);
 
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
-const outputFormat = ref(outputFormats.CITATION);
+const outputFormat = ref<string>(outputFormats.CITATION);
 const citations = ref<Citation[]>([]);
 
 onUpdated(() => {
