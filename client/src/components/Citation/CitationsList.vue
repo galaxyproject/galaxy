@@ -65,7 +65,7 @@ onMounted(async () => {
             </template>
 
             <div v-if="source === 'histories'" class="infomessage">
-                <div v-html="config.citations_export_message_html"></div>
+                <div v-html="config?.citations_export_message_html"></div>
             </div>
 
             <div class="citations-formatted">
