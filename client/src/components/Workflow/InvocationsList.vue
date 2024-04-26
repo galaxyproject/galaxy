@@ -37,10 +37,12 @@
                         style="right: 0"
                         :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
-                        <b
-                            >Invocation ID:
-                            <router-link :to="invocationLink(row.item)">{{ row.item.id }}</router-link></b
-                        >
+                        <b>
+                            Invocation ID:
+                            <a :href="invocationLink(row.item)" @click.prevent="(e) => openInvocation(e, row)">{{
+                                row.item.id
+                            }}</a>
+                        </b>
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </b-card>
@@ -61,12 +63,13 @@
             </template>
             <template v-slot:cell(workflow_id)="data">
                 <div class="truncate">
-                    <router-link
+                    <a
                         v-b-tooltip.hover.html
                         :title="`<b>View run for</b><br />${getStoredWorkflowNameByInstanceId(data.item.workflow_id)}`"
-                        :to="invocationLink(data.item)">
+                        :href="invocationLink(data.item)"
+                        @click="(e) => openInvocation(e, data)">
                         {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
-                    </router-link>
+                    </a>
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">
@@ -114,6 +117,7 @@ import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
+import Vue from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -232,6 +236,28 @@ export default {
         },
         invocationLink(item) {
             return `/workflows/invocations/${item.id}`;
+        },
+        openInvocation(e, row) {
+            if (e.ctrlKey || e.metaKey) {
+                // open in new tab and ignore toggling details
+                return;
+            }
+            // otherwise, manually toggle details and navigate
+            e.preventDefault();
+            const { item, detailsShowing } = row;
+            if (detailsShowing) {
+                // If you route when an invocation is expanded, somehow the workflowStores are not disposed
+                // entirely when you get to the full page view
+
+                // therefore, we close the details
+                row.toggleDetails();
+                // and then wait for stores to be disposed before routing
+                Vue.nextTick(() => {
+                    this.$router.push(this.invocationLink(item));
+                });
+            } else {
+                this.$router.push(this.invocationLink(item));
+            }
         },
     },
 };

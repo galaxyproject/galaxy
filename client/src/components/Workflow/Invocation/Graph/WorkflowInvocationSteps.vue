@@ -2,13 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { components } from "@/api/schema";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import type { GraphStep } from "@/composables/useInvocationGraph";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Workflow } from "@/stores/workflowStore";
 
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -30,6 +28,8 @@ interface Props {
     showingJobId: string;
     /** Whether the steps are being rendered on the dedicated invocation page/route */
     isFullPage?: boolean;
+    /** The active node on the graph */
+    activeNodeId?: number;
 }
 
 const emit = defineEmits<{
@@ -39,13 +39,11 @@ const emit = defineEmits<{
 
 const props = withDefaults(defineProps<Props>(), {
     hideGraph: true,
+    activeNodeId: undefined,
 });
 
 const stepsDiv = ref<HTMLDivElement>();
 const expandInvocationInputs = ref(false);
-
-const stateStore = useWorkflowStateStore(props.storeId);
-const { activeNodeId } = storeToRefs(stateStore);
 
 const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => isWorkflowInput(step.type));
 const hasSingularInput = computed(() => workflowInputSteps.length === 1);
@@ -54,21 +52,23 @@ const workflowRemainingSteps = hasSingularInput.value
     : Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
 
 watch(
-    () => [activeNodeId.value, stepsDiv.value],
+    () => [props.activeNodeId, stepsDiv.value],
     async ([nodeId, card]) => {
+        // if the active node id is an input step, expand the inputs section, else, collapse it
+        const isAnInput = workflowInputSteps.findIndex((step) => step.id === props.activeNodeId) !== -1;
+        expandInvocationInputs.value = isAnInput;
+
         // on full page view, scroll to the active step card in the steps section
         if (props.isFullPage) {
             if (nodeId !== undefined && card) {
-                // if the active node id is an input step, expand the inputs section, else, collapse it
-                const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
-                expandInvocationInputs.value = isAnInput;
+                // scroll to the input steps header
                 if (isAnInput) {
                     const inputHeader = stepsDiv.value?.querySelector(`.invocation-inputs-header`);
                     inputHeader?.scrollIntoView({ behavior: "smooth" });
                 }
 
                 // scroll to the active step card
-                const stepCard = stepsDiv.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
+                const stepCard = stepsDiv.value?.querySelector(`[data-index="${props.activeNodeId}"]`);
                 stepCard?.scrollIntoView();
             }
         }
@@ -112,7 +112,7 @@ function showJob(jobId: string | undefined) {
                     :workflow-step="step"
                     :in-graph-view="!props.hideGraph"
                     :graph-step="steps[step.id]"
-                    :expanded="props.hideGraph ? undefined : activeNodeId === step.id"
+                    :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
                     :showing-job-id="props.showingJobId"
                     @show-job="showJob"
                     @update:expanded="emit('focus-on-step', step.id)" />
@@ -128,7 +128,7 @@ function showJob(jobId: string | undefined) {
             :workflow-step="step"
             :in-graph-view="!props.hideGraph"
             :graph-step="steps[step.id]"
-            :expanded="props.hideGraph ? undefined : activeNodeId === step.id"
+            :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
             :showing-job-id="props.showingJobId"
             @show-job="showJob"
             @update:expanded="emit('focus-on-step', step.id)" />

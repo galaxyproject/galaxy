@@ -11,15 +11,14 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useElementBounding } from "@vueuse/core";
 import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { components } from "@/api/schema";
-import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { JobProvider } from "@/components/providers";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type Step } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
@@ -102,6 +101,7 @@ watch(
 );
 
 const stateStore = useWorkflowStateStore(storeId.value);
+const { activeNodeId } = storeToRefs(stateStore);
 
 watch(
     () => props.zoom,
@@ -116,9 +116,9 @@ watch(
         if (!newVal && steps.value) {
             const errorStep = Object.values(steps.value).find((step) => step.state === "error");
             if (errorStep) {
-                stateStore.activeNodeId = errorStep.id;
+                activeNodeId.value = errorStep.id;
             } else if (props.isTerminal) {
-                stateStore.activeNodeId = Object.values(steps.value)?.slice(-1)[0]?.id || null;
+                activeNodeId.value = Object.values(steps.value)?.slice(-1)[0]?.id || null;
             }
         }
     },
@@ -130,7 +130,7 @@ watch(
     () => hideGraph.value,
     () => {
         showingJobId.value = undefined;
-        stateStore.activeNodeId = null;
+        activeNodeId.value = null;
     }
 );
 
@@ -202,15 +202,11 @@ function scrollJobToView() {
 }
 
 function toggleActiveStep(stepId: number) {
-    if (stateStore.activeNodeId === stepId) {
-        stateStore.activeNodeId = null;
+    if (activeNodeId.value === stepId) {
+        activeNodeId.value = null;
     } else {
-        stateStore.activeNodeId = stepId;
+        activeNodeId.value = stepId;
     }
-}
-
-function getStepKey(step: Step) {
-    return step.id;
 }
 </script>
 
@@ -226,66 +222,62 @@ function getStepKey(step: Step) {
             <BAlert v-else show variant="danger"> Unknown Error </BAlert>
         </div>
         <div v-else-if="steps && datatypesMapper">
-            <ExpandedItems
-                explicit-key="expanded-invocation-steps"
-                :scope-key="props.invocation.id"
-                :get-item-key="getStepKey">
-                <div ref="invocationContainer" class="d-flex">
-                    <div v-if="!hideGraph" class="position-relative w-100">
-                        <BCard no-body>
-                            <WorkflowGraph
-                                :steps="steps"
-                                :datatypes-mapper="datatypesMapper"
-                                :initial-position="initialPosition"
-                                :scroll-to-id="stateStore.activeNodeId"
-                                :show-minimap="props.showMinimap"
-                                :show-zoom-controls="props.showZoomControls"
-                                is-invocation
-                                readonly />
-                        </BCard>
-                        <BButton
-                            class="position-absolute text-decoration-none m-2"
-                            style="top: 0; right: 0"
-                            size="sm"
-                            @click="hideGraph = true">
-                            <FontAwesomeIcon :icon="faTimes" class="mr-1" />
-                            <span v-localize>Hide Graph</span>
-                        </BButton>
-                    </div>
-                    <BButton
-                        v-else
-                        v-b-tooltip.noninteractive.hover.right="'Show Graph'"
-                        size="sm"
-                        class="p-0"
-                        style="width: min-content"
-                        @click="hideGraph = false">
-                        <FontAwesomeIcon :icon="faSitemap" />
-                        <div v-localize>Show Graph</div>
-                    </BButton>
-                    <component
-                        :is="!hideGraph ? FlexPanel : 'div'"
-                        v-if="containerWidth"
-                        side="right"
-                        :collapsible="false"
-                        class="ml-2"
-                        :class="{ 'w-100': hideGraph }"
-                        :min-width="minWidth"
-                        :max-width="maxWidth"
-                        :default-width="containerWidth * 0.4">
-                        <WorkflowInvocationSteps
-                            class="graph-steps-aside"
+            <div ref="invocationContainer" class="d-flex">
+                <div v-if="!hideGraph" class="position-relative w-100">
+                    <BCard no-body>
+                        <WorkflowGraph
                             :steps="steps"
-                            :store-id="storeId"
-                            :invocation="invocationRef"
-                            :workflow="props.workflow"
-                            :is-full-page="props.isFullPage"
-                            :hide-graph="hideGraph"
-                            :showing-job-id="showingJobId || ''"
-                            @update:showing-job-id="(jobId) => (showingJobId = jobId)"
-                            @focus-on-step="toggleActiveStep" />
-                    </component>
+                            :datatypes-mapper="datatypesMapper"
+                            :initial-position="initialPosition"
+                            :scroll-to-id="activeNodeId"
+                            :show-minimap="props.showMinimap"
+                            :show-zoom-controls="props.showZoomControls"
+                            is-invocation
+                            readonly />
+                    </BCard>
+                    <BButton
+                        class="position-absolute text-decoration-none m-2"
+                        style="top: 0; right: 0"
+                        size="sm"
+                        @click="hideGraph = true">
+                        <FontAwesomeIcon :icon="faTimes" class="mr-1" />
+                        <span v-localize>Hide Graph</span>
+                    </BButton>
                 </div>
-            </ExpandedItems>
+                <BButton
+                    v-else
+                    v-b-tooltip.noninteractive.hover.right="'Show Graph'"
+                    size="sm"
+                    class="p-0"
+                    style="width: min-content"
+                    @click="hideGraph = false">
+                    <FontAwesomeIcon :icon="faSitemap" />
+                    <div v-localize>Show Graph</div>
+                </BButton>
+                <component
+                    :is="!hideGraph ? FlexPanel : 'div'"
+                    v-if="containerWidth"
+                    side="right"
+                    :collapsible="false"
+                    class="ml-2"
+                    :class="{ 'w-100': hideGraph }"
+                    :min-width="minWidth"
+                    :max-width="maxWidth"
+                    :default-width="containerWidth * 0.4">
+                    <WorkflowInvocationSteps
+                        class="graph-steps-aside"
+                        :steps="steps"
+                        :store-id="storeId"
+                        :invocation="invocationRef"
+                        :workflow="props.workflow"
+                        :is-full-page="props.isFullPage"
+                        :hide-graph="hideGraph"
+                        :showing-job-id="showingJobId || ''"
+                        :active-node-id="activeNodeId !== null ? activeNodeId : undefined"
+                        @update:showing-job-id="(jobId) => (showingJobId = jobId)"
+                        @focus-on-step="toggleActiveStep" />
+                </component>
+            </div>
             <BCard v-if="!hideGraph" ref="jobCard" class="mt-1" no-body>
                 <BCardHeader class="d-flex justify-content-between align-items-center">
                     <Heading inline size="md">
