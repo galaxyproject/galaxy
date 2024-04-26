@@ -1,40 +1,42 @@
-import os
-import shutil
 import tempfile
 from typing import List
 
 import pytest
 
-from galaxy.files import ConfiguredFileSources
-from galaxy.files.sources import FilesSource
+from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.sources.temp import TempFilesSource
+from galaxy.files.unittest_utils import (
+    setup_root,
+    TestConfiguredFileSources,
+)
 from ._util import (
     assert_realizes_contains,
-    configured_file_sources,
     user_context_fixture,
 )
 
-SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "temporary_file_sources_conf.yml")
-
 ROOT_URI = "temp://test1"
-ROOT_PATH = "/tmp/test1"
+TEMP_PLUGIN = {
+    "type": "temp",
+    "id": "test1",
+    "doc": "Test temporal file source",
+    "writable": True,
+}
 
 
 @pytest.fixture(scope="session")
-def file_sources() -> ConfiguredFileSources:
-    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+def file_sources() -> TestConfiguredFileSources:
+    file_sources = _configured_file_sources()
     return file_sources
 
 
 @pytest.fixture(scope="session")
-def temp_file_source(file_sources: ConfiguredFileSources) -> FilesSource:
+def temp_file_source(file_sources: TestConfiguredFileSources) -> TempFilesSource:
     file_source_pair = file_sources.get_file_source_path(ROOT_URI)
     file_source = file_source_pair.file_source
-    _populate_test_scenario(file_source)
     return file_source
 
 
-def test_file_source(file_sources: FilesSource):
+def test_file_source(file_sources: TestConfiguredFileSources):
     assert_realizes_contains(file_sources, f"{ROOT_URI}/a", "a")
     assert_realizes_contains(file_sources, f"{ROOT_URI}/b", "b")
     assert_realizes_contains(file_sources, f"{ROOT_URI}/c", "c")
@@ -43,17 +45,17 @@ def test_file_source(file_sources: FilesSource):
     assert_realizes_contains(file_sources, f"{ROOT_URI}/dir1/sub1/f", "f")
 
 
-def test_list(temp_file_source: FilesSource):
+def test_list(temp_file_source: TempFilesSource):
     assert_list_names(temp_file_source, "/", recursive=False, expected_names=["a", "b", "c", "dir1"])
     assert_list_names(temp_file_source, "/dir1", recursive=False, expected_names=["d", "e", "sub1"])
 
 
-def test_list_recursive(temp_file_source: FilesSource):
+def test_list_recursive(temp_file_source: TempFilesSource):
     expected_names = ["a", "b", "c", "dir1", "d", "e", "sub1", "f"]
     assert_list_names(temp_file_source, "/", recursive=True, expected_names=expected_names)
 
 
-def test_pagination(temp_file_source: FilesSource):
+def test_pagination(temp_file_source: TempFilesSource):
     # Pagination is only supported for non-recursive listings.
     recursive = False
     root_lvl_entries = temp_file_source.list("/", recursive=recursive)
@@ -83,12 +85,8 @@ def test_pagination(temp_file_source: FilesSource):
     assert result[2] == root_lvl_entries[3]
 
 
-def _populate_test_scenario(file_source: FilesSource):
+def _populate_test_scenario(file_source: TempFilesSource):
     """Create a directory structure in the file source."""
-    if os.path.exists(ROOT_PATH):
-        shutil.rmtree(ROOT_PATH)
-        os.mkdir(ROOT_PATH)
-
     user_context = user_context_fixture()
 
     _upload_to(file_source, "/a", content="a", user_context=user_context)
@@ -99,14 +97,24 @@ def _populate_test_scenario(file_source: FilesSource):
     _upload_to(file_source, "/dir1/sub1/f", content="f", user_context=user_context)
 
 
-def _upload_to(file_source: FilesSource, target_uri: str, content: str, user_context=None):
+def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user_context=None):
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
         file_source.write_from(target_uri, f.name, user_context=user_context)
 
 
-def assert_list_names(file_source: FilesSource, uri: str, recursive: bool, expected_names: List[str]):
+def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
     result = file_source.list(uri, recursive=recursive)
     assert sorted([entry["name"] for entry in result]) == sorted(expected_names)
     return result
+
+
+def _configured_file_sources() -> TestConfiguredFileSources:
+    tmp, root = setup_root()
+    file_sources_config = FileSourcePluginsConfig()
+    plugin = TEMP_PLUGIN
+    plugin["root_path"] = root
+    file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={TEMP_PLUGIN["id"]: plugin}, test_root=root)
+    _populate_test_scenario(file_sources.get_file_source_path(ROOT_URI).file_source)
+    return file_sources

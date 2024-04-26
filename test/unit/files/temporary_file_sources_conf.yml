@@ -1,5 +1,0 @@
-- type: temp
-  id: test1
-  doc: Test temporal file source
-  writable: true
-  root_path: /tmp/test1
