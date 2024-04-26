@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { components } from "@/api/schema";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -48,20 +48,22 @@ const stateStore = useWorkflowStateStore(props.storeId);
 const { activeNodeId } = storeToRefs(stateStore);
 
 const workflowInputSteps = Object.values(props.workflow.steps).filter((step) => isWorkflowInput(step.type));
+const hasSingularInput = computed(() => workflowInputSteps.length === 1);
+const workflowRemainingSteps = hasSingularInput.value
+    ? Object.values(props.workflow.steps)
+    : Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
 
-const workflowRemainingSteps = Object.values(props.workflow.steps).filter((step) => !isWorkflowInput(step.type));
-
-// on invocation route, scroll to the active step card in the steps section
-if (props.isFullPage) {
-    watch(
-        () => [activeNodeId.value, stepsDiv.value],
-        ([nodeId, card]) => {
+watch(
+    () => [activeNodeId.value, stepsDiv.value],
+    async ([nodeId, card]) => {
+        // on full page view, scroll to the active step card in the steps section
+        if (props.isFullPage) {
             if (nodeId !== undefined && card) {
                 // if the active node id is an input step, expand the inputs section, else, collapse it
                 const isAnInput = workflowInputSteps.findIndex((step) => step.id === activeNodeId.value) !== -1;
                 expandInvocationInputs.value = isAnInput;
                 if (isAnInput) {
-                    const inputHeader = stepsDiv.value?.querySelector(`.portlet-header`);
+                    const inputHeader = stepsDiv.value?.querySelector(`.invocation-inputs-header`);
                     inputHeader?.scrollIntoView({ behavior: "smooth" });
                 }
 
@@ -69,12 +71,12 @@ if (props.isFullPage) {
                 const stepCard = stepsDiv.value?.querySelector(`[data-index="${activeNodeId.value}"]`);
                 stepCard?.scrollIntoView();
             }
-            // clear any job being shown
-            emit("update:showing-job-id", undefined);
-        },
-        { immediate: true }
-    );
-}
+        }
+        // clear any job being shown
+        emit("update:showing-job-id", undefined);
+    },
+    { immediate: true }
+);
 
 function showJob(jobId: string | undefined) {
     emit("update:showing-job-id", jobId);
@@ -84,9 +86,9 @@ function showJob(jobId: string | undefined) {
 <template>
     <div ref="stepsDiv" class="ml-2" :class="!props.hideGraph ? 'graph-steps-aside' : 'w-100'">
         <!-- Input Steps grouped in a separate portlet -->
-        <div v-if="workflowInputSteps.length > 0" class="ui-portlet-section w-100">
+        <div v-if="workflowInputSteps.length > 1" class="ui-portlet-section w-100">
             <div
-                class="portlet-header portlet-operations"
+                class="portlet-header portlet-operations invocation-inputs-header"
                 role="button"
                 tabindex="0"
                 @keyup.enter="expandInvocationInputs = !expandInvocationInputs"
