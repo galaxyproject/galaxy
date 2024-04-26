@@ -7708,12 +7708,9 @@ class Workflow(Base, Dictifiable, RepresentById):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
 
-        copied_comments = []
-        for comment in self.comments:
-            copied_comments.append(comment.copy())
-
+        copied_comments = [comment.copy() for comment in self.comments]
         steps_by_id = {s.order_index: s for s in copied_workflow.steps}
-        comments_by_id = {c.order_index: c for c in copied_workflow.comments}
+        comments_by_id = {c.order_index: c for c in copied_comments}
 
         # copy comment relationships
         for old_comment, new_comment in zip(self.comments, copied_comments):
