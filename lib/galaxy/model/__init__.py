@@ -7712,15 +7712,18 @@ class Workflow(Base, Dictifiable, RepresentById):
         for comment in self.comments:
             copied_comments.append(comment.copy())
 
+        steps_by_id = {s.order_index: s for s in copied_workflow.steps}
+        comments_by_id = {c.order_index: c for c in copied_workflow.comments}
+
         # copy comment relationships
         for old_comment, new_comment in zip(self.comments, copied_comments):
             for step_id in [step.order_index for step in old_comment.child_steps]:
-                child_step = copied_workflow.steps[step_id]
+                child_step = steps_by_id.get(step_id)
                 if child_step:
                     child_step.parent_comment = new_comment
 
             for comment_id in [comment.order_index for comment in old_comment.child_comments]:
-                child_comment = copied_workflow.comments[comment_id]
+                child_comment = comments_by_id.get(comment_id)
                 if child_comment:
                     child_comment.parent_comment = new_comment
 
