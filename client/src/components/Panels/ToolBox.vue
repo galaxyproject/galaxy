@@ -50,8 +50,6 @@ const queryPending = ref(false);
 const showSections = ref(props.workflow);
 const results: Ref<string[]> = ref([]);
 const resultPanel: Ref<Record<string, Tool | ToolSectionType> | null> = ref(null);
-const buttonText = ref("");
-const buttonIcon = ref("");
 const closestTerm: Ref<string | null> = ref(null);
 
 const toolStore = useToolStore();
@@ -172,6 +170,9 @@ const workflowSection = computed(() => {
     }
 });
 
+const buttonIcon = computed(() => (showSections.value ? faEyeSlash : faEye));
+const buttonText = computed(() => (showSections.value ? localize("Hide Sections") : localize("Show Sections")));
+
 function onInsertModule(module: Record<string, any>, event: Event) {
     event.preventDefault();
     emit("onInsertModule", module.name, module.title);
@@ -220,18 +221,22 @@ function onResults(
     }
     closestTerm.value = closestMatch;
     queryFilter.value = hasResults.value ? query.value : null;
-    setButtonText();
     queryPending.value = false;
+}
+
+function onSectionFilter(filter: string) {
+    if (query.value !== filter) {
+        query.value = filter;
+        if (!showSections.value) {
+            onToggle();
+        }
+    } else {
+        query.value = "";
+    }
 }
 
 function onToggle() {
     showSections.value = !showSections.value;
-    setButtonText();
-}
-
-function setButtonText() {
-    buttonText.value = showSections.value ? localize("Hide Sections") : localize("Show Sections");
-    buttonIcon.value = showSections.value ? "fa-eye-slash" : "fa-eye";
 }
 </script>
 
@@ -299,7 +304,8 @@ function setButtonText() {
                             v-if="panel"
                             :category="panel || {}"
                             :query-filter="queryFilter || undefined"
-                            @onClick="onToolClick" />
+                            @onClick="onToolClick"
+                            @onFilter="onSectionFilter" />
                     </div>
                 </div>
                 <ToolSection
