@@ -14,7 +14,7 @@ import drmaa
 
 def validate_paramters():
     if len(sys.argv) < 3:
-        sys.stderr.write("usage: %s [job ID] [user uid]\n" % sys.argv[0])
+        sys.stderr.write(f"usage: {sys.argv[0]} [job ID] [user uid]\n")
         exit(1)
 
     jobID = sys.argv[1]

@@ -1036,10 +1036,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         changeset_revisions.append(changeset_revision)
                 self._add_tool_versions(repository_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
-            message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % str(
-                self.repository.tip()
+            message = (
+                f"Revision <b>{self.repository.tip()}</b> includes no Galaxy utilities for which metadata can "
+                "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             )
-            message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
         if self.invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools(

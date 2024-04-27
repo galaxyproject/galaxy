@@ -144,7 +144,7 @@ class WebApplication(base.WebApplication):
             if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
                 continue
             # Try to replace routes various ways to encode variables with simple swagger {form}
-            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            swagger_path = "/{}".format(RE_URL.sub(r"{\1}", rule.routepath))
             controller = rule.defaults.get("controller", "")
             action = rule.defaults.get("action", "")
             # Get the list of methods for the route

@@ -225,7 +225,7 @@ class VisualizationController(
                 trans.sa_session.add(v)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
+            return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
 
     # ------------------------- registry.
     @web.expose

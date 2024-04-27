@@ -61,9 +61,9 @@ class SimpleTransientPathMapper(TransientPathMapper):
         self._staging_directory = staging_directory
 
     def transient_paths_for(self, old_dataset: Dataset) -> TransientDatasetPaths:
-        external_filename_basename = "dataset_%s.dat" % str(old_dataset.uuid)
+        external_filename_basename = f"dataset_{old_dataset.uuid}.dat"
         external_filename = os.path.join(self._staging_directory, external_filename_basename)
-        external_extras_basename = "dataset_%s_files" % str(old_dataset.uuid)
+        external_extras_basename = f"dataset_{old_dataset.uuid}_files"
         external_extras = os.path.join(self._staging_directory, external_extras_basename)
         return TransientDatasetPaths(external_filename, external_extras, self._staging_directory)
 

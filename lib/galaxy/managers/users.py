@@ -195,7 +195,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 "The configuration of this Galaxy instance does not allow admins to delete or purge users."
             )
         if not user.deleted:
-            raise exceptions.MessageException("User '%s' has not been deleted, so they cannot be purged." % user.email)
+            raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
         private_role = self.app.security_agent.get_private_user_role(user)
         # Delete History
         for active_history in user.active_histories:

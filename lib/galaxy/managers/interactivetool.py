@@ -69,7 +69,7 @@ class InteractiveToolSqlite:
                 try:
                     # Create table
                     c.execute(
-                        """CREATE TABLE %s
+                        f"""CREATE TABLE {DATABASE_TABLE_NAME}
                                  (key text,
                                   key_type text,
                                   token text,
@@ -78,7 +78,6 @@ class InteractiveToolSqlite:
                                   info text,
                                   PRIMARY KEY (key, key_type)
                                   )"""
-                        % (DATABASE_TABLE_NAME)
                     )
                 except Exception:
                     pass
@@ -90,11 +89,9 @@ class InteractiveToolSqlite:
                         key_type,
                     ),
                 )
-                insert = """INSERT INTO %s
+                insert = f"""INSERT INTO {DATABASE_TABLE_NAME}
                             (key, key_type, token, host, port, info)
-                            VALUES (?, ?, ?, ?, ?, ?)""" % (
-                    DATABASE_TABLE_NAME
-                )
+                            VALUES (?, ?, ?, ?, ?, ?)"""
                 c.execute(
                     insert,
                     (

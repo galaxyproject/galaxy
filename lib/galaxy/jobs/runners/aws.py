@@ -528,7 +528,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
-                "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
+                "AWSBatchJobRunner requires the following params to be provided: {}.".format(", ".join(check_required))
             )
 
         # parse Platform

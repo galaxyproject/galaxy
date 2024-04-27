@@ -2103,7 +2103,7 @@ class Tool(Dictifiable):
                             )
                         parent[input.name] = value
                     except Exception:
-                        messages[prefixed_name] = "Attempt to replace invalid value for '%s' failed." % (prefixed_label)
+                        messages[prefixed_name] = f"Attempt to replace invalid value for '{prefixed_label}' failed."
                 else:
                     messages[prefixed_name] = error
 
@@ -2315,7 +2315,7 @@ class Tool(Dictifiable):
                     if os.path.exists(filesystem_path):
                         tarball_files.append((filesystem_path, tarball_path))
                         image_found = True
-                        tool_xml = tool_xml.replace("${static_path}/%s" % tarball_path, tarball_path)
+                        tool_xml = tool_xml.replace(f"${{static_path}}/{tarball_path}", tarball_path)
         # If one or more tool help images were found, add the modified tool XML to the tarball instead of the original.
         if image_found:
             with tempfile.NamedTemporaryFile(mode="w", suffix=".xml", delete=False) as fh2:
@@ -2684,7 +2684,7 @@ class Tool(Dictifiable):
             )
             if tool is None:
                 raise exceptions.MessageException(
-                    "This dataset was created by an obsolete tool (%s). Can't re-run." % tool_id
+                    f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
                 )
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:

@@ -16,8 +16,7 @@ from bioblend.galaxy import (
 
 if len(sys.argv) < 5:
     print(
-        "Usage: %s <GalaxyUrl> <ApiKey> <HistoryName (must be unique)> <CollectionHistoryId (i.e. the simple integer id)>"
-        % sys.argv[0]
+        f"Usage: {sys.argv[0]} <GalaxyUrl> <ApiKey> <HistoryName (must be unique)> <CollectionHistoryId (i.e. the simple integer id)>"
     )
     exit(0)
 

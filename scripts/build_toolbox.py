@@ -141,7 +141,7 @@ def scanfiles(filenamelist):
             newtoolelement = ET.Element("tool", attrib)
             toolboxpositionelements = toolelement.findall("toolboxposition")
             if not toolboxpositionelements:
-                print("DBG> %s has no toolboxposition" % fn)
+                print(f"DBG> {fn} has no toolboxposition")
             else:
                 for toolboxpositionelement in toolboxpositionelements:
                     toolbox.add(newtoolelement, toolboxpositionelement)

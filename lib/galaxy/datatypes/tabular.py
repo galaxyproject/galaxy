@@ -1075,7 +1075,7 @@ class BaseVcf(Tabular):
     def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
-                raise Exception("Not enough columns in row %s" % row.join("\t"))
+                raise Exception("Not enough columns in row {}".format(row.join("\t")))
 
         validate_tabular(dataset.get_file_name(), sep="\t", validate_row=validate_row, comment_designator="#")
         return DatatypeValidation.validated()

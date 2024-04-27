@@ -151,7 +151,7 @@ def main():
     template_file = args.template
     if template_file is None:
         default_template = os.path.join(scriptdir, "admin_cleanup_deletion_template.txt")
-        sample_template_file = "%s.sample" % default_template
+        sample_template_file = f"{default_template}.sample"
         if os.path.exists(default_template):
             template_file = default_template
         elif os.path.exists(sample_template_file):
@@ -164,7 +164,7 @@ def main():
                 "found, please specify template as an option (--template)."
             )
     elif not os.path.exists(template_file):
-        parser.error("Specified template file (%s) not found." % template_file)
+        parser.error(f"Specified template file ({template_file}) not found.")
 
     config = galaxy.config.Configuration(**app_properties)
 
@@ -273,9 +273,9 @@ def administrative_delete_datasets(
         subject = "Galaxy Server Cleanup " "- %d datasets DELETED" % len(dataset_list)
         fromaddr = config.email_from
         print()
-        print("From: %s" % fromaddr)
-        print("To: %s" % email)
-        print("Subject: %s" % subject)
+        print(f"From: {fromaddr}")
+        print(f"To: {email}")
+        print(f"Subject: {subject}")
         print("----------")
         print(msgtext)
         if not info_only:

@@ -36,7 +36,7 @@ def get(api_key, url):
     try:
         return json.loads(urlopen(url).read())
     except ValueError as e:
-        print("URL did not return JSON data: %s" % e)
+        print(f"URL did not return JSON data: {e}")
         sys.exit(1)
 
 
@@ -87,14 +87,14 @@ def display(api_key, url, return_formatted=True):
         print("------------------")
         for n, i in enumerate(r):
             if isinstance(i, str):
-                print("  %s" % i)
+                print(f"  {i}")
             else:
                 # All collection members should have a name in the response.
                 # url is optional
                 if "url" in i:
                     print("#%d: %s" % (n + 1, i.pop("url")))
                 if "name" in i:
-                    print("  name: %s" % i.pop("name"))
+                    print(f"  name: {i.pop('name')}")
                 try:
                     for k, v in i.items():
                         print(f"  {k}: {v}")
@@ -112,7 +112,7 @@ def display(api_key, url, return_formatted=True):
     elif isinstance(r, str):
         print(r)
     else:
-        print("response is unknown type: %s" % type(r))
+        print(f"response is unknown type: {type(r)}")
 
 
 def submit(api_key, url, data, return_formatted=True):
@@ -143,7 +143,7 @@ def submit(api_key, url, data, return_formatted=True):
                 else:
                     print("----")
                 if "name" in i:
-                    print("  name: %s" % i.pop("name"))
+                    print(f"  name: {i.pop('name')}")
                 for k, v in i.items():
                     print(f"  {k}: {v}")
             else:

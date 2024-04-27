@@ -534,7 +534,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
-                "title": "Quota '%s'" % quota.name,
+                "title": f"Quota '{quota.name}'",
                 "message": "Quota '%s' is currently associated with %d user(s) and %d group(s)."
                 % (quota.name, len(in_users), len(in_groups)),
                 "status": "info",
@@ -797,7 +797,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_groups.append(trans.security.encode_id(group.id))
                 all_groups.append((group.name, trans.security.encode_id(group.id)))
             return {
-                "title": "Role '%s'" % role.name,
+                "title": f"Role '{role.name}'",
                 "message": "Role '%s' is currently associated with %d user(s) and %d group(s)."
                 % (role.name, len(in_users), len(in_groups)),
                 "status": "info",
@@ -902,7 +902,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                     in_roles.append(trans.security.encode_id(role.id))
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
-                "title": "Group '%s'" % group.name,
+                "title": f"Group '{group.name}'",
                 "message": "Group '%s' is currently associated with %d user(s) and %d role(s)."
                 % (group.name, len(in_users), len(in_roles)),
                 "status": "info",

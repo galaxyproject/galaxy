@@ -62,9 +62,9 @@ def quotacheck(sa_session, users, engine, object_store):
         print("none")
     else:
         if new > current:
-            print("+%s" % (nice_size(new - current)))
+            print(f"+{nice_size(new - current)}")
         else:
-            print("-%s" % (nice_size(current - new)))
+            print(f"-{nice_size(current - new)}")
 
 
 if __name__ == "__main__":

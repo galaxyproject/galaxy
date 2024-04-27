@@ -135,8 +135,8 @@ class LDAP(AuthProvider):
         self.role_search_attribute = options.get(self.role_search_option)
         if self.auto_create_roles_or_groups and self.role_search_attribute is None:
             raise ConfigurationError(
-                "If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
-                " be provided." % self.role_search_option
+                f"If 'auto-create-roles' or 'auto-create-groups' is True, a '{self.role_search_option}' attribute has to"
+                " be provided."
             )
 
         return ok, failure_mode
