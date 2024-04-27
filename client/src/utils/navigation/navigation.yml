@@ -844,6 +844,7 @@ invocations:
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
+    hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'

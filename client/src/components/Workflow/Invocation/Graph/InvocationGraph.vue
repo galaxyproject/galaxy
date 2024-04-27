@@ -238,6 +238,7 @@ function toggleActiveStep(stepId: number) {
                     <BButton
                         class="position-absolute text-decoration-none m-2"
                         style="top: 0; right: 0"
+                        data-description="hide invocation graph"
                         size="sm"
                         @click="hideGraph = true">
                         <FontAwesomeIcon :icon="faTimes" class="mr-1" />
@@ -266,6 +267,7 @@ function toggleActiveStep(stepId: number) {
                     :default-width="containerWidth * 0.4">
                     <WorkflowInvocationSteps
                         class="graph-steps-aside"
+                        :class="{ 'steps-fixed-height': !hideGraph }"
                         :steps="steps"
                         :store-id="storeId"
                         :invocation="invocationRef"
@@ -340,6 +342,8 @@ function toggleActiveStep(stepId: number) {
 .graph-steps-aside {
     overflow-y: scroll;
     scroll-behavior: smooth;
-    max-height: 60vh;
+    &.steps-fixed-height {
+        max-height: 60vh;
+    }
 }
 </style>
