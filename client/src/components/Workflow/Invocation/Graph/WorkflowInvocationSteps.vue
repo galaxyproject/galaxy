@@ -61,15 +61,10 @@ watch(
         // on full page view, scroll to the active step card in the steps section
         if (props.isFullPage) {
             if (nodeId !== undefined && card) {
-                // scroll to the input steps header
-                if (isAnInput) {
-                    const inputHeader = stepsDiv.value?.querySelector(`.invocation-inputs-header`);
-                    inputHeader?.scrollIntoView({ behavior: "smooth" });
-                }
-
                 // scroll to the active step card
                 const stepCard = stepsDiv.value?.querySelector(`[data-index="${props.activeNodeId}"]`);
-                stepCard?.scrollIntoView();
+                const portletHeaderDiv = stepCard?.querySelector(".portlet-header");
+                stepsDiv.value?.scrollTo({ top: portletHeaderDiv?.getBoundingClientRect().top });
             }
         }
         // clear any job being shown
@@ -88,7 +83,7 @@ function showJob(jobId: string | undefined) {
         <!-- Input Steps grouped in a separate portlet -->
         <div v-if="workflowInputSteps.length > 1" class="ui-portlet-section w-100">
             <div
-                class="portlet-header portlet-operations invocation-inputs-header"
+                class="portlet-header portlet-operations"
                 role="button"
                 tabindex="0"
                 @keyup.enter="expandInvocationInputs = !expandInvocationInputs"
