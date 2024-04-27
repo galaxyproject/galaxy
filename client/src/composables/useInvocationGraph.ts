@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import Vue, { computed, type Ref, ref } from "vue";
 
-import { components, fetcher } from "@/api/schema";
+import { stepJobsSummaryFetcher, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
@@ -20,11 +20,6 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
-// Type Definitions
-type StepJobSummary =
-    | components["schemas"]["InvocationStepJobsResponseStepModel"]
-    | components["schemas"]["InvocationStepJobsResponseJobModel"]
-    | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"];
 export interface GraphStep extends Step {
     state?:
         | "new"
@@ -47,13 +42,6 @@ export interface GraphStep extends Step {
 interface InvocationGraph extends Workflow {
     steps: { [index: number]: GraphStep };
 }
-
-// Fetchers
-const stepJobsSummaryFetcher = fetcher
-    .path("/api/invocations/{invocation_id}/step_jobs_summary")
-    .method("get")
-    .create();
-const invocationStepFetcher = fetcher.path("/api/invocations/steps/{step_id}").method("get").create();
 
 /** Classes for states' icons */
 export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean; class?: string }> = {
@@ -78,7 +66,7 @@ const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
  * @param workflowId - The id of the workflow that was invoked
  */
 export function useInvocationGraph(
-    invocation: Ref<components["schemas"]["WorkflowInvocationElementView"]>,
+    invocation: Ref<WorkflowInvocationElementView>,
     workflowId: string | undefined,
     workflowVersion: number | undefined
 ) {
@@ -265,24 +253,11 @@ export function useInvocationGraph(
     //     await fromSimple(storeId.value, invocationGraph.value as any);
     // }
 
-    async function getInvocationStep(name: string, id: number) {
-        const step_id = invocation.value.steps[id]?.id;
-        if (step_id) {
-            try {
-                const { data: invocationStep } = await invocationStepFetcher({ step_id });
-                return invocationStep;
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        }
-    }
-
     return {
         /** An id used to scope the store to the invocation's id */
         storeId,
         /** The steps of the invocation graph */
         steps,
-        getInvocationStep,
         /** Fetches the original workflow structure (once) and the step job summaries for each step in the invocation,
          * and displays the job states on the workflow graph steps.
          */

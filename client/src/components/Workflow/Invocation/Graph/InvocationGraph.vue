@@ -14,7 +14,7 @@ import { BAlert, BButton, BCard, BCardBody, BCardHeader } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onUnmounted, ref, watch } from "vue";
 
-import { components } from "@/api/schema";
+import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { JobProvider } from "@/components/providers";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useInvocationGraph } from "@/composables/useInvocationGraph";
@@ -35,7 +35,7 @@ library.add(faArrowDown, faChevronDown, faChevronUp, faSignInAlt, faSitemap, faT
 
 interface Props {
     /** The invocation to display */
-    invocation: components["schemas"]["WorkflowInvocationElementView"];
+    invocation: WorkflowInvocationElementView;
     /** The workflow which was run */
     workflow: Workflow;
     /** Whether the invocation is terminal */

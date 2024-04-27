@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BTab, BTabs } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
-import { components } from "@/api/schema";
+import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
+import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -26,8 +26,6 @@ import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
-
-type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 
 interface Props {
     invocationId: string;
