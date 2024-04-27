@@ -153,6 +153,14 @@ def retry_during_transitions(
     return _retry
 
 
+def retry_index_during_transitions():
+
+    def exception_check(e):
+        return exception_seems_to_indicate_transition(e) or isinstance(e, IndexError)
+
+    return partial(retry_during_transitions, exception_check=exception_check)
+
+
 def edit_details(f, scope=".history-index"):
     """Open the editor, run the edits, hit the save button"""
 
@@ -1421,7 +1429,12 @@ class NavigatesGalaxy(HasDriver):
         return self.components.workflows.workflow_card.all()
 
     def workflow_card_element(self, workflow_index=0):
-        return self.workflow_card_elements()[workflow_index]
+
+        @retry_index_during_transitions()
+        def fetch():
+            return self.workflow_card_elements()[workflow_index]
+
+        return fetch()
 
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
