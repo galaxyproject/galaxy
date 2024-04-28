@@ -6409,7 +6409,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         for entity in return_entities:
             q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
-                q = q.filter(entity.id == dce.c.id)  # type:ignore[arg-type]
+                q = q.filter(entity.id == dce.c.id)
 
         q = q.order_by(*order_by_columns)
         return q
