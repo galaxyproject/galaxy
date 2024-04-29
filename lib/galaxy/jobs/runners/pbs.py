@@ -13,7 +13,7 @@ except ImportError as exc:
     PBS_IMPORT_MESSAGE = (
         "The Python pbs-python package is required to use "
         "this feature, please install it or correct the "
-        "following error:\nImportError %s" % str(exc)
+        f"following error:\nImportError {exc}"
     )
 
 from galaxy import (
@@ -514,7 +514,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         try:
             pbs_server_name = self.__get_pbs_server(job.destination_params)
             if pbs_server_name is None:
-                log.debug("(%s) Job queued but no destination stored in job params, cannot delete" % job_tag)
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete", job_tag)
                 return
             c = pbs.pbs_connect(util.smart_str(pbs_server_name))
             if c <= 0:

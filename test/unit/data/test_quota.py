@@ -67,7 +67,7 @@ class TestPurgeUsage(BaseModelTestCase):
 class TestCalculateUsage(BaseModelTestCase):
     def setUp(self):
         model = self.model
-        u = model.User(email="calc_usage%s@example.com" % str(uuid.uuid1()), password="password")
+        u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
         self.persist(u)
         h = model.History(name="History for Calculated Usage", user=u)
         self.persist(h)

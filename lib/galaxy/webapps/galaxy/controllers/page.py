@@ -100,7 +100,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             }
         else:
             page = self.page_manager.create_page(trans, CreatePagePayload(**payload))
-            return {"message": "Page '%s' successfully created." % page.title, "status": "success"}
+            return {"message": f"Page '{page.title}' successfully created.", "status": "success"}
 
     @web.legacy_expose_api
     @web.require_login("edit pages")
@@ -159,7 +159,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 trans.sa_session.add(p)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
+            return {"message": f"Attributes of '{p.title}' successfully saved.", "status": "success"}
 
     @web.expose
     @web.require_login()

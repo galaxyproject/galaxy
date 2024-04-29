@@ -258,10 +258,10 @@ def _get_uuid(path):
     if len(roots) == 0:
         raise ValueError("Archive does not have a visible root directory.")
     if len(roots) > 1:
-        raise ValueError("Archive has multiple root directories: %r" % roots)
+        raise ValueError(f"Archive has multiple root directories: {roots!r}")
     uuid = roots.pop()
     if not _is_uuid4(uuid):
-        raise ValueError("Archive root directory name %r is not a valid version 4 " "UUID." % uuid)
+        raise ValueError(f"Archive root directory name {uuid!r} is not a valid version 4 UUID.")
     return uuid
 
 

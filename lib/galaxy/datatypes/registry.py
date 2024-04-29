@@ -971,9 +971,8 @@ class Registry:
         # If extension is not None and is uppercase or mixed case, we need to lowercase it
         if extension is not None and not extension.islower():
             self.log.debug(
-                "%s is not lower case, that could cause troubles in the future. \
-            Please change it to lower case"
-                % extension
+                "%s is not lower case, that could cause troubles in the future. Please change it to lower case",
+                extension,
             )
             extension = extension.lower()
         return extension

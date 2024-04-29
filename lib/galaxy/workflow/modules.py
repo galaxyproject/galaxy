@@ -138,7 +138,7 @@ def to_cwl(value, hda_references, step):
         # I think the following two checks are needed but they may
         # not be needed.
         if not value.dataset.in_ready_state():
-            why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+            why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
             raise DelayedWorkflowEvaluation(why=why)
         if not value.is_ok:
             raise FailWorkflowEvaluation(
@@ -190,7 +190,7 @@ def from_cwl(value, hda_references, progress: "WorkflowProgress"):
             # This is going to re-file -> HDA this each iteration I think, not a good
             # implementation.
             return progress.raw_to_galaxy(value)
-        assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+        assert value["location"].startswith("step_input://"), f"Invalid location {value}"
         return hda_references[int(value["location"][len("step_input://") :]) - 1]
     elif isinstance(value, dict):
         raise NotImplementedError()

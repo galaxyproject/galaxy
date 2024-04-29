@@ -332,7 +332,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             }
         else:
             return self.message_exception(
-                trans, "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)
+                trans, f"You do not have permission to edit this dataset's ( id: {dataset_id} ) information."
             )
 
     @web.expose_api_anonymous

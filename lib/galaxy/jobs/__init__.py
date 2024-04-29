@@ -2169,8 +2169,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     )
                     return (
                         JobState.runner_states.OUTPUT_SIZE_LIMIT,
-                        "Job output file grew too large (greater than %s), please try different inputs or parameters"
-                        % util.nice_size(self.app.job_config.limits.output_size),
+                        f"Job output file grew too large (greater than {util.nice_size(self.app.job_config.limits.output_size)}), please try different inputs or parameters",
                     )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:

@@ -67,11 +67,11 @@ from .markdown_parse import (
 log = logging.getLogger(__name__)
 
 ARG_VAL_CAPTURED_REGEX = r"""(?:([\w_\-\|]+)|\"([^\"]+)\"|\'([^\']+)\')"""
-OUTPUT_LABEL_PATTERN = re.compile(r"output=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
-INPUT_LABEL_PATTERN = re.compile(r"input=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
-STEP_LABEL_PATTERN = re.compile(r"step=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
-PATH_LABEL_PATTERN = re.compile(r"path=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
-SIZE_PATTERN = re.compile(r"size=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
+OUTPUT_LABEL_PATTERN = re.compile(rf"output=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+INPUT_LABEL_PATTERN = re.compile(rf"input=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+STEP_LABEL_PATTERN = re.compile(rf"step=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+PATH_LABEL_PATTERN = re.compile(rf"path=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+SIZE_PATTERN = re.compile(rf"size=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"

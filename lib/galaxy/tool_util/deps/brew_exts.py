@@ -387,9 +387,9 @@ class EnvAction:
         if self.action == "set" or not environ.get(self.variable, ""):
             environ[self.variable] = self.__eval("${value}")
         elif self.action == "prepend":
-            environ[self.variable] = self.__eval("${value}:%s" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"${{value}}:{environ[self.variable]}")
         else:
-            environ[self.variable] = self.__eval("%s:${value}" % environ[self.variable])
+            environ[self.variable] = self.__eval(f"{environ[self.variable]}:${{value}}")
 
     def __eval(self, template):
         return string.Template(template).safe_substitute(

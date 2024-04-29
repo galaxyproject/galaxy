@@ -2089,7 +2089,7 @@ class H5MLM(H5):
         try:
             return dataset.peek
         except Exception:
-            return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
+            return f"HDF5 Model ({nice_size(dataset.get_size())})"
 
     def display_data(
         self,
@@ -4258,7 +4258,7 @@ class Pretext(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary pretext file ({nice_size(dataset.get_size())})"
 
 
 class JP2(Binary):
@@ -4302,7 +4302,7 @@ class JP2(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary JPEG 2000 file ({nice_size(dataset.get_size())})"
 
 
 class Npz(CompressedArchive):
@@ -4356,7 +4356,7 @@ class Npz(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class HexrdImagesNpz(Npz):
@@ -4433,7 +4433,7 @@ class HexrdImagesNpz(Npz):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class HexrdEtaOmeNpz(Npz):
@@ -4495,7 +4495,7 @@ class HexrdEtaOmeNpz(Npz):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class FITS(Binary):
@@ -4624,4 +4624,4 @@ class Numpy(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary numpy file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary numpy file ({nice_size(dataset.get_size())})"

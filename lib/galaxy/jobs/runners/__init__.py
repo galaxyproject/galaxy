@@ -169,7 +169,7 @@ class BaseJobRunner:
                 try:
                     action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                     action_timer = self.app.execution_timer_factory.get_timer(
-                        f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
+                        f"internals.{action_str}", f"job runner action {action_str} for job ${{job_id}} executed"
                     )
                     method(arg)
                     log.trace(action_timer.to_str(job_id=job_id))

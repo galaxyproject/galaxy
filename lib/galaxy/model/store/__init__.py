@@ -1621,7 +1621,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             attrs = load(open(file_name))
         else:
             if required:
-                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+                raise Exception(f"Failed to find file [{file_name}] in model store archive")
             attrs = []
         return attrs
 

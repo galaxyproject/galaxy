@@ -52,7 +52,7 @@ class LSF(BaseJobExec):
         # This should be really handled outside with something like
         # parse_external. Currently CLI runner expect this to just send it in the last position
         # of the string.
-        return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
+        return f"bsub <{script_file} | awk '{{ print $2}}' | sed 's/[<>]//g'"
 
     def delete(self, job_id):
         return f"bkill {job_id}"
