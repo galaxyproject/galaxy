@@ -159,13 +159,16 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    async function getCollection(collectionId: string) {
-        const collection = storedCollections.value[collectionId];
-        if (!collection) {
-            return await fetchCollection({ id: collectionId });
-        }
-        return collection;
-    }
+    /** Returns collection from storedCollections, will load collection if not in store */
+    const getCollectionById = computed(() => {
+        return (collectionId: string) => {
+            if (!storedCollections.value[collectionId]) {
+                // TODO: Try to remove this as it can cause computed side effects (use keyedCache in this store instead?)
+                fetchCollection({ id: collectionId });
+            }
+            return storedCollections.value[collectionId] ?? null;
+        };
+    });
 
     async function fetchCollection(params: { id: string }) {
         set(loadingCollectionElements.value, params.id, true);
@@ -200,7 +203,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
-        getCollection,
+        getCollectionById,
         fetchCollection,
         invalidateCollectionElements,
         saveCollections,

@@ -11,6 +11,7 @@ import { setAttributes } from "@/components/DatasetInformation/services";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import Heading from "../Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -89,7 +90,9 @@ onMounted(async () => {
 
 <template>
     <div aria-labelledby="dataset-attributes-heading">
-        <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
+        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+            {{ localize("Edit Dataset Attributes") }}
+        </Heading>
 
         <BAlert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ localize(messageText) }}
