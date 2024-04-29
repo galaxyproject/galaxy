@@ -1625,6 +1625,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         return None
 
     def _apply_bulk_operation(self, history_id: str, payload, query: str = "", expected_status_code: int = 200):
+        original_history_update_time = self._get_history_update_time(history_id)
         if query:
             query = f"?{query}"
         response = self._put(
@@ -1633,8 +1634,22 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             json=True,
         )
         self._assert_status_code_is(response, expected_status_code)
-        return response.json()
+        result = response.json()
+
+        if "err_msg" in result or result.get("success_count", 0) == 0:
+            # We don't need to check the history update time if there was an error or no items were updated
+            return result
+
+        # After a successful operation, history update time should be updated so the changes can be detected by the frontend
+        after_bulk_operation_history_update_time = self._get_history_update_time(history_id)
+        assert after_bulk_operation_history_update_time > original_history_update_time
+
+        return result
 
     def _assert_bulk_success(self, bulk_operation_result, expected_success_count: int):
         assert bulk_operation_result["success_count"] == expected_success_count, bulk_operation_result
         assert not bulk_operation_result["errors"]
+
+    def _get_history_update_time(self, history_id: str):
+        history = self._get(f"histories/{history_id}").json()
+        return history.get("update_time")
