@@ -1513,10 +1513,6 @@ class HistoryItemOperator:
 
     def _add_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
         trans.tag_handler.add_tags_from_list(trans.user, item, params.tags, flush=self.flush)
-        # Changing tags does not change the item, but we need to update the history to trigger the completion of the operation
-        item.update()
 
     def _remove_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
         trans.tag_handler.remove_tags_from_list(trans.user, item, params.tags, flush=self.flush)
-        # Changing tags does not change the item, but we need to update the history to trigger the completion of the operation
-        item.update()
