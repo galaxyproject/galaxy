@@ -48,8 +48,8 @@ const element = computed(() => {
 <template>
     <div v-if="props.separator" class="separator heading">
         <b-button v-if="collapsible" variant="link" size="sm" @click="$emit('click')">
-            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
-            <icon v-else fixed-width icon="angle-double-up" />
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </b-button>
         <div v-else class="stripe"></div>
         <component
