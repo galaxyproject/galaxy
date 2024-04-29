@@ -242,21 +242,12 @@ const style = computed(() => {
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
 const headerClass = computed(() => {
-    let cls;
-    if (props.isInvocation) {
-        cls = "cursor-pointer";
-        if (invocationStep.value.headerClass) {
-            cls += ` ${invocationStep.value.headerClass}`;
-        } else {
-            cls += " node-header";
-        }
-    } else {
-        cls = "node-header";
-        if (!props.readonly && !props.isInvocation) {
-            cls += " cursor-move";
-        }
-    }
-    return cls;
+    return {
+        ...invocationStep.value.headerClass,
+        "cursor-pointer": props.isInvocation,
+        "node-header": !props.isInvocation || invocationStep.value.headerClass === undefined,
+        "cursor-move": !props.readonly && !props.isInvocation,
+    };
 });
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
