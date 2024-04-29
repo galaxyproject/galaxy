@@ -594,7 +594,7 @@ class RucioObjectStore(ConcreteObjectStore):
             file_name = self._get_cache_path(rel_path)
             if not os.path.islink(file_name):
                 raise ObjectInvalid(
-                    "rucio objectstore._register_file, rucio_register_only " "is set, but file in cache is not a link "
+                    "rucio objectstore._register_file, rucio_register_only is set, but file in cache is not a link "
                 )
         if os.path.islink(file_name):
             file_name = os.readlink(file_name)

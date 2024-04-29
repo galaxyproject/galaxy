@@ -87,7 +87,7 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
             update_stmt = (
                 update(CeleryUserRateLimit)
                 .where(CeleryUserRateLimit.user_id == user_id)
-                .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', " ":now) "))
+                .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', :now)"))
                 .returning(CeleryUserRateLimit.last_scheduled_time)
             )
             result = sa_session.execute(update_stmt, {"interval": task_interval_secs, "now": now}).all()

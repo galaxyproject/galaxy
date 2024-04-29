@@ -275,7 +275,7 @@ def _get_versions(path, uuid):
         framework_version = framework_version_line.split(":")[1].strip()
         return version, framework_version
     except Exception:
-        raise ValueError("Archive does not contain a correctly formatted" " VERSION file.")
+        raise ValueError("Archive does not contain a correctly formatted VERSION file.")
 
 
 def _open_file_in_archive(zip_path, path, uuid):

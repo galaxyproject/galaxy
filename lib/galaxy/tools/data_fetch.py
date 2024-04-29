@@ -305,7 +305,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
                 if datatype.dataset_content_needs_grooming(path):
                     err_msg = (
                         "The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be "
-                        + "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
+                        "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
                     )
                     raise UploadProblemException(err_msg)
 

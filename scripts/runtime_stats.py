@@ -82,20 +82,20 @@ def parse_arguments():
         "--like",
         action="store_true",
         default=False,
-        help="Use SQL `LIKE` operator to find " "a shed-installed tool using the tool's " '"short" id',
+        help='Use SQL `LIKE` operator to find a shed-installed tool using the tool\'s "short" id',
     )
     populate_config_args(parser)
     parser.add_argument("-d", "--debug", action="store_true", default=False, help="Print extra info")
     parser.add_argument("-m", "--min", type=int, default=-1, help="Ignore runtimes less than MIN seconds")
     parser.add_argument("-M", "--max", type=int, default=-1, help="Ignore runtimes greater than MAX seconds")
-    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, " "or username)")
+    parser.add_argument("-u", "--user", help="Return stats for only this user (id, email, or username)")
     parser.add_argument(
         "-s", "--source", default="metrics", help="Runtime data source (SOURCES: {})".format(", ".join(DATA_SOURCES))
     )
     args = parser.parse_args()
 
     if args.like and "/" in args.tool_id:
-        print("ERROR: Do not use --like with a tool shed tool id (the tool " "id should not contain `/` characters)")
+        print("ERROR: Do not use --like with a tool shed tool id (the tool id should not contain `/` characters)")
         sys.exit(2)
 
     args.source = args.source.lower()

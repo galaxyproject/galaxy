@@ -1563,14 +1563,14 @@ class CreateHistoryPayload(Model):
         default=None,
         title="History ID",
         description=(
-            "The encoded ID of the history to copy. " "Provide this value only if you want to copy an existing history."
+            "The encoded ID of the history to copy. Provide this value only if you want to copy an existing history."
         ),
     )
     all_datasets: Optional[bool] = Field(
         default=True,
         title="All Datasets",
         description=(
-            "Whether to copy also deleted HDAs/HDCAs. Only applies when " "providing a `history_id` to copy from."
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when providing a `history_id` to copy from."
         ),
     )
     archive_source: Optional[str] = Field(
@@ -3411,7 +3411,7 @@ class ShareWithPayload(Model):
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users " "that this resource will be shared with."
+            "A collection of encoded IDs (or email addresses) of users that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(

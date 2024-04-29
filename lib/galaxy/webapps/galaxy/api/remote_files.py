@@ -37,7 +37,7 @@ router = Router(tags=["remote files"])
 TargetQueryParam: str = Query(
     default=RemoteFilesTarget.ftpdir,
     title="Target source",
-    description=("The source to load datasets from." " Possible values: ftpdir, userdir, importdir"),
+    description=("The source to load datasets from. Possible values: ftpdir, userdir, importdir"),
 )
 
 FormatQueryParam: Optional[RemoteFilesFormat] = Query(
@@ -54,7 +54,7 @@ RecursiveQueryParam: Optional[bool] = Query(
     default=None,
     title="Recursive",
     description=(
-        "Whether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
+        "Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`."
     ),
 )
 

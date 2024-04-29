@@ -1331,7 +1331,7 @@ class MinimalJobWrapper(HasResourceParameters):
         job = self.get_job()
         if not os.path.exists(self.working_directory):
             log.warning(
-                "(%s): Working directory clear requested but %s does " "not exist", self.job_id, self.working_directory
+                "(%s): Working directory clear requested but %s does not exist", self.job_id, self.working_directory
             )
             return
 
@@ -1535,7 +1535,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if job.state in model.Job.terminal_states:
             log.warning(
-                "(%s) Ignoring state change from '%s' to '%s' for job " "that is already terminal",
+                "(%s) Ignoring state change from '%s' to '%s' for job that is already terminal",
                 job.id,
                 job.state,
                 state,
