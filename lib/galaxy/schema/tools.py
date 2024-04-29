@@ -90,6 +90,9 @@ class ExecuteToolPayload(Model):
     state: Optional[str] = Field(
         default=None,
     )
+    type: Optional[str] = Field(
+        default=None,
+    )
     model_config = ConfigDict(extra="allow")
 
     @model_validator(mode="after")
