@@ -35,7 +35,7 @@ export interface GraphStep extends Step {
         | "paused"
         | "skipped";
     jobs: StepJobSummary["states"];
-    headerClass?: string;
+    headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
     headerIconSpin?: boolean;
 }
@@ -194,10 +194,11 @@ export function useInvocationGraph(
                     }
 
                     /** Setting the header class for the graph step */
-                    if (graphStepFromWfStep.state) {
-                        graphStepFromWfStep.headerClass = `node-header-invocation header-${graphStepFromWfStep.state}`;
-                        // TODO: maybe a different one for inputs? Currently they have no state either.
-                    }
+                    graphStepFromWfStep.headerClass = {
+                        "node-header-invocation": true,
+                        [`header-${graphStepFromWfStep.state}`]: !!graphStepFromWfStep.state,
+                    };
+                    // TODO: maybe a different one for inputs? Currently they have no state either.
 
                     /** Setting the header icon for the graph step */
                     if (graphStepFromWfStep.state) {
