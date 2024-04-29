@@ -38,7 +38,7 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
@@ -1060,7 +1060,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if self._job_io is None:
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
-            user_context = ProvidesUserFileSourcesUserContext(work_request)
+            user_context = ProvidesFileSourcesUserContext(work_request)
             tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
                 sa_session=self.sa_session,

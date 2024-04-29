@@ -10,7 +10,7 @@ from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
     FileSourcePath,
-    ProvidesUserFileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
 )
 from galaxy.files.sources import (
     FilesSourceOptions,
@@ -53,7 +53,7 @@ class RemoteFilesManager:
     ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         default_recursive = False
         default_format = RemoteFilesFormat.uri
 
@@ -143,7 +143,7 @@ class RemoteFilesManager:
         exclude_kind: Optional[Set[PluginKind]] = None,
     ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_context)
         browsable_only = True if browsable_only is None else browsable_only
         plugins_dict = self._file_sources.plugins_to_dict(
             user_context=user_file_source_context,
@@ -160,7 +160,7 @@ class RemoteFilesManager:
     def create_entry(self, user_ctx: ProvidesUserContext, entry_data: CreateEntryPayload) -> CreatedEntryResponse:
         """Create an entry (directory or record) in a remote files location."""
         target = entry_data.target
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         self._file_sources.validate_uri_root(target, user_context=user_file_source_context)
         file_source_path = self._file_sources.get_file_source_path(target)
         file_source = file_source_path.file_source

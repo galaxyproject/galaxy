@@ -3,10 +3,12 @@ import os
 from collections import defaultdict
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
     NamedTuple,
     Optional,
+    Protocol,
     Set,
 )
 
@@ -121,7 +123,7 @@ class ConfiguredFileSources:
         path = file_source.to_relative_path(uri)
         return FileSourcePath(file_source, path)
 
-    def validate_uri_root(self, uri: str, user_context: "ProvidesUserFileSourcesUserContext"):
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext"):
         # validate a URI against Galaxy's configuration, environment, and the current
         # user. Throw appropriate exception if there is a problem with the files source
         # referenced by the URI.
@@ -164,7 +166,7 @@ class ConfiguredFileSources:
     def plugins_to_dict(
         self,
         for_serialization: bool = False,
-        user_context: Optional["FileSourceDictifiable"] = None,
+        user_context: "OptionalUserContext" = None,
         browsable_only: Optional[bool] = False,
         include_kind: Optional[Set[PluginKind]] = None,
         exclude_kind: Optional[Set[PluginKind]] = None,
@@ -183,9 +185,7 @@ class ConfiguredFileSources:
             rval.append(el)
         return rval
 
-    def to_dict(
-        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
-    ) -> Dict[str, Any]:
+    def to_dict(self, for_serialization: bool = False, user_context: "OptionalUserContext" = None) -> Dict[str, Any]:
         return {
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
@@ -224,30 +224,59 @@ class NullConfiguredFileSources(ConfiguredFileSources):
         super().__init__(FileSourcePluginsConfig())
 
 
-class FileSourceDictifiable(Dictifiable):
+class DictifiableFilesSourceContext(Protocol):
+    @property
+    def role_names(self) -> Set[str]: ...
+
+    @property
+    def group_names(self) -> Set[str]: ...
+
+    @property
+    def file_sources(self) -> ConfiguredFileSources: ...
+
+    def to_dict(
+        self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None
+    ) -> Dict[str, Any]: ...
+
+
+class FileSourceDictifiable(Dictifiable, DictifiableFilesSourceContext):
     dict_collection_visible_keys = ("email", "username", "ftp_dir", "preferences", "is_admin")
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         rval["role_names"] = list(self.role_names)
         rval["group_names"] = list(self.group_names)
         return rval
 
-    @property
-    def role_names(self) -> Set[str]:
-        raise NotImplementedError
+
+class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
 
     @property
-    def group_names(self) -> Set[str]:
-        raise NotImplementedError
+    def email(self) -> str: ...
 
     @property
-    def file_sources(self):
-        """Return other filesources available in the system, for chained filesource resolution"""
-        raise NotImplementedError
+    def username(self) -> str: ...
+
+    @property
+    def ftp_dir(self) -> str: ...
+
+    @property
+    def preferences(self) -> Dict[str, Any]: ...
+
+    @property
+    def is_admin(self) -> bool: ...
+
+    @property
+    def user_vault(self) -> Dict[str, Any]: ...
+
+    @property
+    def app_vault(self) -> Dict[str, Any]: ...
 
 
-class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
+OptionalUserContext = Optional[FileSourcesUserContext]
+
+
+class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans, **kwargs):
@@ -306,7 +335,7 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
         return self.trans.app.file_sources
 
 
-class DictFileSourcesUserContext(FileSourceDictifiable):
+class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     def __init__(self, **kwd):
         self._kwd = kwd
 
