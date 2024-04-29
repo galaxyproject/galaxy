@@ -19,7 +19,6 @@ from typing_extensions import (
     Self,
 )
 
-from galaxy import exceptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     HDACustom,
@@ -98,7 +97,7 @@ class ExecuteToolPayload(Model):
         if self.model_extra is not None:
             for field_name in self.model_extra.keys():
                 if not field_name.startswith("files_"):
-                    raise exceptions.RequestParameterInvalidException(f"Invalid field name: {field_name}")
+                    raise ValueError(f"Invalid field name: {field_name}")
         return self
 
 
