@@ -218,7 +218,7 @@ class LibraryFoldersService(ServiceBase):
             trans.app.security_agent.set_all_library_permissions(trans, folder, permissions)
         else:
             raise RequestParameterInvalidException(
-                'The mandatory parameter "action" has an invalid value.' 'Allowed values are: "set_permissions"'
+                'The mandatory parameter "action" has an invalid value. Allowed values are: "set_permissions"'
             )
         current_permissions = self.folder_manager.get_current_roles(trans, folder)
         return LibraryFolderCurrentPermissions(**current_permissions)

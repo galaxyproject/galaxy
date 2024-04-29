@@ -95,8 +95,9 @@ class AuthnzManager:
                         func = getattr(builtins, child.get("Type"))
                 except AttributeError:
                     log.error(
-                        "The value of attribute `Type`, `{}`, is not a valid built-in type;" " skipping this node"
-                    ).format(child.get("Type"))
+                        "The value of attribute `Type`, `%s`, is not a valid built-in type; skipping this node",
+                        child.get("Type"),
+                    )
                     continue
                 self.oidc_config[child.get("Property")] = func(child.get("Value"))
         except ImportError:

@@ -3252,7 +3252,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError(
                 "You can only add Dataset and HistoryDatasetAssociation instances to a history"
-                + f" ( you tried to add {str(dataset)} )."
+                f" ( you tried to add {str(dataset)} )."
             )
         is_dataset = is_hda(dataset)
         if parent_id:

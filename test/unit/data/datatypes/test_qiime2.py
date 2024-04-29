@@ -147,7 +147,7 @@ def test_strip_properties_single():
 
 
 def test_strip_properties_double():
-    double_expression = 'FeatureData[Taxonomy % Properties("SILVIA"), ' 'DistanceMatrix % Axes("ASV", "ASV")]'
+    double_expression = 'FeatureData[Taxonomy % Properties("SILVIA"), DistanceMatrix % Axes("ASV", "ASV")]'
     stripped_expression = "FeatureData[Taxonomy, DistanceMatrix]"
 
     reconstructed_expression = _strip_properties(double_expression)
@@ -156,7 +156,7 @@ def test_strip_properties_double():
 
 
 def test_strip_properties_nested():
-    nested_expression = "Tuple[FeatureData[Taxonomy % " 'Properties("SILVIA")] % Axes("ASV", "ASV")]'
+    nested_expression = 'Tuple[FeatureData[Taxonomy % Properties("SILVIA")] % Axes("ASV", "ASV")]'
     stripped_expression = "Tuple[FeatureData[Taxonomy]]"
 
     reconstructed_expression = _strip_properties(nested_expression)
@@ -177,7 +177,7 @@ def test_strip_properties_complex():
 
 
 def test_strip_properties_keeps_different_binop():
-    expression_with_different_binop = 'FeatureData[Taxonomy % Properties("SILVIA"), ' "Taxonomy & Properties]"
+    expression_with_different_binop = 'FeatureData[Taxonomy % Properties("SILVIA"), Taxonomy & Properties]'
     stripped_expression = "FeatureData[Taxonomy, Taxonomy & Properties]"
 
     reconstructed_expression = _strip_properties(expression_with_different_binop)

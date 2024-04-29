@@ -178,7 +178,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
             LOGGER.error(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
-        msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
+        msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,

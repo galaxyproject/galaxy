@@ -122,9 +122,9 @@ class CloudAuthzController(BaseGalaxyAPIController):
         description = payload.get("description", "")
 
         if not isinstance(config, dict):
-            log.debug(msg_template.format(f"invalid config type `{type(config)}`, expect `dict`"))
+            log.debug(msg_template.format(f"invalid config type `{type(config)}`, expected `dict`"))
             raise RequestParameterInvalidException(
-                "Invalid type for the required `config` variable; expect `dict` " f"but received `{type(config)}`."
+                f"Invalid type for the required `config` variable; expected `dict` but received `{type(config)}`."
             )
         if authn_id:
             try:

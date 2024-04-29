@@ -106,8 +106,8 @@ def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
     subject = f"Regarding your tool shed repositories at {url}"
     message_body_template = (
         "The tool shed automated repository checker has discovered that one or more of your repositories hosted "
-        + "at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans "
-        + "for these repositories, you can mark them as un-deprecated at any time."
+        "at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans "
+        "for these repositories, you can mark them as un-deprecated at any time."
     )
     message_template = string.Template(message_body_template)
     body = "\n".join(textwrap.wrap(message_template.safe_substitute(days=days, url=url), width=95))
