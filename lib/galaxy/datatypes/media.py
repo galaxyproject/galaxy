@@ -36,17 +36,13 @@ def ffprobe(path):
 magic_number = {
     "mp4": {
         "offset": 4,
-        "hex": [
-            "66 74 79 70 69",
-            "66 74 79 70 6D",
-            "66 74 79 70 4D",
-        ],
+        "string": ["ftypisom", "ftypmp42", "ftypMSNV"],
     },
-    "flv": {"offset": 0, "hex": ["46 4C 56 01"]},
+    "flv": {"offset": 0, "string": ["FLV"]},
     "mkv": {"offset": 0, "hex": ["1A 45 DF A3"]},
     "webm": {"offset": 0, "hex": ["1A 45 DF A3"]},
-    "mov": {"offset": 4, "hex": ["66 74 79 70 71", "6D 6F 6F 76"]},
-    "wav": {"offset": 8, "hex": ["57 41 56 45"]},
+    "mov": {"offset": 4, "string": ["ftypqt", "moov"]},
+    "wav": {"offset": 8, "string": ["WAVE"]},
     "mp3": {
         "offset": 0,
         "hex": [
@@ -85,10 +81,10 @@ magic_number = {
             "FF FF",
         ],
     },
-    "ogg": {"offset": 0, "hex": ["4F 67 67"]},
+    "ogg": {"offset": 0, "string": ["OggS"]},
     "wma": {"offset": 0, "hex": ["30 26 B2 75"]},
     "wmv": {"offset": 0, "hex": ["30 26 B2 75"]},
-    "avi": {"offset": 8, "hex": ["41 56 49"]},
+    "avi": {"offset": 8, "string": ["AVI"]},
     "mpg": {
         "offset": 0,
         "hex": [
@@ -116,9 +112,21 @@ def _get_file_format_from_magic_number(filename: str, file_ext: str):
     with open(filename, "rb") as f:
         f.seek(cast(int, magic_number[file_ext]["offset"]))
         head = f.read(8)
-        return any(
-            head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(List[str], magic_number[file_ext]["hex"])
-        )
+        if "string" in magic_number[file_ext]:
+            string_check = any(
+                [
+                    head.startswith(string_code.encode("iso-8859-1"))
+                    for string_code in cast(List[str], magic_number[file_ext]["string"])
+                ]
+            )
+        if "hex" in magic_number[file_ext]:
+            hex_check = any(
+                [
+                    head.startswith(bytes.fromhex(hex_code))
+                    for hex_code in cast(List[str], magic_number[file_ext]["hex"])
+                ]
+            )
+        return string_check or hex_check
 
 
 class Audio(Binary):
@@ -290,9 +298,6 @@ class Mp4(Video):
     file_ext = "mp4"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "mp4" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "mp4")
         return _get_file_format_from_magic_number(filename, "mp4")
 
 
@@ -300,10 +305,14 @@ class Flv(Video):
     file_ext = "flv"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "flv" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "flv")
+
+
+class Mpg(Video):
+    file_ext = "mpg"
+
+    def sniff(self, filename: str) -> bool:
+        return _get_file_format_from_magic_number(filename, "mpg")
 
 
 class Mp3(Audio):
@@ -319,9 +328,6 @@ class Mp3(Audio):
     file_ext = "mp3"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "mp3" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "mp3")
 
 
@@ -374,9 +380,6 @@ class Ogg(Audio):
     file_ext = "ogg"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "ogg" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "ogg")
 
 
@@ -393,23 +396,10 @@ class Webm(Video):
         return _get_file_format_from_magic_number(filename, "webm")
 
 
-class Mpg(Video):
-    file_ext = "mpg"
-
-    def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "mpegvideo" in metadata["format_name"].split(",")
-        return _get_file_format_from_magic_number(filename, "mpg")
-
-
 class Mov(Video):
     file_ext = "mov"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "mov" in metadata["format_name"].split(",") and _get_file_format_from_magic_number(filename, "mov")
         return _get_file_format_from_magic_number(filename, "mov")
 
 
@@ -417,9 +407,6 @@ class Avi(Video):
     file_ext = "avi"
 
     def sniff(self, filename: str) -> bool:
-        if which("ffprobe"):
-            metadata, streams = ffprobe(filename)
-            return "avi" in metadata["format_name"].split(",")
         return _get_file_format_from_magic_number(filename, "avi")
 
 
