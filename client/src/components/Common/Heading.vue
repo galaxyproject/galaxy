@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
+
+library.add(faAngleDoubleDown, faAngleDoubleUp);
 
 interface Props {
     h1?: boolean;
@@ -19,12 +23,14 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     collapse: "none",
+    icon: "",
+    size: "lg",
 });
 
 defineEmits(["click"]);
 
 const sizeClass = computed(() => {
-    return `h-${props.size ?? "lg"}`;
+    return `h-${props.size}`;
 });
 
 const collapsible = computed(() => {
