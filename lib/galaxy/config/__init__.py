@@ -944,7 +944,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     log.warning(
                         "The path '%s' for the 'sanitize_allowlist_file' config option is "
                         "deprecated and will be no longer checked in a future release. Please consult "
-                        "the latest version of the sample configuration file." % deprecated
+                        "the latest version of the sample configuration file.",
+                        deprecated,
                     )
                     _sanitize_allowlist_path = deprecated
                     break
@@ -965,7 +966,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         )
         # Searching data libraries
         self.ftp_upload_dir_template = kwargs.get(
-            "ftp_upload_dir_template", "${ftp_upload_dir}%s${ftp_upload_dir_identifier}" % os.path.sep
+            "ftp_upload_dir_template", f"${{ftp_upload_dir}}{os.path.sep}${{ftp_upload_dir_identifier}}"
         )
         # Support older library-specific path paste option but just default to the new
         # allow_path_paste value.

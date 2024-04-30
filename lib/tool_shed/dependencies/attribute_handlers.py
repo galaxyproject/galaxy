@@ -137,8 +137,8 @@ class RepositoryDependencyAttributeHandler:
                     elem.attrib["changeset_revision"] = lastest_installable_changeset_revision
                     altered = True
                 else:
-                    error_message = "Invalid latest installable changeset_revision %s " % str(
-                        lastest_installable_changeset_revision
+                    error_message = (
+                        f"Invalid latest installable changeset_revision {lastest_installable_changeset_revision} "
                     )
                     error_message += f"retrieved for repository {name} owned by {owner}.  "
             else:

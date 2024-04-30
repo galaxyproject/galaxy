@@ -90,10 +90,10 @@ def _run(args, gi, workflow_id, uuid):
         label_map = {}
 
     workflow_request = dict(
-        history="hist_id=%s" % history_id,
+        history=f"hist_id={history_id}",
     )
     workflow_request["inputs"] = json.dumps(label_map)
-    url = "workflows/%s/usage" % (workflow_id)
+    url = f"workflows/{workflow_id}/usage"
     invoke_response = dataset_populator._post(url, data=workflow_request).json()
     invocation_id = invoke_response["id"]
     workflow_populator = GiWorkflowPopulator(gi)
@@ -174,7 +174,7 @@ def _gi(args):
     gi = galaxy.GalaxyInstance(args.host, key=args.api_key)
     name = "wftest-user-%d" % random.randint(0, 1000000)
 
-    user = gi.users.create_local_user(name, "%s@galaxytesting.dev" % name, "pass123")
+    user = gi.users.create_local_user(name, f"{name}@galaxytesting.dev", "pass123")
     user_id = user["id"]
     api_key = gi.users.create_user_apikey(user_id)
     user_gi = galaxy.GalaxyInstance(args.host, api_key)

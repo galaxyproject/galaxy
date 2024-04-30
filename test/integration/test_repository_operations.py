@@ -66,7 +66,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         response = self._install_repository(revision=REVISION_4, version="0.0.3", allow_upgraded=True)[0]
         assert int(response["ctx_rev"]) >= 4
         latest_revision = response["changeset_revision"]
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"]).json()
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}").json()
         assert repo_response["tool_shed_status"]["revision_update"] == "False"  # that should really be a boolean
         # now checkout revision 3 and attempt an update
         path_components = [
@@ -104,7 +104,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             shed_config.write(shed_text)
         self._get("/api/tool_shed_repositories/check_for_updates", data={"id": response["id"]}, admin=True).json()
         # At this point things should look like there is minor update available
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"])
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}")
         repo_response.raise_for_status()
         repo_json = repo_response.json()
         assert repo_json["tool_shed_status"]["revision_update"] == "True"

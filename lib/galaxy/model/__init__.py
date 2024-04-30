@@ -612,13 +612,10 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
     default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
-    default_usage = (
-        """
-UPDATE galaxy_user SET disk_usage = (%s)
+    default_usage = f"""
+UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
 """
-        % default_usage
-    )
     params = {"id": user_id}
     if default_exclude_ids:
         params["exclude_object_store_ids"] = default_exclude_ids
@@ -3255,7 +3252,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError(
                 "You can only add Dataset and HistoryDatasetAssociation instances to a history"
-                + f" ( you tried to add {str(dataset)} )."
+                f" ( you tried to add {str(dataset)} )."
             )
         is_dataset = is_hda(dataset)
         if parent_id:
@@ -6412,7 +6409,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         for entity in return_entities:
             q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
-                q = q.filter(entity.id == dce.c.id)  # type:ignore[arg-type]
+                q = q.filter(entity.id == dce.c.id)
 
         q = q.order_by(*order_by_columns)
         return q

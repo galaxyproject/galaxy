@@ -15,7 +15,7 @@ from common import submit
 
 def main(options):
     base_galaxy_url = options.galaxy_url.rstrip("/")
-    url = "%s/api/tool_shed_repositories/reset_metadata_on_installed_repositories" % base_galaxy_url
+    url = f"{base_galaxy_url}/api/tool_shed_repositories/reset_metadata_on_installed_repositories"
     submit(options.api, url, {})
 
 

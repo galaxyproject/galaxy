@@ -15,12 +15,25 @@ interface Props {
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
     truncate?: boolean;
+    collapse?: "open" | "closed" | "none";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    collapse: "none",
+});
+
+defineEmits(["click"]);
 
 const sizeClass = computed(() => {
     return `h-${props.size ?? "lg"}`;
+});
+
+const collapsible = computed(() => {
+    return props.collapse !== "none";
+});
+
+const collapsed = computed(() => {
+    return props.collapse === "closed";
 });
 
 const element = computed(() => {
@@ -35,10 +48,15 @@ const element = computed(() => {
 
 <template>
     <div v-if="props.separator" class="separator heading">
-        <div class="stripe"></div>
+        <b-button v-if="collapsible" variant="link" size="sm" @click="$emit('click')">
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
+        </b-button>
+        <div v-else class="stripe"></div>
         <component
             :is="element"
-            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.truncate ? 'truncate' : '']">
+            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', collapsible ? 'collapsible' : '', props.truncate ? 'truncate' : '']">
+            @click="$emit('click')">
             <slot />
         </component>
         <div class="stripe"></div>
@@ -47,7 +65,17 @@ const element = computed(() => {
         :is="element"
         v-else
         class="heading"
-        :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
+        :class="[
+            sizeClass,
+            props.bold ? 'font-weight-bold' : '',
+            props.inline ? 'inline' : '',
+            collapsible ? 'collapsible' : '',
+        ]"
+        @click="$emit('click')">
+        <b-button v-if="collapsible" variant="link" size="sm">
+            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
+            <icon v-else fixed-width icon="angle-double-up" />
+        </b-button>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
     </component>
@@ -78,6 +106,10 @@ h1, h2, h3, h4, h5, h6 {
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+}
+
+.collapsible {
+    cursor: pointer;
 }
 
 .separator {

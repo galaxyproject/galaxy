@@ -182,7 +182,7 @@ def test_disk_store_by_uuid():
                 directory.temp_directory,
                 "files1",
                 output_dataset.rel_path_for_uuid_test(),
-                "dataset_%s.dat" % output_dataset.uuid,
+                f"dataset_{output_dataset.uuid}.dat",
             )
             assert not os.path.exists(output_real_path)
             output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")

@@ -57,7 +57,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files import (
     ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.base import (
@@ -1621,7 +1621,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             attrs = load(open(file_name))
         else:
             if required:
-                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+                raise Exception(f"Failed to find file [{file_name}] in model store archive")
             attrs = []
         return attrs
 
@@ -1902,7 +1902,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
-        self.user_context = ProvidesUserFileSourcesUserContext(user_context)
+        self.user_context = ProvidesFileSourcesUserContext(user_context)
         self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
@@ -3033,7 +3033,7 @@ def source_to_import_store(
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
-            user_context = ProvidesUserFileSourcesUserContext(user_context)
+            user_context = ProvidesFileSourcesUserContext(user_context)
             source_uri = stream_url_to_file(
                 source_uri, app.file_sources, prefix="gx_import_model_store", user_context=user_context
             )

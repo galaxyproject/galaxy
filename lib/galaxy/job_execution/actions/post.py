@@ -231,11 +231,11 @@ class RenameDatasetAction(DefaultJobAction):
                     elif operation == "lower":
                         replacement = replacement.lower()
 
-                new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
+                new_name = new_name.replace(f"#{{{to_be_replaced}}}", replacement)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():
-                    new_name = new_name.replace("${%s}" % k, v)
+                    new_name = new_name.replace(f"${{{k}}}", v)
 
         return new_name
 

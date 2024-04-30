@@ -20,7 +20,7 @@ from galaxy.app_unittest_utils import galaxy_mock
 def create_base_test(connection, amqp_type: str, amqp_connection: Optional[str] = None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
-    app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection
+    app.config.amqp_internal_connection = amqp_connection or f"sqlalchemy+{app.config.database_connection}"
     app.amqp_type = amqp_type
     return app
 

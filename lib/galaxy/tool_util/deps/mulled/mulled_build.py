@@ -307,7 +307,7 @@ def mull_targets(
         conda_bin = "mamba"
         if mamba_version is None:
             mamba_version = ""
-    involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+    involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
     if conda_version is not None or mamba_version is not None:
         mamba_test = "true"
         specs = []

@@ -17,7 +17,7 @@ from typing import (
 from galaxy.files import (
     ConfiguredFileSources,
     DictFileSourcesUserContext,
-    ProvidesUserFileSourcesUserContext,
+    FileSourcesUserContext,
 )
 from galaxy.job_execution.datasets import (
     DatasetPath,
@@ -109,13 +109,13 @@ class JobIO(Dictifiable):
         check_job_script_integrity_count: int,
         check_job_script_integrity_sleep: float,
         file_sources_dict: Dict[str, Any],
-        user_context: Union[ProvidesUserFileSourcesUserContext, Dict["str", Any]],
+        user_context: Union[FileSourcesUserContext, Dict[str, Any]],
         tool_source: Optional[str] = None,
         tool_source_class: Optional["str"] = "XmlToolSource",
         tool_dir: Optional[str] = None,
         is_task: bool = False,
     ):
-        user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
+        user_context_instance: FileSourcesUserContext
         self.file_sources_dict = file_sources_dict
         if isinstance(user_context, dict):
             user_context_instance = DictFileSourcesUserContext(**user_context, file_sources=self.file_sources)

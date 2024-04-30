@@ -4,6 +4,7 @@ import re
 import urllib.request
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -17,7 +18,9 @@ from typing_extensions import (
     Unpack,
 )
 
+from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
+    AnyRemoteEntry,
     DEFAULT_SCHEME,
     Entry,
     EntryData,
@@ -26,7 +29,6 @@ from galaxy.files.sources import (
     RemoteFile,
 )
 from galaxy.files.sources._rdm import (
-    OptionalUserContext,
     RDMFilesSource,
     RDMFilesSourceProperties,
     RDMRepositoryInteractor,
@@ -145,13 +147,15 @@ class InvenioRDMFilesSource(RDMFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> List[AnyRemoteEntry]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            return self.repository.get_records(writeable, user_context)
+            records = self.repository.get_records(writeable, user_context)
+            return cast(List[AnyRemoteEntry], records)
         record_id = self.get_record_id_from_path(path)
-        return self.repository.get_files_in_record(record_id, writeable, user_context)
+        files = self.repository.get_files_in_record(record_id, writeable, user_context)
+        return cast(List[AnyRemoteEntry], files)
 
     def _create_entry(
         self,

@@ -221,8 +221,7 @@ class TestHDAManager(HDATestCase):
         assert accessible == item1
 
         self.log(
-            "after setting a dataset to private (one user) permissions, "
-            + "access should be not allowed for other users"
+            "after setting a dataset to private (one user) permissions, access should be not allowed for other users"
         )
         with self.assertRaises(exceptions.ItemAccessibilityException):
             self.hda_manager.get_accessible(
@@ -233,7 +232,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "a copy of a restricted dataset in another users history should be inaccessible even to "
-            + "the histories owner"
+            "the histories owner"
         )
         history2 = self.history_manager.create(name="history2", user=non_owner)
         self.trans.set_history(history2)
@@ -300,7 +299,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "anonymous users should not be able to access datasets within their own histories if "
-            + "permissions do not allow"
+            "permissions do not allow"
         )
         assert not self.hda_manager.is_accessible(item1, anon_user)
         with self.assertRaises(exceptions.ItemAccessibilityException):
@@ -308,7 +307,7 @@ class TestHDAManager(HDATestCase):
 
         self.log(
             "those users with access permissions should still be allowed access to datasets "
-            + "within anon users' histories"
+            "within anon users' histories"
         )
         assert self.hda_manager.is_accessible(item1, dataset_owner)
 

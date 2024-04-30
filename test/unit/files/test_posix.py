@@ -480,7 +480,7 @@ def _configured_file_sources_with_root(
     if writable is not None:
         plugin["writable"] = writable
     if per_user and root:
-        plugin["root"] = "%s/${user.username}" % root
+        plugin["root"] = f"{root}/${{user.username}}"
         # setup files just for alice
         root = os.path.join(root, "alice")
         os.mkdir(root)

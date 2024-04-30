@@ -53,7 +53,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
         session.refresh(old_history)
         new_update_time = session.get(model.History, old_history.id).update_time
         assert original_update_time == new_update_time
-        print("history copied %s" % history_copy_timer)
+        print(f"history copied {history_copy_timer}")
         assert new_history.name == "new name"
         assert new_history.user == old_history.user
         for hda in new_history.active_datasets:
@@ -121,7 +121,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
 
         history_copy_timer = ExecutionTimer()
         new_history = old_history.copy(target_user=old_history.user)
-        print("history copied %s" % history_copy_timer)
+        print(f"history copied {history_copy_timer}")
 
         for hda in new_history.active_datasets:
             assert hda.get_size() == 3

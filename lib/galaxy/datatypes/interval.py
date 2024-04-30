@@ -289,18 +289,18 @@ class Interval(Tabular):
                     if t < len(elems):
                         strand = cast(str, elems[t])
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             elif n >= 0:  # name column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             else:
                 for elems in compression_utils.file_iter(dataset.get_file_name()):
                     tmp = [elems[c], elems[s], elems[e]]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
     def display_peek(self, dataset: DatasetProtocol) -> str:

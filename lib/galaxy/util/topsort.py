@@ -168,7 +168,7 @@ def topsort(pairlist):
             for y in successors[x]:
                 numpreds[y] = numpreds[y] - 1
                 if numpreds[y] == 0:
-                    answer.append(y)  # noqa: B038
+                    answer.append(y)
             # following "del" isn't needed; just makes
             # CycleError details easier to grasp
             del successors[x]

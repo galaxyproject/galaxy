@@ -272,16 +272,16 @@ def __main__():
         paths_to_look_in = [os.path.join(options.genome_dir, "%s")]
 
     # say what we're looking in
-    print("\nLooking in:\n\t%s" % "\n\t".join(p % "<build_name>" for p in paths_to_look_in))
-    poss_names = ["<build_name>%s" % _ for _ in variants]
-    print("for files that are named %s" % ", ".join(poss_names[:-1]), end=" ")
+    print("\nLooking in:\n\t{}".format("\n\t".join(p % "<build_name>" for p in paths_to_look_in)))
+    poss_names = [f"<build_name>{_}" for _ in variants]
+    print("for files that are named {}".format(", ".join(poss_names[:-1])), end=" ")
     if len(poss_names) > 1:
-        print("or %s" % poss_names[-1], end=" ")
+        print(f"or {poss_names[-1]}", end=" ")
     if len(options.fasta_exts) == 1:
-        print("with the extension %s." % ", ".join(fasta_exts[:-1]))
+        print("with the extension {}.".format(", ".join(fasta_exts[:-1])))
     else:
         print("with the extension {} or {}.".format(", ".join(fasta_exts[:-1]), fasta_exts[-1]))
-    print("\nSkipping the following:\n\t%s" % "\n\t".join(exemptions))
+    print("\nSkipping the following:\n\t{}".format("\n\t".join(exemptions)))
 
     # get column names
     col_values = []
@@ -350,40 +350,33 @@ def __main__():
 
     # output results
     print(
-        "\nThere were %s fasta files found that were not included because they did not have the expected file names."
-        % len(unmatching_fasta_paths)
+        f"\nThere were {len(unmatching_fasta_paths)} fasta files found that were not included because they did not have the expected file names."
     )
-    print("%s fasta files were found and listed.\n" % len(fasta_locs.keys()))
+    print(f"{len(fasta_locs.keys())} fasta files were found and listed.\n")
 
     # output unmatching fasta files
     if options.unmatching_fasta and unmatching_fasta_paths:
-        open(options.unmatching_fasta, "wb").write("%s\n" % "\n".join(unmatching_fasta_paths))
+        open(options.unmatching_fasta, "wb").write("{}\n".format("\n".join(unmatching_fasta_paths)))
 
     # output loc file
-    if options.append:
-        all_fasta_loc = open(loc_path, "ab")
-    else:
-        all_fasta_loc = open(loc_path, "wb")
-    # put sample loc file text at top of file if appropriate
-    if sample_text:
-        if options.loc_sample_name:
-            all_fasta_loc.write("%s\n" % open(options.loc_sample_name, "rb").read().strip())
-        else:
-            all_fasta_loc.write("%s\n" % open("%s.sample" % loc_path, "rb").read().strip())
-    # output list of fasta files in alphabetical order
-    fasta_bases = list(fasta_locs.keys())
-    fasta_bases.sort(key=str.upper)
-    for fb in fasta_bases:
-        out_line = []
-        for col in col_values:
-            try:
-                out_line.append(fasta_locs[fb][col])
-            except KeyError:
-                raise Exception("Unexpected column (%s) encountered" % col)
-        if out_line:
-            all_fasta_loc.write("%s\n" % "\t".join(out_line))
-    # close up output loc file
-    all_fasta_loc.close()
+    with open(loc_path, "ab" if options.append else "wb") as all_fasta_loc:
+        # put sample loc file text at top of file if appropriate
+        if sample_text:
+            loc_sample_name = options.loc_sample_name if options.loc_sample_name else f"{loc_path}.sample"
+            with open(loc_sample_name, "rb") as loc_sample_name_fh:
+                all_fasta_loc.write(f"{loc_sample_name_fh.read().strip()}\n")
+        # output list of fasta files in alphabetical order
+        fasta_bases = list(fasta_locs.keys())
+        fasta_bases.sort(key=str.upper)
+        for fb in fasta_bases:
+            out_line = []
+            for col in col_values:
+                try:
+                    out_line.append(fasta_locs[fb][col])
+                except KeyError:
+                    raise Exception(f"Unexpected column ({col}) encountered")
+            if out_line:
+                all_fasta_loc.write("{}\n".format("\t".join(out_line)))
 
 
 if __name__ == "__main__":

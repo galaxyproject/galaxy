@@ -163,7 +163,7 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
         # settings like .. images:: http_files/images/help.png
         for match in re.findall(".. image:: (?!http)/?(.+)", text):
             text = text.replace(match, match.replace("/", "%2F"))
-        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", r".. image:: %s/\1" % route_to_images, text)
+        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", rf".. image:: {route_to_images}/\1", text)
     return text
 
 

@@ -19403,7 +19403,7 @@ export interface operations {
          * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
          */
         parameters: {
-            /** @description A key used to authenticate this request as acting onbehalf or a job runner for the specified job */
+            /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
             /** @description OIDC provider name */
             query: {
                 job_key: string;
