@@ -12,8 +12,8 @@ defineProps<{
 </script>
 
 <template>
-    <div>
-        <div v-for="option in options" :key="option.name" class="ui-drilldown">
+    <div class="ui-drilldown">
+        <div v-for="option in options" :key="option.name" class="descendant-lines">
             <FormDrilldownOption
                 :current-value="currentValue"
                 :handle-click="handleClick"
