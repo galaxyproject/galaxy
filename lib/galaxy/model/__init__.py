@@ -8779,6 +8779,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                         v["state"] = None
                         steps.append(v)
                 else:
+                    v["implicit_collection_jobs_id"] = step.implicit_collection_jobs_id
                     steps.append(v)
             rval["steps"] = steps
 

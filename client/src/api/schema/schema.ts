@@ -7963,6 +7963,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Implicit Collection Jobs ID
+             * @description The implicit collection job ID associated with the workflow invocation step.
+             */
+            implicit_collection_jobs_id?: string | null;
             /** Job Id */
             job_id: string | null;
             /**
@@ -8049,7 +8054,7 @@ export interface components {
         InvocationStepJobsResponseCollectionJobsModel: {
             /**
              * ID
-             * @description The encoded ID of the workflow invocation.
+             * @description The encoded ID of the collection job.
              * @example 0123456789ABCDEF
              */
             id: string;
@@ -8076,7 +8081,7 @@ export interface components {
         InvocationStepJobsResponseJobModel: {
             /**
              * ID
-             * @description The encoded ID of the workflow invocation.
+             * @description The encoded ID of the job.
              * @example 0123456789ABCDEF
              */
             id: string;

@@ -379,6 +379,11 @@ class InvocationStep(Model, WithModelClass):
         title="Jobs",
         description="Jobs associated with the workflow invocation step.",
     )
+    implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Implicit Collection Jobs ID",
+        description="The implicit collection job ID associated with the workflow invocation step.",
+    )
 
 
 class InvocationReport(Model, WithModelClass):
@@ -581,10 +586,20 @@ class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
 
 class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
     model: JOB_MODEL_CLASS
+    id: EncodedDatabaseIdField = Field(
+        default=...,
+        title="ID",
+        description="The encoded ID of the job.",
+    )
 
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
     model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
+    id: EncodedDatabaseIdField = Field(
+        default=...,
+        title="ID",
+        description="The encoded ID of the collection job.",
+    )
 
 
 class CreateInvocationFromStore(StoreContentSource):

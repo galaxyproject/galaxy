@@ -1,4 +1,6 @@
-import { fetcher } from "@/api/schema";
+import { components, fetcher } from "@/api/schema";
+
+export type StoredWorkflowDetailed = components["schemas"]["StoredWorkflowDetailed"];
 
 export const workflowsFetcher = fetcher.path("/api/workflows").method("get").create();
 
