@@ -95,6 +95,7 @@ class TagHandler:
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()
+        item.update()
         return item.tags
 
     def get_tag_assoc_class(self, item_class):

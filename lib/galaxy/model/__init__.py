@@ -2927,7 +2927,7 @@ class HistoryAudit(Base, RepresentById):
             session.execute(q)
 
 
-class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
+class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
@@ -3093,6 +3093,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def count(self):
         return self.hid_counter - 1
+
+    def update(self):
+        self._update_time = now()
 
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
@@ -7362,7 +7365,7 @@ class UCI:
         self.user = None
 
 
-class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
+class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
     It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
@@ -7740,7 +7743,7 @@ class Workflow(Base, Dictifiable, RepresentById):
 InputConnDictType = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
-class WorkflowStep(Base, RepresentById):
+class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     """
     WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
 
@@ -10061,7 +10064,7 @@ class CloudAuthz(Base):
         )
 
 
-class Page(Base, HasTags, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -10175,7 +10178,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, HasTags, Dictifiable, RepresentById):
+class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
