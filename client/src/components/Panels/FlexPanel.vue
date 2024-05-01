@@ -90,7 +90,7 @@ watch(position, () => {
     });
 });
 
-/** If the the `maxWidth` changes, prevent the panel from exceeding it */
+/** If the `maxWidth` changes, prevent the panel from exceeding it */
 watch(
     () => props.maxWidth,
     (newVal) => {
