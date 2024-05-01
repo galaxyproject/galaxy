@@ -171,8 +171,8 @@ function toggleMenu(nextState = !opened.value) {
                 </div>
                 <button
                     v-if="isSection && toolStore.currentPanelView === 'default'"
-                    v-b-tooltip.hover.noninteractive.right
-                    title="Filter by this section"
+                    v-b-tooltip.hover.noninteractive.bottom
+                    title="Show full section"
                     class="inline-icon-button"
                     @click.stop="emit('onFilter', `section:${toolSection.name}`)">
                     <FontAwesomeIcon :icon="faFilter" />
@@ -217,6 +217,10 @@ function toggleMenu(nextState = !opened.value) {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
+.inline-icon-button {
+    font-size: 75%;
+    padding: 0em 0.5em;
+}
 .tool-panel-label {
     background: darken($panel-bg-color, 5%);
     border-left: 0.25rem solid darken($panel-bg-color, 25%);
