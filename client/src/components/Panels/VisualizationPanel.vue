@@ -2,6 +2,7 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
@@ -22,6 +23,7 @@ interface Plugin {
 }
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+const router = useRouter();
 
 const plugins: Ref<Array<Plugin>> = ref([]);
 const query = ref("");
@@ -42,15 +44,10 @@ const filteredPlugins = computed(() => {
 function createVisualization(dataset: any) {
     showDataDialog.value = false;
     if (currentPlugin.value) {
-        const href = `${currentPlugin.value.href}?dataset_id=${dataset.id}`;
-        if (currentPlugin.value.target == "_top") {
-            window.location.href = href;
-        } else {
-            const galaxyMainElement = document.getElementById("galaxy_main");
-            if (galaxyMainElement) {
-                galaxyMainElement.setAttribute("src", href);
-            }
-        }
+        router.push(`/visualizations/display?visualization=${currentPlugin.value.name}&dataset_id=${dataset.id}`, {
+            // @ts-ignore
+            title: dataset.name,
+        });
     }
 }
 
