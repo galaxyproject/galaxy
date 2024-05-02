@@ -31,6 +31,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
+from galaxy import util
 from galaxy.config import (
     GalaxyAppConfiguration,
     templates,
@@ -62,14 +63,11 @@ from galaxy.schema.notifications import (
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
+    NotificationVariant,
     PersonalNotificationCategory,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
-)
-from galaxy.util import (
-    send_mail,
-    unicodify,
 )
 
 log = logging.getLogger(__name__)
@@ -179,12 +177,12 @@ class NotificationManager:
         success_count = 0
         for user in users:
             try:
-                if self._is_user_subscribed_to_category(user, notification.category):  # type:ignore[arg-type]
+                if self._is_user_subscribed_to_notification(user, notification):
                     user_notification_association = UserNotificationAssociation(user, notification)
                     self.sa_session.add(user_notification_association)
                     success_count += 1
             except Exception as e:
-                log.error(f"Error sending notification to user {user.id}. Reason: {unicodify(e)}")
+                log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
                 continue
         return success_count
 
@@ -221,10 +219,13 @@ class NotificationManager:
     def _dispatch_notification_to_users(self, notification: Notification):
         users = self._get_associated_users(notification)
         for user in users:
-            category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
-            if not self._is_subscribed_to_category(category_settings):
+            try:
+                if self._is_user_subscribed_to_notification(user, notification):
+                    settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+                    self._send_via_channels(notification, user, settings.channels)
+            except Exception as e:
+                log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
                 continue
-            self._send_via_channels(notification, user, category_settings.channels)
 
     def _get_associated_users(self, notification: Notification):
         stmt = (
@@ -239,23 +240,34 @@ class NotificationManager:
         )
         return self.sa_session.execute(stmt).scalars().all()
 
-    def _is_user_subscribed_to_category(self, user: User, category: PersonalNotificationCategory) -> bool:
-        category_settings = self._get_user_category_settings(user, category)
+    def _is_user_subscribed_to_notification(self, user: User, notification: Notification) -> bool:
+        if self._is_urgent(notification):
+            # Urgent notifications are always sent
+            return True
+        category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
         channels = channel_settings.model_fields_set
         for channel in channels:
             if channel not in self.channel_plugins:
-                log.warning(f"Notification channel '{channel}' is not supported.")
-                continue
-            if getattr(channel_settings, channel, False) is False:
-                continue  # User opted out of this channel
-            plugin = self.channel_plugins[channel]
-            plugin.send(notification, user)
+                continue  # Skip unsupported channels
+            user_opted_out = getattr(channel_settings, channel, False) is False
+            if user_opted_out and not self._is_urgent(notification):
+                continue  # Skip sending to opted-out users unless it's an urgent notification
+            try:
+                plugin = self.channel_plugins[channel]
+                plugin.send(notification, user)
+            except Exception as e:
+                log.error(
+                    f"Error sending notification to user {user.id} via channel '{channel}'. Reason: {util.unicodify(e)}"
+                )
 
     def _is_subscribed_to_category(self, category_settings: NotificationCategorySettings) -> bool:
         return category_settings.enabled
+
+    def _is_urgent(self, notification: Notification) -> bool:
+        return notification.variant == NotificationVariant.urgent.value
 
     def _get_user_category_settings(
         self, user: User, category: PersonalNotificationCategory
@@ -652,6 +664,7 @@ class NotificationContext(BaseModel):
     date: str
     hostname: str
     contact_email: str
+    variant: str
     notification_settings_url: str
     content: AnyNotificationContent
     galaxy_url: Optional[str] = None
@@ -701,6 +714,7 @@ class EmailNotificationTemplateBuilder(Protocol):
             hostname=hostname,
             contact_email=contact_email,
             notification_settings_url=notification_settings_url,
+            variant=notification.variant,
             content=self.get_content(template_format),
             galaxy_url=self.notification.galaxy_url,
         )
@@ -762,7 +776,7 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
             subject = template_builder.get_subject()
             text_body = template_builder.get_body(TemplateFormats.TXT)
             html_body = template_builder.get_body(TemplateFormats.HTML)
-            send_mail(
+            util.send_mail(
                 frm=self.config.email_from,
                 to=user.email,
                 subject=subject,
@@ -771,5 +785,5 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
                 html=html_body,
             )
         except Exception as e:
-            log.error(f"Error sending email notification to user {user.id}. Reason: {unicodify(e)}")
+            log.error(f"Error sending email notification to user {user.id}. Reason: {util.unicodify(e)}")
             pass
