@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.0.1.dev0
------------
+-------------------
+24.0.1 (2024-05-02)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix conditional Image imports by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17899 <https://github.com/galaxyproject/galaxy/pull/17899>`_
 
 -------------------
 24.0.0 (2024-04-02)

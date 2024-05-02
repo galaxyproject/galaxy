@@ -3,11 +3,32 @@ History
 
 .. to_doc
 
------------
-24.0.1.dev0
------------
+-------------------
+24.0.1 (2024-05-02)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Invenio plugin fixes by `@davelopez <https://github.com/davelopez>`_ in `#17997 <https://github.com/galaxyproject/galaxy/pull/17997>`_
+* clarify the object store relocate functionality by `@martenson <https://github.com/martenson>`_ in `#18033 <https://github.com/galaxyproject/galaxy/pull/18033>`_
+* Updated the datatypes name for FASTK tool by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#18053 <https://github.com/galaxyproject/galaxy/pull/18053>`_
+
+============
+Enhancements
+============
+
+* Added 4dn_pairs and 4dn_pairsam datatypes by `@SaimMomin12 <https://github.com/SaimMomin12>`_ in `#17875 <https://github.com/galaxyproject/galaxy/pull/17875>`_
+* Add middleware for logging start and end of request by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18046 <https://github.com/galaxyproject/galaxy/pull/18046>`_
+
+=============
+Other changes
+=============
+
+* Rebuild config samples by `@davelopez <https://github.com/davelopez>`_ in `#17911 <https://github.com/galaxyproject/galaxy/pull/17911>`_
+* Backport colabfold tar file datatype by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18029 <https://github.com/galaxyproject/galaxy/pull/18029>`_
 
 -------------------
 24.0.0 (2024-04-02)
