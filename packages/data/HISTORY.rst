@@ -10,6 +10,29 @@ History
 
 
 -------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Always serialize element_count and populated when listing contents by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17890 <https://github.com/galaxyproject/galaxy/pull/17890>`_
+* Fix deadlock that can occur when changing job state by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17896 <https://github.com/galaxyproject/galaxy/pull/17896>`_
+* Fix tool form building if select filters from unavailable dataset metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17930 <https://github.com/galaxyproject/galaxy/pull/17930>`_
+* Fix ``InvalidRequestError: Can't operate on closed transaction inside context manager.  Please complete the context manager before emitting further commands.`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17932 <https://github.com/galaxyproject/galaxy/pull/17932>`_
+* Never fail dataset serialization if display_peek fails by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17937 <https://github.com/galaxyproject/galaxy/pull/17937>`_
+* Fix output datatype when uncompressing a dataset with incorrect datatype by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17944 <https://github.com/galaxyproject/galaxy/pull/17944>`_
+* Use or copy StoredWorkflow when copying step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17988 <https://github.com/galaxyproject/galaxy/pull/17988>`_
+* Raise ``MessageException`` when report references invalid workflow output by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18009 <https://github.com/galaxyproject/galaxy/pull/18009>`_
+* Fix tag regex pattern by `@jdavcs <https://github.com/jdavcs>`_ in `#18025 <https://github.com/galaxyproject/galaxy/pull/18025>`_
+* Fix History Dataset Association creation so that hid is always set by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18036 <https://github.com/galaxyproject/galaxy/pull/18036>`_
+* Fix history export with missing dataset hids by `@davelopez <https://github.com/davelopez>`_ in `#18052 <https://github.com/galaxyproject/galaxy/pull/18052>`_
+* Fix comments lost on import by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#18060 <https://github.com/galaxyproject/galaxy/pull/18060>`_
+* Fix history update time after bulk operation by `@davelopez <https://github.com/davelopez>`_ in `#18068 <https://github.com/galaxyproject/galaxy/pull/18068>`_
+
+-------------------
 24.0.0 (2024-04-02)
 -------------------
 
@@ -51,7 +74,7 @@ Enhancements
 * port invocation API to fastapi by `@martenson <https://github.com/martenson>`_ in `#16707 <https://github.com/galaxyproject/galaxy/pull/16707>`_
 * SQLAlchemy 2.0 upgrades (part 5) by `@jdavcs <https://github.com/jdavcs>`_ in `#16932 <https://github.com/galaxyproject/galaxy/pull/16932>`_
 * Python 3.8 as minimum by `@mr-c <https://github.com/mr-c>`_ in `#16954 <https://github.com/galaxyproject/galaxy/pull/16954>`_
-*  Expose more tool information / navigability in UI. by `@jmchilton <https://github.com/jmchilton>`_ in `#17105 <https://github.com/galaxyproject/galaxy/pull/17105>`_
+* Expose more tool information / navigability in UI. by `@jmchilton <https://github.com/jmchilton>`_ in `#17105 <https://github.com/galaxyproject/galaxy/pull/17105>`_
 * Add support for (fast5.tar).xz binary compressed files by `@tuncK <https://github.com/tuncK>`_ in `#17106 <https://github.com/galaxyproject/galaxy/pull/17106>`_
 * SA2.0 updates: handling "object is being merged into a Session along the backref cascade path" by `@jdavcs <https://github.com/jdavcs>`_ in `#17122 <https://github.com/galaxyproject/galaxy/pull/17122>`_
 * Towards SQLAlchemy 2.0: fix last cases of RemovedIn20Warning by `@jdavcs <https://github.com/jdavcs>`_ in `#17132 <https://github.com/galaxyproject/galaxy/pull/17132>`_

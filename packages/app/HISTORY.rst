@@ -10,6 +10,50 @@ History
 
 
 -------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix tool version switch in editor by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17858 <https://github.com/galaxyproject/galaxy/pull/17858>`_
+* Fix workflow run form failing on certain histories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17869 <https://github.com/galaxyproject/galaxy/pull/17869>`_
+* Always serialize element_count and populated when listing contents by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17890 <https://github.com/galaxyproject/galaxy/pull/17890>`_
+* Fix saving workflows with freehand_comments only by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17901 <https://github.com/galaxyproject/galaxy/pull/17901>`_
+* Always discard session after __handle_waiting_jobs is done by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17913 <https://github.com/galaxyproject/galaxy/pull/17913>`_
+* Fix workflow run form for workflows with null rename PJA by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17929 <https://github.com/galaxyproject/galaxy/pull/17929>`_
+* Revert unnecessary error change by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17948 <https://github.com/galaxyproject/galaxy/pull/17948>`_
+* Fix missing implicit conversion for mapped over jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17952 <https://github.com/galaxyproject/galaxy/pull/17952>`_
+* Fix get_content_as_text for compressed text datatypes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17976 <https://github.com/galaxyproject/galaxy/pull/17976>`_
+* Backport: Fix bug: call unique() on result, not select stmt by `@jdavcs <https://github.com/jdavcs>`_ in `#17981 <https://github.com/galaxyproject/galaxy/pull/17981>`_
+* Fix `LengthValidator` if no value passed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17983 <https://github.com/galaxyproject/galaxy/pull/17983>`_
+* Raise ``RequestParameterInvalidException`` if collection element has unknown extension by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17985 <https://github.com/galaxyproject/galaxy/pull/17985>`_
+* Don't attempt to commit in dry_run mode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17987 <https://github.com/galaxyproject/galaxy/pull/17987>`_
+* Don't fail if reporting invalid parameter values by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18002 <https://github.com/galaxyproject/galaxy/pull/18002>`_
+* Include exception info when something goes wrong while refreshing tokens by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18008 <https://github.com/galaxyproject/galaxy/pull/18008>`_
+* Avoid exception when opening apply rules tool and no collection in history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18011 <https://github.com/galaxyproject/galaxy/pull/18011>`_
+* Don't commit without having set a hid by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18014 <https://github.com/galaxyproject/galaxy/pull/18014>`_
+* Raise appropriate exception if user forces a collection that is not populated with elements as input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18023 <https://github.com/galaxyproject/galaxy/pull/18023>`_
+* Fix tag regex pattern by `@jdavcs <https://github.com/jdavcs>`_ in `#18025 <https://github.com/galaxyproject/galaxy/pull/18025>`_
+* Fix History Dataset Association creation so that hid is always set by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18036 <https://github.com/galaxyproject/galaxy/pull/18036>`_
+* Change wrong quota_source value from KeyError to ValueError by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18040 <https://github.com/galaxyproject/galaxy/pull/18040>`_
+* Check database connection to issue a rollback if no connection by `@jdavcs <https://github.com/jdavcs>`_ in `#18070 <https://github.com/galaxyproject/galaxy/pull/18070>`_
+
+============
+Enhancements
+============
+
+* Fix remote files sources error handling by `@davelopez <https://github.com/davelopez>`_ in `#18027 <https://github.com/galaxyproject/galaxy/pull/18027>`_
+
+=============
+Other changes
+=============
+
+* Drop left-over debug statement by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17939 <https://github.com/galaxyproject/galaxy/pull/17939>`_
+
+-------------------
 24.0.0 (2024-04-02)
 -------------------
 
@@ -52,7 +96,7 @@ Enhancements
 * Vueify Admin User Grid by `@guerler <https://github.com/guerler>`_ in `#17030 <https://github.com/galaxyproject/galaxy/pull/17030>`_
 * Remove web framework dependency from tools by `@davelopez <https://github.com/davelopez>`_ in `#17058 <https://github.com/galaxyproject/galaxy/pull/17058>`_
 * Add select parameter with options from remote resources by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17087 <https://github.com/galaxyproject/galaxy/pull/17087>`_
-*  Expose more tool information / navigability in UI. by `@jmchilton <https://github.com/jmchilton>`_ in `#17105 <https://github.com/galaxyproject/galaxy/pull/17105>`_
+* Expose more tool information / navigability in UI. by `@jmchilton <https://github.com/jmchilton>`_ in `#17105 <https://github.com/galaxyproject/galaxy/pull/17105>`_
 * Vueify Admin Roles Grid by `@guerler <https://github.com/guerler>`_ in `#17118 <https://github.com/galaxyproject/galaxy/pull/17118>`_
 * SA2.0 updates: handling "object is being merged into a Session along the backref cascade path" by `@jdavcs <https://github.com/jdavcs>`_ in `#17122 <https://github.com/galaxyproject/galaxy/pull/17122>`_
 * Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17123 <https://github.com/galaxyproject/galaxy/pull/17123>`_

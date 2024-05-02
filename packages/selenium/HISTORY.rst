@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Set from_tool_form: true when saving new workflow by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17972 <https://github.com/galaxyproject/galaxy/pull/17972>`_
+
+-------------------
 24.0.0 (2024-04-02)
 -------------------
 

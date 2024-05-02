@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix KeyError in ``XForwardedHostMiddleware`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17955 <https://github.com/galaxyproject/galaxy/pull/17955>`_
+
+-------------------
 24.0.0 (2024-04-02)
 -------------------
 
