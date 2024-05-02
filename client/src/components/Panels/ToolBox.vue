@@ -64,7 +64,7 @@ const propShowAdvanced = computed({
 });
 const query = computed({
     get: () => {
-        return props.panelQuery;
+        return props.panelQuery.trim();
     },
     set: (q: string) => {
         queryPending.value = true;
