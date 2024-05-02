@@ -15,6 +15,7 @@ from galaxy.objectstore.caching import (
     CacheTarget,
     check_cache,
     InProcessCacheMonitor,
+    reset_cache,
 )
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
@@ -28,6 +29,7 @@ from galaxy.util import (
     directory_hash_id,
     unlink,
 )
+from galaxy.util.unittest_utils import skip_unless_environ
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -1262,6 +1264,273 @@ def test_config_parse_azure_no_cache():
         with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
+
+
+def verify_caching_object_store_functionality(tmp_path, object_store):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # without cache...
+    hello_world_dataset_2 = MockDataset(10)
+    object_store.update_from_file(hello_world_dataset_2, file_name=hello_path, create=True)
+    reset_cache(object_store.cache_target)
+    assert object_store.exists(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+    assert not object_store.empty(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+
+    data = object_store.get_data(hello_world_dataset_2)
+    assert data == "Hello World!"
+    reset_cache(object_store.cache_target)
+    data = object_store.get_data(hello_world_dataset_2, start=1, count=6)
+    assert data == "ello W"
+    reset_cache(object_store.cache_target)
+    path = object_store.get_filename(hello_world_dataset_2)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test percent used (to some degree)
+    percent_store_used = object_store.get_store_usage_percent()
+    assert percent_store_used >= 0.0
+    assert percent_store_used < 100.0
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test delete no cache
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert object_store.delete(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    from requests import get
+
+    response = get(url)
+    response.raise_for_status()
+    assert response.text == "Hello World!"
+
+
+def verify_object_store_functionality(tmp_path, object_store):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    from requests import get
+
+    response = get(url)
+    response.raise_for_status()
+    assert response.text == "Hello World!"
+
+
+AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML = """
+type: azure_blob
+store_by: uuid
+auth:
+  account_name: ${account_name}
+  account_key: ${account_key}
+
+container:
+  name: ${container_name}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+    }
+    with TestConfig(AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML = """
+type: azure_blob
+store_by: uuid
+auth:
+  account_name: ${account_name}
+  account_key: ${account_key}
+  account_url: ${account_url}
+
+container:
+  name: ${container_name}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_URL")
+def test_real_azure_blob_store_with_account_url(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+        "account_url": os.environ["GALAXY_TEST_AZURE_ACCOUNT_URL"],
+    }
+    with TestConfig(AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML = """
+type: distributed
+backends:
+- type: azure_blob
+  id: azure1
+  store_by: uuid
+  name: Azure Store 1
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_1
+  - type: temp
+    path: database/tmp_azure_1
+- type: azure_blob
+  id: azure2
+  store_by: uuid
+  name: Azure Store 2
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_2
+  - type: temp
+    path: database/tmp_azure_2
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store_in_hierarchical(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+    }
+    with TestConfig(AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_object_store_functionality(tmp_path, object_store)
 
 
 class MockDataset:

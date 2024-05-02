@@ -253,3 +253,28 @@ class ConfiguresDatabaseVault:
     @classmethod
     def _configure_database_vault(cls, config):
         config["vault_config_file"] = VAULT_CONF
+
+
+class ConfiguresWorkflowScheduling:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_workflow_schedulers(cls, schedulers_conf: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "workflow_schedulers.xml")
+        with open(template_config_path, "w") as f:
+            f.write(schedulers_conf)
+
+        config["workflow_schedulers_config_file"] = template_config_path
+
+    @classmethod
+    def _disable_workflow_scheduling(cls, config):
+        noop_schedulers_conf = """<?xml version="1.0"?>
+<workflow_schedulers default="core">
+  <core id="core" />
+  <handlers>
+    <handler id="a_fake_handler_should_prevent_the_real_process_from_scheduling" />
+  </handlers>
+</workflow_schedulers>
+"""
+        cls._configure_workflow_schedulers(noop_schedulers_conf, config)

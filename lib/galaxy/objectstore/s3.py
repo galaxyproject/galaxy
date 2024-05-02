@@ -513,6 +513,14 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _exists(self, obj, **kwargs):
         in_cache = in_s3 = False
         rel_path = self._construct_path(obj, **kwargs)
+        dir_only = kwargs.get("dir_only", False)
+        base_dir = kwargs.get("base_dir", None)
+
+        # check job work directory stuff early to skip API hits.
+        if dir_only and base_dir:
+            if not os.path.exists(rel_path):
+                os.makedirs(rel_path, exist_ok=True)
+            return True
 
         # Check cache
         if self._in_cache(rel_path):
@@ -521,15 +529,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         in_s3 = self._key_exists(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
-        dir_only = kwargs.get("dir_only", False)
-        base_dir = kwargs.get("base_dir", None)
         if dir_only:
             if in_cache or in_s3:
-                return True
-            # for JOB_WORK directory
-            elif base_dir:
-                if not os.path.exists(rel_path):
-                    os.makedirs(rel_path, exist_ok=True)
                 return True
             else:
                 return False
@@ -721,7 +722,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
-    def _get_store_usage_percent(self):
+    def _get_store_usage_percent(self, obj):
         return 0.0
 
     def shutdown(self):

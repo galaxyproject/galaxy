@@ -32,8 +32,11 @@ extra_dirs:
 
 
 class Config:
-    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
+    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id", template_vars=None):
         self.temp_directory = mkdtemp()
+        template_vars = template_vars or {}
+        template_vars["temp_directory"] = self.temp_directory
+        self.template_vars = template_vars
         if config_str.startswith("<"):
             config_file = "store.xml"
         else:
@@ -60,7 +63,7 @@ class Config:
         if not os.path.exists(directory):
             os.makedirs(directory, exist_ok=True)
         contents_template = Template(contents)
-        expanded_contents = contents_template.safe_substitute(temp_directory=self.temp_directory)
+        expanded_contents = contents_template.safe_substitute(**self.template_vars)
         open(path, "w").write(expanded_contents)
         return path
 

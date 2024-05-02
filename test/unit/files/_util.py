@@ -157,7 +157,11 @@ def write_from(
 
 def configured_file_sources(conf_file):
     file_sources_config = FileSourcePluginsConfig()
-    return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+    if isinstance(conf_file, str):
+        conf = ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+    else:
+        conf = ConfiguredFileSources(file_sources_config, conf_dict=conf_file)
+    return conf
 
 
 def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):

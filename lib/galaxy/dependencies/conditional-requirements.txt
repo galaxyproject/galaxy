@@ -6,7 +6,7 @@ sentry-sdk[fastapi]
 pbs_python
 drmaa
 statsd
-azure-storage==0.32.0
+azure-storage-blob==12.19.1
 python-irodsclient==2.0.0
 python-ldap==3.4.0
 ldap3==2.9.1
@@ -26,6 +26,7 @@ fs-gcsfs # type: googlecloudstorage
 google-cloud-storage>=2.8.0  # type: googlecloudstorage
 fs.onedatarestfs # type: onedata
 fs-basespace # type: basespace
+fs-azureblob # type: azure
 
 # Vault backend
 hvac
