@@ -1,13 +1,13 @@
 <template>
     <div class="history-import-component" aria-labelledby="history-import-heading">
-        <h1 id="history-import-heading" class="h-lg">Import a history from an archive</h1>
+        <h1 id="history-import-heading" class="h-lg">Import a {{ identifierText }} from an archive</h1>
 
         <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
-                header="History import job ended in error"
+                :header="`${identifierTextCapitalized} import job ended in error`"
                 :job="jobError" />
         </b-alert>
 
@@ -15,12 +15,16 @@
             <LoadingSpan message="Loading server configuration." />
         </div>
         <div v-else-if="waitingOnJob">
-            <LoadingSpan message="Waiting on history import job, this may take a while." />
+            <LoadingSpan :message="`Waiting on ${identifierText} import job, this may take a while.`" />
         </div>
         <div v-else-if="complete">
             <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
                 <span class="mb-1 h-sm">Done!</span>
-                <p>History imported, check out <a :href="historyLink">your histories</a>.</p>
+                <p>
+                    {{ identifierTextCapitalized }} imported, check out
+                    <a :href="historyLink">your {{ identifierTextPlural }}</a
+                    >.
+                </p>
             </b-alert>
         </div>
         <div v-else>
@@ -67,7 +71,7 @@
                 </b-form-group>
 
                 <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
-                    Import history
+                    Import {{ identifierText }}
                 </b-button>
             </b-form>
         </div>
@@ -101,6 +105,12 @@ Vue.use(BootstrapVue);
 
 export default {
     components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink },
+    props: {
+        invocationImport: {
+            type: Boolean,
+            default: false,
+        },
+    },
     setup() {
         const sourceURL = ref("");
         const debouncedURL = refDebounced(sourceURL, 200);
@@ -149,6 +159,15 @@ export default {
         },
         historyLink() {
             return `${getAppRoot()}histories/list`;
+        },
+        identifierText() {
+            return this.invocationImport ? "invocation" : "history";
+        },
+        identifierTextCapitalized() {
+            return this.identifierText.charAt(0).toUpperCase() + this.identifierText.slice(1);
+        },
+        identifierTextPlural() {
+            return this.invocationImport ? "invocations" : "histories";
         },
     },
     watch: {
