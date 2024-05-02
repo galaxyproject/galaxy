@@ -430,7 +430,7 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
-    update_time: Mapped[datetime]
+    update_time: Mapped[Optional[datetime]]
 
     @property
     def seconds_since_updated(self):
@@ -454,7 +454,7 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime):
     server_name: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     hostname: Mapped[Optional[str]] = mapped_column(String(255))
     pid: Mapped[Optional[int]]
-    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
 
 
 def cached_id(galaxy_model_object):
@@ -5472,7 +5472,7 @@ class HistoryDatasetAssociationHistory(Base):
     history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    update_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     version: Mapped[Optional[int]]
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     extension: Mapped[Optional[str]] = mapped_column(TrimmedString(64))
@@ -9638,8 +9638,8 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     __tablename__ = "form_definition"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
     name: Mapped[str] = mapped_column(TrimmedString(255))
     desc: Mapped[Optional[str]] = mapped_column(TEXT)
     form_definition_current_id: Mapped[int] = mapped_column(
