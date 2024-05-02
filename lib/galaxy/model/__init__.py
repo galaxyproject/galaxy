@@ -3030,7 +3030,7 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
-class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
+class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
@@ -3196,6 +3196,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def count(self):
         return self.hid_counter - 1
+
+    def update(self):
+        self._update_time = now()
 
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
@@ -7457,7 +7460,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
         self.history = history
 
 
-class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
+class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
     It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
@@ -7797,6 +7800,25 @@ class Workflow(Base, Dictifiable, RepresentById):
         for old_step, new_step in zip(self.steps, copied_steps):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
+
+        copied_comments = [comment.copy() for comment in self.comments]
+        steps_by_id = {s.order_index: s for s in copied_workflow.steps}
+        comments_by_id = {c.order_index: c for c in copied_comments}
+
+        # copy comment relationships
+        for old_comment, new_comment in zip(self.comments, copied_comments):
+            for step_id in [step.order_index for step in old_comment.child_steps]:
+                child_step = steps_by_id.get(step_id)
+                if child_step:
+                    child_step.parent_comment = new_comment
+
+            for comment_id in [comment.order_index for comment in old_comment.child_comments]:
+                child_comment = comments_by_id.get(comment_id)
+                if child_comment:
+                    child_comment.parent_comment = new_comment
+
+        copied_workflow.comments = copied_comments
+
         return copied_workflow
 
     @property
@@ -7813,7 +7835,7 @@ class Workflow(Base, Dictifiable, RepresentById):
 InputConnDictType = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
-class WorkflowStep(Base, RepresentById):
+class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     """
     WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
 
@@ -8347,6 +8369,17 @@ class WorkflowComment(Base, RepresentById):
         comment.size = dict.get("size", None)
         comment.color = dict.get("color", "none")
         comment.data = dict.get("data", None)
+        return comment
+
+    def copy(self):
+        comment = WorkflowComment()
+        comment.order_index = self.order_index
+        comment.type = self.type
+        comment.position = self.position
+        comment.size = self.size
+        comment.color = self.color
+        comment.data = self.data
+
         return comment
 
 
@@ -10136,7 +10169,7 @@ class CloudAuthz(Base):
         )
 
 
-class Page(Base, HasTags, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -10247,7 +10280,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page: Mapped["Page"] = relationship(back_populates="users_shared_with")
 
 
-class Visualization(Base, HasTags, Dictifiable, RepresentById):
+class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),

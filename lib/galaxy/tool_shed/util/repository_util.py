@@ -22,7 +22,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import joinedload
 
 from galaxy import util
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
@@ -282,6 +285,7 @@ def get_installed_repository(
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
+    check_database_connection(app.install_model.context)
     # We store the port, if one exists, in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
     if from_cache:

@@ -1452,6 +1452,9 @@ class HistoryItemOperator:
             raise exceptions.ItemDeletionException("This item has been permanently deleted and cannot be recovered.")
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
+        # Again, we need to force an update in the edge case where all selected items are already undeleted
+        # or when the item was purged as undelete will not trigger an update
+        item.update()
 
     def _purge(self, item: "HistoryItem", trans: ProvidesHistoryContext):
         if getattr(item, "purged", False):

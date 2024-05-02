@@ -545,6 +545,21 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
+def test_export_history_with_missing_hid():
+    # The dataset's hid was used to compose the file name during the export but it
+    # can be missing sometimes. We now use the dataset's encoded id instead.
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    # Remove hid from d1
+    d1.hid = None
+    app.commit()
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+
 def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
