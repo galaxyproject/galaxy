@@ -551,6 +551,21 @@ mapping:
         desc: |
           FileSource plugins described embedded into Galaxy's config.
 
+      object_store_templates_config_file:
+        type: str
+        default: object_store_templates.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Configured Object Store templates configuration file.
+
+      object_store_templates:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Configured Object Store templates embedded into Galaxy's config.
+
       enable_mulled_containers:
         type: bool
         default: true

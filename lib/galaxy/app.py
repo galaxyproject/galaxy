@@ -50,6 +50,7 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tasks import (
@@ -91,7 +92,10 @@ from galaxy.model.tool_shed_install import (
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
+    UserObjectStoreResolver,
+    UserObjectStoresAppConfig,
 )
+from galaxy.objectstore.templates import ConfiguredObjectStoreTemplates
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     reload_toolbox,
@@ -104,6 +108,7 @@ from galaxy.quota import (
 from galaxy.schema.fields import Security
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
+    is_vault_configured,
     Vault,
     VaultFactory,
 )
@@ -247,8 +252,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         # Read config file and check for errors
         self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
         self.config.check()
-        self._configure_object_store(fsmon=True)
-        self._register_singleton(BaseObjectStore, self.object_store)
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
@@ -262,6 +265,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._register_singleton(install_model_scoped_session, self.install_model.context)
         # Load quota management.
         self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
+        self._configure_object_store(fsmon=True)
+        self._register_singleton(BaseObjectStore, self.object_store)
+        galaxy.model.setup_global_object_store_for_models(self.object_store)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -407,6 +414,22 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             )
 
     def _configure_object_store(self, **kwds):
+        app_config = UserObjectStoresAppConfig(
+            jobs_directory=self.config.jobs_directory,
+            new_file_path=self.config.new_file_path,
+            umask=self.config.umask,
+            object_store_cache_size=self.config.object_store_cache_size,
+            object_store_cache_path=self.config.object_store_cache_path,
+        )
+        self._register_singleton(UserObjectStoresAppConfig, app_config)
+        user_object_store_resolver = self._register_abstract_singleton(
+            UserObjectStoreResolver, UserObjectStoreResolverImpl  # type: ignore[type-abstract]
+        )  # Ignored because of https://github.com/python/mypy/issues/4717
+        vault_configured = is_vault_configured(self.vault)
+        templates = ConfiguredObjectStoreTemplates.from_app_config(self.config, vault_configured=vault_configured)
+        self.object_store_templates = self._register_singleton(ConfiguredObjectStoreTemplates, templates)
+        # kwds["object_store_templates"] = self.object_store_templates
+        kwds["user_object_store_resolver"] = user_object_store_resolver
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
@@ -448,7 +471,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
         self.model = mapping.configure_model_mapping(
             self.config.file_path,
-            self.object_store,
             self.config.use_pbkdf2,
             engine,
             combined_install_database,
@@ -568,7 +590,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
             ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
         )
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(

@@ -20,6 +20,7 @@ const props = defineProps<Props>();
 const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
 const isPrivate = computed(() => props.storageInfo.private);
 const badges = computed(() => props.storageInfo.badges);
+const userDefined = computed(() => props.storageInfo.object_store_id?.startsWith("user_objects://"));
 
 const quotaUsageProvider = ref(null);
 
@@ -67,6 +68,9 @@ export default {
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
         <div v-else>Galaxy has no quota configured for this storage location.</div>
-        <ConfigurationMarkdown v-if="storageInfo.description" :markdown="storageInfo.description" :admin="true" />
+        <ConfigurationMarkdown
+            v-if="storageInfo.description"
+            :markdown="storageInfo.description"
+            :admin="!userDefined" />
     </div>
 </template>

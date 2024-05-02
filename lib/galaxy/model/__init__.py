@@ -153,6 +153,11 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore.templates import (
+    ObjectStoreConfiguration,
+    ObjectStoreTemplate,
+    template_to_configuration,
+)
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -209,6 +214,11 @@ _datatypes_registry = None
 
 STR_TO_STR_DICT = Dict[str, str]
 
+OBJECT_STORE_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
+OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = Dict[str, OBJECT_STORE_TEMPLATE_CONFIGURATION_VALUE_TYPE]
+OBJECT_STORE_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = List[str]
+OBJECT_STORE_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
+
 
 class TransformAction(TypedDict):
     action: str
@@ -220,6 +230,9 @@ mapper_registry = registry(
     type_annotation_map={
         Optional[STR_TO_STR_DICT]: JSONType,
         Optional[TRANSFORM_ACTIONS]: MutableJSONType,
+        Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
+        Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
+        Optional[OBJECT_STORE_TEMPLATE_DEFINITION_TYPE]: JSONType,
     },
 )
 
@@ -764,6 +777,7 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
         back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
     )
+    object_stores: Mapped[List["UserObjectStore"]] = relationship(back_populates="user")
     quotas: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="user")
     quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(back_populates="user")
     social_auth: Mapped[List["UserAuthnzToken"]] = relationship(back_populates="user")
@@ -3984,6 +3998,10 @@ class StorableObject:
         if sa_session := object_session(self):
             with transaction(sa_session):
                 sa_session.commit()
+
+
+def setup_global_object_store_for_models(object_store):
+    Dataset.object_store = object_store
 
 
 class Dataset(Base, StorableObject, Serializable):
@@ -10905,6 +10923,59 @@ class UserPreference(Base, RepresentById):
         # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
+
+
+class UserObjectStore(Base, RepresentById):
+    __tablename__ = "user_object_store"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # the template store id
+    object_store_template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    object_store_template_version: Mapped[int] = mapped_column(Integer, index=True)
+    # Full template from object_store_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    object_store_template_definition: Mapped[Optional[OBJECT_STORE_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    object_store_template_variables: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = (
+        mapped_column(JSONType)
+    )
+    # Track a list of secrets that were defined for this object store at creation
+    object_store_template_secrets: Mapped[Optional[OBJECT_STORE_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = (
+        mapped_column(JSONType)
+    )
+
+    user = relationship("User", back_populates="object_stores")
+
+    @property
+    def template(self) -> ObjectStoreTemplate:
+        return ObjectStoreTemplate(**self.object_store_template_definition or {})
+
+    def object_store_configuration(self, secrets: Dict[str, Any]) -> ObjectStoreConfiguration:
+        user = self.user
+        user_details = {
+            "username": user.username,
+            "email": user.email,
+            "id": user.id,
+        }
+        variables: OBJECT_STORE_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.object_store_template_variables or {}
+        return template_to_configuration(
+            self.template,
+            variables=variables,
+            secrets=secrets,
+            user_details=user_details,
+        )
 
 
 class UserAction(Base, RepresentById):

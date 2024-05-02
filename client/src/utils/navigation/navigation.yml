@@ -94,11 +94,18 @@ preferences:
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '.preferred-storage'
+    manage_object_stores: '.manage-object-stores'
 
   object_store_selection:
     selectors:
       option_buttons: '.preferred-object-store-select-button'
       option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
+
+object_store_instances:
+  index:
+    selectors:
+      create_button: object-store-create
+
 
 toolbox_filters:
   selectors:

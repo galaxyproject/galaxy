@@ -92,6 +92,14 @@
             :preferred-object-store-id="currentUser.preferred_object_store_id"
             :user-id="userId">
         </UserPreferredObjectStore>
+        <UserPreferredObjectStore
+            v-if="hasTemplates"
+            id="manage-object-stores"
+            class="manage-object-stores"
+            icon="fa-hdd"
+            title="Manage Your Object Stores"
+            description="Add, remove, or update your personal object store configured."
+            to="/object_store_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
             :email="email"
@@ -128,7 +136,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import { mapState } from "pinia";
+import { mapActions, mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -136,6 +144,7 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
 import UserBeaconSettings from "./UserBeaconSettings";
@@ -183,6 +192,7 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useObjectStoreTemplatesStore, ["hasTemplates"]),
         activePreferences() {
             const userPreferencesEntries = Object.entries(getUserPreferencesModel());
             // Object.entries returns an array of arrays, where the first element
@@ -222,8 +232,26 @@ export default {
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
         });
+        this.ensureTemplates();
     },
     methods: {
+        ...mapActions(useObjectStoreTemplatesStore, ["ensureTemplates"]),
+        toggleNotifications() {
+            if (window.Notification) {
+                Notification.requestPermission().then(function (permission) {
+                    //If the user accepts, let's create a notification
+                    if (permission === "granted") {
+                        new Notification("Notifications enabled", {
+                            icon: "static/favicon.ico",
+                        });
+                    } else {
+                        alert("Notifications disabled, please re-enable through browser settings.");
+                    }
+                });
+            } else {
+                alert("Notifications are not supported by this browser.");
+            }
+        },
         makeDataPrivate() {
             if (
                 confirm(

@@ -57,6 +57,7 @@ import VueRouter from "vue-router";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
+import CreateInstance from "@/components/ObjectStore/Instances/CreateInstance";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -67,6 +68,10 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
+import EditInstance from "@/components/ObjectStore/Instances/EditInstance.vue";
+import ManageIndex from "@/components/ObjectStore/Instances/ManageIndex.vue";
+import UpgradeInstance from "@/components/ObjectStore/Instances/UpgradeInstance.vue";
+import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
@@ -343,6 +348,32 @@ export function getRouter(Galaxy) {
                     {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_instances/create",
+                        component: CreateUserObjectStore,
+                    },
+                    {
+                        path: "object_store_instances/index",
+                        component: ManageIndex,
+                        props: (route) => {
+                            return { message: route.query["message"] };
+                        },
+                    },
+                    {
+                        path: "object_store_instances/:instanceId/edit",
+                        component: EditInstance,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_instances/:instanceId/upgrade",
+                        component: UpgradeInstance,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_templates/:templateId/new",
+                        component: CreateInstance,
                         props: true,
                     },
                     {
