@@ -698,6 +698,7 @@ class HistoryExportManager:
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
+        assert history.update_time is not None, "History update time must be set"
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
