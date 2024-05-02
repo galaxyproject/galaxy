@@ -72,7 +72,7 @@ const query = computed({
     },
 });
 
-const { currentPanel } = storeToRefs(toolStore);
+const { currentPanel, currentPanelView } = storeToRefs(toolStore);
 const hasResults = computed(() => results.value.length > 0);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
@@ -304,6 +304,7 @@ function onToggle() {
                             v-if="panel"
                             :category="panel || {}"
                             :query-filter="queryFilter || undefined"
+                            :has-filter-button="!!query && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
                     </div>

@@ -34,6 +34,7 @@ interface Props {
     sectionName?: string;
     expanded?: boolean;
     sortItems?: boolean;
+    hasFilterButton?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
     sectionName: "default",
     expanded: false,
     sortItems: true,
+    hasFilterButton: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -170,7 +172,7 @@ function toggleMenu(nextState = !opened.value) {
                     <ToolPanelLinks :links="links" />
                 </div>
                 <button
-                    v-if="isSection && toolStore.currentPanelView === 'default'"
+                    v-if="isSection && props.hasFilterButton"
                     v-b-tooltip.hover.noninteractive.bottom
                     title="Show full section"
                     class="inline-icon-button"
