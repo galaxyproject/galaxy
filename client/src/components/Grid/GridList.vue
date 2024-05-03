@@ -422,7 +422,7 @@ watch(operationMessage, () => {
                         <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
                     </th>
                 </thead>
-                <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex">
+                <tbody v-for="(rowData, rowIndex) in gridData" :key="rowIndex" data-description="grid item">
                     <tr :class="{ 'grid-dark-row': rowIndex % 2 }">
                         <td v-if="!!gridConfig.batch">
                             <BFormCheckbox
@@ -499,7 +499,7 @@ watch(operationMessage, () => {
                             <FontAwesomeIcon v-else icon="fa-shield-alt" />
                         </td>
                     </tr>
-                    <tr v-if="expanded.has(rowData)">
+                    <tr v-if="expanded.has(rowData)" data-description="grid expanded row">
                         <td :colspan="gridConfig.fields.length + 2">
                             <BCard class="p-2">
                                 <slot name="expanded" :row-data="rowData" />
@@ -529,7 +529,18 @@ watch(operationMessage, () => {
                         </BButton>
                     </div>
                 </div>
-                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+                <BPagination
+                    v-model="currentPage"
+                    :total-rows="totalRows"
+                    :per-page="limit"
+                    class="m-0"
+                    size="sm"
+                    data-description="grid pager"
+                    next-class="gx-grid-pager-next"
+                    prev-class="gx-grid-pager-prev"
+                    first-class="gx-grid-pager-first"
+                    last-class="gx-grid-pager-last"
+                    page-class="gx-grid-pager-page" />
             </div>
         </div>
     </div>

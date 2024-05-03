@@ -25,7 +25,7 @@ function showDetails() {
 </script>
 
 <template>
-    <BLink class="toggle-invocation-details" @click.stop="showDetails">
+    <BLink data-description="toggle row details" @click.stop="showDetails">
         <FontAwesomeIcon
             :title="props.detailsShowing ? 'Hide details' : 'Show details'"
             size="lg"
