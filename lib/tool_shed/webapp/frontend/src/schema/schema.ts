@@ -424,6 +424,15 @@ export interface components {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
             repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
         }
+        /** MessageExceptionModel */
+        MessageExceptionModel: {
+            /** Err Code */
+            err_code: number
+            /** Err Msg */
+            err_msg: string
+            /** Validation Errors */
+            validation_errors: components["schemas"]["ValidationErrorModel"][]
+        }
         /** Organization */
         Organization: {
             /**
@@ -1018,6 +1027,17 @@ export interface components {
             /** Error Type */
             type: string
         }
+        /** ValidationErrorModel */
+        ValidationErrorModel: {
+            /** Input */
+            input: Record<string, never>
+            /** Loc */
+            loc: (number | string)[]
+            /** Msg */
+            msg: string
+            /** Type */
+            type: string
+        }
         /** Version */
         Version: {
             /**
@@ -1052,13 +1072,19 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Index
-     * @description index category
-     */
     categories__index: {
+        /**
+         * Index
+         * @description index category
+         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1066,13 +1092,19 @@ export interface operations {
                     "application/json": components["schemas"]["Category"][]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Create
-     * @description create a category
-     */
     categories__create: {
+        /**
+         * Create
+         * @description create a category
+         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateCategoryRequest"]
@@ -1083,6 +1115,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Category"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1109,6 +1147,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Category"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1143,6 +1187,12 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoriesByCategory"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1160,10 +1210,16 @@ export interface operations {
                     "application/json": components["schemas"]["Service"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /** Tool Classes */
     tools__trs_tool_classes: {
+        /** Tool Classes */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1171,10 +1227,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolClass"][]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /** Trs Index */
     tools__trs_index: {
+        /** Trs Index */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1182,10 +1244,16 @@ export interface operations {
                     "application/json": unknown
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /** Trs Get */
     tools__trs_get: {
+        /** Trs Get */
         parameters: {
             path: {
                 /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
@@ -1197,6 +1265,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Tool"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1220,6 +1294,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["ToolVersion"][]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1254,6 +1334,12 @@ export interface operations {
                         | components["schemas"]["Repository"][]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1277,6 +1363,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Repository"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1306,6 +1398,12 @@ export interface operations {
                     "application/json": string[]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1333,7 +1431,13 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": unknown[]
+                    "application/json": Record<string, never>[]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1366,6 +1470,12 @@ export interface operations {
                     "application/json": components["schemas"]["InstallInfo"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1386,10 +1496,16 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /** Updates */
     repositories__update: {
+        /** Updates */
         parameters: {
             query: {
                 owner?: string | null
@@ -1402,7 +1518,13 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": unknown
+                    "application/json": Record<string, never>
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1428,6 +1550,12 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedRepository"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1449,6 +1577,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": string[]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1476,6 +1610,12 @@ export interface operations {
                     "application/json": string[]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1499,6 +1639,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": string[]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1536,6 +1682,12 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryUpdate"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1554,8 +1706,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1575,8 +1731,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1608,6 +1768,12 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1629,6 +1795,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["RepositoryPermissions"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1657,6 +1829,12 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1677,8 +1855,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1700,8 +1882,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1731,6 +1917,12 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1752,7 +1944,13 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": unknown
+                    "application/json": Record<string, never>
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1776,13 +1974,19 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Index
-     * @description index users
-     */
     users__index: {
+        /**
+         * Index
+         * @description index users
+         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1790,13 +1994,19 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"][]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Create
-     * @description create a user
-     */
     users__create: {
+        /**
+         * Create
+         * @description create a user
+         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateUserRequest"]
@@ -1807,6 +2017,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1829,13 +2045,19 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Show
-     * @description show a user
-     */
     users__show: {
+        /**
+         * Show
+         * @description show a user
+         */
         parameters: {
             path: {
                 /** @description The encoded database identifier of the user. */
@@ -1847,6 +2069,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -1872,6 +2100,12 @@ export interface operations {
                     "application/json": string
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1895,6 +2129,12 @@ export interface operations {
                     "application/json": string
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1913,8 +2153,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1933,13 +2177,19 @@ export interface operations {
                     "application/json": components["schemas"]["Version"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
-    /**
-     * Change Password
-     * @description reset a user
-     */
     users__internal_change_password: {
+        /**
+         * Change Password
+         * @description reset a user
+         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiChangePasswordRequest"]
@@ -1947,8 +2197,12 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: {
-                content: never
+            204: never
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
             }
             /** @description Validation Error */
             422: {
@@ -1973,6 +2227,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UiLoginResponse"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -2000,6 +2260,12 @@ export interface operations {
                     "application/json": components["schemas"]["UiLogoutResponse"]
                 }
             }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -2023,6 +2289,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UiRegisterResponse"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
@@ -2053,6 +2325,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["RepositoryMetadata"]
+                }
+            }
+            /** @description Bad Request */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
             /** @description Validation Error */
