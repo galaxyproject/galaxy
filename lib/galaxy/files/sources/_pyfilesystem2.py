@@ -37,6 +37,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     required_module: ClassVar[Optional[Type[FS]]]
     required_package: ClassVar[str]
     supports_pagination = True
+    supports_search = True
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
@@ -70,7 +71,8 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                     return res
                 else:
                     page = self._to_page(limit, offset)
-                    res = h.filterdir(path, namespaces=["details"], page=page)
+                    filter = self._query_to_filter(query)
+                    res = h.filterdir(path, namespaces=["details"], page=page, files=filter, dirs=filter)
                     to_dict = functools.partial(self._resource_info_to_dict, path)
                     return list(map(to_dict, res))
         except fs.errors.PermissionDenied as e:
@@ -87,6 +89,11 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         start = offset or 0
         end = start + limit
         return (start, end)
+
+    def _query_to_filter(self, query: Optional[str]) -> Optional[List[str]]:
+        if query is None:
+            return None
+        return [f"*{query}*"]
 
     def _realize_to(
         self,
