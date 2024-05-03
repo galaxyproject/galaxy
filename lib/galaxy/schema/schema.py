@@ -3733,3 +3733,22 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class DatasetSummary(Model):
+    id: EncodedDatabaseIdField
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
+    state: DatasetStateField
+    deleted: bool
+    purged: bool
+    purgable: bool
+    file_size: int
+    total_size: int
+    uuid: UuidField
+
+
+class MessageExceptionModel(Model):
+    err_msg: str
+    err_code: int
+    validation_errors: List[Dict[str, str]]
