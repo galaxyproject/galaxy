@@ -85,6 +85,39 @@ def test_pagination(temp_file_source: TempFilesSource):
     assert result[2] == root_lvl_entries[3]
 
 
+def test_search(temp_file_source: TempFilesSource):
+    # Search is only supported for non-recursive listings.
+    recursive = False
+    root_lvl_entries = temp_file_source.list("/", recursive=recursive)
+    assert len(root_lvl_entries) == 4
+
+    result = temp_file_source.list("/", recursive=recursive, query="a")
+    assert len(result) == 1
+    assert result[0]["name"] == "a"
+
+    result = temp_file_source.list("/", recursive=recursive, query="b")
+    assert len(result) == 1
+    assert result[0]["name"] == "b"
+
+    result = temp_file_source.list("/", recursive=recursive, query="c")
+    assert len(result) == 1
+    assert result[0]["name"] == "c"
+
+    # Searching for 'd' at root level should return the directory 'dir1' but not the file 'd'
+    # as it is not a direct child of the root.
+    result = temp_file_source.list("/", recursive=recursive, query="d")
+    assert len(result) == 1
+    assert result[0]["name"] == "dir1"
+
+    # Searching for 'e' at root level should not return anything.
+    result = temp_file_source.list("/", recursive=recursive, query="e")
+    assert len(result) == 0
+
+    result = temp_file_source.list("/dir1", recursive=recursive, query="e")
+    assert len(result) == 1
+    assert result[0]["name"] == "e"
+
+
 def _populate_test_scenario(file_source: TempFilesSource):
     """Create a directory structure in the file source."""
     user_context = user_context_fixture()
