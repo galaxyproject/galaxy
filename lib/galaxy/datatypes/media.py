@@ -114,17 +114,12 @@ def _get_file_format_from_magic_number(filename: str, file_ext: str):
         head = f.read(8)
         if "string" in magic_number[file_ext]:
             string_check = any(
-                [
-                    head.startswith(string_code.encode("iso-8859-1"))
-                    for string_code in cast(List[str], magic_number[file_ext]["string"])
-                ]
+                head.startswith(string_code.encode("iso-8859-1"))
+                for string_code in cast(List[str], magic_number[file_ext]["string"])
             )
         if "hex" in magic_number[file_ext]:
             hex_check = any(
-                [
-                    head.startswith(bytes.fromhex(hex_code))
-                    for hex_code in cast(List[str], magic_number[file_ext]["hex"])
-                ]
+                head.startswith(bytes.fromhex(hex_code)) for hex_code in cast(List[str], magic_number[file_ext]["hex"])
             )
         return string_check or hex_check
 
