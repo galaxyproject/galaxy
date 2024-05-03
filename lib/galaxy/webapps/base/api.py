@@ -36,8 +36,8 @@ if typing.TYPE_CHECKING:
         Scope,
         Send,
     )
-from galaxy.schema.schema import MessageExceptionModel
 
+from galaxy.schema.schema import MessageExceptionModel
 
 log = getLogger(__name__)
 
