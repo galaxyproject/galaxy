@@ -102,6 +102,10 @@ ExcludeKindQueryParam = Query(
     ),
 )
 
+LimitQueryParam = Query(default=None, title="Limit", description="Maximum number of entries to return.")
+
+OffsetQueryParam = Query(default=None, title="Offset", description="Number of entries to skip.")
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -125,8 +129,8 @@ class FastAPIRemoteFiles:
         recursive: Optional[bool] = RecursiveQueryParam,
         disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
         writeable: Optional[bool] = WriteableQueryParam,
-        limit: Optional[int] = Query(None, title="Limit", description="Maximum number of entries to return."),
-        offset: Optional[int] = Query(None, title="Offset", description="Number of entries to skip."),
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
         return self.manager.index(user_ctx, target, format, recursive, disable, writeable, limit, offset)
