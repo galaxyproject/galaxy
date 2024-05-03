@@ -148,6 +148,10 @@ const filtered = computed<HistorySummary[]>(() => {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
             return 1;
+        } else if (isMultiviewPanel.value && isPinned(a.id) && !isPinned(b.id)) {
+            return -1;
+        } else if (isMultiviewPanel.value && !isPinned(a.id) && isPinned(b.id)) {
+            return 1;
         } else if (a.update_time < b.update_time) {
             return 1;
         } else {
@@ -161,16 +165,20 @@ const isMultiviewPanel = computed(() => !props.inModal && props.multiple);
 
 function isActiveItem(history: HistorySummary) {
     if (isMultiviewPanel.value) {
-        return pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id);
+        return isPinned(history.id);
     } else {
         return props.selectedHistories.some((item: PinnedHistory) => item.id == history.id);
     }
 }
 
+function isPinned(historyId: string) {
+    return pinnedHistories.value.some((item: PinnedHistory) => item.id == historyId);
+}
+
 function historyClicked(history: HistorySummary) {
     emit("selectHistory", history);
     if (isMultiviewPanel.value) {
-        if (pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id)) {
+        if (isPinned(history.id)) {
             historyStore.unpinHistories([history.id]);
         } else {
             openInMulti(history);
@@ -263,18 +271,14 @@ async function loadMore(noScroll = false) {
                                         <i v-if="history.id === currentHistoryId">(Current)</i>
                                     </Heading>
                                     <i
-                                        v-if="props.multiple && pinnedHistories.some((h) => h.id === history.id)"
-                                        v-b-tooltip.noninteractive.hover
+                                        v-if="props.multiple && isPinned(history.id)"
                                         title="This history is currently pinned in the multi-history view">
                                         (currently pinned)
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Amount of items in history')">
+                                    <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
                                     </BBadge>
                                     <BBadge
