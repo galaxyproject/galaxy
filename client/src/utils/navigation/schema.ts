@@ -385,13 +385,6 @@ interface Rootworkflows extends Component {
     workflow_rows: SelectorTemplate;
     external_link: SelectorTemplate;
     trs_icon: SelectorTemplate;
-    pager: SelectorTemplate;
-    pager_page: SelectorTemplate;
-    pager_page_next: SelectorTemplate;
-    pager_page_first: SelectorTemplate;
-    pager_page_last: SelectorTemplate;
-    pager_page_previous: SelectorTemplate;
-    pager_page_active: SelectorTemplate;
     run_button: SelectorTemplate;
     bookmark_link: SelectorTemplate;
     workflow_with_name: SelectorTemplate;
