@@ -2573,11 +2573,13 @@ def populate_module_and_state(
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
-            raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
+            raise exceptions.MessageException(
+                "Error computing workflow step runtime state", err_data={step.order_index: step_errors}
+            )
         if step.upgrade_messages:
             if allow_tool_state_corrections:
                 log.debug('Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages)
             else:
                 raise exceptions.MessageException(
-                    step.upgrade_messages, err_data={step.order_index: step.upgrade_messages}
+                    "Workflow step has upgrade messages", err_data={step.order_index: step.upgrade_messages}
                 )
