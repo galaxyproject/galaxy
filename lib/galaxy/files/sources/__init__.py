@@ -102,6 +102,7 @@ class FilesSourceProperties(TypedDict):
     browsable: NotRequired[bool]
     url: NotRequired[Optional[str]]
     supports_pagination: NotRequired[bool]
+    supports_search: NotRequired[bool]
 
 
 @dataclass
@@ -313,6 +314,7 @@ def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
     supports_pagination: ClassVar[bool] = False
+    supports_search: ClassVar[bool] = False
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -392,6 +394,7 @@ class BaseFilesSource(FilesSource):
             "disable_templating": self.disable_templating,
             "scheme": self.get_scheme(),
             "supports_pagination": self.supports_pagination,
+            "supports_search": self.supports_search,
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
@@ -423,12 +426,15 @@ class BaseFilesSource(FilesSource):
         opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         self._check_user_access(user_context)
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
+        if not self.supports_search and query:
+            raise RequestParameterInvalidException("Server-side search is not supported by this file source.")
 
-        return self._list(path, recursive, user_context, opts, limit, offset)
+        return self._list(path, recursive, user_context, opts, limit, offset, query)
 
     def _list(
         self,
@@ -438,6 +444,7 @@ class BaseFilesSource(FilesSource):
         opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ):
         pass
 

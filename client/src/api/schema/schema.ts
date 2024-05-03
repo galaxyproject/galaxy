@@ -15566,6 +15566,7 @@ export interface operations {
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             /** @description Maximum number of entries to return. */
             /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
@@ -15574,6 +15575,7 @@ export interface operations {
                 writeable?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
+                query?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -21886,6 +21888,7 @@ export interface operations {
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             /** @description Maximum number of entries to return. */
             /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
@@ -21894,6 +21897,7 @@ export interface operations {
                 writeable?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
+                query?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

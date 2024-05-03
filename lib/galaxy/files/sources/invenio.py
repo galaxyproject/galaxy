@@ -153,6 +153,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
@@ -219,6 +220,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         user_context: OptionalUserContext = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> List[RemoteDirectory]:
         params: Dict[str, Any] = {}
         request_url = self.records_url

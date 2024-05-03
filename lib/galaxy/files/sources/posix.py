@@ -61,6 +61,7 @@ class PosixFilesSource(BaseFilesSource):
         opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         if not self.root:
             raise exceptions.ItemAccessibilityException("Listing files at file:// URLs has been disabled.")

@@ -63,6 +63,7 @@ class S3FsFilesSource(BaseFilesSource):
         opts: Optional[FilesSourceOptions] = None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
+        query: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         _props = self._serialization_props(user_context)
         # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function

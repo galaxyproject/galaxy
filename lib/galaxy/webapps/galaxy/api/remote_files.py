@@ -106,6 +106,12 @@ LimitQueryParam = Query(default=None, title="Limit", description="Maximum number
 
 OffsetQueryParam = Query(default=None, title="Offset", description="Number of entries to skip.")
 
+SearchQueryParam = Query(
+    default=None,
+    title="Query",
+    description="Search query to filter entries by. The syntax could be different depending on the target source.",
+)
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -131,9 +137,10 @@ class FastAPIRemoteFiles:
         writeable: Optional[bool] = WriteableQueryParam,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
+        query: Optional[str] = SearchQueryParam,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
-        return self.manager.index(user_ctx, target, format, recursive, disable, writeable, limit, offset)
+        return self.manager.index(user_ctx, target, format, recursive, disable, writeable, limit, offset, query)
 
     @router.get(
         "/api/remote_files/plugins",
