@@ -133,7 +133,7 @@ class Net(data.Text):
     """Class describing a net format alignment file"""
 
     edam_format = "format_3983"
-    file_ext = "net"
+    file_ext = "ucsc.net"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -153,7 +153,7 @@ class Net(data.Text):
         >>> fname = get_test_fname( '1.chain' )
         >>> Net().sniff( fname )
         False
-        >>> fname = get_test_fname( '1.net' )
+        >>> fname = get_test_fname( '1.ucsc.net' )
         >>> Net().sniff( fname )
         True
         >>>
