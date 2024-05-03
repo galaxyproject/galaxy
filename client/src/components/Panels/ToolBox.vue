@@ -304,7 +304,7 @@ function onToggle() {
                             v-if="panel"
                             :category="panel || {}"
                             :query-filter="queryFilter || undefined"
-                            :has-filter-button="!!query && !queryTooShort && currentPanelView === 'default'"
+                            :has-filter-button="hasResults && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
                     </div>
