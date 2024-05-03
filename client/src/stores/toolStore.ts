@@ -37,6 +37,7 @@ export interface ToolSection {
     model_class: string;
     id: string;
     name: string;
+    title?: string;
     version?: string;
     description?: string;
     links?: Record<string, string>;

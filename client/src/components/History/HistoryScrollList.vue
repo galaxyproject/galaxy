@@ -220,8 +220,8 @@ async function loadMore(noScroll = false) {
 <template>
     <div :class="isMultiviewPanel ? 'unified-panel' : 'flex-column-overflow'">
         <div class="unified-panel-controls">
-            <BBadge v-if="props.filter && !validFilter" class="alert-danger w-100 mb-2">
-                Search string too short!
+            <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
+                Search term is too short
             </BBadge>
             <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </div>

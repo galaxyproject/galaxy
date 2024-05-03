@@ -12,7 +12,10 @@ import {
 } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
-const TOOL_ID_KEYS = ["id", "tool_id"];
+const FILTER_KEYS = {
+    id: ["id", "tool_id"],
+    panel_section_name: ["section", "panel_section_name"],
+};
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
 const MINIMUM_WORD_MATCH = 2; // for word match
@@ -46,6 +49,7 @@ export interface ToolSearchKeys {
 
 interface SearchMatch {
     id: string;
+    /** The order of the match, higher number = higher rank in results */
     order: number;
 }
 
@@ -264,11 +268,12 @@ export function searchToolsByKeys(
 } {
     const matchedTools: SearchMatch[] = [];
     let closestTerm = null;
-    // if user's query = "id:1234" or "tool_id:1234", only search for id
-    const id = processForId(query, TOOL_ID_KEYS);
-    if (id) {
-        query = id;
-        keys = { id: 1 };
+
+    // check if query is of the form "property:value" and then ONLY filter on that property
+    const { filteredQuery, filteredKeys } = filterOnKeys(query, FILTER_KEYS);
+    if (filteredQuery) {
+        query = filteredQuery;
+        keys = filteredKeys;
     }
 
     const queryWords = query.trim().toLowerCase().split(" ");
@@ -338,7 +343,7 @@ export function searchToolsByKeys(
         }
     }
     // no results with string.match(): recursive call with usesDL
-    if (!id && !usesDL && matchedTools.length == 0) {
+    if (!filteredQuery && !usesDL && matchedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, panelView, currentPanel, true);
     }
     const { idResults, resultPanel } = createSortedResultObject(matchedTools, currentPanel);
@@ -491,15 +496,32 @@ function sanitizeString(value: string, targets: string[] = [], substitute = "") 
 }
 
 /**
- * If the query is of the form "id:1234" (or "tool_id:1234"), return the id.
+ * If the query is of the form "property:value", return the value and keys which
+ * ONLY filter on that property.
+ * Otherwise, return null/empty object.
+ * @param query - the raw query
+ * @param keys - keys to filter for
+ */
+function filterOnKeys(query: string, keys: Record<string, string[]>) {
+    for (const key in keys) {
+        const filteredQuery = processForProperty(query, keys[key] || []);
+        if (filteredQuery) {
+            return { filteredQuery, filteredKeys: { [key]: 1 } };
+        }
+    }
+    return { filteredQuery: null, filteredKeys: {} };
+}
+
+/**
+ * If the query is of the form "property:value", return the value.
  * Otherwise, return null.
  * @param query - the raw query
- * @param keys - Optional: keys to check for (default: ["id"])
- * @returns id or null
+ * @param keys - keys to check for
+ * @returns value or null
  */
-function processForId(query: string, keys = ["id"]) {
+function processForProperty(query: string, keys: string[]) {
     for (const key of keys) {
-        if (query.includes(`${key}:`)) {
+        if (query.trim().startsWith(`${key}:`)) {
             return query.split(`${key}:`)[1]?.trim();
         }
     }

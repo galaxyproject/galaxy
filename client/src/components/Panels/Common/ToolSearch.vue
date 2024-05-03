@@ -154,7 +154,7 @@ watch(
 
 function checkQuery(q: string) {
     emit("onQuery", q);
-    if (q && q.length >= MIN_QUERY_LENGTH) {
+    if (q.trim() && q.trim().length >= MIN_QUERY_LENGTH) {
         if (FAVORITES.includes(q)) {
             post({ type: "favoriteTools" });
         } else {
