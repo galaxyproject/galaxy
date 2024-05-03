@@ -262,10 +262,10 @@ function onToggle() {
                     </b-button>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                    <b-badge class="alert-info w-100">Search term is too short</b-badge>
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
-                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                    <b-badge class="alert-warning w-100">No results found</b-badge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <b-badge class="alert-danger w-100">
@@ -304,7 +304,7 @@ function onToggle() {
                             v-if="panel"
                             :category="panel || {}"
                             :query-filter="queryFilter || undefined"
-                            :has-filter-button="!!query && currentPanelView === 'default'"
+                            :has-filter-button="!!query && !queryTooShort && currentPanelView === 'default'"
                             @onClick="onToolClick"
                             @onFilter="onSectionFilter" />
                     </div>
