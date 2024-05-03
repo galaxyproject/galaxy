@@ -272,17 +272,13 @@ async function loadMore(noScroll = false) {
                                     </Heading>
                                     <i
                                         v-if="props.multiple && isPinned(history.id)"
-                                        v-b-tooltip.noninteractive.hover
                                         title="This history is currently pinned in the multi-history view">
                                         (currently pinned)
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Amount of items in history')">
+                                    <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
                                     </BBadge>
                                     <BBadge
