@@ -626,8 +626,7 @@ class FastAPIHistoryContents:
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        archive = self.service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return self._download_collection(trans, id)
 
     @router.get(
         "/api/dataset_collections/{id}/download",
@@ -644,8 +643,7 @@ class FastAPIHistoryContents:
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
         """
-        archive = self.service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+        return self._download_collection(trans, id)
 
     @router.post(
         "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
@@ -1033,3 +1031,7 @@ class FastAPIHistoryContents:
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval
+
+    def _download_collection(self, trans, id):
+        archive = self.service.get_dataset_collection_archive_for_download(trans, id)
+        return StreamingResponse(archive.response(), headers=archive.get_headers())

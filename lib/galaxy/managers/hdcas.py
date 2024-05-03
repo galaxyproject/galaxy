@@ -42,6 +42,9 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
 def write_dataset_collection(dataset_collection_instance, archive):
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
+        if not hda:
+            # TODO should we raise galaxy.exceptions.InternalServerError or create a new exception type?
+            raise Exception("Attempt to write dataset collection with missing elements")
         if hda.state != hda.states.OK:
             continue
         for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
