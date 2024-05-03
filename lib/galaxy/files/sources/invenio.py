@@ -121,6 +121,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
 
     plugin_type = "inveniordm"
     supports_pagination = True
+    supports_search = True
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         super().__init__(**kwd)
@@ -158,7 +159,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records = self.repository.get_records(writeable, user_context, limit=limit, offset=offset)
+            records = self.repository.get_records(writeable, user_context, limit=limit, offset=offset, query=query)
             return cast(List[AnyRemoteEntry], records)
         record_id = self.get_record_id_from_path(path)
         files = self.repository.get_files_in_record(record_id, writeable, user_context)
@@ -231,6 +232,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         size, page = self._to_size_page(limit, offset)
         params["size"] = size
         params["page"] = page
+        if query:
+            params["q"] = query
+            params["sort"] = "bestmatch"
         response_data = self._get_response(user_context, request_url, params=params)
         return self._get_records_from_response(response_data)
 
