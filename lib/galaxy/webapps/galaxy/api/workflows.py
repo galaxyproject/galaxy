@@ -97,11 +97,7 @@ from galaxy.tools import recommendations
 from galaxy.tools._types import ParameterValidationErrorsT
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.web import (
-    expose_api,
-    expose_api_raw_anonymous_and_sessionless,
-    format_return_as_json,
-)
+from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
     SharableMixin,
     url_for,
