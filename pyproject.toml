@@ -57,7 +57,7 @@ dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 dparse = "*"
 edam-ontology = "*"
-fastapi = ">=0.108"
+fastapi-slim = ">=0.111.0"
 fs = "*"
 future = ">=1.0.0"  # Python 3.12 support
 galaxy_sequence_utils = "*"
