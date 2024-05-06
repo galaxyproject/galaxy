@@ -34,7 +34,7 @@ from galaxy.util import (
 from galaxy.util.path import safe_relpath
 from . import DiskObjectStore
 from ._util import fix_permissions
-
+from .caching import UsesCache
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
@@ -153,7 +153,7 @@ class CloudConfigMixin:
         }
 
 
-class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
+class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
     """
     Object store that stores files as data objects in an iRODS Zone. A local cache
     exists that is used as an intermediate location for files between Galaxy and iRODS.
@@ -316,60 +316,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    def _construct_path(
-        self,
-        obj,
-        base_dir=None,
-        dir_only=None,
-        extra_dir=None,
-        extra_dir_at_root=False,
-        alt_name=None,
-        obj_dir=False,
-        in_cache=False,
-        **kwargs,
-    ):
-        ipt_timer = ExecutionTimer()
-        # extra_dir should never be constructed from provided data but just
-        # make sure there are no shenanigans afoot
-        if extra_dir and extra_dir != os.path.normpath(extra_dir):
-            log.warning("extra_dir is not normalized: %s", extra_dir)
-            raise ObjectInvalid("The requested object is invalid")
-        # ensure that any parent directory references in alt_name would not
-        # result in a path not contained in the directory path constructed here
-        if alt_name:
-            if not safe_relpath(alt_name):
-                log.warning("alt_name would locate path outside dir: %s", alt_name)
-                raise ObjectInvalid("The requested object is invalid")
-            # alt_name can contain parent directory references, but S3 will not
-            # follow them, so if they are valid we normalize them out
-            alt_name = os.path.normpath(alt_name)
-        rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
-        if extra_dir is not None:
-            if extra_dir_at_root:
-                rel_path = os.path.join(extra_dir, rel_path)
-            else:
-                rel_path = os.path.join(rel_path, extra_dir)
-
-        # for JOB_WORK directory
-        if obj_dir:
-            rel_path = os.path.join(rel_path, str(self._get_object_id(obj)))
-        if base_dir:
-            base = self.extra_dirs.get(base_dir)
-            log.debug("irods_pt _construct_path: %s", ipt_timer)
-            return os.path.join(base, rel_path)
-
-        if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
-        log.debug("irods_pt _construct_path: %s", ipt_timer)
-
-        if in_cache:
-            return self._get_cache_path(rel_path)
-
-        return rel_path
-
-    def _get_cache_path(self, rel_path):
-        return os.path.abspath(os.path.join(self.staging_path, rel_path))
-
     # rel_path is file or folder?
     def _get_size_in_irods(self, rel_path):
         ipt_timer = ExecutionTimer()
@@ -409,11 +355,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return False
         finally:
             log.debug("irods_pt _data_object_exists: %s", ipt_timer)
-
-    def _in_cache(self, rel_path):
-        """Check if the given dataset is in the local cache and return True if so."""
-        cache_path = self._get_cache_path(rel_path)
-        return os.path.exists(cache_path)
 
     def _pull_into_cache(self, rel_path):
         ipt_timer = ExecutionTimer()
