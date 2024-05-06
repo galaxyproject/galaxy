@@ -9,6 +9,7 @@ import logging
 from typing import Dict
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import (
     annotatable,
     base,
@@ -40,11 +41,10 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
 
 
 def write_dataset_collection(dataset_collection_instance, archive):
+    if not dataset_collection_instance.populated_optimized():
+        raise RequestParameterInvalidException("Attempt to write dataset collection that has not been populated yet")
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
-        if not hda:
-            # TODO should we raise galaxy.exceptions.InternalServerError or create a new exception type?
-            raise Exception("Attempt to write dataset collection with missing elements")
         if hda.state != hda.states.OK:
             continue
         for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
