@@ -44,6 +44,46 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
 </object_store>
 """
 )
+AZURE_OBJECT_STORE_CONFIG = string.Template(
+    """
+type: distributed
+backends:
+- type: azure_blob
+  id: azure1
+  name: Azure Store 1
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: "${temp_directory}/database/job_working_directory_azure_1"
+  - type: temp
+    path: "${temp_directory}/database/tmp_azure_1"
+- type: azure_blob
+  id: azure2
+  name: Azure Store 2
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: "${temp_directory}/database/job_working_directory_azure_2"
+  - type: temp
+    path: "${temp_directory}/database/tmp_azure_2"
+"""
+)
 
 
 def start_minio(container_name):
@@ -161,6 +201,47 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                         "access_key": OBJECT_STORE_ACCESS_KEY,
                         "secret_key": OBJECT_STORE_SECRET_KEY,
                         "cache_updated_data": cls.updateCacheData(),
+                    }
+                )
+            )
+        config["object_store_config_file"] = config_path
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def updateCacheData(cls):
+        return True
+
+
+class BaseAzureObjectStoreIntegrationTestCase(
+    BaseObjectStoreIntegrationTestCase, integration_util.ConfiguresWorkflowScheduling
+):
+    object_store_cache_path: str
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # disabling workflow scheduling to limit database locking when
+        # testing without postgres.
+        cls._disable_workflow_scheduling(config)
+        temp_directory = cls._test_driver.mkdtemp()
+        cls.object_stores_parent = temp_directory
+        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        config_path = os.path.join(temp_directory, "object_store_conf.yml")
+        config["object_store_store_by"] = "uuid"
+        config["metadata_strategy"] = "extended"
+        config["outputs_to_working_directory"] = True
+        config["retry_metadata_internally"] = False
+        with open(config_path, "w") as f:
+            f.write(
+                AZURE_OBJECT_STORE_CONFIG.safe_substitute(
+                    {
+                        "temp_directory": temp_directory,
+                        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+                        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+                        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
                     }
                 )
             )
