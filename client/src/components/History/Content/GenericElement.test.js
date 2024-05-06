@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import VueRouter from "vue-router";
@@ -60,6 +61,7 @@ describe("GenericElement", () => {
             },
             localVue,
             router,
+            pinia: createTestingPinia(),
         });
     });
 

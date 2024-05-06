@@ -51,6 +51,10 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.themes import flatten_theme
 from ..version import (
     VERSION_MAJOR,
@@ -60,18 +64,13 @@ from ..version import (
 if TYPE_CHECKING:
     from galaxy.model import User
 
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
-
 log = logging.getLogger(__name__)
 
 DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 GALAXY_APP_NAME = "galaxy"
-GALAXY_SCHEMAS_PATH = files("galaxy.config") / "schemas"
+GALAXY_SCHEMAS_PATH = resource_path(__package__, "schemas")
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
 REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
 TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
@@ -193,7 +192,7 @@ def configure_logging(config, facts=None):
         logging.config.dictConfig(logging_conf)
 
 
-def find_root(kwargs):
+def find_root(kwargs) -> str:
     return os.path.abspath(kwargs.get("root_dir", "."))
 
 
@@ -238,6 +237,7 @@ class BaseAppConfiguration(HasDynamicProperties):
     add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
     object_store_store_by: str
+    shed_tools_dir: str
 
     def __init__(self, **kwargs):
         self._preprocess_kwargs(kwargs)
@@ -539,8 +539,12 @@ class BaseAppConfiguration(HasDynamicProperties):
                 if self._path_exists(new_path):  # That's a bingo!
                     resolves_to = self.schema.paths_to_resolve.get(key)
                     log.warning(
-                        "Paths for the '{0}' option should be relative to '{1}'. To suppress this warning, "
-                        "move '{0}' into '{1}', or set it's value to an absolute path.".format(key, resolves_to)
+                        "Paths for the '%s' option should be relative to '%s'. To suppress this warning, "
+                        "move '%s' into '%s', or set its value to an absolute path.",
+                        key,
+                        resolves_to,
+                        key,
+                        resolves_to,
                     )
                     return new_path
             return current_path
@@ -743,7 +747,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._override_tempdir(kwargs)
-        self._configure_sqlalchemy20_warnings(kwargs)
         self._process_config(kwargs)
         self._set_dependent_defaults()
 
@@ -759,36 +762,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     "DEPENDENT_CONFIG_DEFAULTS, "
                     f"{dependent_config_param}, {config_param}"
                 )
-
-    def _configure_sqlalchemy20_warnings(self, kwargs):
-        """
-        This method should be deleted after migration to SQLAlchemy 2.0 is complete.
-        To enable warnings, set `GALAXY_CONFIG_SQLALCHEMY_WARN_20=1`,
-        """
-        warn = string_as_bool(kwargs.get("sqlalchemy_warn_20", False))
-        if warn:
-            import sqlalchemy
-
-            sqlalchemy.util.deprecations.SQLALCHEMY_WARN_20 = True
-            self._setup_sqlalchemy20_warnings_filters()
-
-    def _setup_sqlalchemy20_warnings_filters(self):
-        import warnings
-
-        from sqlalchemy.exc import RemovedIn20Warning
-
-        # Always display RemovedIn20Warning warnings.
-        warnings.filterwarnings("always", category=RemovedIn20Warning)
-        # Optionally, enable filters for specific warnings (raise error, or log, etc.)
-        # messages = [
-        #     r"replace with warning text to match",
-        # ]
-        # for msg in messages:
-        #     warnings.filterwarnings('error', message=msg, category=RemovedIn20Warning)
-        #
-        # See documentation:
-        # https://docs.python.org/3.7/library/warnings.html#the-warnings-filter
-        # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#migration-to-2-0-step-three-resolve-all-removedin20warnings
 
     def _load_schema(self):
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
@@ -862,7 +835,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.cookie_path = kwargs.get("cookie_path")
         if not running_from_source and kwargs.get("tool_path") is None:
             try:
-                self.tool_path = str(files("galaxy.tools") / "bundled")
+                with as_file(resource_path("galaxy.tools", "bundled")) as path:
+                    self.tool_path = os.fspath(path)
             except ModuleNotFoundError:
                 # Might not be a full galaxy installation
                 self.tool_path = self._in_root_dir(self.tool_path)
@@ -970,7 +944,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                     log.warning(
                         "The path '%s' for the 'sanitize_allowlist_file' config option is "
                         "deprecated and will be no longer checked in a future release. Please consult "
-                        "the latest version of the sample configuration file." % deprecated
+                        "the latest version of the sample configuration file.",
+                        deprecated,
                     )
                     _sanitize_allowlist_path = deprecated
                     break
@@ -991,7 +966,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         )
         # Searching data libraries
         self.ftp_upload_dir_template = kwargs.get(
-            "ftp_upload_dir_template", "${ftp_upload_dir}%s${ftp_upload_dir_identifier}" % os.path.sep
+            "ftp_upload_dir_template", f"${{ftp_upload_dir}}{os.path.sep}${{ftp_upload_dir_identifier}}"
         )
         # Support older library-specific path paste option but just default to the new
         # allow_path_paste value.
@@ -1109,6 +1084,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.amqp_internal_connection = (
                 f"sqlalchemy+sqlite:///{self._in_data_dir('control.sqlite')}?isolation_level=IMMEDIATE"
             )
+
+        self._process_celery_config()
+
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)
         try:
             with open(self.user_preferences_extra_conf_path) as stream:
@@ -1229,6 +1207,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 _load_theme(file_path, self.themes_by_host[host])
         else:
             _load_theme(self.themes_config_file, self.themes)
+
+    def _process_celery_config(self):
+        if self.celery_conf and self.celery_conf.get("result_backend") is None:
+            # If the result_backend is not set, use a SQLite database in the data directory
+            result_backend = f"db+sqlite:///{self._in_data_dir('results.sqlite')}?isolation_level=IMMEDIATE"
+            self.celery_conf["result_backend"] = result_backend
 
     def _check_database_connection_strings(self):
         """

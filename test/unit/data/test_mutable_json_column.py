@@ -20,7 +20,7 @@ class TestMutableColumn(BaseModelTestCase):
         session = self.model.session
         with transaction(session):
             session.commit()
-        w.value = {"x": "z"}
+        w.value = {"x": "z"}  # type:ignore[assignment]
         persisted = self.persist_and_reload(w)
         assert persisted.value == {"x": "z"}
         persisted.value["x"] = "1"

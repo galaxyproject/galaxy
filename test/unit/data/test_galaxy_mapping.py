@@ -651,7 +651,7 @@ class TestMappings(BaseModelTestCase):
             history = self.model.session.scalars(
                 select(model.History).filter(model.History.name == "HistoryContentsHistory1").limit(1)
             ).first()
-            return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
+            return [hda.name for hda in history.contents_iter(**kwds)]
 
         assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
@@ -880,6 +880,9 @@ class TestMappings(BaseModelTestCase):
         assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
+
+        # recover user after expunge
+        user = loaded_invocation.history.user
 
         step_1, step_2 = loaded_invocation.workflow.steps
 

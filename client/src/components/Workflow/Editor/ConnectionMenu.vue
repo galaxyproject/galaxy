@@ -62,7 +62,8 @@ watch(focused, (focused) => {
     }
 });
 
-const { connectionStore, stepStore } = useWorkflowStores();
+const stores = useWorkflowStores();
+const { stepStore } = stores;
 
 interface InputObject {
     stepId: number;
@@ -97,7 +98,7 @@ function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
     const step = stepStore.getStep(inputObject.stepId);
     assertDefined(step);
     const inputSource = step.inputs.find((input) => input.name == inputObject.inputName)!;
-    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper, connectionStore, stepStore);
+    return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper, stores);
 }
 
 const validInputs: ComputedRef<InputObject[]> = computed(() => {

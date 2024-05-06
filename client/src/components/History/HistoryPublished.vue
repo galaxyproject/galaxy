@@ -14,9 +14,8 @@ const props = defineProps<Props>();
 const history = ref({});
 
 onMounted(async () => {
-    const result = await historyFetcher({ history_id: props.id });
-
-    history.value = result;
+    const { data } = await historyFetcher({ history_id: props.id });
+    history.value = data;
 });
 </script>
 

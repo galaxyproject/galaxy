@@ -545,6 +545,21 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
+def test_export_history_with_missing_hid():
+    # The dataset's hid was used to compose the file name during the export but it
+    # can be missing sometimes. We now use the dataset's encoded id instead.
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    # Remove hid from d1
+    d1.hid = None
+    app.commit()
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+
 def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
@@ -827,6 +842,21 @@ def test_sessionless_import_edit_datasets():
     assert d2 is not None
 
 
+def test_import_job_with_output_copy():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    hda = h.active_datasets[-1]
+    # Simulate a copy being made of an output hda
+    copy = hda.copy(new_name="output copy")
+    # set extension to auto, should be changed to real extension when finalizing job
+    copy.extension = "auto"
+    app.add_and_commit(copy)
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    import_model_store.perform_import()
+    assert copy.extension == "txt"
+
+
 def test_import_datasets_with_ids_fails_if_not_editing_models():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     u = h.user
@@ -988,7 +1018,7 @@ def _setup_collection_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_collection_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -1014,7 +1044,7 @@ def _setup_simple_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"

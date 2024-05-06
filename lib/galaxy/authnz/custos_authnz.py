@@ -35,7 +35,7 @@ from . import IdentityProvider
 try:
     import pkce
 except ImportError:
-    pkce = None  # type: ignore[assignment]
+    pkce = None  # type: ignore[assignment, unused-ignore]
 
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"

@@ -7,7 +7,7 @@ pbs_python
 drmaa
 statsd
 azure-storage==0.32.0
-python-irodsclient==1.1.3
+python-irodsclient==2.0.0
 python-ldap==3.4.0
 ldap3==2.9.1
 python-pam
@@ -64,5 +64,5 @@ weasyprint
 # AWS Batch runner
 boto3
 
-#For Rucio storage plugin
-rucio-clients==33.6.0
+# For Rucio storage plugin
+rucio-clients>=33.6.0

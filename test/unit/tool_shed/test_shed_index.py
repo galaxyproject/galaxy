@@ -40,7 +40,7 @@ def community_file_structure(community_file_dir):
     return community(
         file_path=os.path.join(community_file_dir, "database", "community_files"),
         hgweb_config_dir=community_file_dir,
-        dburi="sqlite:///%s" % os.path.join(community_file_dir, "database", "community.sqlite"),
+        dburi="sqlite:///{}".format(os.path.join(community_file_dir, "database", "community.sqlite")),
     )
 
 

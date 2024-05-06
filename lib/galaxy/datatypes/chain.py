@@ -1,5 +1,5 @@
 """
-Genome browser chain format class
+Genome browser alignment formats
 """
 
 import logging
@@ -98,7 +98,6 @@ class Chain(data.Text):
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith("chain"):
-                    # The next line.strip() must not be '', nor startwith '>'
                     tokens = line.split()
                     if not (
                         len(tokens) in [12, 13]
@@ -124,6 +123,72 @@ class Chain(data.Text):
                         prior_token_len = len(tokens)
                     if prior_token_len == 1:
                         return True
+                else:
+                    return False
+        return False
+
+
+@build_sniff_from_prefix
+class Net(data.Text):
+    """Class describing a net format alignment file"""
+
+    edam_format = "format_3983"
+    file_ext = "ucsc.net"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in net format
+
+        For details see https://genome.ucsc.edu/goldenPath/help/net.html
+
+        Rules for sniffing as True:
+
+            We don't care about line length (other than empty lines).
+
+            The first non-empty line must start with 'net' followed by chromName (str) and chromSize (int)
+
+            We will only check that the first "net" line and the first data line are formatted correctly.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.chain' )
+        >>> Net().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.ucsc.net' )
+        >>> Net().sniff( fname )
+        True
+        >>>
+        """
+        allowed_classes = ["fill", "gap"]
+        strands = ["+", "-"]
+
+        fh = file_prefix.string_io()
+        for line in fh:
+            line = line.strip()
+            if line:  # first non-empty line
+                if line.startswith("net"):
+                    tokens = line.split()
+                    if not (len(tokens) == 3 and tokens[2].isdigit()):
+                        return False
+                    for line in fh:
+                        if line[0] != " ":  # children are indented one space
+                            return False
+                        line = line.strip()
+                        if line == "":
+                            break
+                        tokens = line.split()
+                        if not (
+                            len(tokens) >= 7  # seven fixed fields
+                            and len(tokens) <= 41  # plus seventeen optional name/value pairs
+                            and tokens[0] in allowed_classes
+                            and tokens[1].isdigit()
+                            and tokens[2].isdigit()
+                            and tokens[4] in strands
+                            and tokens[5].isdigit()
+                            and tokens[6].isdigit()
+                        ):
+                            return False
+                        else:
+                            return True
                 else:
                     return False
         return False

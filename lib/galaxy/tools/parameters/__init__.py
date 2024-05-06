@@ -16,9 +16,7 @@ from galaxy.util.json import safe_loads
 from .basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    is_runtime_value,
     ParameterValueError,
-    runtime_to_json,
     SelectToolParameter,
     ToolParameter,
 )
@@ -29,6 +27,11 @@ from .grouping import (
     Section,
     UploadDataset,
 )
+from .workflow_utils import (
+    is_runtime_value,
+    runtime_to_json,
+)
+from .wrapped import flat_to_nested_state
 
 REPLACE_ON_TRUTHY = object()
 
@@ -260,7 +263,7 @@ def params_to_strings(
     is then json encoded (this allowing complex nested parameters and
     such).
     """
-    rval = dict()
+    rval = {}
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app, use_security=use_security)
@@ -275,7 +278,7 @@ def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_va
     allow each parameter to convert the basic types into the parameters
     preferred form).
     """
-    rval = dict()
+    rval = {}
     param_values = param_values or {}
     for key, value in param_values.items():
         param = params.get(key)
@@ -515,6 +518,8 @@ def populate_state(
 def _populate_state_legacy(
     request_context, inputs, incoming, state, errors, prefix="", context=None, check=True, simple_errors=True
 ):
+    if context is None:
+        context = flat_to_nested_state(incoming)
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
@@ -600,8 +605,8 @@ def _populate_state_legacy(
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
-            for rep_state in group_state:
-                rep_index = rep_state["__index__"]
+            for rep_index, rep_state in enumerate(group_state):
+                rep_index = rep_state.get("__index__", rep_index)
                 rep_prefix = "%s_%d|" % (key, rep_index)
                 _populate_state_legacy(
                     request_context,
@@ -633,7 +638,7 @@ def _get_incoming_value(incoming, key, default):
     """
     if f"__{key}__is_composite" in incoming:
         composite_keys = incoming[f"__{key}__keys"].split()
-        value = dict()
+        value = {}
         for composite_key in composite_keys:
             value[composite_key] = incoming[f"{key}_{composite_key}"]
         return value

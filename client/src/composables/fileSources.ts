@@ -18,6 +18,10 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         isLoading.value = false;
     });
 
+    function getFileSourceById(id: string) {
+        return fileSources.value.find((fs) => fs.id === id);
+    }
+
     return {
         /**
          * The list of available file sources from the server.
@@ -31,5 +35,12 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * Whether the user can write files to any of the available file sources.
          */
         hasWritable: readonly(hasWritable),
+        /**
+         * Get the file source with the given ID.
+         *
+         * @param id - The ID of the file source to get.
+         * @returns The file source with the given ID, if found.
+         */
+        getFileSourceById,
     };
 }

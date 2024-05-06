@@ -19,7 +19,6 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.webapps.base.controller import (
@@ -225,7 +224,7 @@ class VisualizationController(
                 trans.sa_session.add(v)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
+            return {"message": f"Attributes of '{v.title}' successfully saved.", "status": "success"}
 
     # ------------------------- registry.
     @web.expose
@@ -263,9 +262,8 @@ class VisualizationController(
             raise exception
         return trans.show_error_message(
             "There was an error rendering the visualization. "
-            + "Contact your Galaxy administrator if the problem persists."
-            + "<br/>Details: "
-            + unicodify(exception),
+            "Contact your Galaxy administrator if the problem persists."
+            f"<br/>Details: {exception}",
             use_panels=False,
         )
 

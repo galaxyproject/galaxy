@@ -70,6 +70,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    blank: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 onBeforeUnmount(() => {
@@ -90,7 +94,8 @@ const position = useRelativePosition(
     computed(() => props.parentNode)
 );
 
-const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const stores = useWorkflowStores();
+const { connectionStore, stateStore } = stores;
 const hasTerminals = ref(false);
 watchEffect(() => {
     hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
@@ -144,7 +149,7 @@ const label = computed(() => props.input.label || props.input.name);
 const hasConnections = computed(() => connections.value.length > 0);
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "input-data-row"];
-    if (props.input?.valid === false) {
+    if (!props.blank && props.input?.valid === false) {
         classes.push("form-row-error");
     }
     return classes;
@@ -178,8 +183,7 @@ function onDrop(event: DragEvent) {
         stepOut.stepId,
         stepOut.output,
         props.datatypesMapper,
-        connectionStore,
-        stepStore
+        stores
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;
@@ -242,7 +246,7 @@ watch(
             @click="onRemove">
             <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
         </button>
-        {{ label }}
+        <span v-if="!blank">{{ label }}</span>
         <span
             v-if="!input.optional && !hasTerminals"
             v-b-tooltip.hover

@@ -13,9 +13,6 @@ from requests import Response
 
 from galaxy.exceptions.error_codes import ErrorCode
 
-ASSERT_FAIL_ERROR_CODE = "Expected Galaxy error code %d, obtained %d"
-ASSERT_FAIL_STATUS_CODE = "Request status code (%d) was not expected value %s. Body was %s"
-
 
 def assert_status_code_is(response: Response, expected_status_code: int, failure_message: Optional[str] = None):
     """Assert that the supplied response has the expect status code."""
@@ -45,7 +42,9 @@ def _report_status_code_error(
         body = response.json()
     except Exception:
         body = f"INVALID JSON RESPONSE <{response.text}>"
-    assertion_message = ASSERT_FAIL_STATUS_CODE % (response.status_code, expected_status_code, body)
+    assertion_message = (
+        f"Request status code ({response.status_code}) was not expected value {expected_status_code}. Body was {body}"
+    )
     if failure_message:
         assertion_message = f"{failure_message}. {assertion_message}"
     raise AssertionError(assertion_message)
@@ -72,7 +71,7 @@ def assert_error_code_is(response: Union[Response, dict], error_code: Union[int,
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_code")
     err_code = as_dict["err_code"]
-    assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (error_code, err_code)
+    assert err_code == int(error_code), f"Expected Galaxy error code {error_code}, obtained {err_code}"
 
 
 def assert_object_id_error(response: Response):

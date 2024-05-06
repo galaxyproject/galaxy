@@ -1,30 +1,34 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFileExport } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { useConfirmDialog } from "composables/confirmDialog";
-import { useFileSources } from "composables/fileSources";
-import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "composables/shortTermStorage";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { copy as sendToClipboard } from "utils/clipboard";
-import { computed, onMounted, reactive, ref, watch } from "vue";
-import { RouterLink } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
 
 import {
     exportHistoryToFileSource,
     fetchHistoryExportRecords,
     reimportHistoryFromRecord,
 } from "@/api/histories.export";
+import type { ColorVariant } from "@/components/Common";
+import { areEqual, ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useFileSources } from "@/composables/fileSources";
+import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "@/composables/shortTermStorage";
+import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useHistoryStore } from "@/stores/historyStore";
+import { copy as sendToClipboard } from "@/utils/clipboard";
 import { absPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExportOptions from "./ExportOptions.vue";
+import RDMCredentialsInfo from "./RDMCredentialsInfo.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
     isRunning: isExportTaskRunning,
@@ -34,7 +38,7 @@ const {
 } = useTaskMonitor();
 
 const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
-const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["rdm"] });
+const { hasWritable: hasWritableRDMFileSources, getFileSourceById } = useFileSources({ include: ["rdm"] });
 
 const {
     isPreparing: isPreparingDownload,
@@ -45,32 +49,32 @@ const {
 
 const { confirm } = useConfirmDialog();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    historyId: string;
+}
+
+const props = defineProps<Props>();
 
 library.add(faFileExport);
 
 const POLLING_DELAY = 3000;
 
-const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
+const exportParams = ref(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
-const exportRecords = ref(null);
+const exportRecords = ref<ExportRecord[]>([]);
 
 const historyName = computed(() => history.value?.name ?? props.historyId);
+const defaultFileName = computed(() => `(Galaxy History) ${historyName.value}`);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
 const isLatestExportRecordReadyToDownload = computed(
     () =>
         latestExportRecord.value &&
         latestExportRecord.value.isUpToDate &&
         latestExportRecord.value.canDownload &&
-        latestExportRecord.value.exportParams?.equals(exportParams)
+        areEqual(latestExportRecord.value.exportParams, exportParams.value)
 );
 const canGenerateDownload = computed(() => !isPreparingDownload.value && !isLatestExportRecordReadyToDownload.value);
-const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
+const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : []));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const availableRecordsMessage = computed(() =>
     isLoadingRecords.value
@@ -85,9 +89,10 @@ const history = computed(() => {
     return history;
 });
 
-const errorMessage = ref(null);
-const actionMessage = ref(null);
-const actionMessageVariant = ref(null);
+const errorMessage = ref<string | undefined>(undefined);
+const actionMessage = ref<string | undefined>(undefined);
+const actionMessageVariant = ref<ColorVariant | undefined>(undefined);
+const zenodoSource = computed(() => getFileSourceById("zenodo"));
 
 onMounted(async () => {
     updateExports();
@@ -103,7 +108,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function updateExports() {
     isLoadingRecords.value = true;
     try {
-        errorMessage.value = null;
+        errorMessage.value = undefined;
         exportRecords.value = await fetchHistoryExportRecords(props.historyId);
         const shouldWaitForTask =
             latestExportRecord.value?.isPreparing &&
@@ -120,36 +125,36 @@ async function updateExports() {
             errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
         }
     } catch (error) {
-        errorMessage.value = error;
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         isLoadingRecords.value = false;
     }
 }
 
-async function doExportToFileSource(exportDirectory, fileName) {
-    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams);
+async function doExportToFileSource(exportDirectory: string, fileName: string) {
+    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams.value);
     updateExports();
 }
 
 async function prepareDownload() {
-    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
+    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams.value });
     updateExports();
 }
 
-function downloadFromRecord(record) {
+function downloadFromRecord(record: ExportRecord) {
     if (record.canDownload) {
-        downloadObjectByRequestId(record.stsDownloadId);
+        downloadObjectByRequestId(record.stsDownloadId!);
     }
 }
 
-function copyDownloadLinkFromRecord(record) {
+function copyDownloadLinkFromRecord(record: ExportRecord) {
     if (record.canDownload) {
-        const relativeLink = getDownloadObjectUrl(record.stsDownloadId);
+        const relativeLink = getDownloadObjectUrl(record.stsDownloadId!);
         sendToClipboard(absPath(relativeLink), "Download link copied to your clipboard");
     }
 }
 
-async function reimportFromRecord(record) {
+async function reimportFromRecord(record: ExportRecord) {
     const confirmed = await confirm(
         `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
     );
@@ -168,15 +173,14 @@ async function reimportFromRecord(record) {
 }
 
 function onActionMessageDismissedFromRecord() {
-    actionMessage.value = null;
-    actionMessageVariant.value = null;
+    actionMessage.value = undefined;
+    actionMessageVariant.value = undefined;
 }
 
-function updateExportParams(newParams) {
-    exportParams.modelStoreFormat = newParams.modelStoreFormat;
-    exportParams.includeFiles = newParams.includeFiles;
-    exportParams.includeDeleted = newParams.includeDeleted;
-    exportParams.includeHidden = newParams.includeHidden;
+function updateExportParams(newParams: ExportParams) {
+    exportParams.value = {
+        ...newParams,
+    };
 }
 </script>
 <template>
@@ -202,11 +206,13 @@ function updateExportParams(newParams) {
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
+
                     <BAlert show variant="warning">
                         History archive downloads can expire and are removed at regular intervals. For permanent
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
                     </BAlert>
+
                     <BButton
                         class="gen-direct-download-btn"
                         :disabled="!canGenerateDownload"
@@ -214,6 +220,7 @@ function updateExportParams(newParams) {
                         @click="prepareDownload">
                         Generate direct download
                     </BButton>
+
                     <span v-if="isPreparingDownload">
                         <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
@@ -232,6 +239,7 @@ function updateExportParams(newParams) {
                         one of the available remote file sources here. You will be able to re-import it later as long as
                         it remains available on the remote server.
                     </p>
+
                     <ExportToFileSourceForm
                         what="history"
                         :clear-input-after-export="true"
@@ -243,24 +251,46 @@ function updateExportParams(newParams) {
                     title="to RDM repository"
                     title-link-class="tab-export-to-rdm-repo">
                     <p>You can <b>upload your history</b> to one of the available RDM repositories here.</p>
-                    <p>
-                        Your history export archive needs to be uploaded to an existing <i>draft</i> record. You will
-                        need to create a <b>new record</b> on the repository or select an existing
-                        <b>draft record</b> and then export your history to it.
-                    </p>
-                    <BAlert show variant="info">
-                        You may need to setup your credentials for the selected repository in your
-                        <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
-                        export. You can also define some default options for the export in those settings, like the
-                        public name you want to associate with your records or whether you want to publish them
-                        immediately or keep them as drafts after export.
-                    </BAlert>
+
+                    <RDMCredentialsInfo what="history export archive" />
+
                     <ExportToRDMRepositoryForm
                         what="history"
-                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-filename="defaultFileName"
                         :default-record-name="historyName"
                         :clear-input-after-export="true"
                         @export="doExportToFileSource" />
+                </BTab>
+                <BTab
+                    v-if="zenodoSource"
+                    id="zenodo-file-source-tab"
+                    title="to ZENODO"
+                    title-link-class="tab-export-to-zenodo-repo">
+                    <div class="zenodo-info">
+                        <img
+                            src="https://raw.githubusercontent.com/zenodo/zenodo/master/zenodo/modules/theme/static/img/logos/zenodo-gradient-square.svg"
+                            alt="ZENODO Logo" />
+                        <p>
+                            <ExternalLink href="https://zenodo.org"><b>Zenodo</b></ExternalLink> is a general-purpose
+                            open repository developed under the
+                            <ExternalLink href="https://www.openaire.eu">European OpenAIRE</ExternalLink> program and
+                            operated by <ExternalLink href="https://home.cern">CERN</ExternalLink>. It allows
+                            researchers to deposit research papers, data sets, research software, reports, and any other
+                            research related digital artefacts. For each submission, a persistent
+                            <b>digital object identifier (DOI)</b> is minted, which makes the stored items easily
+                            citeable.
+                        </p>
+                    </div>
+
+                    <RDMCredentialsInfo what="history export archive" selected-repository="ZENODO" />
+                    <ExportToRDMRepositoryForm
+                        what="history"
+                        :default-filename="defaultFileName"
+                        :default-record-name="historyName"
+                        :clear-input-after-export="true"
+                        :file-source="zenodoSource"
+                        @export="doExportToFileSource">
+                    </ExportToRDMRepositoryForm>
                 </BTab>
             </BTabs>
         </BCard>
@@ -269,28 +299,36 @@ function updateExportParams(newParams) {
             {{ errorMessage }}
         </BAlert>
         <div v-else-if="latestExportRecord">
-            <h2 class="h-md mt-3">Latest Export Record</h2>
-            <ExportRecordDetails
-                :record="latestExportRecord"
-                object-type="history"
-                class="mt-3"
-                :action-message="actionMessage"
-                :action-message-variant="actionMessageVariant"
-                @onDownload="downloadFromRecord"
-                @onCopyDownloadLink="copyDownloadLinkFromRecord"
-                @onReimport="reimportFromRecord"
-                @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+            <h2 class="h-md mt-3">Export Records</h2>
+            <BCard>
+                <ExportRecordDetails
+                    :record="latestExportRecord"
+                    object-type="history"
+                    :action-message="actionMessage"
+                    :action-message-variant="actionMessageVariant"
+                    @onDownload="downloadFromRecord"
+                    @onCopyDownloadLink="copyDownloadLinkFromRecord"
+                    @onReimport="reimportFromRecord"
+                    @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+                <ExportRecordTable
+                    v-if="hasPreviousExports"
+                    id="previous-export-records"
+                    :records="previousExportRecords"
+                    class="mt-3"
+                    @onDownload="downloadFromRecord"
+                    @onReimport="reimportFromRecord" />
+            </BCard>
         </div>
         <BAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </BAlert>
-
-        <ExportRecordTable
-            v-if="hasPreviousExports"
-            id="previous-export-records"
-            :records="previousExportRecords"
-            class="mt-3"
-            @onDownload="downloadFromRecord"
-            @onReimport="reimportFromRecord" />
     </span>
 </template>
+
+<style scoped>
+.zenodo-info {
+    display: flex;
+    align-items: start;
+    gap: 0.5rem;
+}
+</style>

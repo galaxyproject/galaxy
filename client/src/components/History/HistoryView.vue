@@ -8,7 +8,6 @@
             <b-button
                 v-if="userOwnsHistory"
                 size="sm"
-                variant="outline-info"
                 :title="setAsCurrentTitle"
                 :disabled="isSetAsCurrentDisabled"
                 data-description="switch to history button"
@@ -20,12 +19,15 @@
                 v-if="canImportHistory"
                 v-b-modal:copy-history-modal
                 size="sm"
-                variant="outline-info"
                 title="Import this history"
                 data-description="import history button">
                 Import this history
             </b-button>
         </div>
+
+        <b-alert :show="copySuccess">
+            History imported and is now your active history. <b-link to="/histories/list">View here</b-link>.
+        </b-alert>
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
@@ -37,11 +39,10 @@
             v-else
             :history="history"
             :can-edit-history="canEditHistory"
-            :should-show-controls="false"
             filterable
             @view-collection="onViewCollection" />
 
-        <CopyModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 
@@ -70,6 +71,7 @@ export default {
     data() {
         return {
             selectedCollections: [],
+            copySuccess: false,
         };
     },
     computed: {
@@ -129,6 +131,9 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentHistory"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
+        },
+        copyOkay() {
+            this.copySuccess = true;
         },
     },
 };

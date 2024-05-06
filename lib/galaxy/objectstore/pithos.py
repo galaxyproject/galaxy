@@ -43,7 +43,7 @@ def parse_config_xml(config_xml):
     :returns: (dict) according to syntax
     :raises: various XML parse errors
     """
-    r = dict()
+    r = {}
     try:
         for tag, required_attrs, optional_attrs in (
             (
@@ -83,7 +83,7 @@ def parse_config_xml(config_xml):
             log.error(msg)
             raise Exception(msg)
     except Exception:
-        log.exception("Malformed PithosObjectStore Configuration XML -- " "unable to continue")
+        log.exception("Malformed PithosObjectStore Configuration XML, unable to continue")
         raise
     return r
 
@@ -325,7 +325,7 @@ class PithosObjectStore(ConcreteObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
-                log.warning(f"Could not get size of file {path} in local cache," f"will try Pithos. Error: {ex}")
+                log.warning("Could not get size of file %s in local cache, will try Pithos. Error: %s", path, ex)
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:
@@ -408,7 +408,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if kwargs.get("create"):
             self._create(obj, **kwargs)
         if not self._exists(obj, **kwargs):
-            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, " f"kwargs: {kwargs}")
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)
@@ -420,10 +420,7 @@ class PithosObjectStore(ConcreteObjectStore):
                     shutil.copy2(source_path, cache_path)
                 self._fix_permissions(cache_path)
             except OSError:
-                log.exception(
-                    'Trouble copying source file "{source}" to cache "{cache}"'
-                    "".format(source=source_path, cache=cache_path)
-                )
+                log.exception('Trouble copying source file "%s" to cache "%s"', source_path, cache_path)
         else:
             with open(cache_path) as f:
                 self.pithos.upload_object(obj, f)

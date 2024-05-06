@@ -1,5 +1,9 @@
 from collections import UserDict
-from typing import Dict
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -158,4 +162,36 @@ def make_list_copy(from_list):
     return new_list
 
 
-__all__ = ("LegacyUnprefixedDict", "WrappedParameters", "make_dict_copy")
+def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
+    key_parts = incoming_key.split("|")
+    if len(key_parts) == 1:
+        # Regular parameter
+        if incoming_key in d and not incoming_value:
+            # In case we get an empty repeat after we already filled in a repeat element
+            return
+        d[incoming_key] = incoming_value
+    elif key_parts[0].rsplit("_", 1)[-1].isdigit():
+        # Repeat
+        input_name, _index = key_parts[0].rsplit("_", 1)
+        index = int(_index)
+        d.setdefault(input_name, [])
+        newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
+        d[input_name].extend(newlist[len(d[input_name]) :])
+        subdict = d[input_name][index]
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
+    else:
+        # Section / Conditional
+        input_name = key_parts[0]
+        subdict = d.get(input_name, {})
+        d[input_name] = subdict
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
+
+
+def flat_to_nested_state(incoming: Dict[str, Any]):
+    nested_state: Dict[str, Any] = {}
+    for key, value in incoming.items():
+        process_key(key, value, nested_state)
+    return nested_state
+
+
+__all__ = ("LegacyUnprefixedDict", "WrappedParameters", "make_dict_copy", "process_key", "flat_to_nested_state")

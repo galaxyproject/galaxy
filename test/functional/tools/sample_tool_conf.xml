@@ -57,6 +57,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_dataset_in_conditional.xml" />
   <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
@@ -144,6 +145,7 @@
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_hdf5.xml" />
+  <tool file="validation_image.xml"/>
   <tool file="validation_zip.xml" />
   <tool file="validation_tar.xml" />
   <tool file="validation_tar_gz.xml" />

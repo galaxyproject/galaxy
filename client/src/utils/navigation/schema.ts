@@ -262,7 +262,6 @@ interface Rootpublished_histories extends Component {
     advanced_search_toggle: SelectorTemplate;
     advanced_search_name_input: SelectorTemplate;
     advanced_search_tag_input: SelectorTemplate;
-    advanced_search_submit: SelectorTemplate;
     tag_content: SelectorTemplate;
     column_header: SelectorTemplate;
 }
@@ -500,6 +499,7 @@ interface Rootinvocations extends Component {
     toggle_invocation_details: SelectorTemplate;
     progress_steps_note: SelectorTemplate;
     progress_jobs_note: SelectorTemplate;
+    hide_invocation_graph: SelectorTemplate;
     invocation_tab: SelectorTemplate;
     invocation_details_tab: SelectorTemplate;
     input_details_title: SelectorTemplate;

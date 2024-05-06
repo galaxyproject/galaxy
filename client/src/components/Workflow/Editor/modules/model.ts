@@ -1,7 +1,9 @@
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-interface Workflow {
+export interface Workflow {
     name: string;
     annotation: string;
     license: string;
@@ -21,14 +23,10 @@ interface Workflow {
  * @param appendData if true appends data to current workflow, making sure to create new uuids
  * @param defaultPosition where to position workflow in the editor
  */
-export async function fromSimple(
-    id: string,
-    data: Workflow,
-    appendData = false,
-    defaultPosition = { top: 0, left: 0 }
-) {
+export function fromSimple(id: string, data: Workflow, appendData = false, defaultPosition = { top: 0, left: 0 }) {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
+    const stateStore = useWorkflowStateStore(id);
 
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
@@ -72,6 +70,10 @@ export async function fromSimple(
     });
 
     commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
+
+    stateStore.report = data.report ?? {
+        markdown: reportDefault,
+    };
 }
 
 export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {

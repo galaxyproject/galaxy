@@ -8,7 +8,7 @@ import { computed, ref, watch } from "vue";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
-    UserNotificationPreferences,
+    UserNotificationPreferencesExtended,
 } from "@/api/notifications.preferences";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
@@ -39,22 +39,28 @@ const { config } = useConfig(true);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const pushNotificationsGranted = ref(pushNotificationsEnabled());
-const notificationsPreferences = ref<UserNotificationPreferences["preferences"]>({});
+const notificationsPreferences = ref<UserNotificationPreferencesExtended["preferences"]>({});
+const supportedChannels = ref<string[]>([]);
 
 const categories = computed(() => Object.keys(notificationsPreferences.value));
 const showPreferences = computed(() => {
     return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;
 });
 
-const categoryDescriptionMap = {
-    message: "You will receive notifications when someone sends you a message.",
-    new_shared_item: "You will receive notifications when someone shares an item with you.",
+const categoryDescriptionMap: Record<string, string> = {
+    message: `
+        You will receive these notifications only when your Galaxy administrators send you a message.
+        Please note that for certain critical or urgent messages, you will receive notifications even if you have disabled this channel.
+    `,
+    new_shared_item:
+        "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
 };
 
 async function getNotificationsPreferences() {
     loading.value = true;
     await getNotificationsPreferencesFromServer()
         .then((data) => {
+            supportedChannels.value = data.supportedChannels;
             notificationsPreferences.value = data.preferences;
         })
         .catch((error: any) => {
@@ -129,14 +135,6 @@ watch(
         <div v-else-if="showPreferences" class="notifications-preferences-body">
             <div v-for="category in categories" :key="category" class="card-container">
                 <div class="category-header">
-                    <div>
-                        <div v-localize class="category-title">{{ capitalizeWords(category) }}</div>
-
-                        <div v-if="categoryDescriptionMap[category]" v-localize class="category-description">
-                            {{ categoryDescriptionMap[category] }}
-                        </div>
-                    </div>
-
                     <BFormCheckbox
                         v-model="notificationsPreferences[category].enabled"
                         v-b-tooltip.hover
@@ -145,13 +143,16 @@ watch(
                                 ? 'Disable notifications'
                                 : 'Enable notifications'
                         "
-                        switch />
+                        switch>
+                        <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
+                    </BFormCheckbox>
                 </div>
 
-                <div
-                    v-for="channel in Object.keys(notificationsPreferences[category].channels)"
-                    :key="channel"
-                    class="category-channel">
+                <div v-if="categoryDescriptionMap[category]" v-localize class="category-description">
+                    {{ categoryDescriptionMap[category] }}
+                </div>
+
+                <div v-for="channel in supportedChannels" :key="channel" class="category-channel">
                     <BFormCheckbox
                         v-model="notificationsPreferences[category].channels[channel]"
                         v-localize
@@ -245,5 +246,10 @@ watch(
 .category-description {
     font-size: 0.8rem;
     font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+.card-container {
+    margin: 0.5rem;
 }
 </style>

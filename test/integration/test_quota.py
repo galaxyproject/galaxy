@@ -196,6 +196,13 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         labels = [q["quota_source_label"] for q in quotas]
         assert "mylabel" in labels
 
+        with self.dataset_populator.test_history() as history_id:
+            response = self.dataset_populator._get_contents_request(
+                history_id, data={"q": "quota_source_label-eq", "qv": "invalid", "v": "dev"}
+            )
+        assert response.status_code == 400
+        assert "unparsable value for filter" in response.json()["err_msg"]
+
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)
         create_response = self._post("quotas", data=payload, json=True)

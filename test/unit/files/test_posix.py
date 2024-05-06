@@ -12,10 +12,8 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     RequestParameterInvalidException,
 )
-from galaxy.files import (
-    ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
-)
+from galaxy.files import ConfiguredFileSources
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
     TestConfiguredFileSources,
@@ -154,7 +152,7 @@ def test_posix_per_user_serialized():
 
 
 def test_user_ftp_explicit_config():
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_purge=False,
     )
     plugin = {
@@ -179,7 +177,7 @@ def test_user_ftp_explicit_config():
 
 def test_user_ftp_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=False,
     )
@@ -197,7 +195,7 @@ def test_user_ftp_implicit_config():
 
 def test_user_ftp_respects_upload_purge_off():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=True,
     )
@@ -210,7 +208,7 @@ def test_user_ftp_respects_upload_purge_off():
 
 def test_user_ftp_respects_upload_purge_on_by_default():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
@@ -222,7 +220,7 @@ def test_user_ftp_respects_upload_purge_on_by_default():
 
 def test_import_dir_explicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         library_import_dir=root,
     )
     plugin = {
@@ -236,7 +234,7 @@ def test_import_dir_explicit_config():
 
 def test_import_dir_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         library_import_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
@@ -247,7 +245,7 @@ def test_import_dir_implicit_config():
 
 def test_user_import_dir_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         user_library_import_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
@@ -475,14 +473,14 @@ def _configured_file_sources_with_root(
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
-    file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
+    file_sources_config = FileSourcePluginsConfig(**config_kwd)
     plugin: Dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:
         plugin["writable"] = writable
     if per_user and root:
-        plugin["root"] = "%s/${user.username}" % root
+        plugin["root"] = f"{root}/${{user.username}}"
         # setup files just for alice
         root = os.path.join(root, "alice")
         os.mkdir(root)

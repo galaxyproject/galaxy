@@ -14,7 +14,7 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type DatasetDetails } from "@/api";
+import { type HDADetailed } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
@@ -26,7 +26,7 @@ import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownloa
 library.add(faBug, faChartBar, faInfoCircle, faLink, faQuestion, faRedo, faSitemap);
 
 interface Props {
-    item: DatasetDetails;
+    item: HDADetailed;
     writable: boolean;
     showHighlight: boolean;
     itemUrls: ItemUrls;
@@ -58,16 +58,16 @@ const showVisualizations = computed(() => {
     return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
 });
 const reportErrorUrl = computed(() => {
-    return prependPath(props.itemUrls.reportError);
+    return prependPath(props.itemUrls.reportError!);
 });
 const showDetailsUrl = computed(() => {
-    return prependPath(props.itemUrls.showDetails);
+    return prependPath(props.itemUrls.showDetails!);
 });
 const rerunUrl = computed(() => {
-    return prependPath(props.itemUrls.rerun);
+    return prependPath(props.itemUrls.rerun!);
 });
 const visualizeUrl = computed(() => {
-    return prependPath(props.itemUrls.visualize);
+    return prependPath(props.itemUrls.visualize!);
 });
 const downloadUrl = computed(() => {
     return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
@@ -83,11 +83,11 @@ function onDownload(resource: string) {
 }
 
 function onError() {
-    router.push(props.itemUrls.reportError);
+    router.push(props.itemUrls.reportError!);
 }
 
 function onInfo() {
-    router.push(props.itemUrls.showDetails);
+    router.push(props.itemUrls.showDetails!);
 }
 
 function onRerun() {
@@ -95,7 +95,7 @@ function onRerun() {
 }
 
 function onVisualize() {
-    router.push(props.itemUrls.visualize);
+    router.push(props.itemUrls.visualize!);
 }
 
 function onHighlight() {

@@ -59,14 +59,7 @@ watch(props, fetch, { immediate: true });
 
 <template>
     <div>
-        <h2 v-if="includeTitle" class="h-md">
-            Dataset Storage
-            <RelocateLink
-                v-if="storageInfo"
-                :dataset-id="datasetId"
-                :dataset-storage-details="storageInfo"
-                @relocated="fetch" />
-        </h2>
+        <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <LoadingSpan v-else-if="storageInfo == null"> </LoadingSpan>
         <div v-else-if="discarded">
@@ -84,5 +77,10 @@ watch(props, fetch, { immediate: true });
         <div v-else>
             <DescribeObjectStore what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
+        <RelocateLink
+            v-if="storageInfo"
+            :dataset-id="datasetId"
+            :dataset-storage-details="storageInfo"
+            @relocated="fetch" />
     </div>
 </template>

@@ -399,7 +399,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         log.debug(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
-        msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
+        msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
@@ -521,14 +521,14 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         check_required = []
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
-            value = params.get(k, spec.get("default"))  # type: ignore[attr-defined]
-            if spec.get("required") and not value:  # type: ignore[attr-defined]
+            value = params.get(k, spec.get("default"))
+            if spec.get("required") and not value:
                 check_required.append(k)
-            mapper = spec.get("map")    # type: ignore[attr-defined]
+            mapper = spec.get("map")
             parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
-                "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
+                "AWSBatchJobRunner requires the following params to be provided: {}.".format(", ".join(check_required))
             )
 
         # parse Platform

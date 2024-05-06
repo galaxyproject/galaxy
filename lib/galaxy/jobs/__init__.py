@@ -38,7 +38,7 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
@@ -67,6 +67,7 @@ from galaxy.model import (
     Task,
 )
 from galaxy.model.base import transaction
+from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
@@ -75,6 +76,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
@@ -121,7 +123,7 @@ class JobDestination(Bunch):
         self["env"] = []
         self["resubmit"] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
-        self["params"] = dict()
+        self["params"] = {}
 
         # Use the values persisted in an existing job
         if "from_job" in kwds and kwds["from_job"].destination_id is not None:
@@ -142,7 +144,7 @@ class JobToolConfiguration(Bunch):
     def __init__(self, **kwds):
         self["handler"] = None
         self["destination"] = None
-        self["params"] = dict()
+        self["params"] = {}
         super().__init__(**kwds)
 
     def get_resource_group(self):
@@ -447,7 +449,7 @@ class JobConfiguration(ConfiguresHandlers):
         execution_dict = job_config_dict.get("execution", {})
         environments = execution_dict.get("environments", [])
         enviroment_iter = (
-            map(lambda e: (e["id"], e), environments) if isinstance(environments, list) else environments.items()
+            ((e["id"], e) for e in environments) if isinstance(environments, list) else environments.items()
         )
         for environment_id, environment_dict in enviroment_iter:
             metrics = environment_dict.get("metrics")
@@ -519,11 +521,11 @@ class JobConfiguration(ConfiguresHandlers):
                 assert tool_class is None
                 tool_id = raw_tool_id.lower().rstrip("/")
                 if tool_id not in self.tools:
-                    self.tools[tool_id] = list()
+                    self.tools[tool_id] = []
             else:
                 assert tool_class in VALID_TOOL_CLASSES, tool_class
                 if tool_class not in self.tool_classes:
-                    self.tool_classes[tool_class] = list()
+                    self.tool_classes[tool_class] = []
 
             params = tool.get("params")
             if params is None:
@@ -639,10 +641,9 @@ class JobConfiguration(ConfiguresHandlers):
                 fields = []
                 for field_name in fields_names:
                     if field_name not in self.resource_parameters:
-                        message = "Failed to find field for resource {} in resource parameters {}".format(
-                            field_name, self.resource_parameters
+                        raise KeyError(
+                            f"Failed to find field for resource {field_name} in resource parameters {self.resource_parameters}"
                         )
-                        raise KeyError(message)
                     fields.append(parse_xml_string(self.resource_parameters[field_name]))
 
                 if fields:
@@ -662,7 +663,7 @@ class JobConfiguration(ConfiguresHandlers):
             key = param.get("id")
             if key in ["container", "container_override"]:
                 containers = map(requirements.container_from_element, param.findall("container"))
-                param_value = list(map(lambda c: c.to_dict(), containers))
+                param_value = [c.to_dict() for c in containers]
             else:
                 param_value = param.text
 
@@ -1059,7 +1060,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if self._job_io is None:
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
-            user_context = ProvidesUserFileSourcesUserContext(work_request)
+            user_context = ProvidesFileSourcesUserContext(work_request)
             tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
                 sa_session=self.sa_session,
@@ -1181,7 +1182,9 @@ class MinimalJobWrapper(HasResourceParameters):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
     def get_job(self) -> model.Job:
-        return self.sa_session.get(Job, self.job_id)
+        job = self.sa_session.get(Job, self.job_id)
+        assert job
+        return job
 
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
@@ -1328,7 +1331,7 @@ class MinimalJobWrapper(HasResourceParameters):
         job = self.get_job()
         if not os.path.exists(self.working_directory):
             log.warning(
-                "(%s): Working directory clear requested but %s does " "not exist", self.job_id, self.working_directory
+                "(%s): Working directory clear requested but %s does not exist", self.job_id, self.working_directory
             )
             return
 
@@ -1532,7 +1535,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if job.state in model.Job.terminal_states:
             log.warning(
-                "(%s) Ignoring state change from '%s' to '%s' for job " "that is already terminal",
+                "(%s) Ignoring state change from '%s' to '%s' for job that is already terminal",
                 job.id,
                 job.state,
                 state,
@@ -1939,12 +1942,16 @@ class MinimalJobWrapper(HasResourceParameters):
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
             except MaxDiscoveredFilesExceededError as e:
                 final_job_state = job.states.ERROR
-                job.job_messages = [str(e)]
+                job.job_messages = [
+                    {
+                        "type": "internal",
+                        "desc": str(e),
+                        "error_level": StdioErrorLevel.FATAL,
+                    }
+                ]
 
             for dataset_assoc in output_dataset_associations:
-                if getattr(dataset_assoc.dataset, "discovered", False):
-                    # skip outputs that have been discovered
-                    continue
+                is_discovered_dataset = getattr(dataset_assoc.dataset, "discovered", False)
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
@@ -1953,6 +1960,12 @@ class MinimalJobWrapper(HasResourceParameters):
                     dataset_assoc.dataset.dataset.history_associations
                     + dataset_assoc.dataset.dataset.library_associations
                 ):
+                    if is_discovered_dataset:
+                        if dataset is dataset_assoc.dataset:
+                            continue
+                        elif dataset.extension == dataset_assoc.dataset.extension or dataset.extension == "auto":
+                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, dataset)
+                            continue
                     output_name = dataset_assoc.name
 
                     # Handles retry internally on error for instance...
@@ -1978,7 +1991,8 @@ class MinimalJobWrapper(HasResourceParameters):
                     )
 
         for pja in job.post_job_actions:
-            ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
+            if pja.post_job_action.action_type not in ActionBox.immediate_actions:
+                ActionBox.execute(self.app, self.sa_session, pja.post_job_action, job, final_job_state=final_job_state)
 
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
@@ -2088,12 +2102,8 @@ class MinimalJobWrapper(HasResourceParameters):
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
-        job_id_tag = "<unknown job id>"
-        if job is not None:
-            job_id_tag = job.get_id_tag()
-
         state, tool_stdout, tool_stderr, job_messages = check_output(
-            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
 
         # Store the modified stdout and stderr in the job:
@@ -2159,8 +2169,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     )
                     return (
                         JobState.runner_states.OUTPUT_SIZE_LIMIT,
-                        "Job output file grew too large (greater than %s), please try different inputs or parameters"
-                        % util.nice_size(self.app.job_config.limits.output_size),
+                        f"Job output file grew too large (greater than {util.nice_size(self.app.job_config.limits.output_size)}), please try different inputs or parameters",
                     )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
@@ -2206,9 +2215,7 @@ class MinimalJobWrapper(HasResourceParameters):
         try:
             if not tmp_dir or util.asbool(tmp_dir):
                 working_directory = self.working_directory
-                return """$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')""".format(
-                    working_directory
-                )
+                return f"""$([ ! -e '{working_directory}/tmp' ] || mv '{working_directory}/tmp' '{working_directory}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{working_directory}/tmp'; echo '{working_directory}/tmp')"""
             else:
                 return tmp_dir
         except ValueError:
@@ -2270,7 +2277,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if set_extension:
             for output_dataset_assoc in job.output_datasets:
                 if output_dataset_assoc.dataset.ext == "auto":
-                    context = self.get_dataset_finish_context(dict(), output_dataset_assoc)
+                    context = self.get_dataset_finish_context({}, output_dataset_assoc)
                     output_dataset_assoc.dataset.extension = context.get("ext", "data")
             with transaction(self.sa_session):
                 self.sa_session.commit()

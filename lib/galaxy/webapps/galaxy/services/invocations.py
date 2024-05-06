@@ -1,5 +1,4 @@
 import logging
-from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Dict,
@@ -27,10 +26,6 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
-)
-from galaxy.model.store import (
-    BcoExportOptions,
-    get_export_store_factory,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
@@ -227,34 +222,13 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
     ):
-        return list(
-            map(lambda i: self.serialize_workflow_invocation(i, params, default_view=default_view), invocations)
-        )
+        return [self.serialize_workflow_invocation(i, params, default_view=default_view) for i in invocations]
 
     def serialize_workflow_invocation_step(
         self,
         invocation_step: WorkflowInvocationStep,
     ):
         return invocation_step.to_dict("element")
-
-    # TODO: remove this after 23.1 release
-    def deprecated_generate_invocation_bco(
-        self,
-        trans,
-        invocation_id: DecodedDatabaseIdField,
-        export_options: BcoExportOptions,
-    ):
-        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
-        if not workflow_invocation:
-            raise ObjectNotFound()
-
-        with NamedTemporaryFile() as export_target:
-            with get_export_store_factory(trans.app, "bco.json", bco_export_options=export_options)(
-                export_target.name
-            ) as export_store:
-                export_store.export_workflow_invocation(workflow_invocation)
-                export_target.seek(0)
-            return export_target.read()
 
     def create_from_store(
         self,

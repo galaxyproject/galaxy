@@ -220,7 +220,7 @@ table thead.thead-dark tr th[role="columnheader"] {
 
 // show sticky elements behind dropdown-menus
 .sticky-top {
-    z-index: 800;
+    z-index: 100;
 }
 
 // remove margin for labels with for attribute

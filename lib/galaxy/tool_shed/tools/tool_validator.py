@@ -70,10 +70,9 @@ class ToolValidator:
                                 sample_found = True
                                 break
                         if not sample_found:
-                            correction_msg = f"This file refers to a file named <b>{str(index_file_name)}</b>.  "
-                            correction_msg += (
-                                "Upload a file named <b>%s.sample</b> to the repository to correct this error."
-                                % str(index_file_name)
+                            correction_msg = (
+                                f"This file refers to a file named <b>{index_file_name}</b>.  "
+                                f"Upload a file named <b>{index_file_name}.sample</b> to the repository to correct this error."
                             )
                             invalid_files_and_errors_tups.append((tool_config_name, correction_msg))
         return invalid_files_and_errors_tups

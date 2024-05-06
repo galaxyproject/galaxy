@@ -22,6 +22,8 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data, headers } = await historiesFetcher({
+        view: "summary",
+        keys: "username,create_time",
         limit,
         offset,
         search,
@@ -30,6 +32,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         show_own: false,
         show_published: false,
         show_shared: true,
+        show_archived: true,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];
@@ -112,7 +115,7 @@ const gridConfig: GridConfig = {
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
     plural: "Histories",
-    sortBy: "name",
+    sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "name", "update_time", "username"],
     title: "Shared Histories",

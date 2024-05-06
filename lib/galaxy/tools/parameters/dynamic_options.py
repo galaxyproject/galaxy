@@ -28,7 +28,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.tools.expressions import do_eval
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
+    workflow_building_modes,
+)
 from galaxy.util import (
     Element,
     string_as_bool,
@@ -737,16 +740,20 @@ class DynamicOptions:
                 if not hasattr(dataset, "get_file_name"):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-                path = dataset.get_file_name()
-                if os.path.getsize(path) < 1048576:
-                    with open(path) as fh:
-                        options += self.parse_file_fields(fh)
-                else:
-                    # Pass just the first megabyte to parse_file_fields.
-                    log.warning("Attempting to load options from large file, reading just first megabyte")
-                    with open(path) as fh:
-                        contents = fh.read(1048576)
-                    options += self.parse_file_fields(StringIO(contents))
+                try:
+                    path = dataset.get_file_name()
+                    if os.path.getsize(path) < 1048576:
+                        with open(path) as fh:
+                            options += self.parse_file_fields(fh)
+                    else:
+                        # Pass just the first megabyte to parse_file_fields.
+                        log.warning("Attempting to load options from large file, reading just first megabyte")
+                        with open(path) as fh:
+                            contents = fh.read(1048576)
+                        options += self.parse_file_fields(StringIO(contents))
+                except Exception as e:
+                    log.warning("Could not read contents from %s: %s", dataset, str(e))
+                    continue
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
             if trans and trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
@@ -766,7 +773,14 @@ class DynamicOptions:
             hdas = user.get_user_data_tables(self.tool_data_table_name)
             by_dbkey = {}
             for hda in hdas:
-                by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
+                try:
+                    table_entries = self.hda_to_table_entries(hda, self.tool_data_table_name)
+                except Exception as e:
+                    # This is a bug, `hda_to_table_entries` is not generic enough for certain loc file
+                    # structures, such as for the dada2_species, which doesn't have a dbkey column
+                    table_entries = {}
+                    log.warning("Failed to read data table bundle entries: %s", e)
+                by_dbkey.update(table_entries)
             for data_table_entry in by_dbkey.values():
                 field_entry = []
                 for column_key in self.tool_data_table.columns.keys():
@@ -912,8 +926,7 @@ def strip_or_none(maybe_string: Optional[Element]) -> Optional[str]:
 
 
 def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
-    from_url = elem.get("from_url")
-    if from_url:
+    if from_url := elem.get("from_url"):
         request_method = cast(Literal["GET", "POST"], elem.get("request_method", "GET"))
         assert request_method in get_args(REQUEST_METHODS)
         request_headers = strip_or_none(elem.find("request_headers"))
@@ -958,6 +971,8 @@ def _get_ref_data(other_values, ref_name):
             list,
         ),
     ):
+        if is_runtime_value(ref):
+            return []
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda

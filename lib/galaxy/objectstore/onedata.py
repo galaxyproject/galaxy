@@ -60,7 +60,7 @@ def _parse_config_xml(config_xml):
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
-        extra_dirs = [{attr: elem.get(attr) for attr in ("type", "path")} 
+        extra_dirs = [{attr: elem.get(attr) for attr in ("type", "path")}
                       for elem in _get_config_xml_elements(config_xml, "extra_dir")]
 
         return {
@@ -119,8 +119,8 @@ class OnedataObjectStore(ConcreteObjectStore):
             "disable_tls_certificate_validation", False)
 
         space_dict = config_dict["space"]
-        self.space_name = space_dict["name"] 
-        self.galaxy_root_dir = space_dict.get("galaxy_root_dir", "") 
+        self.space_name = space_dict["name"]
+        self.galaxy_root_dir = space_dict.get("galaxy_root_dir", "")
 
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
@@ -139,14 +139,14 @@ class OnedataObjectStore(ConcreteObjectStore):
 
         log.debug(f"Configuring Onedata connection to {self.onezone_domain} "
                   f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})")
-        
+
         verify_ssl = not self.disable_tls_certificate_validation
-        self._client = OnedataFileRESTClient(self.onezone_domain, 
+        self._client = OnedataFileRESTClient(self.onezone_domain,
                                              self.access_token,
                                              verify_ssl=verify_ssl)
 
         if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target,
                                                        self.cache_monitor_interval)
 
     @classmethod
@@ -286,7 +286,7 @@ class OnedataObjectStore(ConcreteObjectStore):
     def _download(self, rel_path):
         try:
             dst_path = self._get_cache_path(rel_path)
-    
+
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
             onedata_path = self._construct_onedata_path(rel_path)
@@ -303,8 +303,8 @@ class OnedataObjectStore(ConcreteObjectStore):
                 return False
 
             with open(dst_path, 'wb') as dst:
-                for chunk in self._client.iter_file_content(self.space_name, 
-                                                            STREAM_CHUNK_SIZE, 
+                for chunk in self._client.iter_file_content(self.space_name,
+                                                            STREAM_CHUNK_SIZE,
                                                             file_path=onedata_path):
                     dst.write(chunk)
 
@@ -317,8 +317,8 @@ class OnedataObjectStore(ConcreteObjectStore):
 
     def _push_to_os(self, rel_path, source_file=None):
         """
-        Push the file pointed to by ``rel_path`` to the object store under ``rel_path``. 
-        If ``source_file`` is provided, push that file instead while still using 
+        Push the file pointed to by ``rel_path`` to the object store under ``rel_path``.
+        If ``source_file`` is provided, push that file instead while still using
         ``rel_path`` as the path.
         """
         try:
@@ -326,8 +326,8 @@ class OnedataObjectStore(ConcreteObjectStore):
             if os.path.exists(source_file):
                 if os.path.getsize(source_file) == 0 and self._exists_in_onedata(rel_path):
                     log.debug(
-                        "Wanted to push file '%s' to Onedata '%s' but its size is 0; skipping.", 
-                        source_file, 
+                        "Wanted to push file '%s' to Onedata '%s' but its size is 0; skipping.",
+                        source_file,
                         rel_path
                     )
                     return True
@@ -350,9 +350,9 @@ class OnedataObjectStore(ConcreteObjectStore):
                             if not chunk:
                                 break
 
-                            self._client.put_file_content(self.space_name, 
-                                                          file_id, 
-                                                          offset, 
+                            self._client.put_file_content(self.space_name,
+                                                          file_id,
+                                                          offset,
                                                           chunk)
                             offset += len(chunk)
 

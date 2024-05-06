@@ -14,6 +14,7 @@ import { orList } from "@/utils/strings";
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
+import FormSelection from "../FormSelection.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
@@ -502,7 +503,7 @@ const noOptionsWarningMessage = computed(() => {
         </div>
 
         <FormSelect
-            v-if="currentVariant"
+            v-if="currentVariant && !currentVariant.multiple"
             v-model="currentValue"
             class="align-self-start"
             :multiple="currentVariant.multiple"
@@ -515,6 +516,12 @@ const noOptionsWarningMessage = computed(() => {
                 </BAlert>
             </template>
         </FormSelect>
+        <FormSelection
+            v-else-if="currentVariant?.multiple"
+            v-model="currentValue"
+            :data="formattedOptions"
+            optional
+            multiple />
 
         <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox

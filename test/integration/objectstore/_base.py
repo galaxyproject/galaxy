@@ -49,7 +49,8 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
 # Onedata setup for the test is done according to this documentation:
 # https://onedata.org/#/home/documentation/topic/stable/demo-mode
 ONEDATA_DEMO_SPACE_NAME = "demo-space"
-ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
+ONEDATA_OBJECT_STORE_CONFIG = string.Template(
+    """
 <object_store type="onedata">
     <auth access_token="${access_token}" />
     <connection onezone_domain="${onezone_domain}" disable_tls_certificate_validation="True"/>
@@ -101,10 +102,6 @@ def get_files(directory):
 
 def files_count(directory):
     return sum(1 for _ in get_files(directory))
-
-
-def stop_docker(container_name):
-    subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
 @integration_util.skip_unless_docker()
@@ -169,7 +166,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def tearDownClass(cls):
-        stop_docker(cls.container_name)
+        docker_rm(cls.container_name)
         super().tearDownClass()
 
     @classmethod

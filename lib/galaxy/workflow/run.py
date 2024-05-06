@@ -45,6 +45,7 @@ from galaxy.workflow.run_request import (
 
 if TYPE_CHECKING:
     from galaxy.model import (
+        HistoryItem,
         Workflow,
         WorkflowOutput,
         WorkflowStep,
@@ -144,6 +145,8 @@ def queue_invoke(
 
 
 class WorkflowInvoker:
+    progress: "WorkflowProgress"
+
     def __init__(
         self,
         trans: "WorkRequestContext",
@@ -348,7 +351,7 @@ class WorkflowProgress:
     def __init__(
         self,
         workflow_invocation: WorkflowInvocation,
-        inputs_by_step_id: Any,
+        inputs_by_step_id: Dict[int, Any],
         module_injector: ModuleInjector,
         param_map: Dict[int, Dict[str, Any]],
         jobs_per_scheduling_iteration: int = -1,
@@ -415,11 +418,12 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]) -> Any:
+    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]):
         replacement: Union[
             modules.NoReplacement,
             model.DatasetCollectionInstance,
             List[model.DatasetCollectionInstance],
+            "HistoryItem",
         ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
@@ -444,10 +448,10 @@ class WorkflowProgress:
             for step_input in step.inputs:
                 if step_input.name == prefixed_name and step_input.default_value_set:
                     if is_data:
-                        replacement = raw_to_galaxy(trans, step_input.default_value)
+                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
-    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True) -> Any:
+    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
         output_step_id = connection.output_step.id
         output_name = connection.output_name
         if output_step_id not in self.outputs:
@@ -530,7 +534,7 @@ class WorkflowProgress:
 
         return replacement
 
-    def get_replacement_workflow_output(self, workflow_output: "WorkflowOutput") -> Any:
+    def get_replacement_workflow_output(self, workflow_output: "WorkflowOutput"):
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
         step_outputs = self.outputs[step.id]
@@ -541,7 +545,10 @@ class WorkflowProgress:
             return step_outputs[output_name]
 
     def set_outputs_for_input(
-        self, invocation_step: WorkflowInvocationStep, outputs: Any = None, already_persisted: bool = False
+        self,
+        invocation_step: WorkflowInvocationStep,
+        outputs: Optional[Dict[str, Any]] = None,
+        already_persisted: bool = False,
     ) -> None:
         step = invocation_step.workflow_step
 
@@ -600,6 +607,7 @@ class WorkflowProgress:
                         workflow_output = model.WorkflowOutput(step, output_name=output_name)
                         step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
+                assert workflow_output.output_name
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
                     invocation_step.workflow_invocation.add_message(
@@ -632,6 +640,7 @@ class WorkflowProgress:
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
+            assert step.order_index
             raise MessageException(f"Failed to find persisted subworkflow invocation for step [{step.order_index + 1}]")
         return subworkflow_invocation
 
@@ -708,7 +717,7 @@ class WorkflowProgress:
         )
 
     def raw_to_galaxy(self, value: dict):
-        return raw_to_galaxy(self.module_injector.trans, value)
+        return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         try:

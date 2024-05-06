@@ -112,8 +112,8 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.error_unless_dataset_purge_allowed()
         with self.session().begin():
             for dataset_id in request.dataset_ids:
-                dataset: Dataset = self.session().get(Dataset, dataset_id)
-                if dataset.user_can_purge:
+                dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+                if dataset and dataset.user_can_purge:
                     try:
                         dataset.full_delete()
                     except Exception:
@@ -164,8 +164,7 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
             # has been shared.
             raise exceptions.InsufficientPermissionsException("Cannot change dataset permissions...")
 
-        quota_source_map = self.app.object_store.get_quota_source_map()
-        if quota_source_map:
+        if quota_source_map := self.app.object_store.get_quota_source_map():
             old_label = quota_source_map.get_quota_source_label(old_object_store_id)
             new_label = quota_source_map.get_quota_source_label(new_object_store_id)
             if old_label != new_label:

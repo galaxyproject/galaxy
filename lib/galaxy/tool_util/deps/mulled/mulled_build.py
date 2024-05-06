@@ -57,7 +57,7 @@ from ..conda_compat import MetaData
 
 log = logging.getLogger(__name__)
 
-DIRNAME = os.path.dirname(__file__)
+INVFILE = os.environ.get("INVFILE", os.path.join(os.path.dirname(__file__), "invfile.lua"))
 DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base-glibc-busybox-bash:latest")
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
@@ -150,7 +150,7 @@ def get_affected_packages(args):
 def conda_versions(pkg_name, file_name):
     """Return all conda version strings for a specified package name."""
     j = json.load(open(file_name))
-    ret = list()
+    ret = []
     for pkg in j["packages"].values():
         if pkg["name"] == pkg_name:
             ret.append(f"{pkg['version']}--{pkg['build']}")
@@ -222,6 +222,7 @@ def mull_targets(
     singularity_image_dir="singularity_import",
     base_image=None,
     determine_base_image=True,
+    invfile=INVFILE,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -266,7 +267,7 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         "-f",
-        f"{DIRNAME}/invfile.lua",
+        invfile,
         "-set",
         f"CHANNELS={channels_str}",
         "-set",
@@ -306,7 +307,7 @@ def mull_targets(
         conda_bin = "mamba"
         if mamba_version is None:
             mamba_version = ""
-    involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+    involucro_args.extend(["-set", f"CONDA_BIN={conda_bin}"])
     if conda_version is not None or mamba_version is not None:
         mamba_test = "true"
         specs = []
@@ -470,6 +471,7 @@ def add_build_arguments(parser):
     parser.add_argument(
         "--singularity-image-dir", dest="singularity_image_dir", help="Directory to write singularity images too."
     )
+    parser.add_argument("--involucro-lua-file", dest="invfile", default=INVFILE, help="Path to invfile.lua")
     parser.add_argument("-n", "--namespace", dest="namespace", default="biocontainers", help="quay.io namespace.")
     parser.add_argument(
         "-r",
@@ -580,6 +582,8 @@ def args_to_mull_targets_kwds(args):
         kwds["hash_func"] = args.hash
     if hasattr(args, "singularity_image_dir") and args.singularity_image_dir:
         kwds["singularity_image_dir"] = args.singularity_image_dir
+    if hasattr(args, "invfile"):
+        kwds["invfile"] = args.invfile
 
     kwds["involucro_context"] = context_from_args(args)
 

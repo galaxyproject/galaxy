@@ -5,6 +5,10 @@ from datetime import (
     date,
     datetime,
 )
+from typing import (
+    cast,
+    List,
+)
 
 import sqlalchemy
 from boltons.iterutils import remap
@@ -20,10 +24,7 @@ from sqlalchemy import (
     or_,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -140,13 +141,13 @@ class JobManager:
                 )
             elif invocation_id is not None:
                 wfi_step = wfi_step.where(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
-            wfi_step = wfi_step.subquery()
+            wfi_step_sq = wfi_step.subquery()
 
-            stmt1 = stmt.join(wfi_step)
+            stmt1 = stmt.join(wfi_step_sq)
             stmt2 = stmt.join(ImplicitCollectionJobsJobAssociation).join(
-                wfi_step,
+                wfi_step_sq,
                 ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
-                == wfi_step.c.implicit_collection_jobs_id,
+                == wfi_step_sq.c.implicit_collection_jobs_id,
             )
             # Ensure the result is models, not tuples
             sq = stmt1.union(stmt2).subquery()
@@ -190,7 +191,7 @@ class JobManager:
                     elif key == "runner":
                         stmt = stmt.where(text_column_filter(Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    columns = [Job.tool_id]
+                    columns: List = [Job.tool_id]
                     if user_details:
                         columns.append(User.email)
                     if is_admin:
@@ -358,78 +359,19 @@ class JobSearch:
                 return key, value
             return key, value
 
-        # build one subquery that selects a job with correct job parameters
+        stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
-        subq = select(model.Job.id).where(
-            and_(
-                model.Job.tool_id == tool_id,
-                model.Job.user_id == user.id,
-                model.Job.copied_from_job_id.is_(None),  # Always pick original job
-            )
-        )
-        if tool_version:
-            subq = subq.where(Job.tool_version == str(tool_version))
+        stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
-        if job_state is None:
-            subq = subq.where(
-                Job.state.in_(
-                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
-                )
-            )
-        else:
-            if isinstance(job_state, str):
-                subq = subq.where(Job.state == job_state)
-            elif isinstance(job_state, list):
-                subq = subq.where(or_(*[Job.state == s for s in job_state]))
+        data_conditions: List = []
 
-        # exclude jobs with deleted outputs
-        subq = subq.where(
-            and_(
-                model.Job.any_output_dataset_collection_instances_deleted == false(),
-                model.Job.any_output_dataset_deleted == false(),
-            )
-        )
-
-        for k, v in wildcard_param_dump.items():
-            if v == {"__class__": "RuntimeValue"}:
-                # TODO: verify this is always None. e.g. run with runtime input input
-                v = None
-            elif k.endswith("|__identifier__"):
-                # We've taken care of this while constructing the conditions based on ``input_data`` above
-                continue
-            elif k == "chromInfo" and "?.len" in v:
-                continue
-            value_dump = json.dumps(v, sort_keys=True)
-            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
-            a = aliased(JobParameter)
-            if value_dump == wildcard_value:
-                subq = subq.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value == value_dump,
-                    )
-                )
-            else:
-                subq = subq.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value.like(wildcard_value),
-                    )
-                )
-
-        query = select(Job.id).select_from(Job.table.join(subq, subq.c.id == Job.id))
-
-        data_conditions = []
-
-        # We now build the query filters that relate to the input datasets
+        # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
         # the type (hda, hdca or lda) in `data_types`
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids = []
+        used_ids: List = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
             # the input is in a repeat, or not (section and conditional)
@@ -441,137 +383,19 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    a = aliased(model.JobToInputDatasetAssociation)
-                    b = aliased(model.HistoryDatasetAssociation)
-                    c = aliased(model.HistoryDatasetAssociation)
-                    d = aliased(model.JobParameter)
-                    e = aliased(model.HistoryDatasetAssociationHistory)
-                    query = query.add_columns(a.dataset_id)
-                    used_ids.append(a.dataset_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    stmt = select(model.HistoryDatasetAssociation.id).where(
-                        model.HistoryDatasetAssociation.id == e.history_dataset_association_id
-                    )
-                    # b is the HDA used for the job
-                    query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
-                    name_condition = []
-                    if identifier:
-                        query = query.join(d)
-                        data_conditions.append(
-                            and_(
-                                d.name.in_({f"{_}|__identifier__" for _ in k}),
-                                d.value == json.dumps(identifier),
-                            )
-                        )
-                    else:
-                        stmt = stmt.where(e.name == c.name)
-                        name_condition.append(b.name == c.name)
-                    stmt = (
-                        stmt.where(
-                            e.extension == c.extension,
-                        )
-                        .where(
-                            a.dataset_version == e.version,
-                        )
-                        .where(
-                            e._metadata == c._metadata,
-                        )
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,  # c is the requested job input HDA
-                            # We need to make sure that the job we are looking for has been run with identical inputs.
-                            # Here we deal with 3 requirements:
-                            #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
-                            #  - b's update_time is older than the job create time, meaning no changes occurred
-                            #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
-                            or_(
-                                and_(
-                                    or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
-                                    b.extension == c.extension,
-                                    b.metadata == c.metadata,
-                                    *name_condition,
-                                ),
-                                b.id.in_(stmt),
-                            ),
-                            or_(b.deleted == false(), c.deleted == false()),
-                        )
-                    )
+                    stmt = self._build_stmt_for_hda(stmt, data_conditions, used_ids, k, v, identifier)
                 elif t == "ldda":
-                    a = aliased(model.JobToInputLibraryDatasetAssociation)
-                    query = query.add_columns(a.ldda_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
-                    used_ids.append(a.ldda_id)
+                    stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
-                    a = aliased(model.JobToInputDatasetCollectionAssociation)
-                    b = aliased(model.HistoryDatasetCollectionAssociation)
-                    c = aliased(model.HistoryDatasetCollectionAssociation)
-                    query = query.add_columns(a.dataset_collection_id)
-                    query = (
-                        query.join(a, a.job_id == model.Job.id)
-                        .join(b, b.id == a.dataset_collection_id)
-                        .join(c, b.name == c.name)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,
-                            or_(
-                                and_(b.deleted == false(), b.id == v),
-                                and_(
-                                    or_(
-                                        c.copied_from_history_dataset_collection_association_id == b.id,
-                                        b.copied_from_history_dataset_collection_association_id == c.id,
-                                    ),
-                                    c.deleted == false(),
-                                ),
-                            ),
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_id)
+                    stmt = self._build_stmt_for_hdca(stmt, data_conditions, used_ids, k, v)
                 elif t == "dce":
-                    a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-                    b = aliased(model.DatasetCollectionElement)
-                    c = aliased(model.DatasetCollectionElement)
-                    d = aliased(model.HistoryDatasetAssociation)
-                    e = aliased(model.HistoryDatasetAssociation)
-                    query = query.add_columns(a.dataset_collection_element_id)
-                    query = (
-                        query.join(a, a.job_id == model.Job.id)
-                        .join(b, b.id == a.dataset_collection_element_id)
-                        .join(
-                            c,
-                            and_(
-                                c.element_identifier == b.element_identifier,
-                                or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
-                            ),
-                        )
-                        .outerjoin(d, d.id == c.hda_id)
-                        .outerjoin(e, e.dataset_id == d.dataset_id)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            or_(
-                                c.child_collection_id == b.child_collection_id,
-                                and_(
-                                    c.hda_id == b.hda_id,
-                                    d.id == c.hda_id,
-                                    e.dataset_id == d.dataset_id,
-                                ),
-                            ),
-                            c.id == v,
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_element_id)
+                    stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
                 else:
                     return []
 
-            query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+            stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
-        for job in self.sa_session.execute(query):
+        for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
@@ -628,6 +452,199 @@ class JobSearch:
             return job
         log.info("No equivalent jobs found %s", search_timer)
         return None
+
+    def _build_job_subquery(self, tool_id, user_id, tool_version, job_state, wildcard_param_dump):
+        """Build subquery that selects a job with correct job parameters."""
+        stmt = select(model.Job.id).where(
+            and_(
+                model.Job.tool_id == tool_id,
+                model.Job.user_id == user_id,
+                model.Job.copied_from_job_id.is_(None),  # Always pick original job
+            )
+        )
+        if tool_version:
+            stmt = stmt.where(Job.tool_version == str(tool_version))
+
+        if job_state is None:
+            stmt = stmt.where(
+                Job.state.in_(
+                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
+                )
+            )
+        else:
+            if isinstance(job_state, str):
+                stmt = stmt.where(Job.state == job_state)
+            elif isinstance(job_state, list):
+                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
+
+        # exclude jobs with deleted outputs
+        stmt = stmt.where(
+            and_(
+                model.Job.any_output_dataset_collection_instances_deleted == false(),
+                model.Job.any_output_dataset_deleted == false(),
+            )
+        )
+
+        for k, v in wildcard_param_dump.items():
+            if v == {"__class__": "RuntimeValue"}:
+                # TODO: verify this is always None. e.g. run with runtime input input
+                v = None
+            elif k.endswith("|__identifier__"):
+                # We've taken care of this while constructing the conditions based on ``input_data`` above
+                continue
+            elif k == "chromInfo" and "?.len" in v:
+                continue
+            value_dump = json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            a = aliased(JobParameter)
+            if value_dump == wildcard_value:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value == value_dump,
+                    )
+                )
+            else:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value.like(wildcard_value),
+                    )
+                )
+
+        return stmt.subquery()
+
+    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+        a = aliased(model.JobToInputDatasetAssociation)
+        b = aliased(model.HistoryDatasetAssociation)
+        c = aliased(model.HistoryDatasetAssociation)
+        d = aliased(model.JobParameter)
+        e = aliased(model.HistoryDatasetAssociationHistory)
+        stmt = stmt.add_columns(a.dataset_id)
+        used_ids.append(a.dataset_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        hda_stmt = select(model.HistoryDatasetAssociation.id).where(
+            model.HistoryDatasetAssociation.id == e.history_dataset_association_id
+        )
+        # b is the HDA used for the job
+        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
+        name_condition = []
+        if identifier:
+            stmt = stmt.join(d)
+            data_conditions.append(
+                and_(
+                    d.name.in_({f"{_}|__identifier__" for _ in k}),
+                    d.value == json.dumps(identifier),
+                )
+            )
+        else:
+            hda_stmt = hda_stmt.where(e.name == c.name)
+            name_condition.append(b.name == c.name)
+        hda_stmt = (
+            hda_stmt.where(
+                e.extension == c.extension,
+            )
+            .where(
+                a.dataset_version == e.version,
+            )
+            .where(
+                e._metadata == c._metadata,
+            )
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,  # c is the requested job input HDA
+                # We need to make sure that the job we are looking for has been run with identical inputs.
+                # Here we deal with 3 requirements:
+                #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
+                #  - b's update_time is older than the job create time, meaning no changes occurred
+                #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
+                or_(
+                    and_(
+                        or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
+                        b.extension == c.extension,
+                        b.metadata == c.metadata,
+                        *name_condition,
+                    ),
+                    b.id.in_(hda_stmt),
+                ),
+                or_(b.deleted == false(), c.deleted == false()),
+            )
+        )
+        return stmt
+
+    def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputLibraryDatasetAssociation)
+        stmt = stmt.add_columns(a.ldda_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
+        used_ids.append(a.ldda_id)
+        return stmt
+
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionAssociation)
+        b = aliased(model.HistoryDatasetCollectionAssociation)
+        c = aliased(model.HistoryDatasetCollectionAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id).join(b, b.id == a.dataset_collection_id).join(c, b.name == c.name)
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,
+                or_(
+                    and_(b.deleted == false(), b.id == v),
+                    and_(
+                        or_(
+                            c.copied_from_history_dataset_collection_association_id == b.id,
+                            b.copied_from_history_dataset_collection_association_id == c.id,
+                        ),
+                        c.deleted == false(),
+                    ),
+                ),
+            )
+        )
+        used_ids.append(a.dataset_collection_id)
+        return stmt
+
+    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionElementAssociation)
+        b = aliased(model.DatasetCollectionElement)
+        c = aliased(model.DatasetCollectionElement)
+        d = aliased(model.HistoryDatasetAssociation)
+        e = aliased(model.HistoryDatasetAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_element_id)
+        stmt = (
+            stmt.join(a, a.job_id == model.Job.id)
+            .join(b, b.id == a.dataset_collection_element_id)
+            .join(
+                c,
+                and_(
+                    c.element_identifier == b.element_identifier,
+                    or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
+                ),
+            )
+            .outerjoin(d, d.id == c.hda_id)
+            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                or_(
+                    c.child_collection_id == b.child_collection_id,
+                    and_(
+                        c.hda_id == b.hda_id,
+                        d.id == c.hda_id,
+                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
+                    ),
+                ),
+                c.id == v,
+            )
+        )
+        used_ids.append(a.dataset_collection_element_id)
+        return stmt
 
 
 def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
@@ -833,7 +850,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
             statement = (
-                select(model.Job.state, func.count("*"))
+                select(model.Job.state, func.count())
                 .select_from(join)
                 .where(model.ImplicitCollectionJobs.id == jobs_source.id)
                 .group_by(model.Job.state)
@@ -1051,6 +1068,7 @@ def summarize_job_outputs(job: model.Job, tool, params):
         ("hdca", "dataset_collection_id", job.output_dataset_collection_instances),
     )
     for src, attribute, output_associations in possible_outputs:
+        output_associations = cast(List, output_associations)  # during iteration, mypy sees it as object
         for output_association in output_associations:
             output_name = output_association.name
             if output_name not in output_labels and tool:
@@ -1068,7 +1086,7 @@ def summarize_job_outputs(job: model.Job, tool, params):
     return outputs
 
 
-def get_jobs_to_check_at_startup(session: Session, track_jobs_in_database: bool, config):
+def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_database: bool, config):
     if track_jobs_in_database:
         in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
     else:

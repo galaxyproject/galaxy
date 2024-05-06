@@ -38,6 +38,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Role,
     UserAddress,
+    UserObjectstoreUsage,
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
@@ -305,6 +306,21 @@ class FastAPIUsers:
             return []
 
     @router.get(
+        "/api/users/{user_id}/objectstore_usage",
+        name="get_user_objectstore_usage",
+        summary="Return the user's object store usage summary broken down by object store ID",
+    )
+    def objectstore_usage(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    ) -> List[UserObjectstoreUsage]:
+        if user := self.service.get_user_full(trans, user_id, False):
+            return user.dictify_objectstore_usage()
+        else:
+            return []
+
+    @router.get(
         "/api/users/{user_id}/usage/{label}",
         name="get_user_usage_for_label",
         summary="Return the user's quota usage summary for a given quota source label",
@@ -366,7 +382,7 @@ class FastAPIUsers:
         return payload
 
     @router.delete(
-        "/api/users/{user_id}/favorites/{object_type}/{object_id}",
+        "/api/users/{user_id}/favorites/{object_type}/{object_id:path}",
         name="remove_favorite",
         summary="Remove the object from user's favorites",
     )
@@ -515,6 +531,7 @@ class FastAPIUsers:
             else:
                 build_dict["fasta"] = trans.security.decode_id(len_value)
                 dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
+                assert dataset
                 try:
                     new_len = dataset.get_converted_dataset(trans, "len")
                     new_linecount = new_len.get_converted_dataset(trans, "linecount")
@@ -738,7 +755,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         if not preferences:
             return []
-        extra_pref_inputs = list()
+        extra_pref_inputs = []
         # Build sections for different categories of inputs
         user_vault = UserVaultWrapper(trans.app.vault, user)
         for item, value in preferences.items():
@@ -787,7 +804,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
-        inputs = list()
+        inputs = []
         user_info = {
             "email": email,
             "username": username,
@@ -956,7 +973,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.values = form_values
 
         # Update values for extra user preference items
-        extra_user_pref_data = dict()
+        extra_user_pref_data = {}
         extra_pref_keys = self._get_extra_user_preferences(trans)
         user_vault = UserVaultWrapper(trans.app.vault, user)
         if extra_pref_keys is not None:
@@ -1134,7 +1151,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"message": "Toolbox filters have been saved."}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
-        filter_inputs = list()
+        filter_inputs = []
         filter_values = saved_values.get(filter_type, [])
         filter_config = filter_types[filter_type]["config"]
         filter_title = filter_types[filter_type]["title"]

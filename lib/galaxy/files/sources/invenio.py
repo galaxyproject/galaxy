@@ -1,8 +1,10 @@
 import datetime
 import json
+import re
 import urllib.request
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -13,9 +15,13 @@ import requests
 from typing_extensions import (
     Literal,
     TypedDict,
+    Unpack,
 )
 
+from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
+    AnyRemoteEntry,
+    DEFAULT_SCHEME,
     Entry,
     EntryData,
     FilesSourceOptions,
@@ -23,8 +29,8 @@ from galaxy.files.sources import (
     RemoteFile,
 )
 from galaxy.files.sources._rdm import (
-    OptionalUserContext,
     RDMFilesSource,
+    RDMFilesSourceProperties,
     RDMRepositoryInteractor,
 )
 from galaxy.util import (
@@ -112,6 +118,26 @@ class InvenioRDMFilesSource(RDMFilesSource):
 
     plugin_type = "inveniordm"
 
+    def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
+        super().__init__(**kwd)
+        self._scheme_regex = re.compile(rf"^{self.get_scheme()}?://{self.id}|^{DEFAULT_SCHEME}://{self.id}")
+
+    def get_scheme(self) -> str:
+        return "invenio"
+
+    def score_url_match(self, url: str):
+        if match := self._scheme_regex.match(url):
+            return match.span()[1]
+        else:
+            return 0
+
+    def to_relative_path(self, url: str) -> str:
+        legacy_uri_root = f"{DEFAULT_SCHEME}://{self.id}"
+        if url.startswith(legacy_uri_root):
+            return url[len(legacy_uri_root) :]
+        else:
+            return super().to_relative_path(url)
+
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         return InvenioRepositoryInteractor(repository_url, self)
 
@@ -121,13 +147,15 @@ class InvenioRDMFilesSource(RDMFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
+    ) -> List[AnyRemoteEntry]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            return self.repository.get_records(writeable, user_context)
+            records = self.repository.get_records(writeable, user_context)
+            return cast(List[AnyRemoteEntry], records)
         record_id = self.get_record_id_from_path(path)
-        return self.repository.get_files_in_record(record_id, writeable, user_context)
+        files = self.repository.get_files_in_record(record_id, writeable, user_context)
+        return cast(List[AnyRemoteEntry], files)
 
     def _create_entry(
         self,
@@ -135,7 +163,8 @@ class InvenioRDMFilesSource(RDMFilesSource):
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
     ) -> Entry:
-        record = self.repository.create_draft_record(entry_data["name"], user_context=user_context)
+        public_name = self.get_public_name(user_context)
+        record = self.repository.create_draft_record(entry_data["name"], public_name, user_context=user_context)
         return {
             "uri": self.repository.to_plugin_uri(record["id"]),
             "name": record["metadata"]["title"],
@@ -198,9 +227,11 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         response_data = self._get_response(user_context, request_url)
         return self._get_record_files_from_response(record_id, response_data)
 
-    def create_draft_record(self, title: str, user_context: OptionalUserContext = None) -> RemoteDirectory:
+    def create_draft_record(
+        self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
+    ) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
-        creator = self._get_creator_from_user_context(user_context)
+        creator = self._get_creator_from_public_name(public_name)
         create_record_request = {
             "files": {"enabled": True},
             "metadata": {
@@ -360,10 +391,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                 )
         return rval
 
-    def _get_creator_from_user_context(self, user_context: OptionalUserContext):
-        public_name = self.get_user_preference_by_key("public_name", user_context)
-        family_name = "Galaxy User"
+    def _get_creator_from_public_name(self, public_name: Optional[str] = None) -> Creator:
         given_name = "Anonymous"
+        family_name = "Galaxy User"
         if public_name:
             tokens = public_name.split(", ")
             if len(tokens) == 2:
@@ -371,12 +401,16 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                 given_name = tokens[1]
             else:
                 given_name = public_name
-        return {"person_or_org": {"family_name": family_name, "given_name": given_name, "type": "personal"}}
-
-    def get_user_preference_by_key(self, key: str, user_context: OptionalUserContext):
-        preferences = user_context.preferences if user_context else None
-        value = preferences.get(f"{self.plugin.id}|{key}", None) if preferences else None
-        return value
+        return {
+            "person_or_org": {
+                "name": f"{given_name} {family_name}",
+                "family_name": family_name,
+                "given_name": given_name,
+                "type": "personal",
+                "identifiers": [],
+            },
+            "affiliations": [],
+        }
 
     def _get_response(
         self, user_context: OptionalUserContext, request_url: str, params: Optional[Dict[str, Any]] = None

@@ -13,7 +13,6 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
     RefactorResponse,
     WorkflowContentsManager,
@@ -33,6 +32,7 @@ from galaxy.schema.workflows import (
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
@@ -51,12 +51,12 @@ class WorkflowsService(ServiceBase):
         workflow_contents_manager: WorkflowContentsManager,
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
-        notification_manager: NotificationManager,
+        notification_service: NotificationService,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
-        self.shareable_service = ShareableService(workflows_manager, serializer, notification_manager)
+        self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
 
     def index(
@@ -85,7 +85,7 @@ class WorkflowsService(ServiceBase):
         if missing_tools:
             workflows_missing_tools = []
             workflows = []
-            workflows_by_toolshed = dict()
+            workflows_by_toolshed = {}
             for value in rval:
                 stored_workflow = self._workflows_manager.get_stored_workflow(trans, value["id"], by_stored_id=True)
                 tools = self._workflow_contents_manager.get_all_tools(stored_workflow.latest_workflow)

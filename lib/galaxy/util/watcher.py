@@ -13,9 +13,9 @@ try:
 
     can_watch = True
 except ImportError:
-    Observer = None
-    FileSystemEventHandler = object
-    PollingObserver = None
+    Observer = None  # type:ignore[assignment, unused-ignore]
+    FileSystemEventHandler = object  # type:ignore[assignment,misc, unused-ignore]
+    PollingObserver = None  # type:ignore[assignment, misc, unused-ignore]
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
@@ -162,7 +162,7 @@ class EventHandler(FileSystemEventHandler):
             ext_ok = self._extension_check(path, path)
         else:
             # reversed sort for getting the most specific dir first
-            for key in reversed(sorted(self.watcher.dir_callbacks.keys())):
+            for key in sorted(self.watcher.dir_callbacks.keys(), reverse=True):
                 if os.path.commonprefix([path, key]) == key:
                     callback = self.watcher.dir_callbacks[key]
                     ext_ok = self._extension_check(key, path)

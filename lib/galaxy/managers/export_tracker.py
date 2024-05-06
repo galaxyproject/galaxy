@@ -8,7 +8,7 @@ from sqlalchemy import (
     and_,
     select,
 )
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import ObjectNotFound
@@ -44,7 +44,7 @@ class StoreExportTracker:
             export_association: StoreExportAssociation = self.session.execute(stmt).scalars().one()
         except NoResultFound:
             raise ObjectNotFound("Cannot set export metadata. Reason: Export association not found")
-        export_association.export_metadata = export_metadata.json()
+        export_association.export_metadata = export_metadata.model_dump_json()  # type:ignore[assignment]
         with transaction(self.session):
             self.session.commit()
 
@@ -64,7 +64,11 @@ class StoreExportTracker:
                 StoreExportAssociation,
             )
             .where(
-                and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
+                and_(
+                    StoreExportAssociation.object_type == object_type,
+                    StoreExportAssociation.object_id == object_id,
+                    StoreExportAssociation.task_uuid.is_not(None),
+                )
             )
             .order_by(StoreExportAssociation.create_time.desc())
         )
@@ -72,4 +76,4 @@ class StoreExportTracker:
             stmt = stmt.offset(offset)
         if limit:
             stmt = stmt.limit(limit)
-        return self.session.execute(stmt).scalars()
+        return self.session.execute(stmt).scalars()  # type:ignore[return-value]

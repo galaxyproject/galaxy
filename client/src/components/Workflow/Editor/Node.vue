@@ -12,8 +12,10 @@
         :disabled="readonly"
         @move="onMoveTo"
         @pan-by="onPanBy">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
-            class="node-header unselectable clearfix card-header py-1 px-2"
+            class="unselectable clearfix card-header py-1 px-2"
+            :class="headerClass"
             @click="makeActive"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
@@ -74,6 +76,12 @@
                 >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>
+            <span class="float-right">
+                <FontAwesomeIcon
+                    v-if="isInvocation && invocationStep.headerIcon"
+                    :icon="invocationStep.headerIcon"
+                    :spin="invocationStep.headerIconSpin" />
+            </span>
         </div>
         <b-alert
             v-if="!!errors"
@@ -83,11 +91,19 @@
             @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body card-body p-0 mx-2" @click="makeActive" @keyup.enter="makeActive">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <div
+            v-else
+            class="node-body position-relative card-body p-0 mx-2"
+            :class="{ 'cursor-pointer': isInvocation }"
+            @click="makeActive"
+            @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
                 :key="`in-${index}-${input.name}`"
+                :class="isInvocation && 'position-absolute'"
                 :input="input"
+                :blank="isInvocation"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
                 :step-position="step.position ?? { top: 0, left: 0 }"
@@ -97,13 +113,16 @@
                 :parent-node="elHtml"
                 :readonly="readonly"
                 @onChange="onChange" />
-            <div v-if="showRule" class="rule" />
+            <div v-if="!isInvocation && showRule" class="rule" />
+            <NodeInvocationText v-if="isInvocation" :invocation-step="invocationStep" />
             <NodeOutput
                 v-for="(output, index) in outputs"
                 :key="`out-${index}-${output.name}`"
+                :class="isInvocation && 'invocation-node-output'"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
+                :blank="isInvocation"
                 :step-id="id"
                 :step-type="step.type"
                 :step-position="step.position ?? { top: 0, left: 0 }"
@@ -133,6 +152,7 @@ import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
+import type { GraphStep } from "@/composables/useInvocationGraph";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
@@ -142,6 +162,7 @@ import type { OutputTerminals } from "./modules/terminals";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeInvocationText from "@/components/Workflow/Editor/NodeInvocationText.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
@@ -153,7 +174,7 @@ const props = defineProps({
     id: { type: Number, required: true },
     contentId: { type: String as PropType<string | null>, default: null },
     name: { type: String as PropType<string | null>, default: null },
-    step: { type: Object as PropType<Step>, required: true },
+    step: { type: Object as PropType<Step | GraphStep>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     activeNodeId: {
         type: null as unknown as PropType<number | null>,
@@ -164,6 +185,7 @@ const props = defineProps({
     scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
+    isInvocation: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
 });
 
@@ -172,7 +194,6 @@ const emit = defineEmits([
     "onActivate",
     "onChange",
     "onCreate",
-    "onUpdate",
     "onClone",
     "onUpdateStepPosition",
     "pan-by",
@@ -220,6 +241,14 @@ const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+const headerClass = computed(() => {
+    return {
+        ...invocationStep.value.headerClass,
+        "cursor-pointer": props.isInvocation,
+        "node-header": !props.isInvocation || invocationStep.value.headerClass === undefined,
+        "cursor-move": !props.readonly && !props.isInvocation,
+    };
+});
 const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const extraStepInputs = stepStore.getStepExtraInputs(props.id);
@@ -248,6 +277,7 @@ const invalidOutputs = computed(() => {
         return { name, optional: false, datatypes: [], valid: false };
     });
 });
+const invocationStep = computed(() => props.step as GraphStep);
 const outputs = computed(() => {
     return [...props.step.outputs, ...invalidOutputs.value];
 });
@@ -318,12 +348,21 @@ function makeActive() {
     }
 
     .node-header {
-        cursor: move;
         background: $brand-primary;
         color: $white;
+        &.cursor-move {
+            cursor: move;
+        }
     }
 
     .node-body {
+        .invocation-node-output {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+        }
         .rule {
             height: 0;
             border: none;

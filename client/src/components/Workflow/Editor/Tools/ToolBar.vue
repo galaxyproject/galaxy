@@ -27,7 +27,7 @@ import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.v
 
 library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
 
-const { toolbarStore, commentStore } = useWorkflowStores();
+const { toolbarStore, commentStore, undoRedoStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -102,7 +102,7 @@ function onRemoveAllFreehand() {
     commentStore.deleteFreehandComments();
 }
 
-useToolLogic(toolbarStore, commentStore);
+useToolLogic(toolbarStore, commentStore, undoRedoStore);
 
 const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7 } = useMagicKeys();
 

@@ -2,10 +2,17 @@
 import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { CreatedEntry, createRemoteEntry, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import {
+    BrowsableFilesSourcePlugin,
+    CreatedEntry,
+    createRemoteEntry,
+    FilterFileSourcesOptions,
+} from "@/api/remoteFiles";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import { fileSourcePluginToItem } from "../FilesDialog/utilities";
 
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -17,6 +24,11 @@ interface Props {
     clearInputAfterExport?: boolean;
     defaultRecordName?: string;
     defaultFilename?: string;
+    /**
+     * If undefined, the user will need to select a repository to export to,
+     * otherwise this file source will be pre-selected.
+     */
+    fileSource?: BrowsableFilesSourcePlugin;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -24,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
     clearInputAfterExport: false,
     defaultRecordName: "",
     defaultFilename: "",
+    fileSource: undefined,
 });
 
 const emit = defineEmits<{
@@ -35,7 +48,7 @@ type ExportChoice = "existing" | "new";
 const includeOnlyRDMCompatible: FilterFileSourcesOptions = { include: ["rdm"] };
 
 const recordUri = ref<string>("");
-const sourceUri = ref<string>("");
+const sourceUri = ref<string>(props.fileSource?.uri_root ?? "");
 const fileName = ref<string>(props.defaultFilename);
 const exportChoice = ref<ExportChoice>("new");
 const recordName = ref<string>(props.defaultRecordName);
@@ -52,6 +65,9 @@ const recordNameDescription = computed(() => localize("Give the new record a nam
 
 const namePlaceholder = computed(() => localize("File name"));
 const recordNamePlaceholder = computed(() => localize("Record name"));
+
+const uniqueSourceId = computed(() => props.fileSource?.id ?? "any");
+const fileSourceAsItem = computed(() => (props.fileSource ? fileSourcePluginToItem(props.fileSource) : undefined));
 
 function doExport() {
     emit("export", recordUri.value, fileName.value);
@@ -72,7 +88,7 @@ async function doCreateRecord() {
 
 function clearInputs() {
     recordUri.value = "";
-    sourceUri.value = "";
+    sourceUri.value = props.fileSource?.uri_root ?? "";
     fileName.value = "";
     newEntry.value = undefined;
 }
@@ -84,10 +100,17 @@ function clearInputs() {
             <BFormInput id="file-name-input" v-model="fileName" :placeholder="namePlaceholder" required />
         </BFormGroup>
 
-        <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
-            <BFormRadio id="radio-new" v-localize name="exportChoice" value="new"> Export to new record </BFormRadio>
+        <p>
+            Your {{ what }} needs to be uploaded to an existing <i>draft</i> record. You will need to create a
+            <b>new record</b> or select an existing <b>draft record</b> and then export your {{ what }} to it.
+        </p>
 
-            <BFormRadio id="radio-existing" v-localize name="exportChoice" value="existing">
+        <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
+            <BFormRadio :id="`radio-new-${uniqueSourceId}`" v-localize name="exportChoice" value="new">
+                Export to new record
+            </BFormRadio>
+
+            <BFormRadio :id="`radio-existing-${uniqueSourceId}`" v-localize name="exportChoice" value="existing">
                 Export to existing draft record
             </BFormRadio>
         </BFormRadioGroup>
@@ -123,6 +146,7 @@ function clearInputs() {
             </div>
             <div v-else>
                 <BFormGroup
+                    v-if="!props.fileSource"
                     id="fieldset-record-new"
                     label-for="source-selector"
                     :description="repositoryRecordDescription"
@@ -172,7 +196,8 @@ function clearInputs() {
                     v-model="recordUri"
                     mode="directory"
                     :require-writable="true"
-                    :filter-options="includeOnlyRDMCompatible" />
+                    :filter-options="fileSource ? undefined : includeOnlyRDMCompatible"
+                    :selected-item="fileSourceAsItem" />
             </BFormGroup>
 
             <BButton

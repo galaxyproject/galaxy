@@ -48,7 +48,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
     app: ToolShedApp
-    repository: Optional[Repository]
+    repository: Optional[Repository]  # type:ignore[assignment]
 
     # why is mypy making me re-annotate these things from the base class, it didn't
     # when they were in the same file
@@ -365,19 +365,17 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
         def __data_manager_dict_to_tuple_list(metadata_dict):
             # we do not check tool_guid or tool conf file name
-            return set(
-                sorted(
-                    (
-                        name,
-                        tuple(sorted(value.get("data_tables", []))),
-                        value.get("guid"),
-                        value.get("version"),
-                        value.get("name"),
-                        value.get("id"),
-                    )
-                    for name, value in metadata_dict.items()
+            return {
+                (
+                    name,
+                    tuple(sorted(value.get("data_tables", []))),
+                    value.get("guid"),
+                    value.get("version"),
+                    value.get("name"),
+                    value.get("id"),
                 )
-            )
+                for name, value in metadata_dict.items()
+            }
 
         # only compare valid entries, any invalid entries are ignored
         ancestor_metadata = __data_manager_dict_to_tuple_list(ancestor_metadata.get("data_managers", {}))
@@ -1038,10 +1036,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         changeset_revisions.append(changeset_revision)
                 self._add_tool_versions(repository_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
-            message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % str(
-                self.repository.tip()
+            message = (
+                f"Revision <b>{self.repository.tip()}</b> includes no Galaxy utilities for which metadata can "
+                "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             )
-            message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
             status = "error"
         if self.invalid_file_tups:
             message = tool_util.generate_message_for_invalid_tools(

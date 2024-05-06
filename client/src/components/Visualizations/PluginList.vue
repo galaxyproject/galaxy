@@ -17,7 +17,7 @@
                                     v-if="plugin.logo"
                                     alt="ui thumbnails"
                                     class="plugin-list-image"
-                                    :src="plugin.logo" />
+                                    :src="absPath(plugin.logo)" />
                                 <div v-else class="plugin-list-icon fa fa-eye" />
                             </td>
                             <td>
@@ -64,6 +64,7 @@ import axios from "axios";
 import DelayedInput from "components/Common/DelayedInput";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
+import { absPath } from "utils/redirect";
 
 export default {
     components: {
@@ -106,6 +107,7 @@ export default {
             });
     },
     methods: {
+        absPath,
         onSearch(newValue) {
             this.search = newValue;
         },
@@ -134,13 +136,9 @@ export default {
             }
         },
         create(plugin) {
-            const href = `${plugin.href}?dataset_id=${this.selected}`;
-            if (plugin.target == "_top") {
-                window.location.href = href;
-            } else {
-                const galaxyMainElement = document.getElementById("galaxy_main");
-                galaxyMainElement.setAttribute("src", href);
-            }
+            this.$router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${this.selected}`, {
+                title: plugin.name,
+            });
         },
         match(plugin) {
             const query = this.search.toLowerCase();

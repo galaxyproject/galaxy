@@ -9,7 +9,7 @@ from typing import (
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
 from galaxy.tool_util.parser import ToolSource
-from galaxy.util.resources import files
+from galaxy.util.resources import resource_string
 
 
 def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
@@ -23,10 +23,9 @@ def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
 
 
 def _read_ontology_data_text(filename: str) -> str:
-    return files(PACKAGE).joinpath(filename).read_text()
+    return resource_string(__package__, filename)
 
 
-PACKAGE = "galaxy.tool_util.ontologies"
 BIOTOOLS_MAPPING_FILENAME = "biotools_mappings.tsv"
 EDAM_OPERATION_MAPPING_FILENAME = "edam_operation_mappings.tsv"
 EDAM_TOPIC_MAPPING_FILENAME = "edam_topic_mappings.tsv"

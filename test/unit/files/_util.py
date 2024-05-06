@@ -5,15 +5,16 @@ import tempfile
 
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
+    OptionalUserContext,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
 
 
-def serialize_and_recover(file_sources_o, user_context=None):
+def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: OptionalUserContext = None):
     as_dict = file_sources_o.to_dict(for_serialization=True, user_context=user_context)
     file_sources = ConfiguredFileSources.from_dict(as_dict)
     return file_sources
@@ -33,14 +34,24 @@ def find(dir_list, class_=None, name=None):
     return None
 
 
-def list_root(file_sources, uri, recursive, user_context=None):
+def list_root(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    recursive: bool,
+    user_context: OptionalUserContext = None,
+):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
     res = file_source.list("/", recursive=recursive, user_context=user_context)
     return res
 
 
-def list_dir(file_sources, uri, recursive, user_context=None):
+def list_dir(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    recursive: bool,
+    user_context: OptionalUserContext = None,
+):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
     print(file_source_pair.path)
@@ -82,7 +93,9 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
     return user_context
 
 
-def realize_to_temp_file(file_sources, uri, user_context=None):
+def realize_to_temp_file(
+    file_sources: ConfiguredFileSources, uri: str, user_context: OptionalUserContext = None
+) -> str:
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode="r") as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
@@ -91,29 +104,35 @@ def realize_to_temp_file(file_sources, uri, user_context=None):
             return realized_contents
 
 
-def assert_realizes_as(file_sources, uri, expected, user_context=None):
+def assert_realizes_as(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    expected: str,
+    user_context: OptionalUserContext = None,
+):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if realized_contents != expected:
-        message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] as [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
-def assert_realizes_contains(file_sources, uri, expected, user_context=None):
+def assert_realizes_contains(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    expected: str,
+    user_context: OptionalUserContext = None,
+):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if expected not in realized_contents:
-        message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] to contain [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
-def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Exception:
+def assert_realizes_throws_exception(
+    file_sources: ConfiguredFileSources, uri: str, user_context: OptionalUserContext = None
+) -> Exception:
     exception = None
     try:
         realize_to_temp_file(file_sources, uri, user_context=user_context)
@@ -123,7 +142,12 @@ def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Ex
     return exception
 
 
-def write_from(file_sources, uri, content, user_context=None):
+def write_from(
+    file_sources: ConfiguredFileSources,
+    uri: str,
+    content: str,
+    user_context: OptionalUserContext = None,
+):
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
@@ -132,7 +156,7 @@ def write_from(file_sources, uri, content, user_context=None):
 
 
 def configured_file_sources(conf_file):
-    file_sources_config = ConfiguredFileSourcesConfig()
+    file_sources_config = FileSourcePluginsConfig()
     return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
 
 

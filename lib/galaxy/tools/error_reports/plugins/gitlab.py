@@ -154,7 +154,7 @@ class GitLabPlugin(BaseGitPlugin):
                         gl_emailquery = self.gitlab.users.list(search=gl_useremail)
                         log.debug(f"GitLab error reporting - User list: {gl_emailquery}")
                         if len(gl_emailquery) > 0:
-                            log.debug("GitLab error reporting - Last Committer user ID: %s" % gl_emailquery[0].get_id())
+                            log.debug("GitLab error reporting - Last Committer user ID: %s", gl_emailquery[0].get_id())
                             self.git_username_id_cache[gl_useremail] = gl_emailquery[0].get_id()
                     gl_userid = self.git_username_id_cache.get(gl_useremail, None)
 
@@ -185,12 +185,7 @@ class GitLabPlugin(BaseGitPlugin):
                         )
 
                 return (
-                    "Submitted error report to GitLab. Your Issue number is [#{}]({}/{}/issues/{})".format(
-                        self.issue_cache[issue_cache_key][error_title],
-                        self.gitlab_base_url,
-                        gitlab_projecturl,
-                        self.issue_cache[issue_cache_key][error_title],
-                    ),
+                    f"Submitted error report to GitLab. Your Issue number is [#{self.issue_cache[issue_cache_key][error_title]}]({self.gitlab_base_url}/{gitlab_projecturl}/issues/{self.issue_cache[issue_cache_key][error_title]})",
                     "success",
                 )
 

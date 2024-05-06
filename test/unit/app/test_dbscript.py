@@ -24,10 +24,11 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import in_packages
-from galaxy.util.resources import resource_path
-
-pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+    Traversable,
+)
 
 DbUrl = NewType("DbUrl", str)
 
@@ -42,19 +43,21 @@ COMMANDS = [ADMIN_CMD, DEV_CMD]
 
 
 @pytest.fixture(scope="session")
-def migrations_dir():
+def migrations_dir() -> Traversable:
     """[galaxy-root]/lib/galaxy/model/migrations/"""
     return resource_path("galaxy.model", "migrations")
 
 
 @pytest.fixture(scope="session")
-def alembic_env_dir(migrations_dir) -> str:
+def alembic_env_dir(migrations_dir: Traversable) -> Traversable:
     """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
     return migrations_dir / "alembic"
 
 
 @pytest.fixture(params=["one database", "two databases"])
-def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, monkeypatch, request):  # noqa: F811
+def config(
+    url_factory, alembic_env_dir: Traversable, alembic_config_text, tmp_directory, monkeypatch, request  # noqa: F811
+):
     """
     Construct Config object for staging; setup staging env.
     """
@@ -69,7 +72,8 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
 
     # Copy production alembic.ini to staging location
     config_file_path = os.path.join(tmp_directory, "alembic.ini")
-    update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, gxy_dburl)
+    with as_file(alembic_env_dir) as alembic_env_dir_path:
+        update_config_for_staging(alembic_config_text, os.fspath(alembic_env_dir_path), version_locations, gxy_dburl)
     write_to_file(config_file_path, alembic_config_text)
 
     alembic_cfg = Config(config_file_path)
@@ -102,7 +106,7 @@ class TestRevisionCommand:
         run_command(f"{DEV_CMD} revision --rev-id 3 --message foo3")
 
         script_dir = ScriptDirectory.from_config(config)
-        revisions = [rev for rev in script_dir.walk_revisions()]
+        revisions = list(script_dir.walk_revisions())
         assert len(revisions) == 5  # verify total revisions: 2 base + 3 new
 
         rev = script_dir.get_revision("3")

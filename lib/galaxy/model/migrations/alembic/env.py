@@ -58,7 +58,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
         if revision_str:
             if len(revision_str) > 1:
                 log.error("Please run the commmand for one revision at a time")
-            revision_str = revision_str[0]  # type: ignore[union-attr]
+            revision_str = revision_str[0]
 
     if revision_str.startswith(f"{GXY}@"):
         url = urls[GXY]
@@ -116,7 +116,7 @@ def _configure_and_run_migrations_offline(url: str) -> None:
 
 
 def _configure_and_run_migrations_online(url) -> None:
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

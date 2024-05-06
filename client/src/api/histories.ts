@@ -8,3 +8,9 @@ export const undeleteHistory = fetcher.path("/api/histories/deleted/{history_id}
 export const undeleteHistories = fetcher.path("/api/histories/batch/undelete").method("put").create();
 export const publishedHistoriesFetcher = fetcher.path("/api/histories/published").method("get").create();
 export const historyFetcher = fetcher.path("/api/histories/{history_id}").method("get").create();
+export const updateHistoryItemsInBulk = fetcher
+    .path("/api/histories/{history_id}/contents/bulk")
+    .method("put")
+    .create();
+export const sharing = fetcher.path("/api/histories/{history_id}/sharing").method("get").create();
+export const enableLink = fetcher.path("/api/histories/{history_id}/enable_link_access").method("put").create();

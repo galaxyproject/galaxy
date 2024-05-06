@@ -1,73 +1,65 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faFilter } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
-import { type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
+import { type Tool as ToolType, type ToolSection, type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
 
 import Tool from "./Tool.vue";
 import ToolPanelLabel from "./ToolPanelLabel.vue";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 
+library.add(faFilter);
+
 const emit = defineEmits<{
     (e: "onClick", tool: any, evt: Event): void;
+    (e: "onFilter", filter: string): void;
     (e: "onOperation", tool: any, evt: Event): void;
 }>();
 
 const eventBus = useEventBus<string>("open-tool-section");
 
-const props = defineProps({
-    category: {
-        type: Object,
-        required: true,
-    },
-    queryFilter: {
-        type: String,
-        default: "",
-    },
-    disableFilter: {
-        type: Boolean,
-    },
-    hideName: {
-        type: Boolean,
-    },
-    operationTitle: {
-        type: String,
-        default: "",
-    },
-    operationIcon: {
-        type: String,
-        default: "",
-    },
-    toolKey: {
-        type: String,
-        default: "",
-    },
-    sectionName: {
-        type: String,
-        default: "default",
-    },
-    expanded: {
-        type: Boolean,
-        default: false,
-    },
-    sortItems: {
-        type: Boolean,
-        default: true,
-    },
+interface Props {
+    category: ToolSection | ToolType | ToolSectionLabel;
+    queryFilter?: string;
+    disableFilter?: boolean;
+    hideName?: boolean;
+    operationTitle?: string;
+    operationIcon?: string;
+    toolKey?: string;
+    sectionName?: string;
+    expanded?: boolean;
+    sortItems?: boolean;
+    hasFilterButton?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    queryFilter: "",
+    disableFilter: false,
+    hideName: false,
+    operationTitle: "",
+    operationIcon: "",
+    toolKey: "",
+    sectionName: "default",
+    expanded: false,
+    sortItems: true,
+    hasFilterButton: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
 const toolStore = useToolStore();
 
 const elems = computed(() => {
-    if (props.category.elems !== undefined && props.category.elems.length > 0) {
-        return props.category.elems;
+    if (toolSection.value.elems !== undefined && toolSection.value.elems.length > 0) {
+        return toolSection.value.elems;
     }
-    if (props.category.tools !== undefined && props.category.tools.length > 0) {
-        return props.category.tools.map((toolId: string) => {
-            const tool = toolStore.getToolForId(toolId);
+    if (toolSection.value.tools !== undefined && toolSection.value.tools.length > 0) {
+        return toolSection.value.tools.map((toolId) => {
+            const tool = toolStore.getToolForId(toolId as string);
             if (!tool && typeof toolId !== "string") {
                 return toolId as ToolSectionLabel;
             } else {
@@ -78,11 +70,14 @@ const elems = computed(() => {
     return [];
 });
 
-const name = computed(() => props.category.title || props.category.name);
-const isSection = computed(() => props.category.tools !== undefined || props.category.elems !== undefined);
+const toolSection = computed(() => props.category as ToolSection);
+const toolSectionLabel = computed(() => props.category as ToolSectionLabel);
+
+const name = computed(() => toolSection.value.title || toolSection.value.name);
+const isSection = computed(() => toolSection.value.tools !== undefined || toolSection.value.elems !== undefined);
 const hasElements = computed(() => elems.value.length > 0);
-const title = computed(() => props.category.description);
-const links = computed(() => props.category.links || {});
+const title = computed(() => props.category.description || undefined);
+const links = computed(() => toolSection.value.links || {});
 
 const opened = ref(props.expanded || checkFilter());
 
@@ -96,12 +91,12 @@ const sortedElements = computed(() => {
         isConfigLoaded.value &&
         config.value.toolbox_auto_sort === true &&
         props.sortItems === true &&
-        !elems.value.some((el: ToolSectionLabel) => el.text !== undefined && el.text !== "")
+        !elems.value.some((el) => (el as ToolSectionLabel).text !== undefined && (el as ToolSectionLabel).text !== "")
     ) {
         const elements = [...elems.value];
         const sorted = elements.sort((a, b) => {
-            const aNameLower = a.name.toLowerCase();
-            const bNameLower = b.name.toLowerCase();
+            const aNameLower = (a as ToolSection).name.toLowerCase();
+            const bNameLower = (b as ToolSection).name.toLowerCase();
             if (aNameLower > bNameLower) {
                 return 1;
             } else if (aNameLower < bNameLower) {
@@ -166,18 +161,31 @@ function toggleMenu(nextState = !opened.value) {
             v-b-tooltip.topright.hover.noninteractive
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title">
-            <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
-                <span class="name">
-                    {{ name }}
-                </span>
-                <ToolPanelLinks :links="links" />
+            <a
+                class="title-link d-flex justify-content-between align-items-center"
+                href="javascript:void(0)"
+                @click="toggleMenu()">
+                <div>
+                    <span class="name">
+                        {{ name }}
+                    </span>
+                    <ToolPanelLinks :links="links" />
+                </div>
+                <button
+                    v-if="isSection && props.hasFilterButton"
+                    v-b-tooltip.hover.noninteractive.bottom
+                    title="Show full section"
+                    class="inline-icon-button"
+                    @click.stop="emit('onFilter', `section:${toolSection.name}`)">
+                    <FontAwesomeIcon :icon="faFilter" />
+                </button>
             </a>
         </div>
         <transition name="slide">
             <div v-if="opened" data-description="opened tool panel section">
                 <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel
-                        v-if="category.text || el.model_class === 'ToolSectionLabel'"
+                        v-if="toolSectionLabel.text || el.model_class === 'ToolSectionLabel'"
                         :key="key"
                         :definition="el" />
                     <Tool
@@ -196,7 +204,7 @@ function toggleMenu(nextState = !opened.value) {
         </transition>
     </div>
     <div v-else>
-        <ToolPanelLabel v-if="category.text" :definition="category" />
+        <ToolPanelLabel v-if="toolSectionLabel.text" :definition="toolSectionLabel" />
         <Tool
             v-else
             :tool="category"
@@ -211,6 +219,10 @@ function toggleMenu(nextState = !opened.value) {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
+.inline-icon-button {
+    font-size: 75%;
+    padding: 0em 0.5em;
+}
 .tool-panel-label {
     background: darken($panel-bg-color, 5%);
     border-left: 0.25rem solid darken($panel-bg-color, 25%);

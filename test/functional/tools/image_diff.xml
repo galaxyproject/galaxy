@@ -22,10 +22,23 @@
       <param name="in" value="im1_uint8.png" />
       <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" eps="0" />
     </test>
+    <!-- test pair of equal images (float tiff) -->
+    <test>
+      <param name="in" value="im4_float.tif" />
+      <output name="out" value="im4_float.tif" compare="image_diff" />
+    </test>
     <!-- test pair of different images -->
     <test>
       <param name="in" value="im2_a.png" />
       <output name="out" value="im2_b.png" compare="image_diff" metric="mae" eps="0.25" />
+    </test>
+    <test>
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" />
+    </test>
+    <test expect_test_failure="true">
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="iou" eps="0.75" pin_labels="2" />
     </test>
     <!-- test RGB data -->
     <test>

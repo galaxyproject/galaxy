@@ -213,6 +213,7 @@ class ConfigSerializer(base.ModelSerializer):
             ),
             "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
             "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "object_store_always_respect_user_selection": _use_config,
             "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,

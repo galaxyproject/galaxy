@@ -224,7 +224,7 @@ steps:
     def test_integer_input(self):
         editor = self.components.workflow_editor
 
-        name = self.workflow_create_new()
+        name = self.workflow_create_new(save_workflow=False)
         self.workflow_editor_add_input(item_name="parameter_input")
         self.screenshot("workflow_editor_parameter_input_new")
         editor.label_input.wait_for_and_send_keys("input1")

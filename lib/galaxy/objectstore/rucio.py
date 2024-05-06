@@ -1,21 +1,8 @@
 import hashlib
-from typing import Optional
-
-from .caching import (
-    CacheTarget,
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-    parse_caching_config_dict_from_xml,
-)
-
-try:
-    from ..authnz.util import provider_name_to_backend
-except ImportError:
-    provider_name_to_backend = None  # type: ignore[misc,assignment]
-
 import logging
 import os
 import shutil
+from typing import Optional
 
 try:
     import rucio.common
@@ -30,6 +17,11 @@ try:
 except ImportError:
     Client = None
 
+try:
+    from galaxy.authnz.util import provider_name_to_backend
+except ImportError:
+    provider_name_to_backend = None  # type: ignore[assignment, unused-ignore]
+
 from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
@@ -41,7 +33,13 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import ConcreteObjectStore
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    enable_cache_monitor,
+    InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
+)
 
 log = logging.getLogger(__name__)
 
@@ -596,7 +594,7 @@ class RucioObjectStore(ConcreteObjectStore):
             file_name = self._get_cache_path(rel_path)
             if not os.path.islink(file_name):
                 raise ObjectInvalid(
-                    "rucio objectstore._register_file, rucio_register_only " "is set, but file in cache is not a link "
+                    "rucio objectstore._register_file, rucio_register_only is set, but file in cache is not a link "
                 )
         if os.path.islink(file_name):
             file_name = os.readlink(file_name)

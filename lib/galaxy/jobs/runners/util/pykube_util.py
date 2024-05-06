@@ -25,7 +25,7 @@ except ImportError as exc:
     K8S_IMPORT_MESSAGE = (
         "The Python pykube package is required to use "
         "this feature, please install it or correct the "
-        "following error:\nImportError %s" % str(exc)
+        f"following error:\nImportError {exc}"
     )
 
 log = logging.getLogger(__name__)

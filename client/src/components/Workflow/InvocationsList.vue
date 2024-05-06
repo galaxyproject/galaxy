@@ -1,8 +1,19 @@
 <template>
     <div class="invocations-list" aria-labelledby="invocations-title">
-        <h1 id="invocations-title" class="mb-3 h-lg">
-            {{ title }}
-        </h1>
+        <div class="grid-header d-flex justify-content-between pb-2 flex-column">
+            <div class="d-flex">
+                <Heading
+                    id="invocations-title"
+                    h1
+                    separator
+                    inline
+                    size="xl"
+                    class="flex-grow-1 m-0"
+                    data-description="grid title">
+                    <span v-localize>{{ title }}</span>
+                </Heading>
+            </div>
+        </div>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
@@ -21,12 +32,17 @@
             </template>
             <template v-slot:row-details="row">
                 <b-card>
-                    <small class="float-right" :data-invocation-id="row.item.id">
+                    <small
+                        class="float-right position-absolute mr-4"
+                        style="right: 0"
+                        :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
-                        <b
-                            >Invocation ID:
-                            <router-link :to="invocationLink(row.item)">{{ row.item.id }}</router-link></b
-                        >
+                        <b>
+                            Invocation ID:
+                            <a :href="invocationLink(row.item)" @click.prevent="(e) => openInvocation(e, row)">{{
+                                row.item.id
+                            }}</a>
+                        </b>
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </b-card>
@@ -46,24 +62,18 @@
                     @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
-                <div
-                    v-b-tooltip.hover.top
-                    :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
-                    class="truncate">
-                    <b-link href="#" @click.stop="swapRowDetails(data)">
+                <div class="truncate">
+                    <a
+                        v-b-tooltip.hover.html
+                        :title="`<b>View run for</b><br />${getStoredWorkflowNameByInstanceId(data.item.workflow_id)}`"
+                        :href="invocationLink(data.item)"
+                        @click="(e) => openInvocation(e, data)">
                         {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
-                    </b-link>
+                    </a>
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">
-                <div
-                    v-b-tooltip.hover.top.html
-                    :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
-                    class="truncate">
-                    <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        {{ getHistoryNameById(data.item.history_id) }}
-                    </b-link>
-                </div>
+                <SwitchToHistoryLink :history-id="data.value" />
             </template>
             <template v-slot:cell(create_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -73,6 +83,18 @@
             </template>
             <template v-slot:cell(state)="data">
                 <HelpText :uri="`galaxy.invocations.states.${data.value}`" :text="data.value" />
+            </template>
+            <template v-slot:cell(view)="data">
+                <BButton
+                    id="invocation-view-button"
+                    v-b-tooltip.hover.top.noninteractive
+                    title="Go to invocation overview"
+                    :data-invocation-view="data.item.id"
+                    variant="primary"
+                    size="sm"
+                    :to="invocationLink(data.item)">
+                    <span class="fa fa-eye" />
+                </BButton>
             </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
@@ -90,26 +112,30 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import HelpText from "components/Help/HelpText";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
+import Vue from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
 import paginationMixin from "./paginationMixin";
 
+import Heading from "../Common/Heading.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 export default {
     components: {
+        Heading,
+        HelpText,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
-        HelpText,
+        SwitchToHistoryLink,
     },
     mixins: [paginationMixin],
     props: {
@@ -126,6 +152,8 @@ export default {
         const fields = [{ key: "expand", label: "", class: "col-button" }];
         if (!this.storedWorkflowId) {
             fields.push({ key: "workflow_id", label: "Workflow", class: "col-name" });
+        } else {
+            fields.push({ key: "view", label: "View", class: "col-button" });
         }
         if (!this.historyId) {
             fields.push({ key: "history_id", label: "History", class: "col-history" });
@@ -174,6 +202,8 @@ export default {
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
+            } else {
+                extraParams["include_nested_invocations"] = false;
             }
             if (this.historyId) {
                 extraParams["history_id"] = this.historyId;
@@ -201,34 +231,33 @@ export default {
     methods: {
         ...mapActions(useHistoryStore, ["loadHistoryById"]),
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceIdCached"]),
-        async provider(ctx) {
-            ctx.root = this.root;
-            const extraParams = this.ownerGrid ? {} : { include_terminal: false };
-            if (this.storedWorkflowId) {
-                extraParams["workflow_id"] = this.storedWorkflowId;
-            } else {
-                extraParams["include_nested_invocations"] = false;
-            }
-            if (this.historyId) {
-                extraParams["history_id"] = this.historyId;
-            }
-            if (this.userId) {
-                extraParams["user_id"] = this.userId;
-            }
-            const promise = invocationsProvider(ctx, this.setRows, extraParams).catch(this.onError);
-            const invocationItems = await promise;
-            this.invocationItems = invocationItems;
-            return invocationItems;
-        },
         swapRowDetails(row) {
             row.toggleDetails();
         },
         invocationLink(item) {
             return `/workflows/invocations/${item.id}`;
         },
-        switchHistory(historyId) {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.switchToHistory(historyId);
+        openInvocation(e, row) {
+            if (e.ctrlKey || e.metaKey) {
+                // open in new tab and ignore toggling details
+                return;
+            }
+            // otherwise, manually toggle details and navigate
+            e.preventDefault();
+            const { item, detailsShowing } = row;
+            if (detailsShowing) {
+                // If you route when an invocation is expanded, somehow the workflowStores are not disposed
+                // entirely when you get to the full page view
+
+                // therefore, we close the details
+                row.toggleDetails();
+                // and then wait for stores to be disposed before routing
+                Vue.nextTick(() => {
+                    this.$router.push(this.invocationLink(item));
+                });
+            } else {
+                this.$router.push(this.invocationLink(item));
+            }
         },
     },
 };

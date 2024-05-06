@@ -1,6 +1,7 @@
+import axios from "axios";
 import type { FetchArgType } from "openapi-typescript-fetch";
 
-import { DatasetDetails } from "@/api";
+import { HDADetailed } from "@/api";
 import { components, fetcher } from "@/api/schema";
 import { withPrefix } from "@/utils/redirect";
 
@@ -11,7 +12,7 @@ type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
 // custom interface for how we use getDatasets
 interface GetDatasetsOptions extends GetDatasetsQuery {
     sortBy?: string;
-    sortDesc?: string;
+    sortDesc?: boolean;
     query?: string;
 }
 
@@ -40,32 +41,28 @@ export const fetchDataset = fetcher.path("/api/datasets/{dataset_id}").method("g
 
 export const fetchDatasetStorage = fetcher.path("/api/datasets/{dataset_id}/storage").method("get").create();
 
-export async function fetchDatasetDetails(params: { id: string }): Promise<DatasetDetails> {
+export async function fetchDatasetDetails(params: { id: string }): Promise<HDADetailed> {
     const { data } = await fetchDataset({ dataset_id: params.id, view: "detailed" });
     // We know that the server will return a DatasetDetails object because of the view parameter
     // but the type system doesn't, so we have to cast it.
-    return data as unknown as DatasetDetails;
+    return data as unknown as HDADetailed;
 }
 
-const updateHistoryDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
+const updateDataset = fetcher.path("/api/datasets/{dataset_id}").method("put").create();
 
-export async function undeleteHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await updateHistoryDataset({
-        history_id: historyId,
-        id: datasetId,
+export async function undeleteDataset(datasetId: string) {
+    const { data } = await updateDataset({
+        dataset_id: datasetId,
         type: "dataset",
         deleted: false,
     });
     return data;
 }
 
-const deleteHistoryDataset = fetcher
-    .path("/api/histories/{history_id}/contents/{type}s/{id}")
-    .method("delete")
-    .create();
+const deleteDataset = fetcher.path("/api/datasets/{dataset_id}").method("delete").create();
 
-export async function purgeHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await deleteHistoryDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
+export async function purgeDataset(datasetId: string) {
+    const { data } = await deleteDataset({ dataset_id: datasetId, purge: true });
     return data;
 }
 
@@ -92,3 +89,9 @@ export function getCompositeDatasetLink(historyDatasetId: string, path: string) 
 
 export type DatasetExtraFiles = components["schemas"]["DatasetExtraFiles"];
 export const fetchDatasetExtraFiles = fetcher.path("/api/datasets/{dataset_id}/extra_files").method("get").create();
+
+export async function fetchDatasetAttributes(datasetId: string) {
+    const { data } = await axios.get(withPrefix(`/dataset/get_edit?dataset_id=${datasetId}`));
+
+    return data;
+}

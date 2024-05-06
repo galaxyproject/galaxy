@@ -169,7 +169,7 @@ class BaseJobRunner:
                 try:
                     action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                     action_timer = self.app.execution_timer_factory.get_timer(
-                        f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
+                        f"internals.{action_str}", f"job runner action {action_str} for job ${{job_id}} executed"
                     )
                     method(arg)
                     log.trace(action_timer.to_str(job_id=job_id))
@@ -203,9 +203,10 @@ class BaseJobRunner:
             queue_job = job_wrapper.enqueue()
         except Exception as e:
             queue_job = False
-            # Required for exceptions thrown by object store incompatiblity.
+            # Required for exceptions thrown by object store incompatibility.
             # tested by test/integration/objectstore/test_private_handling.py
-            job_wrapper.fail(str(e), exception=e)
+            message = e.client_message if hasattr(e, "client_message") else str(e)
+            job_wrapper.fail(message, exception=e)
             log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
             return
         if queue_job:

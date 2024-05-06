@@ -5,11 +5,14 @@ import { computed } from "vue";
 import { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { filesDialog } from "@/utils/data";
 
+import { SelectionItem } from "../SelectionDialog/selectionTypes";
+
 interface Props {
     value: string;
     mode?: FileSourceBrowsingMode;
     requireWritable?: boolean;
     filterOptions?: FilterFileSourcesOptions;
+    selectedItem?: SelectionItem;
 }
 
 interface SelectableFile {
@@ -20,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
     mode: "file",
     requireWritable: false,
     filterOptions: undefined,
+    selectedItem: undefined,
 });
 
 const emit = defineEmits<{
@@ -40,6 +44,7 @@ const selectFile = () => {
         mode: props.mode,
         requireWritable: props.requireWritable,
         filterOptions: props.filterOptions,
+        selectedItem: props.selectedItem,
     };
     filesDialog((selected: SelectableFile) => {
         currentValue.value = selected?.url;

@@ -237,7 +237,7 @@ class RepositoryGrid(grids.Grid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
@@ -247,7 +247,7 @@ class RepositoryGrid(grids.Grid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         else:
@@ -258,7 +258,7 @@ class RepositoryGrid(grids.Grid):
                     and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false())
                 )
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
 
@@ -377,7 +377,7 @@ class MatchedRepositoryGrid(grids.Grid):
 
 
 class InstallMatchedRepositoryGrid(MatchedRepositoryGrid):
-    columns = [col for col in MatchedRepositoryGrid.columns]
+    columns = list(MatchedRepositoryGrid.columns)
     # Override the NameColumn
     columns[0] = MatchedRepositoryGrid.NameColumn(
         "Name", link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)), attach_popup=False
@@ -458,7 +458,7 @@ class RepositoriesByUserGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
@@ -473,7 +473,7 @@ class RepositoriesByUserGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         else:
@@ -488,7 +488,7 @@ class RepositoriesByUserGrid(RepositoryGrid):
                     )
                 )
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
 
@@ -538,7 +538,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                         .join(model.RepositoryMetadata.table)
                         .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                         .join(model.User.table)
-                        .outerjoin(model.RepositoryCategoryAssociation.table)
+                        .outerjoin(model.RepositoryCategoryAssociation)
                         .outerjoin(model.Category.table)
                         .filter(model.Category.table.c.name == category.name)
                     )
@@ -547,7 +547,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         if filter == trans.app.repository_grid_filter_manager.filters.CERTIFIED_LEVEL_ONE_SUITES:
@@ -560,7 +560,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                         .join(model.RepositoryMetadata.table)
                         .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                         .join(model.User.table)
-                        .outerjoin(model.RepositoryCategoryAssociation.table)
+                        .outerjoin(model.RepositoryCategoryAssociation)
                         .outerjoin(model.Category.table)
                         .filter(model.Category.table.c.name == category.name)
                     )
@@ -570,7 +570,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
         else:
@@ -587,7 +587,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                             )
                         )
                         .join(model.User.table)
-                        .outerjoin(model.RepositoryCategoryAssociation.table)
+                        .outerjoin(model.RepositoryCategoryAssociation)
                         .outerjoin(model.Category.table)
                         .filter(model.Category.table.c.name == category.name)
                     )
@@ -597,7 +597,7 @@ class RepositoriesInCategoryGrid(RepositoryGrid):
                     and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false())
                 )
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
             )
 
@@ -632,7 +632,7 @@ class RepositoriesIOwnGrid(RepositoryGrid):
                 and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.user_id == trans.user.id)
             )
             .join(model.User.table)
-            .outerjoin(model.RepositoryCategoryAssociation.table)
+            .outerjoin(model.RepositoryCategoryAssociation)
             .outerjoin(model.Category.table)
         )
 
@@ -680,11 +680,11 @@ class RepositoriesICanAdministerGrid(RepositoryGrid):
         return (
             trans.sa_session.query(model.Repository)
             .filter(model.Repository.table.c.deleted == false())
-            .outerjoin(model.RepositoryRoleAssociation.table)
+            .outerjoin(model.RepositoryRoleAssociation)
             .outerjoin(model.Role.table)
             .filter(or_(*clause_list))
             .join(model.User.table)
-            .outerjoin(model.RepositoryCategoryAssociation.table)
+            .outerjoin(model.RepositoryCategoryAssociation)
             .outerjoin(model.Category.table)
         )
 
@@ -748,7 +748,7 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
 class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToolTestComponentsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with missing tool test components"
-    columns = [col for col in RepositoriesMissingToolTestComponentsGrid.columns]
+    columns = list(RepositoriesMissingToolTestComponentsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -835,7 +835,7 @@ class DeprecatedRepositoriesIOwnGrid(RepositoriesIOwnGrid):
                 )
             )
             .join(model.User.table)
-            .outerjoin(model.RepositoryCategoryAssociation.table)
+            .outerjoin(model.RepositoryCategoryAssociation)
             .outerjoin(model.Category.table)
         )
 
@@ -857,12 +857,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
             metadata = repository_metadata.metadata
             if invalid_tools := metadata.get("invalid_tools", []):
                 for invalid_tool_config in invalid_tools:
-                    href_str = '<a href="load_invalid_tool?repository_id={}&tool_config={}&changeset_revision={}">{}</a>'.format(
-                        trans.security.encode_id(repository.id),
-                        invalid_tool_config,
-                        repository_metadata.changeset_revision,
-                        invalid_tool_config,
-                    )
+                    href_str = f'<a href="load_invalid_tool?repository_id={trans.security.encode_id(repository.id)}&tool_config={invalid_tool_config}&changeset_revision={repository_metadata.changeset_revision}">{invalid_tool_config}</a>'
                     val += href_str
                     val += "<br/>"
                 val = val.rstrip("<br/>")
@@ -915,7 +910,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
 class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with invalid tools"
-    columns = [col for col in RepositoriesWithInvalidToolsGrid.columns]
+    columns = list(RepositoriesWithInvalidToolsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -1477,11 +1472,11 @@ class ValidRepositoryGrid(RepositoryGrid):
                     .join(model.RepositoryMetadata.table)
                     .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                     .join(model.User.table)
-                    .join(model.RepositoryCategoryAssociation.table)
+                    .join(model.RepositoryCategoryAssociation)
                     .join(model.Category.table)
                     .filter(
                         and_(
-                            model.Category.table.c.id == trans.security.decode_id(kwd["id"]),
+                            model.Category.__table__.c.id == trans.security.decode_id(kwd["id"]),
                             model.RepositoryMetadata.table.c.downloadable == true(),
                         )
                     )
@@ -1493,7 +1488,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                     .join(model.RepositoryMetadata.table)
                     .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                     .join(model.User.table)
-                    .join(model.RepositoryCategoryAssociation.table)
+                    .join(model.RepositoryCategoryAssociation)
                     .join(model.Category.table)
                     .filter(
                         and_(
@@ -1513,7 +1508,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                     )
                     .join(model.RepositoryMetadata.table)
                     .join(model.User.table)
-                    .join(model.RepositoryCategoryAssociation.table)
+                    .join(model.RepositoryCategoryAssociation)
                     .join(model.Category.table)
                     .filter(
                         and_(
@@ -1529,7 +1524,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
                 .filter(model.RepositoryMetadata.table.c.downloadable == true())
             )
@@ -1540,7 +1535,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                 .join(model.RepositoryMetadata.table)
                 .filter(or_(*trans.app.repository_registry.certified_level_one_clause_list))
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
                 .filter(model.RepositoryMetadata.table.c.downloadable == true())
             )
@@ -1553,7 +1548,7 @@ class ValidRepositoryGrid(RepositoryGrid):
                 )
                 .join(model.RepositoryMetadata.table)
                 .join(model.User.table)
-                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.RepositoryCategoryAssociation)
                 .outerjoin(model.Category.table)
                 .filter(model.RepositoryMetadata.table.c.downloadable == true())
             )

@@ -205,12 +205,13 @@ def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
 
 def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
     repository_found = []
-    all_metadata = dict()
+    all_metadata = {}
     for tool_id in tool_ids:
         repository = guid_to_repository(app, tool_id)
         owner = repository.user.username
         name = repository.name
-        repository = _get_repository_by_name_and_owner(app.model.context.current, name, owner, app.model.User)
+        assert name
+        repository = _get_repository_by_name_and_owner(app.model.session().current, name, owner, app.model.User)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
@@ -527,6 +528,7 @@ def upload_tar_and_set_metadata(
     app = trans.app
     user = trans.user
     assert user
+    assert user.username
     repo_dir = repository.repo_path(app)
     tip = repository.tip()
     tar_response = upload_tar(

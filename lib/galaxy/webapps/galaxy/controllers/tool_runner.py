@@ -46,9 +46,9 @@ class ToolRunner(BaseUIController):
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         def __tool_404__():
             log.debug("index called with tool id '%s' but no such tool exists", tool_id)
-            trans.log_event("Tool id '%s' does not exist" % tool_id)
+            trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
-            return trans.show_error_message("Tool '%s' does not exist." % (escape(tool_id)))
+            return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")
 
         # tool id not available, redirect to main page
         if tool_id is None:
