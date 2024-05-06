@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
 
-import Heading from "@/components/Common/Heading.vue";
-
 const props = defineProps<{
     storeId: string;
-    heading?: string;
 }>();
-
-const heading = computed(() => props.heading ?? "Undo Redo Stack");
 
 const currentStore = ref(useUndoRedoStore(props.storeId));
 
@@ -22,13 +17,20 @@ watch(
 
 <template>
     <section class="undo-redo-stack">
-        <Heading h2 size="sm"> {{ heading }} </Heading>
         <div class="scroll-list">
-            <button v-for="action in currentStore.redoActionStack" :key="action.id">
+            <button
+                v-for="action in currentStore.redoActionStack"
+                :key="action.id"
+                @click="currentStore.rollForwardTo(action)">
                 {{ action.name }}
             </button>
 
-            <button v-for="action in currentStore.undoActionStack" :key="action.id">
+            <span> current state </span>
+
+            <button
+                v-for="action in [...currentStore.undoActionStack].reverse()"
+                :key="action.id"
+                @click="currentStore.rollBackTo(action)">
                 {{ action.name }}
             </button>
         </div>
@@ -37,5 +39,11 @@ watch(
 
 <style scoped lang="scss">
 .undo-redo-stack {
+    width: 100%;
+
+    .scroll-list {
+        display: flex;
+        flex-direction: column;
+    }
 }
 </style>
