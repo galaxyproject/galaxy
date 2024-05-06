@@ -1518,6 +1518,9 @@ auth:
 bucket:
   name: ${bucket}
 
+connection:
+  region: ${region}
+
 extra_dirs:
 - type: job_work
   path: database/job_working_directory_azure
@@ -1529,11 +1532,13 @@ extra_dirs:
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
 def test_real_aws_s3_store(tmp_path):
     template_vars = {
         "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
         "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
         "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
     }
     with TestConfig(AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
