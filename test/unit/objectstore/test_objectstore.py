@@ -1617,6 +1617,44 @@ def test_aws_via_cloudbridge_store_with_region(tmp_path):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
+
+GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML = """
+type: generic_s3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+connection:
+  host: storage.googleapis.com
+  port: 443
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
+    }
+    with TestConfig(GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
 class MockDataset:
     def __init__(self, id):
         self.id = id
