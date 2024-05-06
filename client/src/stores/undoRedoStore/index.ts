@@ -8,6 +8,15 @@ export { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export type UndoRedoStore = ReturnType<typeof useUndoRedoStore>;
 
+export class ActionOutOfBoundsError extends Error {
+    public action: UndoRedoAction;
+
+    constructor(action: UndoRedoAction, bounds: "undo" | "redo") {
+        super(`The action "${action.name}" is not in the ${bounds} stack`);
+        this.action = action;
+    }
+}
+
 export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
@@ -141,6 +150,30 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         }
     });
 
+    function rollBackTo(action: UndoRedoAction) {
+        const undoSet = new Set(undoActionStack.value);
+
+        if (!undoSet.has(action)) {
+            throw new ActionOutOfBoundsError(action, "undo");
+        }
+
+        while (nextRedoAction.value !== action) {
+            undo();
+        }
+    }
+
+    function rollForwardTo(action: UndoRedoAction) {
+        const redoSet = new Set(redoActionStack.value);
+
+        if (!redoSet.has(action)) {
+            throw new ActionOutOfBoundsError(action, "redo");
+        }
+
+        while (nextUndoAction.value !== action) {
+            redo();
+        }
+    }
+
     return {
         undoActionStack,
         redoActionStack,
@@ -162,6 +195,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         hasUndo,
         hasRedo,
         $reset,
+        rollBackTo,
+        rollForwardTo,
     };
 });
 
