@@ -539,7 +539,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
-            return bool(self._size(obj, **kwargs) > 0)
+            return bool(self._size(obj, **kwargs) == 0)
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
@@ -678,7 +678,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
-    def _get_store_usage_percent(self):
+    def _get_store_usage_percent(self, obj):
         return 0.0
 
     def shutdown(self):
