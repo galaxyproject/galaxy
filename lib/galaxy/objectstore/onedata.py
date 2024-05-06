@@ -9,8 +9,10 @@ from datetime import datetime
 from typing import Optional
 
 try:
-    from onedatafilerestclient import OnedataFileRESTClient
-    from onedatafilerestclient import OnedataRESTError
+    from onedatafilerestclient import (
+        OnedataFileRESTClient,
+        OnedataRESTError,
+    )
 except ImportError:
     OnedataFileRESTClient = None
 
@@ -51,8 +53,7 @@ def _parse_config_xml(config_xml):
 
         conn_xml = _get_config_xml_elements(config_xml, "connection")[0]
         onezone_domain = conn_xml.get("onezone_domain")
-        disable_tls_certificate_validation = string_as_bool(
-            conn_xml.get("disable_tls_certificate_validation", "False"))
+        disable_tls_certificate_validation = string_as_bool(conn_xml.get("disable_tls_certificate_validation", "False"))
 
         space_xml = _get_config_xml_elements(config_xml, "space")[0]
         space_name = space_xml.get("name")
@@ -60,21 +61,18 @@ def _parse_config_xml(config_xml):
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
-        extra_dirs = [{attr: elem.get(attr) for attr in ("type", "path")}
-                      for elem in _get_config_xml_elements(config_xml, "extra_dir")]
+        extra_dirs = [
+            {attr: elem.get(attr) for attr in ("type", "path")}
+            for elem in _get_config_xml_elements(config_xml, "extra_dir")
+        ]
 
         return {
-            "auth": {
-                "access_token": access_token
-            },
+            "auth": {"access_token": access_token},
             "connection": {
                 "onezone_domain": onezone_domain,
                 "disable_tls_certificate_validation": disable_tls_certificate_validation,
             },
-            "space": {
-                "name": space_name,
-                "galaxy_root_dir": galaxy_root_dir
-            },
+            "space": {"name": space_name, "galaxy_root_dir": galaxy_root_dir},
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
             "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
@@ -115,8 +113,7 @@ class OnedataObjectStore(ConcreteObjectStore):
 
         connection_dict = config_dict["connection"]
         self.onezone_domain = connection_dict["onezone_domain"]
-        self.disable_tls_certificate_validation = connection_dict.get(
-            "disable_tls_certificate_validation", False)
+        self.disable_tls_certificate_validation = connection_dict.get("disable_tls_certificate_validation", False)
 
         space_dict = config_dict["space"]
         self.space_name = space_dict["name"]
@@ -137,17 +134,16 @@ class OnedataObjectStore(ConcreteObjectStore):
         if OnedataFileRESTClient is None:
             raise Exception(NO_ONEDATA_ERROR_MESSAGE)
 
-        log.debug(f"Configuring Onedata connection to {self.onezone_domain} "
-                  f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})")
+        log.debug(
+            f"Configuring Onedata connection to {self.onezone_domain} "
+            f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})"
+        )
 
         verify_ssl = not self.disable_tls_certificate_validation
-        self._client = OnedataFileRESTClient(self.onezone_domain,
-                                             self.access_token,
-                                             verify_ssl=verify_ssl)
+        self._client = OnedataFileRESTClient(self.onezone_domain, self.access_token, verify_ssl=verify_ssl)
 
         if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target,
-                                                       self.cache_monitor_interval)
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -155,24 +151,23 @@ class OnedataObjectStore(ConcreteObjectStore):
 
     def to_dict(self):
         as_dict = super().to_dict()
-        as_dict.update({
-            "auth": {
-                "access_token": self.access_token,
-            },
-            "connection": {
-                "onezone_domain": self.onezone_domain,
-                "disable_tls_certificate_validation": self.disable_tls_certificate_validation,
-            },
-            "space": {
-                "name": self.space_name,
-                "galaxy_root_dir": self.galaxy_root_dir
-            },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
-        })
+        as_dict.update(
+            {
+                "auth": {
+                    "access_token": self.access_token,
+                },
+                "connection": {
+                    "onezone_domain": self.onezone_domain,
+                    "disable_tls_certificate_validation": self.disable_tls_certificate_validation,
+                },
+                "space": {"name": self.space_name, "galaxy_root_dir": self.galaxy_root_dir},
+                "cache": {
+                    "size": self.cache_size,
+                    "path": self.staging_path,
+                    "cache_updated_data": self.cache_updated_data,
+                },
+            }
+        )
         return as_dict
 
     @property
@@ -243,7 +238,7 @@ class OnedataObjectStore(ConcreteObjectStore):
     def _get_size_in_onedata(self, rel_path):
         try:
             onedata_path = self._construct_onedata_path(rel_path)
-            return self._client.get_attributes(self.space_name, file_path=onedata_path)['size']
+            return self._client.get_attributes(self.space_name, file_path=onedata_path)["size"]
         except OnedataRESTError:
             log.exception("Could not get '%s' size from Onedata", rel_path)
             return -1
@@ -290,7 +285,7 @@ class OnedataObjectStore(ConcreteObjectStore):
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
             onedata_path = self._construct_onedata_path(rel_path)
-            file_size = self._client.get_attributes(self.space_name, file_path=onedata_path)['size']
+            file_size = self._client.get_attributes(self.space_name, file_path=onedata_path)["size"]
 
             # Test if cache is large enough to hold the new file
             if not self.cache_target.fits_in_cache(file_size):
@@ -302,10 +297,8 @@ class OnedataObjectStore(ConcreteObjectStore):
                 )
                 return False
 
-            with open(dst_path, 'wb') as dst:
-                for chunk in self._client.iter_file_content(self.space_name,
-                                                            STREAM_CHUNK_SIZE,
-                                                            file_path=onedata_path):
+            with open(dst_path, "wb") as dst:
+                for chunk in self._client.iter_file_content(self.space_name, STREAM_CHUNK_SIZE, file_path=onedata_path):
                     dst.write(chunk)
 
             log.debug("Pulled '%s' into cache to %s", rel_path, dst_path)
@@ -326,9 +319,7 @@ class OnedataObjectStore(ConcreteObjectStore):
             if os.path.exists(source_file):
                 if os.path.getsize(source_file) == 0 and self._exists_in_onedata(rel_path):
                     log.debug(
-                        "Wanted to push file '%s' to Onedata '%s' but its size is 0; skipping.",
-                        source_file,
-                        rel_path
+                        "Wanted to push file '%s' to Onedata '%s' but its size is 0; skipping.", source_file, rel_path
                     )
                     return True
                 else:
@@ -343,17 +334,14 @@ class OnedataObjectStore(ConcreteObjectStore):
                     onedata_path = self._construct_onedata_path(rel_path)
                     file_id = self._client.get_file_id(self.space_name, onedata_path)
 
-                    with open(source_file, 'rb') as src:
+                    with open(source_file, "rb") as src:
                         offset = 0
                         while True:
                             chunk = src.read(STREAM_CHUNK_SIZE)
                             if not chunk:
                                 break
 
-                            self._client.put_file_content(self.space_name,
-                                                          file_id,
-                                                          offset,
-                                                          chunk)
+                            self._client.put_file_content(self.space_name, file_id, offset, chunk)
                             offset += len(chunk)
 
                     end_time = datetime.now()
@@ -445,7 +433,7 @@ class OnedataObjectStore(ConcreteObjectStore):
                 # need this line to set the dataset filename, not sure how this is done - filesystem is monitored?
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 onedata_path = self._construct_onedata_path(rel_path)
-                self._client.create_file(self.space_name, onedata_path, 'REG', create_parents=True)
+                self._client.create_file(self.space_name, onedata_path, "REG", create_parents=True)
         return self
 
     def _empty(self, obj, **kwargs):

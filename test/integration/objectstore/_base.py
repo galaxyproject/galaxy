@@ -259,20 +259,18 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
-            f.write(ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
-                {
-                    "temp_directory": temp_directory,
-                    "access_token": get_onedata_access_token(cls.oz_container_name),
-                    "onezone_domain": docker_ip_address(cls.oz_container_name),
-                    "space_name": ONEDATA_DEMO_SPACE_NAME,
-                    "optional_space_params": random.choice([
-                        '',
-                        'path=""',
-                        'path="a/b/c/d"'
-                    ]),
-                    "cache_updated_data": cls.updateCacheData(),
-                }
-            ))
+            f.write(
+                ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
+                    {
+                        "temp_directory": temp_directory,
+                        "access_token": get_onedata_access_token(cls.oz_container_name),
+                        "onezone_domain": docker_ip_address(cls.oz_container_name),
+                        "space_name": ONEDATA_DEMO_SPACE_NAME,
+                        "optional_space_params": random.choice(["", 'path=""', 'path="a/b/c/d"']),
+                        "cache_updated_data": cls.updateCacheData(),
+                    }
+                )
+            )
 
         config["object_store_config_file"] = config_path
 
@@ -310,7 +308,7 @@ def docker_run(image, name, *args, detach=True, remove=True, ports=None):
     cmd = ["docker", "run"]
 
     if ports:
-        for (container_port, host_port) in ports:
+        for container_port, host_port in ports:
             cmd.extend(["-p", f"{container_port}:{host_port}"])
 
     if detach:
@@ -341,11 +339,11 @@ def docker_ip_address(container_name):
     cmd = [
         "docker",
         "inspect",
-        '-f',
-        '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}',
+        "-f",
+        "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
         container_name,
     ]
-    return subprocess.check_output(cmd).decode('utf-8').strip()
+    return subprocess.check_output(cmd).decode("utf-8").strip()
 
 
 def docker_rm(container_name):
