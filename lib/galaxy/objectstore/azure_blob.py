@@ -31,14 +31,14 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
+from ._util import fix_permissions
 from .caching import (
     CacheTarget,
     enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
+    UsesCache,
 )
-from ._util import fix_permissions
-
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
     "ObjectStore configured, but no azure.storage.blob dependency available."
@@ -92,7 +92,7 @@ def parse_config_xml(config_xml):
         raise
 
 
-class AzureBlobObjectStore(ConcreteObjectStore):
+class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
     """
     Object store that stores objects as blobs in an Azure Blob Container. A local
     cache exists that is used as an intermediate location for files between
@@ -180,62 +180,6 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             )
         self.service = service
 
-    def _construct_path(
-        self,
-        obj,
-        base_dir=None,
-        dir_only=None,
-        extra_dir=None,
-        extra_dir_at_root=False,
-        alt_name=None,
-        obj_dir=False,
-        in_cache=False,
-        **kwargs,
-    ):
-        # extra_dir should never be constructed from provided data but just
-        # make sure there are no shenannigans afoot
-        if extra_dir and extra_dir != os.path.normpath(extra_dir):
-            log.warning("extra_dir is not normalized: %s", extra_dir)
-            raise ObjectInvalid("The requested object is invalid")
-        # ensure that any parent directory references in alt_name would not
-        # result in a path not contained in the directory path constructed here
-        if alt_name:
-            if not safe_relpath(alt_name):
-                log.warning("alt_name would locate path outside dir: %s", alt_name)
-                raise ObjectInvalid("The requested object is invalid")
-            # alt_name can contain parent directory references, but S3 will not
-            # follow them, so if they are valid we normalize them out
-            alt_name = os.path.normpath(alt_name)
-
-        rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
-
-        if extra_dir is not None:
-            if extra_dir_at_root:
-                rel_path = os.path.join(extra_dir, rel_path)
-            else:
-                rel_path = os.path.join(rel_path, extra_dir)
-
-        # for JOB_WORK directory
-        if obj_dir:
-            rel_path = os.path.join(rel_path, str(self._get_object_id(obj)))
-        if base_dir:
-            base = self.extra_dirs.get(base_dir)
-            return os.path.join(base, rel_path)
-
-        # S3 folders are marked by having trailing '/' so add it now
-        # rel_path = '%s/' % rel_path # assume for now we don't need this in Azure blob storage.
-
-        if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
-
-        if in_cache:
-            return self._get_cache_path(rel_path)
-
-        return rel_path
-
-    def _get_cache_path(self, rel_path):
-        return os.path.abspath(os.path.join(self.staging_path, rel_path))
-
     def _get_size_in_azure(self, rel_path):
         try:
             properties = self._blob_client(rel_path).get_blob_properties()
@@ -255,11 +199,6 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
-
-    def _in_cache(self, rel_path):
-        """Check if the given dataset is in the local cache."""
-        cache_path = self._get_cache_path(rel_path)
-        return os.path.exists(cache_path)
 
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)

@@ -7,6 +7,7 @@ import threading
 import time
 from math import inf
 from typing import (
+    Dict,
     List,
     Optional,
     Tuple,
@@ -14,10 +15,13 @@ from typing import (
 
 from typing_extensions import NamedTuple
 
+from galaxy.exceptions import ObjectInvalid
 from galaxy.util import (
+    directory_hash_id,
     nice_size,
     string_as_bool,
 )
+from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
@@ -213,3 +217,69 @@ class InProcessCacheMonitor:
 
         # Wait for the cache monitor thread to join before ending
         self.cache_monitor_thread.join(5)
+
+
+# mixin for object stores using a cache directory
+class UsesCache:
+    staging_path: str
+    extra_dirs: Dict[str, str]
+
+    def _construct_path(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir=False,
+        in_cache=False,
+        **kwargs,
+    ):
+        # extra_dir should never be constructed from provided data but just
+        # make sure there are no shenannigans afoot
+        if extra_dir and extra_dir != os.path.normpath(extra_dir):
+            log.warning("extra_dir is not normalized: %s", extra_dir)
+            raise ObjectInvalid("The requested object is invalid")
+        # ensure that any parent directory references in alt_name would not
+        # result in a path not contained in the directory path constructed here
+        if alt_name:
+            if not safe_relpath(alt_name):
+                log.warning("alt_name would locate path outside dir: %s", alt_name)
+                raise ObjectInvalid("The requested object is invalid")
+            # alt_name can contain parent directory references, but S3 will not
+            # follow them, so if they are valid we normalize them out
+            alt_name = os.path.normpath(alt_name)
+
+        object_id = self._get_object_id(obj)
+        rel_path = os.path.join(*directory_hash_id(object_id))
+
+        if extra_dir is not None:
+            if extra_dir_at_root:
+                rel_path = os.path.join(extra_dir, rel_path)
+            else:
+                rel_path = os.path.join(rel_path, extra_dir)
+
+        # for JOB_WORK directory
+        if obj_dir:
+            rel_path = os.path.join(rel_path, str(object_id))
+        if base_dir:
+            base = self.extra_dirs.get(base_dir)
+            assert base
+            return os.path.join(base, rel_path)
+
+        if not dir_only:
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
+        return rel_path
+
+    def _get_cache_path(self, rel_path: str) -> str:
+        return os.path.abspath(os.path.join(self.staging_path, rel_path))
+
+    def _in_cache(self, rel_path: str) -> bool:
+        """Check if the given dataset is in the local cache and return True if so."""
+        cache_path = self._get_cache_path(rel_path)
+        return os.path.exists(cache_path)
