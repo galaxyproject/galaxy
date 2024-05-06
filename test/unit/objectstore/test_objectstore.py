@@ -991,12 +991,6 @@ def test_config_parse_cloud():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1004,13 +998,12 @@ def test_config_parse_cloud():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1027,11 +1020,6 @@ def test_config_parse_cloud():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1056,12 +1044,6 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1069,13 +1051,12 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1086,11 +1067,6 @@ def test_config_parse_cloud_noauth_for_aws():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")

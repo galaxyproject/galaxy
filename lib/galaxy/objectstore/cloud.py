@@ -56,13 +56,6 @@ class CloudConfigMixin:
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
-            "connection": {
-                "host": self.host,
-                "port": self.port,
-                "multipart": self.multipart,
-                "is_secure": self.is_secure,
-                "conn_path": self.conn_path,
-            },
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
@@ -86,7 +79,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.transfer_progress = 0
 
         bucket_dict = config_dict["bucket"]
-        connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
@@ -95,12 +87,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.bucket_name = bucket_dict.get("name")
         self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
         self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
-
-        self.host = connection_dict.get("host", None)
-        self.port = connection_dict.get("port", 6000)
-        self.multipart = connection_dict.get("multipart", True)
-        self.is_secure = connection_dict.get("is_secure", True)
-        self.conn_path = connection_dict.get("conn_path", "/")
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
