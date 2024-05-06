@@ -75,11 +75,13 @@ const { anySelected, multiSelectedSteps, multiSelectedComments, deselectAll } = 
 const previousPosition = ref<Position | null>(null);
 const currentLazyAction = ref<LazyMoveMultipleAction | null>(null);
 
+const shouldMultidrag = computed(() => props.selected && anySelected.value);
+
 const onStart = (_position: Position, event: DragEvent) => {
     emit("mousedown", event);
     hasMoved = false;
 
-    if (!anySelected.value) {
+    if (!shouldMultidrag.value) {
         emit("start");
     }
 
@@ -98,7 +100,7 @@ const onStart = (_position: Position, event: DragEvent) => {
             event.dataTransfer!.setData("text/plain", JSON.stringify(props.dragData));
         }
 
-        if (!anySelected.value) {
+        if (!shouldMultidrag.value) {
             emit("dragstart", event);
         }
     }
@@ -122,8 +124,6 @@ function getSnappedPosition<T extends Position>(position: T) {
         } as T;
     }
 }
-
-const shouldMultidrag = computed(() => props.selected && anySelected.value);
 
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
@@ -188,7 +188,7 @@ const onEnd = (_position: Position, event: DragEvent) => {
 
     emit("mouseup", event);
 
-    if (!anySelected.value) {
+    if (!shouldMultidrag.value) {
         emit("stop");
     }
 };
