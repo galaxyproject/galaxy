@@ -33,6 +33,8 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from . import DiskObjectStore
+from ._util import fix_permissions
+
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
@@ -314,17 +316,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    def _fix_permissions(self, rel_path):
-        """Set permissions on rel_path"""
-        for basedir, _, files in os.walk(rel_path):
-            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
-            for filename in files:
-                path = os.path.join(basedir, filename)
-                # Ignore symlinks
-                if os.path.islink(path):
-                    continue
-                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
-
     def _construct_path(
         self,
         obj,
@@ -432,7 +423,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
-        self._fix_permissions(self._get_cache_path(rel_path_dir))
+        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
         log.debug("irods_pt _pull_into_cache: %s", ipt_timer)
         return file_ok
 
@@ -779,7 +770,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                     if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
-                    self._fix_permissions(cache_file)
+                    fix_permissions(self.config, cache_file)
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:

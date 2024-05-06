@@ -27,6 +27,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
+from ._util import fix_permissions
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -215,17 +216,6 @@ class PithosObjectStore(ConcreteObjectStore):
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
-    def _fix_permissions(self, rel_path):
-        """Set permissions on rel_path"""
-        for basedir, _, files in os.walk(rel_path):
-            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
-            for filename in files:
-                path = os.path.join(basedir, filename)
-                # Ignore symlinks
-                if os.path.islink(path):
-                    continue
-                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
-
     def _pull_into_cache(self, rel_path):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
@@ -235,7 +225,7 @@ class PithosObjectStore(ConcreteObjectStore):
         # Now pull in the file
         cache_path = self._get_cache_path(rel_path_dir)
         self.pithos.download_object(rel_path, cache_path)
-        self._fix_permissions(cache_path)
+        fix_permissions(self.config, cache_path)
         return cache_path
 
     # No need to overwrite "shutdown"
@@ -418,7 +408,7 @@ class PithosObjectStore(ConcreteObjectStore):
             try:
                 if source_path != cache_path:
                     shutil.copy2(source_path, cache_path)
-                self._fix_permissions(cache_path)
+                fix_permissions(self.config, cache_path)
             except OSError:
                 log.exception('Trouble copying source file "%s" to cache "%s"', source_path, cache_path)
         else:
