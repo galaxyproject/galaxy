@@ -27,7 +27,6 @@ from galaxy.exceptions import (
 )
 from galaxy.util import (
     directory_hash_id,
-    umask_fix_perms,
     unlink,
 )
 from galaxy.util.path import safe_relpath
@@ -38,6 +37,8 @@ from .caching import (
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
 )
+from ._util import fix_permissions
+
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
     "ObjectStore configured, but no azure.storage.blob dependency available."
@@ -232,17 +233,6 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         return rel_path
 
-    def _fix_permissions(self, rel_path):
-        """Set permissions on rel_path"""
-        for basedir, _, files in os.walk(rel_path):
-            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
-            for filename in files:
-                path = os.path.join(basedir, filename)
-                # Ignore symlinks
-                if os.path.islink(path):
-                    continue
-                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
-
     def _get_cache_path(self, rel_path):
         return os.path.abspath(os.path.join(self.staging_path, rel_path))
 
@@ -278,7 +268,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
-        self._fix_permissions(self._get_cache_path(rel_path_dir))
+        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
         return file_ok
 
     def _download(self, rel_path):
@@ -556,7 +546,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                     if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
-                    self._fix_permissions(cache_file)
+                    fix_permissions(self.config, cache_file)
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:

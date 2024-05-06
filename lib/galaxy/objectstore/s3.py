@@ -27,7 +27,6 @@ from galaxy.exceptions import (
 from galaxy.util import (
     directory_hash_id,
     string_as_bool,
-    umask_fix_perms,
     unlink,
     which,
 )
@@ -40,6 +39,7 @@ from .caching import (
     parse_caching_config_dict_from_xml,
 )
 from .s3_multipart_upload import multipart_upload
+from ._util import fix_permissions
 
 NO_BOTO_ERROR_MESSAGE = (
     "S3/Swift object store configured, but no boto dependency available."
@@ -288,17 +288,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         # raise error
         raise S3ResponseError
 
-    def _fix_permissions(self, rel_path):
-        """Set permissions on rel_path"""
-        for basedir, _, files in os.walk(rel_path):
-            umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
-            for filename in files:
-                path = os.path.join(basedir, filename)
-                # Ignore symlinks
-                if os.path.islink(path):
-                    continue
-                umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
-
     def _construct_path(
         self,
         obj,
@@ -417,7 +406,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
-        self._fix_permissions(self._get_cache_path(rel_path_dir))
+        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
         return file_ok
 
     def _transfer_cb(self, complete, total):
@@ -722,7 +711,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                     if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
-                    self._fix_permissions(cache_file)
+                    fix_permissions(self.config, cache_file)
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
