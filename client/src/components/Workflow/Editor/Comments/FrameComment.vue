@@ -262,6 +262,7 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
                 :position="position"
+                :selected="commentStore.getCommentMultiSelected(props.comment.id)"
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="onDragEnd"

@@ -42,6 +42,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    selected: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits<{
@@ -119,6 +123,8 @@ function getSnappedPosition<T extends Position>(position: T) {
     }
 }
 
+const shouldMultidrag = computed(() => props.selected && anySelected.value);
+
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
 
@@ -142,7 +148,7 @@ const onMove = (position: Position, event: DragEvent) => {
                 previousPosition.value.x !== snapped.x ||
                 previousPosition.value.y !== snapped.y
             ) {
-                if (anySelected.value) {
+                if (shouldMultidrag.value) {
                     if (undoRedoStore.isQueued(currentLazyAction.value)) {
                         currentLazyAction.value?.changePosition(snapped);
                     } else {

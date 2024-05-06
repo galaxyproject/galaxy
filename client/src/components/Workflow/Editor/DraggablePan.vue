@@ -43,6 +43,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    selected: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 type Position = { x: number; y: number };
@@ -168,6 +172,7 @@ function onStart() {
         :drag-data="dragData"
         :disabled="disabled"
         :snappable="snappable"
+        :selected="selected"
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"

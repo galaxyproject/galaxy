@@ -11,6 +11,7 @@
         :class="classes"
         :style="style"
         :disabled="readonly"
+        :selected="stateStore.getStepMultiSelected(props.id)"
         @move="onMoveTo"
         @pan-by="onPanBy">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
