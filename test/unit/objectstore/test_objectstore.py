@@ -8,6 +8,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from requests import get
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
@@ -1242,7 +1243,7 @@ def test_config_parse_azure_no_cache():
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
-def verify_caching_object_store_functionality(tmp_path, object_store):
+def verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=True):
     # Test no dataset with id 1 exists.
     absent_dataset = MockDataset(1)
     assert not object_store.exists(absent_dataset)
@@ -1322,14 +1323,13 @@ def verify_caching_object_store_functionality(tmp_path, object_store):
 
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
-    from requests import get
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
 
-    response = get(url)
-    response.raise_for_status()
-    assert response.text == "Hello World!"
 
-
-def verify_object_store_functionality(tmp_path, object_store):
+def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):
     # Test no dataset with id 1 exists.
     absent_dataset = MockDataset(1)
     assert not object_store.exists(absent_dataset)
@@ -1376,11 +1376,10 @@ def verify_object_store_functionality(tmp_path, object_store):
 
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
-    from requests import get
-
-    response = get(url)
-    response.raise_for_status()
-    assert response.text == "Hello World!"
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
 
 
 AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML = """
@@ -1507,6 +1506,110 @@ def test_real_azure_blob_store_in_hierarchical(tmp_path):
         object_store,
     ):
         verify_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
+type: aws_s3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_real_aws_s3_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_aws_via_cloudbridge_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        # disabling get_object_url check - cloudbridge in this config assumes the region
+        # is us-east-1 and generates a URL for that region. This functionality works and can
+        # be tested if a region is specified in the configuration (see next config and test case).
+        verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=False)
+
+
+AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+  region: ${region}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_with_region(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
 
 
 class MockDataset:

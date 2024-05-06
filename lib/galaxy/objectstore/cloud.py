@@ -117,6 +117,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         log.debug(f"Configuring `{provider}` Connection")
         if provider == "aws":
             config = {"aws_access_key": credentials["access_key"], "aws_secret_key": credentials["secret_key"]}
+            if "region" in credentials:
+                config["aws_region_name"] = credentials["region"]
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
             config = {
@@ -184,8 +186,9 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             if provider == "aws":
                 akey = auth_element.get("access_key")
                 skey = auth_element.get("secret_key")
-
                 config["auth"] = {"access_key": akey, "secret_key": skey}
+                if "region" in auth_element:
+                    config["auth"]["region"] = auth_element["region"]
             elif provider == "azure":
                 sid = auth_element.get("subscription_id")
                 if sid is None:
