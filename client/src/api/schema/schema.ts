@@ -1819,6 +1819,8 @@ export interface paths {
     "/api/workflows/{workflow_id}": {
         /** Displays information needed to run a workflow. */
         get: operations["show_workflow_api_workflows__workflow_id__get"];
+        /** Update the workflow stored with the ``id`` */
+        put: operations["update_workflow_api_workflows__workflow_id__put"];
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
     };
@@ -14566,6 +14568,39 @@ export interface components {
              */
             y?: number | number | null;
         };
+        /** WorkflowUpdatePayload */
+        WorkflowUpdatePayload: {
+            /**
+             * Annotation
+             * @description String annotation for the workflow, if not present in payload, annotation defaults to existing annotation
+             */
+            annotation?: string | null;
+            /**
+             * From Tool Form
+             * @description True iff encoded state coming in is encoded for the tool form.
+             */
+            from_tool_form?: boolean | null;
+            /**
+             * Menu Entry
+             * @description Boolean marking if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified
+             */
+            menu_entry?: boolean | null;
+            /**
+             * Name
+             * @description String name for the workflow, if not present in payload, name defaults to existing name
+             */
+            name?: string | null;
+            /**
+             * Tags
+             * @description List containing list of tags to add to the workflow (overwriting existing tags), if not present, tags are not modified
+             */
+            tags?: string[] | null;
+            /**
+             * Workflow
+             * @description The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`
+             */
+            workflow: Record<string, never>;
+        };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
             /**
@@ -25476,6 +25511,41 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["StoredWorkflowDetailed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_workflow_api_workflows__workflow_id__put: {
+        /** Update the workflow stored with the ``id`` */
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
