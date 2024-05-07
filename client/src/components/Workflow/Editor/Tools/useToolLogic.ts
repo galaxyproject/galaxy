@@ -57,7 +57,6 @@ export function useToolLogic() {
         }
 
         if (toolbarStore.currentTool === "boxSelect") {
-            // TODO: box select logic
             return;
         }
 
