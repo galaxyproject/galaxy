@@ -126,7 +126,7 @@ async function onDelete() {
 const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
-            condition: !shared.value && !props.workflow.show_in_tool_panel,
+            condition: !props.workflow.deleted && !shared.value && !props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-add",
             component: "async",
             title: "Add bookmarks",
@@ -137,7 +137,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
             action: () => onToggleBookmark(true),
         },
         {
-            condition: !shared.value && props.workflow.show_in_tool_panel,
+            condition: !props.workflow.deleted && !shared.value && props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-remove",
             component: "async",
             title: "Remove bookmark",
