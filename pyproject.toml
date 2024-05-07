@@ -57,7 +57,7 @@ dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 dparse = "*"
 edam-ontology = "*"
-fastapi = ">=0.108"
+fastapi-slim = ">=0.111.0"
 fs = "*"
 future = ">=1.0.0"  # Python 3.12 support
 galaxy_sequence_utils = "*"
@@ -69,6 +69,7 @@ h5grove = ">=1.2.1"
 h5py = "*"
 importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
 isa-rwval = ">=0.10.10"
+jinja2 = "*"
 kombu = ">=5.3"  # for importlib-metadata fix
 isal = "*"
 lagom = "*"
