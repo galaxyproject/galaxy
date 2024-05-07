@@ -240,7 +240,7 @@ def include_all_package_routers(app: FastAPI, package_name: str):
     for _, module in walk_controller_modules(package_name):
         router = getattr(module, "router", None)
         if router:
-            responses: dict[int | str, dict[str, typing.Any]] = {
+            responses: typing.Dict[int, typing.Dict[str, typing.Any]] = {
                 400: {
                     "description": "Bad Request",
                     "model": MessageExceptionModel,
