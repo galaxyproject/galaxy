@@ -276,39 +276,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
     # Public Methods #
     ##################
 
-    def _exists(self, obj, **kwargs):
-        in_cache = in_azure = False
-        rel_path = self._construct_path(obj, **kwargs)
-        dir_only = kwargs.get("dir_only", False)
-        base_dir = kwargs.get("base_dir", None)
-
-        # check job work directory stuff early to skip API hits.
-        if dir_only and base_dir:
-            if not os.path.exists(rel_path):
-                os.makedirs(rel_path, exist_ok=True)
-            return True
-
-        in_cache = self._in_cache(rel_path)
-        in_azure = self._exists_remotely(rel_path)
-        # log.debug("~~~~~~ File '%s' exists in cache: %s; in azure: %s" % (rel_path, in_cache, in_azure))
-        # dir_only does not get synced so shortcut the decision
-        dir_only = kwargs.get("dir_only", False)
-        base_dir = kwargs.get("base_dir", None)
-        if dir_only:
-            if in_cache or in_azure:
-                return True
-            else:
-                return False
-
-        # TODO: Sync should probably not be done here. Add this to an async upload stack?
-        if in_cache and not in_azure:
-            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
-            return True
-        elif in_azure:
-            return True
-        else:
-            return False
-
     def file_ready(self, obj, **kwargs):
         """
         A helper method that checks if a file corresponding to a dataset is

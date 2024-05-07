@@ -482,27 +482,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         log.debug("irods_pt _file_ready: %s", ipt_timer)
         return False
 
-    def _exists(self, obj, **kwargs):
-        ipt_timer = ExecutionTimer()
-        rel_path = self._construct_path(obj, **kwargs)
-
-        # Check cache and irods
-        if self._in_cache(rel_path) or self._exists_remotely(rel_path):
-            log.debug("irods_pt _exists: %s", ipt_timer)
-            return True
-
-        # dir_only does not get synced so shortcut the decision
-        dir_only = kwargs.get("dir_only", False)
-        base_dir = kwargs.get("base_dir", None)
-        if dir_only and base_dir:
-            # for JOB_WORK directory
-            if not os.path.exists(rel_path):
-                os.makedirs(rel_path, exist_ok=True)
-            log.debug("irods_pt _exists: %s", ipt_timer)
-            return True
-        log.debug("irods_pt _exists: %s", ipt_timer)
-        return False
-
     def _create(self, obj, **kwargs):
         ipt_timer = ExecutionTimer()
         if not self._exists(obj, **kwargs):
