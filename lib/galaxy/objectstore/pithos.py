@@ -234,32 +234,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
             return 0
         return int(file["content-length"])
 
-    def _delete(self, obj, **kwargs):
-        """Delete the object
-        :returns: weather the object was deleted
-        """
-        path = self._construct_path(obj, **kwargs)
-        base_dir = kwargs.get("base_dir", None)
-        dir_only = kwargs.get("dir_only", False)
-        obj_dir = kwargs.get("obj_dir", False)
-        try:
-            if all((base_dir, dir_only, obj_dir)):
-                shutil.rmtree(os.path.abspath(path))
-                return True
-            cache_path = self._get_cache_path(path)
-
-            entire_dir = kwargs.get("entire_dir", False)
-            extra_dir = kwargs.get("extra_dir", False)
-            if entire_dir and extra_dir:
-                shutil.rmtree(cache_path)
-                return self._delete_remote_all(path)
-            else:
-                os.unlink(cache_path)
-                return self._delete_existing_remote(path)
-        except OSError:
-            log.exception(f"{self._get_filename(obj, **kwargs)} delete error")
-        return False
-
     def _delete_remote_all(self, path: str) -> bool:
         try:
             log.debug(f"On Pithos: delete -r {path}/")
