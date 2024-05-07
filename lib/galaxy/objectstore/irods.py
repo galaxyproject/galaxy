@@ -356,18 +356,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         finally:
             log.debug("irods_pt _data_object_exists: %s", ipt_timer)
 
-    def _pull_into_cache(self, rel_path):
-        ipt_timer = ExecutionTimer()
-        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
-        rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
-        # Now pull in the file
-        file_ok = self._download(rel_path)
-        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        log.debug("irods_pt _pull_into_cache: %s", ipt_timer)
-        return file_ok
-
     def _download(self, rel_path):
         ipt_timer = ExecutionTimer()
         log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))

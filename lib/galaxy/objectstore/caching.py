@@ -7,6 +7,7 @@ import threading
 import time
 from math import inf
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
@@ -18,11 +19,13 @@ from typing_extensions import NamedTuple
 from galaxy.exceptions import ObjectInvalid
 from galaxy.util import (
     directory_hash_id,
+    ExecutionTimer,
     nice_size,
     string_as_bool,
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
+from ._util import fix_permissions
 
 log = logging.getLogger(__name__)
 
@@ -223,6 +226,7 @@ class InProcessCacheMonitor:
 class UsesCache:
     staging_path: str
     extra_dirs: Dict[str, str]
+    config: Any
 
     def _construct_path(
         self,
@@ -283,3 +287,19 @@ class UsesCache:
         """Check if the given dataset is in the local cache and return True if so."""
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
+
+    def _pull_into_cache(self, rel_path) -> bool:
+        ipt_timer = ExecutionTimer()
+        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
+        rel_path_dir = os.path.dirname(rel_path)
+        if not os.path.exists(self._get_cache_path(rel_path_dir)):
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
+        # Now pull in the file
+        file_ok = self._download(rel_path)
+        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
+        log.debug("_pull_into_cache: %s", ipt_timer)
+        return file_ok
+
+    def _get_object_id(self, obj: Any) -> str: ...
+
+    def _download(self, rel_path: str) -> bool: ...
