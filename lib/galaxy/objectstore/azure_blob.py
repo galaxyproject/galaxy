@@ -313,36 +313,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
 
-    def _get_filename(self, obj, **kwargs):
-        rel_path = self._construct_path(obj, **kwargs)
-        base_dir = kwargs.get("base_dir", None)
-        dir_only = kwargs.get("dir_only", False)
-        obj_dir = kwargs.get("obj_dir", False)
-        sync_cache = kwargs.get("sync_cache", True)
-
-        # for JOB_WORK directory
-        if base_dir and dir_only and obj_dir:
-            return os.path.abspath(rel_path)
-
-        cache_path = self._get_cache_path(rel_path)
-        if not sync_cache:
-            return cache_path
-        # Check if the file exists in the cache first, always pull if file size in cache is zero
-        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
-            return cache_path
-        # Check if the file exists in persistent storage and, if it does, pull it into cache
-        elif self._exists(obj, **kwargs):
-            if dir_only:  # Directories do not get pulled into cache
-                return cache_path
-            else:
-                if self._pull_into_cache(rel_path):
-                    return cache_path
-        # For the case of retrieving a directory only, return the expected path
-        # even if it does not exist.
-        # if dir_only:
-        #     return cache_path
-        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {str(obj)}, kwargs: {str(kwargs)}")
-
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
             self._create(obj, **kwargs)

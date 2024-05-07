@@ -264,29 +264,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
             log.exception(f"Could not delete {path} from Pithos, {ce}")
         return False
 
-    def _get_filename(self, obj, **kwargs):
-        """Get the expected filename with absolute path"""
-        base_dir = kwargs.get("base_dir", None)
-        dir_only = kwargs.get("dir_only", False)
-        obj_dir = kwargs.get("obj_dir", False)
-        path = self._construct_path(obj, **kwargs)
-
-        # for JOB_WORK directory
-        if base_dir and dir_only and obj_dir:
-            return os.path.abspath(path)
-        cache_path = self._get_cache_path(path)
-        if dir_only:
-            if not os.path.exists(cache_path):
-                os.makedirs(cache_path, exist_ok=True)
-            return cache_path
-        if self._in_cache(path):
-            return cache_path
-        elif self._exists(obj, **kwargs):
-            if not dir_only:
-                self._pull_into_cache(path)
-                return cache_path
-        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
-
     def _update_from_file(self, obj, **kwargs):
         """Update the store when a file is updated"""
         if kwargs.get("create"):
