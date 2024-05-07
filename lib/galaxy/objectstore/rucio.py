@@ -406,9 +406,12 @@ class RucioObjectStore(ConcreteObjectStore, UsesCache):
             if size != 0:
                 return size
         if self._exists(obj, **kwargs):
-            return self.rucio_broker.get_size(rel_path)
+            return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
+
+    def _get_remote_size(self, rel_path):
+        return self.rucio_broker.get_size(rel_path)
 
     def _delete(self, obj, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
