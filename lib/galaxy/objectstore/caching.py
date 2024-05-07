@@ -16,7 +16,10 @@ from typing import (
 
 from typing_extensions import NamedTuple
 
-from galaxy.exceptions import ObjectInvalid
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound,
+)
 from galaxy.util import (
     directory_hash_id,
     ExecutionTimer,
@@ -361,6 +364,12 @@ class UsesCache:
                 self._push_to_os(rel_path, from_string="")
         return self
 
+    def _empty(self, obj, **kwargs):
+        if self._exists(obj, **kwargs):
+            return self._size(obj, **kwargs) == 0
+        else:
+            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
+
     def _exists_remotely(self, rel_path: str) -> bool: ...
 
     def _push_to_os(self, rel_path, source_file: Optional[str] = None, from_string: Optional[str] = None) -> None: ...
@@ -368,3 +377,5 @@ class UsesCache:
     def _get_object_id(self, obj: Any) -> str: ...
 
     def _download(self, rel_path: str) -> bool: ...
+
+    def _size(self, obj) -> int: ...

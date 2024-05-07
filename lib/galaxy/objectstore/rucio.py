@@ -394,13 +394,6 @@ class RucioObjectStore(ConcreteObjectStore, UsesCache):
             log.debug("rucio _create: %s", rel_path)
         return self
 
-    def _empty(self, obj, **kwargs):
-        log.debug("rucio _empty")
-        if self._exists(obj, **kwargs):
-            return bool(self._size(obj, **kwargs) > 0)
-        else:
-            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
-
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         log.debug("rucio _size: %s", rel_path)
