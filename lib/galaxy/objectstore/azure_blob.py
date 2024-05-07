@@ -276,36 +276,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
     # Public Methods #
     ##################
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
-        rel_path = self._construct_path(obj, **kwargs)
-        extra_dir = kwargs.get("extra_dir", None)
-        base_dir = kwargs.get("base_dir", None)
-        dir_only = kwargs.get("dir_only", False)
-        obj_dir = kwargs.get("obj_dir", False)
-        try:
-            if base_dir and dir_only and obj_dir:
-                # Remove temporary data in JOB_WORK directory
-                shutil.rmtree(os.path.abspath(rel_path))
-                return True
-
-            # For the case of extra_files, because we don't have a reference to
-            # individual files/blobs we need to remove the entire directory structure
-            # with all the files in it. This is easy for the local file system,
-            # but requires iterating through each individual blob in Azure and deleing it.
-            if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
-                return self._delete_remote_all(rel_path)
-            else:
-                # Delete from cache first
-                unlink(self._get_cache_path(rel_path), ignore_errors=True)
-                # Delete from S3 as well
-                if self._exists_remotely(rel_path):
-                    log.debug("Deleting from Azure: %s", rel_path)
-                    return self._delete_existing_remote(rel_path)
-        except OSError:
-            log.exception("%s delete error", self._get_filename(obj, **kwargs))
-        return False
-
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
             blobs = self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
