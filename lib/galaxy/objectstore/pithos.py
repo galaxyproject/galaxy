@@ -264,22 +264,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
             log.exception(f"Could not delete {path} from Pithos, {ce}")
         return False
 
-    def _get_data(self, obj, start=0, count=-1, **kwargs):
-        """Fetch (e.g., download) data
-        :param start: Chunk of data starts here
-        :param count: Fetch at most as many data, fetch all if negative
-        """
-        path = self._construct_path(obj, **kwargs)
-        if self._in_cache(path):
-            cache_path = self._pull_into_cache(path)
-        else:
-            cache_path = self._get_cache_path(path)
-        data_file = open(cache_path)
-        data_file.seek(start)
-        content = data_file.read(count)
-        data_file.close()
-        return content
-
     def _get_filename(self, obj, **kwargs):
         """Get the expected filename with absolute path"""
         base_dir = kwargs.get("base_dir", None)
