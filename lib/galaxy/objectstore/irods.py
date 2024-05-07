@@ -317,7 +317,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         return as_dict
 
     # rel_path is file or folder?
-    def _get_size_in_irods(self, rel_path):
+    def _get_remote_size(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
@@ -334,7 +334,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
             return -1
         finally:
-            log.debug("irods_pt _get_size_in_irods: %s", ipt_timer)
+            log.debug("irods_pt _get_remote_size: %s", ipt_timer)
 
     # rel_path is file or folder?
     def _exists_remotely(self, rel_path):
@@ -473,7 +473,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
                 log.debug("irods_pt _size: %s", ipt_timer)
         elif self._exists(obj, **kwargs):
             log.debug("irods_pt _size: %s", ipt_timer)
-            return self._get_size_in_irods(rel_path)
+            return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         log.debug("irods_pt _size: %s", ipt_timer)
         return 0

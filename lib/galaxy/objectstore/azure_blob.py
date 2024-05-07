@@ -180,7 +180,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             )
         self.service = service
 
-    def _get_size_in_azure(self, rel_path):
+    def _get_remote_size(self, rel_path):
         try:
             properties = self._blob_client(rel_path).get_blob_properties()
             size_in_bytes = properties.size
@@ -204,11 +204,11 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if not self.cache_target.fits_in_cache(self._get_size_in_azure(rel_path)):
+            if not self.cache_target.fits_in_cache(self._get_remote_size(rel_path)):
                 log.critical(
                     "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
                     rel_path,
-                    self._get_size_in_azure(rel_path),
+                    self._get_remote_size(rel_path),
                     self.cache_target.log_description,
                 )
                 return False
@@ -284,7 +284,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try Azure. Error: %s", rel_path, ex)
         elif self._exists(obj, **kwargs):
-            return self._get_size_in_azure(rel_path)
+            return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 

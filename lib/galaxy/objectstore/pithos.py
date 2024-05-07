@@ -237,6 +237,9 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
                 log.warning("Could not get size of file %s in local cache, will try Pithos. Error: %s", path, ex)
+        return self._get_remote_size(path)
+
+    def _get_remote_size(self, path):
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:

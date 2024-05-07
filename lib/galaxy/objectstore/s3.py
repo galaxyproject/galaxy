@@ -292,7 +292,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
     def _get_transfer_progress(self):
         return self.transfer_progress
 
-    def _get_size_in_s3(self, rel_path):
+    def _get_remote_size(self, rel_path):
         try:
             key = self._bucket.get_key(rel_path)
             return key.size
@@ -333,8 +333,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         #     if self._exists_remotely(rel_path):
         #         # print("***2 %s exists in S3" % rel_path)
         #         # Make sure the size in cache is available in its entirety
-        #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path)))
-        #         if os.path.getsize(cache_path) == self._get_size_in_s3(rel_path):
+        #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_remote_size(rel_path)))
+        #         if os.path.getsize(cache_path) == self._get_remote_size(rel_path):
         #             # print("***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path)
         #             exists = True
         #         else:
@@ -448,7 +448,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
         elif self._exists(obj, **kwargs):
-            return self._get_size_in_s3(rel_path)
+            return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 

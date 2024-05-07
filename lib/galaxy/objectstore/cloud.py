@@ -264,7 +264,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
     def _get_transfer_progress(self):
         return self.transfer_progress
 
-    def _get_size_in_cloud(self, rel_path):
+    def _get_remote_size(self, rel_path):
         try:
             obj = self.bucket.objects.get(rel_path)
             return obj.size
@@ -388,7 +388,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try cloud. Error: %s", rel_path, ex)
         elif self._exists(obj, **kwargs):
-            return self._get_size_in_cloud(rel_path)
+            return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
