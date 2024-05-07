@@ -35,6 +35,7 @@ const cssVariables = computed(() => ({
     "--position-top": `${props.comment.position[1]}px`,
     "--width": `${props.comment.size[0]}px`,
     "--height": `${props.comment.size[1]}px`,
+    "--pointer-events": props.comment.type === "freehand" ? "none" : "unset",
 }));
 
 const { commentStore, undoRedoStore } = useWorkflowStores();
@@ -140,5 +141,6 @@ function toggleSelect(e: MouseEvent) {
     height: var(--height);
     top: var(--position-top);
     left: var(--position-left);
+    pointer-events: var(--pointer-events);
 }
 </style>
