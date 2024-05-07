@@ -297,8 +297,43 @@ class UsesCache:
         # Now pull in the file
         file_ok = self._download(rel_path)
         fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        log.debug("_pull_into_cache: %s", ipt_timer)
+        log.debug("_pull_into_cache: %s\n\n\n\n\n\n", ipt_timer)
         return file_ok
+
+    def _exists(self, obj, **kwargs):
+        in_cache = exists_remotely = False
+        rel_path = self._construct_path(obj, **kwargs)
+        dir_only = kwargs.get("dir_only", False)
+        base_dir = kwargs.get("base_dir", None)
+
+        # check job work directory stuff early to skip API hits.
+        if dir_only and base_dir:
+            if not os.path.exists(rel_path):
+                os.makedirs(rel_path, exist_ok=True)
+            return True
+
+        in_cache = self._in_cache(rel_path)
+        exists_remotely = self._exists_remotely(rel_path)
+        dir_only = kwargs.get("dir_only", False)
+        base_dir = kwargs.get("base_dir", None)
+        if dir_only:
+            if in_cache or exists_remotely:
+                return True
+            else:
+                return False
+
+        # TODO: Sync should probably not be done here. Add this to an async upload stack?
+        if in_cache and not exists_remotely:
+            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
+            return True
+        elif exists_remotely:
+            return True
+        else:
+            return False
+
+    def _exists_remotely(self, rel_path: str) -> bool: ...
+
+    def _push_to_os(self, rel_path, source_file: str) -> None: ...
 
     def _get_object_id(self, obj: Any) -> str: ...
 
