@@ -12642,7 +12642,7 @@ export interface components {
             /** Input */
             input: Record<string, never>;
             /** Loc */
-            loc: (number | string)[];
+            loc: number[];
             /** Msg */
             msg: string;
             /** Type */
