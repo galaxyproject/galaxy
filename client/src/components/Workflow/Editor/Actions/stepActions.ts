@@ -7,6 +7,8 @@ import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
+
 export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;
     fromValue: Step[K];
@@ -341,7 +343,9 @@ export class CopyStepAction extends UndoRedoAction {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
-        this.step = structuredClone(step);
+
+        const labelSet = getLabelSet(stepStore);
+        this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
     }
 

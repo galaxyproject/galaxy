@@ -11,6 +11,7 @@ import { ensureDefined } from "@/utils/assertions";
 
 import { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, Workflow } from "../modules/model";
+import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
 
 export class LazySetValueAction<T> extends LazyUndoRedoAction {
     setValueHandler;
@@ -344,8 +345,9 @@ export class DuplicateSelectionAction extends CopyIntoWorkflowAction {
             structuredClone(ensureDefined(commentStore.commentsRecord[id]))
         ) as WorkflowComment[];
 
+        const labelSet = getLabelSet(stepStore);
         const steps = Object.fromEntries(
-            stepIds.map((id) => [id, structuredClone(ensureDefined(stepStore.steps[id]))])
+            stepIds.map((id) => [id, cloneStepWithUniqueLabel(ensureDefined(stepStore.steps[id]), labelSet)])
         );
 
         const partialWorkflow = { comments, steps, name: "" };

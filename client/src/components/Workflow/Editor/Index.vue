@@ -598,7 +598,6 @@ export default {
                 ...sourceStep,
                 id: null,
                 uuid: null,
-                label: null,
                 position: defaultPosition(this.graphOffset, this.transform),
             });
         },
