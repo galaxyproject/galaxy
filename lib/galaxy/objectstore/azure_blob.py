@@ -276,14 +276,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
     # Public Methods #
     ##################
 
-    def _empty(self, obj, **kwargs):
-        if self._exists(obj, **kwargs):
-            size = self._size(obj, **kwargs)
-            is_empty = bool(size == 0)
-            return is_empty
-        else:
-            raise ObjectNotFound(f"objectstore.empty, object does not exist: {str(obj)}, kwargs: {str(kwargs)}")
-
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):

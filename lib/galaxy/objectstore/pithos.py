@@ -225,15 +225,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
                 self.pithos.upload_from_string(rel_path, "")
         return self
 
-    def _empty(self, obj, **kwargs):
-        """
-        :returns: weather the object has content
-        :raises ObjectNotFound:
-        """
-        if not self._exists(obj, **kwargs):
-            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
-        return bool(self._size(obj, **kwargs))
-
     def _size(self, obj, **kwargs) -> int:
         """
         :returns: The size of the object, or 0 if it doesn't exist (sorry for

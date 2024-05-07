@@ -440,12 +440,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             raise
         return False
 
-    def _empty(self, obj, **kwargs):
-        if self._exists(obj, **kwargs):
-            return bool(self._size(obj, **kwargs) == 0)
-        else:
-            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
-
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
