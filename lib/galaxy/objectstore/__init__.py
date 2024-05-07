@@ -1386,6 +1386,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
+    elif store == "boto3":
+        from .s3_boto3 import S3ObjectStore as Boto3ObjectStore
+
+        objectstore_class = Boto3ObjectStore
     elif store in ["s3", "aws_s3"]:
         from .s3 import S3ObjectStore
 
