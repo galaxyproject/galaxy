@@ -406,7 +406,7 @@ watch(operationMessage, () => {
                         <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
                             <BButton
                                 variant="link"
-                                class="text-nowrap font-weight-bold"
+                                class="text-nowrap font-weight-bold p-0"
                                 :data-description="`grid sort key ${fieldEntry.key}`"
                                 @click="onSort(fieldEntry.key)">
                                 <span>{{ fieldTitle(fieldEntry) }}</span>
