@@ -442,20 +442,6 @@ class RucioObjectStore(ConcreteObjectStore, UsesCache):
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
 
-    def _get_data(self, obj, start=0, count=-1, **kwargs):
-        rel_path = self._construct_path(obj, **kwargs)
-        log.debug("rucio _get_data: %s", rel_path)
-        auth_token = self._get_token(**kwargs)
-        # Check cache first and get file if not there
-        if not self._in_cache(rel_path) or os.path.getsize(self._get_cache_path(rel_path)) == 0:
-            self._pull_into_cache(rel_path, auth_token)
-        # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path))
-        data_file.seek(start)
-        content = data_file.read(count)
-        data_file.close()
-        return content
-
     def _get_token(self, **kwargs):
         auth_token = kwargs.get("auth_token", None)
         if auth_token:

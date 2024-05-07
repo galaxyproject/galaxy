@@ -529,20 +529,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
             log.debug("irods_pt _delete: %s", ipt_timer)
         return False
 
-    def _get_data(self, obj, start=0, count=-1, **kwargs):
-        ipt_timer = ExecutionTimer()
-        rel_path = self._construct_path(obj, **kwargs)
-        # Check cache first and get file if not there
-        if not self._in_cache(rel_path):
-            self._pull_into_cache(rel_path)
-        # Read the file content from cache
-        data_file = open(self._get_cache_path(rel_path))
-        data_file.seek(start)
-        content = data_file.read(count)
-        data_file.close()
-        log.debug("irods_pt _get_data: %s", ipt_timer)
-        return content
-
     def _get_filename(self, obj, **kwargs):
         ipt_timer = ExecutionTimer()
         base_dir = kwargs.get("base_dir", None)
