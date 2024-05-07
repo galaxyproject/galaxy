@@ -394,6 +394,43 @@ class UsesCache:
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
+    def _get_filename(self, obj, **kwargs):
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
+        sync_cache = kwargs.get("sync_cache", True)
+
+        rel_path = self._construct_path(obj, **kwargs)
+
+        # for JOB_WORK directory
+        if base_dir and dir_only and obj_dir:
+            return os.path.abspath(rel_path)
+
+        cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
+
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
+            return cache_path
+
+        # Check if the file exists in persistent storage and, if it does, pull it into cache
+        elif self._exists(obj, **kwargs):
+            if dir_only:
+                self._download_directory_into_cache(rel_path, cache_path)
+                return cache_path
+            else:
+                if self._pull_into_cache(rel_path):
+                    return cache_path
+        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
+
+    def _download_directory_into_cache(self, rel_path, cache_path):
+        # azure, pithos, irod, and cloud did not do this prior to refactoring so I am assuming
+        # there is just operations that fail with these object stores,
+        # I'm placing a no-op here to match their behavior but we should
+        # maybe implement this for those object stores.
+        pass
+
     def _get_remote_size(self, rel_path: str) -> int: ...
 
     def _exists_remotely(self, rel_path: str) -> bool: ...
