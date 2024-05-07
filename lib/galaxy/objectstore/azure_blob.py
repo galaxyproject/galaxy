@@ -480,7 +480,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # but requires iterating through each individual blob in Azure and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
-                blobs = self.service.get_container_client(self.container_name).list_blobs()
+                blobs = self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
                 for blob in blobs:
                     log.debug("Deleting from Azure: %s", blob)
                     self._blob_client(blob.name).delete_blob()
