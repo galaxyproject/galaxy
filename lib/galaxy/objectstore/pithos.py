@@ -154,17 +154,9 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
         if project and c.get("x-container-policy-project") != project:
             self.pithos.reassign_container(project)
 
-    def _pull_into_cache(self, rel_path):
-        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
-        rel_path_dir = os.path.dirname(rel_path)
-        rel_cache_path_dir = self._get_cache_path(rel_path_dir)
-        if not os.path.exists(rel_cache_path_dir):
-            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
-        # Now pull in the file
-        cache_path = self._get_cache_path(rel_path_dir)
-        self.pithos.download_object(rel_path, cache_path)
-        fix_permissions(self.config, cache_path)
-        return cache_path
+    def _download(self, rel_path):
+        local_destination = self._get_cache_path(rel_path)
+        self.pithos.download_object(rel_path, local_destination)
 
     # No need to overwrite "shutdown"
 

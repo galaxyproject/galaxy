@@ -200,16 +200,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
     def _blob_client(self, rel_path: str):
         return self.service.get_blob_client(self.container_name, rel_path)
 
-    def _pull_into_cache(self, rel_path):
-        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
-        rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
-        # Now pull in the file
-        file_ok = self._download(rel_path)
-        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        return file_ok
-
     def _download(self, rel_path):
         local_destination = self._get_cache_path(rel_path)
         try:

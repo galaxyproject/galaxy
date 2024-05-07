@@ -348,16 +348,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         # else:
         #     return False
 
-    def _pull_into_cache(self, rel_path):
-        # Ensure the cache directory structure exists (e.g., dataset_#_files/)
-        rel_path_dir = os.path.dirname(rel_path)
-        if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
-        # Now pull in the file
-        file_ok = self._download(rel_path)
-        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        return file_ok
-
     def _transfer_cb(self, complete, total):
         self.transfer_progress += 10
 
