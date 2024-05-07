@@ -71,6 +71,10 @@ const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) 
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && filterText.value);
+const deleteButtonTitle = computed(() => (showDeleted.value ? "Hide deleted workflows" : "Show deleted workflows"));
+const bookmarkButtonTitle = computed(() =>
+    showBookmarked.value ? "Hide bookmarked workflows" : "Show bookmarked workflows"
+);
 
 // Filtering computed refs
 const workflowFilters = computed(() => WorkflowFilters(props.activeList));
@@ -87,8 +91,17 @@ function updateFilterValue(filterKey: string, newValue: any) {
     filterText.value = workflowFilters.value.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
+function toggleBookmarked(bookmarked?: boolean) {
+    showBookmarked.value = bookmarked ?? !showBookmarked.value;
+}
+
 function onToggleBookmarked() {
-    showBookmarked.value = !showBookmarked.value;
+    toggleBookmarked();
+}
+
+function onToggleDeleted() {
+    updateFilterValue("deleted", true);
+    toggleBookmarked(false);
 }
 
 async function load(overlayLoading = false, silent = false) {
@@ -234,10 +247,10 @@ onMounted(() => {
                             id="show-deleted"
                             v-b-tooltip.hover
                             size="sm"
-                            :title="!showDeleted ? 'Show deleted workflows' : 'Hide deleted workflows'"
+                            :title="deleteButtonTitle"
                             :pressed="showDeleted"
                             variant="outline-primary"
-                            @click="updateFilterValue('deleted', true)">
+                            @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
                             Show deleted
                         </BButton>
@@ -246,8 +259,9 @@ onMounted(() => {
                             id="show-bookmarked"
                             v-b-tooltip.hover
                             size="sm"
-                            :title="!showBookmarked ? 'Show bookmarked workflows' : 'Hide bookmarked workflows'"
+                            :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
+                            :disabled="showDeleted"
                             variant="outline-primary"
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
