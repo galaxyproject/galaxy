@@ -86,7 +86,7 @@ class OutputsLabelDuplicatedFilter(Linter):
         for output in tool_xml.findall("./outputs/data") + tool_xml.findall("./outputs/collection"):
             name = output.attrib.get("name", "")
             label = output.attrib.get("label", "${tool.name} on ${on_string}")
-            if label in labels and output.find(".//filter") is not None:
+            if label in labels and output.find("./filter") is not None:
                 lint_ctx.warn(
                     f"Tool output [{name}] uses duplicated label '{label}', double check if filters imply disjoint cases",
                     linter=cls.name(),
@@ -105,7 +105,7 @@ class OutputsLabelDuplicatedNoFilter(Linter):
         for output in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]"):
             name = output.attrib.get("name", "")
             label = output.attrib.get("label", "${tool.name} on ${on_string}")
-            if label in labels and output.find(".//filter") is None:
+            if label in labels and output.find("./filter") is None:
                 lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", linter=cls.name(), node=output)
             labels.add(label)
 
