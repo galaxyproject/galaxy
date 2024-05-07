@@ -152,19 +152,27 @@ function getAABB() {
     return aabb;
 }
 
-function onDragStart() {
+let resampleNodes = true;
+let stepsInBounds = [] as StepWithPosition[];
+let commentsInBounds = [] as WorkflowComment[];
+
+function onDrag() {
     const aabb = getAABB();
 
-    const stepsInBounds = getStepsInBounds(aabb);
-    const commentsInBounds = getCommentsInBounds(aabb);
+    if (resampleNodes) {
+        stepsInBounds = getStepsInBounds(aabb);
+        commentsInBounds = getCommentsInBounds(aabb);
 
-    commentsInBounds.push(props.comment);
+        commentsInBounds.push(props.comment);
+        resampleNodes = false;
+    }
 
     lazyAction = new LazyMoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
     undoRedoStore.applyLazyAction(lazyAction);
 }
 
 function onDragEnd() {
+    resampleNodes = true;
     saveText();
     undoRedoStore.flushLazyAction();
 }
@@ -173,7 +181,7 @@ function onMove(position: { x: number; y: number }) {
     if (lazyAction && undoRedoStore.isQueued(lazyAction)) {
         lazyAction.changePosition(position);
     } else {
-        onDragStart();
+        onDrag();
     }
 }
 

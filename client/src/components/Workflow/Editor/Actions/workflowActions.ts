@@ -182,7 +182,7 @@ export class LazyMoveMultipleAction extends LazyUndoRedoAction {
         this.commentStore = commentStore;
         this.stepStore = stepStore;
         this.comments = [...comments];
-        this.steps = [...steps];
+        this.steps = [...steps.map((step) => ensureDefined(stepStore.getStep(step.id)))] as StepWithPosition[];
 
         this.steps.forEach((step) => {
             this.stepStartOffsets.set(step.id, [step.position.left - position.x, step.position.top - position.y]);
