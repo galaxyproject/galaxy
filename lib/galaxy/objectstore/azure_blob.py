@@ -294,24 +294,36 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             # but requires iterating through each individual blob in Azure and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
-                blobs = self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
-                for blob in blobs:
-                    log.debug("Deleting from Azure: %s", blob)
-                    self._blob_client(blob.name).delete_blob()
-                return True
+                return self._delete_remote_all(rel_path)
             else:
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._exists_remotely(rel_path):
                     log.debug("Deleting from Azure: %s", rel_path)
-                    self._blob_client(rel_path).delete_blob()
-                    return True
-        except AzureHttpError:
-            log.exception("Could not delete blob '%s' from Azure", rel_path)
+                    return self._delete_existing_remote(rel_path)
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
+
+    def _delete_remote_all(self, rel_path: str) -> bool:
+        try:
+            blobs = self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
+            for blob in blobs:
+                log.debug("Deleting from Azure: %s", blob)
+                self._blob_client(blob.name).delete_blob()
+            return True
+        except AzureHttpError:
+            log.exception("Could not delete blob '%s' from Azure", rel_path)
+            return False
+
+    def _delete_existing_remote(self, rel_path: str) -> bool:
+        try:
+            self._blob_client(rel_path).delete_blob()
+            return True
+        except AzureHttpError:
+            log.exception("Could not delete blob '%s' from Azure", rel_path)
+            return False
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

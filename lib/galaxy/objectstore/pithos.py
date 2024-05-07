@@ -252,17 +252,30 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
             extra_dir = kwargs.get("extra_dir", False)
             if entire_dir and extra_dir:
                 shutil.rmtree(cache_path)
-                log.debug(f"On Pithos: delete -r {path}/")
-                self.pithos.del_object(path, delimiter="/")
-                return True
+                return self._delete_remote_all(path)
             else:
                 os.unlink(cache_path)
-                self.pithos.del_object(path)
+                return self._delete_existing_remote(path)
         except OSError:
             log.exception(f"{self._get_filename(obj, **kwargs)} delete error")
-        except ClientError as ce:
-            log.exception(f"Could not delete {path} from Pithos, {ce}")
         return False
+
+    def _delete_remote_all(self, path: str) -> bool:
+        try:
+            log.debug(f"On Pithos: delete -r {path}/")
+            self.pithos.del_object(path, delimiter="/")
+            return True
+        except ClientError:
+            log.exception(f"Could not delete path '{path}' from Pithos")
+            return False
+
+    def _delete_existing_remote(self, path: str) -> bool:
+        try:
+            self.pithos.del_object(path)
+            return True
+        except ClientError:
+            log.exception(f"Could not delete path '{path}' from Pithos")
+            return False
 
     def _get_object_url(self, obj, **kwargs):
         """
