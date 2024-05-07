@@ -10,6 +10,17 @@ History
 
 
 -------------------
+24.0.2 (2024-05-07)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Improve error message for ``Extract dataset`` tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18078 <https://github.com/galaxyproject/galaxy/pull/18078>`_
+
+-------------------
 24.0.1 (2024-05-02)
 -------------------
 

@@ -10,6 +10,18 @@ History
 
 
 -------------------
+24.0.2 (2024-05-07)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Tool linters: allow to skip by old linter names (by allowing to skip linter modules) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18091 <https://github.com/galaxyproject/galaxy/pull/18091>`_
+* tool linters: output filters should only consider child filter nodes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18096 <https://github.com/galaxyproject/galaxy/pull/18096>`_
+
+-------------------
 24.0.1 (2024-05-02)
 -------------------
 
