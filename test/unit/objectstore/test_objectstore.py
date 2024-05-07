@@ -1,4 +1,5 @@
 import os
+import random
 import time
 from tempfile import (
     mkdtemp,
@@ -1544,6 +1545,50 @@ def test_real_aws_s3_store(tmp_path):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
+AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
+type: boto3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_real_aws_s3_store_boto3(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+def test_real_aws_s3_store_boto3_new_bucket(tmp_path):
+    rand_int = random.randint(100000, 999999)
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": f"mynewbucket{rand_int}",
+    }
+    with TestConfig(AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
 AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML = """
 type: cloud
 store_by: uuid
@@ -1617,7 +1662,6 @@ def test_aws_via_cloudbridge_store_with_region(tmp_path):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
-
 GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML = """
 type: generic_s3
 store_by: uuid
@@ -1639,6 +1683,7 @@ extra_dirs:
   path: database/tmp_azure
 """
 
+
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
@@ -1649,6 +1694,43 @@ def test_gcp_via_s3_interop(tmp_path):
         "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
     }
     with TestConfig(GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+GOOGLE_INTEROP_VIA_BOTO3_TEMPLATE_TEST_CONFIG_YAML = """
+type: boto3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+connection:
+  endpoint_url: https://storage.googleapis.com
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop_and_boto3(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
+    }
+    with TestConfig(GOOGLE_INTEROP_VIA_BOTO3_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
         _,
         object_store,
     ):

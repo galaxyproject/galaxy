@@ -183,6 +183,7 @@ types-python-dateutil = "*"
 types-PyYAML = "*"
 types-requests = "*"
 types-six = "*"
+"boto3-stubs[s3]" = "*"
 
 [tool.ruff]
 target-version = "py38"
