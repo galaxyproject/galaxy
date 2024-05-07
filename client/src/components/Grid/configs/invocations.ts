@@ -73,7 +73,7 @@ function fetchHistoriesAndWorkflows(invocations: Array<WorkflowInvocation>) {
  */
 const actions: ActionArray = [
     {
-        title: "Import New Invocation",
+        title: "Import Invocation",
         icon: faPlus,
         handler: () => {
             emit("/workflows/invocations/import");
