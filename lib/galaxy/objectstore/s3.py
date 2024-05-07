@@ -440,41 +440,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             raise
         return False
 
-    def _create(self, obj, **kwargs):
-        if not self._exists(obj, **kwargs):
-            # Pull out locally used fields
-            extra_dir = kwargs.get("extra_dir", None)
-            extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
-            dir_only = kwargs.get("dir_only", False)
-            alt_name = kwargs.get("alt_name", None)
-
-            # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
-
-            # Optionally append extra_dir
-            if extra_dir is not None:
-                if extra_dir_at_root:
-                    rel_path = os.path.join(extra_dir, rel_path)
-                else:
-                    rel_path = os.path.join(rel_path, extra_dir)
-
-            # Create given directory in cache
-            cache_dir = os.path.join(self.staging_path, rel_path)
-            if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir, exist_ok=True)
-
-            # Although not really necessary to create S3 folders (because S3 has
-            # flat namespace), do so for consistency with the regular file system
-            # S3 folders are marked by having trailing '/' so add it now
-            # s3_dir = '%s/' % rel_path
-            # self._push_to_os(s3_dir, from_string='')
-            # If instructed, create the dataset in cache & in S3
-            if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
-                open(os.path.join(self.staging_path, rel_path), "w").close()
-                self._push_to_os(rel_path, from_string="")
-        return self
-
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) == 0)
