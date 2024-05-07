@@ -373,16 +373,6 @@ class BaseObjectStore(ObjectStore):
         """Close any connections for this ObjectStore."""
         self.running = False
 
-    def file_ready(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
-    ):
-        """
-        Check if a file corresponding to a dataset is ready to be used.
-
-        Return True if so, False otherwise
-        """
-        return True
-
     @classmethod
     def parse_xml(clazz, config_xml):
         """Parse an XML description of a configuration for this object store.
@@ -937,10 +927,6 @@ class NestedObjectStore(BaseObjectStore):
     def _exists(self, obj, **kwargs):
         """Determine if the `obj` exists in any of the backends."""
         return self._call_method("_exists", obj, False, False, **kwargs)
-
-    def file_ready(self, obj, **kwargs):
-        """Determine if the file for `obj` is ready to be used by any of the backends."""
-        return self._call_method("file_ready", obj, False, False, **kwargs)
 
     def _create(self, obj, **kwargs):
         """Create a backing file in a random backend."""

@@ -364,25 +364,6 @@ class RucioObjectStore(ConcreteObjectStore, UsesCache):
     def parse_xml(cls, config_xml):
         return parse_config_xml(config_xml)
 
-    def file_ready(self, obj, **kwargs):
-        log.debug("rucio file_ready")
-        """
-        A helper method that checks if a file corresponding to a dataset is
-        ready and available to be used. Return ``True`` if so, ``False`` otherwise.
-        """
-        rel_path = self._construct_path(obj, **kwargs)
-        # Make sure the size in cache is available in its entirety
-        if self._in_cache(rel_path):
-            if os.path.getsize(self._get_cache_path(rel_path)) == self.rucio_broker.get_size(rel_path):
-                return True
-        log.debug(
-            "Waiting for dataset %s to transfer from OS: %s/%s",
-            rel_path,
-            os.path.getsize(self._get_cache_path(rel_path)),
-            self.rucio_broker.get_size(rel_path),
-        )
-        return False
-
     def _create(self, obj, **kwargs):
         if not self._exists(obj, **kwargs):
             # Pull out locally used fields

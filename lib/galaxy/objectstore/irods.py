@@ -461,27 +461,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         finally:
             log.debug("irods_pt _push_to_irods: %s", ipt_timer)
 
-    def file_ready(self, obj, **kwargs):
-        """
-        A helper method that checks if a file corresponding to a dataset is
-        ready and available to be used. Return ``True`` if so, ``False`` otherwise.
-        """
-        ipt_timer = ExecutionTimer()
-        rel_path = self._construct_path(obj, **kwargs)
-        # Make sure the size in cache is available in its entirety
-        if self._in_cache(rel_path):
-            if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_irods(rel_path):
-                log.debug("irods_pt _file_ready: %s", ipt_timer)
-                return True
-            log.debug(
-                "Waiting for dataset %s to transfer from OS: %s/%s",
-                rel_path,
-                os.path.getsize(self._get_cache_path(rel_path)),
-                self._get_size_in_irods(rel_path),
-            )
-        log.debug("irods_pt _file_ready: %s", ipt_timer)
-        return False
-
     def _create(self, obj, **kwargs):
         ipt_timer = ExecutionTimer()
         if not self._exists(obj, **kwargs):
