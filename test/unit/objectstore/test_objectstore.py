@@ -8,6 +8,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from requests import get
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
@@ -991,12 +992,6 @@ def test_config_parse_cloud():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1004,13 +999,12 @@ def test_config_parse_cloud():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1027,11 +1021,6 @@ def test_config_parse_cloud():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1056,12 +1045,6 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1069,13 +1052,12 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1086,11 +1068,6 @@ def test_config_parse_cloud_noauth_for_aws():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1266,7 +1243,7 @@ def test_config_parse_azure_no_cache():
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
-def verify_caching_object_store_functionality(tmp_path, object_store):
+def verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=True):
     # Test no dataset with id 1 exists.
     absent_dataset = MockDataset(1)
     assert not object_store.exists(absent_dataset)
@@ -1346,14 +1323,13 @@ def verify_caching_object_store_functionality(tmp_path, object_store):
 
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
-    from requests import get
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
 
-    response = get(url)
-    response.raise_for_status()
-    assert response.text == "Hello World!"
 
-
-def verify_object_store_functionality(tmp_path, object_store):
+def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):
     # Test no dataset with id 1 exists.
     absent_dataset = MockDataset(1)
     assert not object_store.exists(absent_dataset)
@@ -1400,11 +1376,10 @@ def verify_object_store_functionality(tmp_path, object_store):
 
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
-    from requests import get
-
-    response = get(url)
-    response.raise_for_status()
-    assert response.text == "Hello World!"
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
 
 
 AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML = """
@@ -1531,6 +1506,115 @@ def test_real_azure_blob_store_in_hierarchical(tmp_path):
         object_store,
     ):
         verify_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
+type: aws_s3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+connection:
+  region: ${region}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_real_aws_s3_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
+    }
+    with TestConfig(AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_aws_via_cloudbridge_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        # disabling get_object_url check - cloudbridge in this config assumes the region
+        # is us-east-1 and generates a URL for that region. This functionality works and can
+        # be tested if a region is specified in the configuration (see next config and test case).
+        verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=False)
+
+
+AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+  region: ${region}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_with_region(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
 
 
 class MockDataset:

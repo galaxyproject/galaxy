@@ -87,6 +87,7 @@ def parse_config_xml(config_xml):
         multipart = string_as_bool(cn_xml.get("multipart", "True"))
         is_secure = string_as_bool(cn_xml.get("is_secure", "True"))
         conn_path = cn_xml.get("conn_path", "/")
+        region = cn_xml.get("region", None)
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
@@ -114,6 +115,7 @@ def parse_config_xml(config_xml):
                 "multipart": multipart,
                 "is_secure": is_secure,
                 "conn_path": conn_path,
+                "region": region,
             },
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
@@ -142,6 +144,7 @@ class CloudConfigMixin:
                 "multipart": self.multipart,
                 "is_secure": self.is_secure,
                 "conn_path": self.conn_path,
+                "region": self.region,
             },
             "cache": {
                 "size": self.cache_size,
@@ -185,6 +188,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         self.multipart = connection_dict.get("multipart", True)
         self.is_secure = connection_dict.get("is_secure", True)
         self.conn_path = connection_dict.get("conn_path", "/")
+        self.region = connection_dict.get("region", None)
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -228,7 +232,23 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         log.debug("Configuring S3 Connection")
         # If access_key is empty use default credential chain
         if self.access_key:
-            self.conn = S3Connection(self.access_key, self.secret_key)
+            if self.region:
+                # If specify a region we can infer a host and turn on SIGV4.
+                # https://stackoverflow.com/questions/26744712/s3-using-boto-and-sigv4-missing-host-parameter
+
+                # Turning on SIGV4 is needed for AWS regions created after 2014... from
+                # https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html:
+                #
+                # "Amazon S3 supports Signature Version 4, a protocol for authenticating inbound API requests to AWS services,
+                # in all AWS Regions. At this time, AWS Regions created before January 30, 2014 will continue to support the
+                # previous protocol, Signature Version 2. Any new Regions after January 30, 2014 will support only Signature
+                # Version 4 and therefore all requests to those Regions must be made with Signature Version 4."
+                os.environ["S3_USE_SIGV4"] = "True"
+                self.conn = S3Connection(self.access_key, self.secret_key, host=f"s3.{self.region}.amazonaws.com")
+            else:
+                # See notes above, this path through the code will not work for
+                # newer regions.
+                self.conn = S3Connection(self.access_key, self.secret_key)
         else:
             self.conn = S3Connection()
 
@@ -581,7 +601,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
-            return bool(self._size(obj, **kwargs) > 0)
+            return bool(self._size(obj, **kwargs) == 0)
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
