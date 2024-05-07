@@ -54,6 +54,7 @@ RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = 0.1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
 
 GALAXY_MAIN_FRAME_ID = "galaxy_main"
+GALAXY_VISUALIZATION_FRAME_ID = "galaxy_visualization"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
@@ -151,6 +152,14 @@ def retry_during_transitions(
         )
 
     return _retry
+
+
+def retry_index_during_transitions():
+
+    def exception_check(e):
+        return exception_seems_to_indicate_transition(e) or isinstance(e, IndexError)
+
+    return partial(retry_during_transitions, exception_check=exception_check)
 
 
 def edit_details(f, scope=".history-index"):
@@ -294,6 +303,15 @@ class NavigatesGalaxy(HasDriver):
         """Decorator to operate within the context of Galaxy's main frame."""
         try:
             self.switch_to_main_panel()
+            yield
+        finally:
+            self.driver.switch_to.default_content()
+
+    @contextlib.contextmanager
+    def visualization_panel(self):
+        """Decorator to operate within the context of Galaxy's visualization frame."""
+        try:
+            self.driver.switch_to.frame(GALAXY_VISUALIZATION_FRAME_ID)
             yield
         finally:
             self.driver.switch_to.default_content()
@@ -1237,7 +1255,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.pages.wait_for_and_click()
 
     def admin_open(self):
-        self.components.masthead.admin.wait_for_and_click()
+        self.components.admin.activity.wait_for_and_click()
 
     def create_quota(
         self,
@@ -1421,7 +1439,12 @@ class NavigatesGalaxy(HasDriver):
         return self.components.workflows.workflow_card.all()
 
     def workflow_card_element(self, workflow_index=0):
-        return self.workflow_card_elements()[workflow_index]
+
+        @retry_index_during_transitions()
+        def fetch():
+            return self.workflow_card_elements()[workflow_index]
+
+        return fetch()
 
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
@@ -1558,7 +1581,7 @@ class NavigatesGalaxy(HasDriver):
             workflow_run.expand_form_link.wait_for_and_click()
             workflow_run.expanded_form.wait_for_visible()
 
-    def workflow_create_new(self, annotation=None, clear_placeholder=False):
+    def workflow_create_new(self, annotation=None, clear_placeholder=False, save_workflow=True):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
@@ -1570,11 +1593,12 @@ class NavigatesGalaxy(HasDriver):
         name_component.wait_for_and_send_keys(name)
         annotation = annotation or self._get_random_name()
         self.components.workflow_editor.edit_annotation.wait_for_and_send_keys(annotation)
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        assert not save_button.has_class("disabled")
-        save_button.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        if save_workflow:
+            save_button = self.components.workflow_editor.save_button
+            save_button.wait_for_visible()
+            assert not save_button.has_class("disabled")
+            save_button.wait_for_and_click()
+            self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def invocation_index_table_elements(self):

@@ -22,7 +22,10 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from galaxy.util.resources import files
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from .custos_authnz import (
     CustosAuthFactory,
     KEYCLOAK_BACKENDS,
@@ -35,7 +38,7 @@ from .psa_authnz import (
     Strategy,
 )
 
-OIDC_BACKEND_SCHEMA = files("galaxy.authnz.xsd") / "oidc_backends_config.xsd"
+OIDC_BACKEND_SCHEMA = resource_path(__package__, "xsd/oidc_backends_config.xsd")
 
 log = logging.getLogger(__name__)
 
@@ -92,8 +95,9 @@ class AuthnzManager:
                         func = getattr(builtins, child.get("Type"))
                 except AttributeError:
                     log.error(
-                        "The value of attribute `Type`, `{}`, is not a valid built-in type;" " skipping this node"
-                    ).format(child.get("Type"))
+                        "The value of attribute `Type`, `%s`, is not a valid built-in type; skipping this node",
+                        child.get("Type"),
+                    )
                     continue
                 self.oidc_config[child.get("Property")] = func(child.get("Value"))
         except ImportError:
@@ -108,7 +112,8 @@ class AuthnzManager:
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file, schemafname=OIDC_BACKEND_SCHEMA)
+            with as_file(OIDC_BACKEND_SCHEMA) as oidc_backend_schema_path:
+                tree = parse_xml(config_file, schemafname=oidc_backend_schema_path)
             root = tree.getroot()
             if root.tag != "OIDC":
                 raise etree.ParseError(
@@ -343,9 +348,8 @@ class AuthnzManager:
             if refreshed:
                 log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
             return True
-        except Exception as e:
-            msg = f"An error occurred when refreshing user token: {e}"
-            log.error(msg)
+        except Exception:
+            log.exception("An error occurred when refreshing user token")
             return False
 
     def refresh_expiring_oidc_tokens(self, trans, user=None):

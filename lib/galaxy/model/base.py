@@ -53,8 +53,8 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
         return  # exit: can't use as a Session
 
-    if not session.in_transaction():
-        with session.begin():
+    if not session.in_transaction():  # type:ignore[union-attr]
+        with session.begin():  # type:ignore[union-attr]
             yield
     else:
         yield
@@ -81,7 +81,7 @@ def check_database_connection(session):
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False, future=True)
+        self._SessionLocal = sessionmaker(autoflush=False)
         versioned_session(self._SessionLocal)
         context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
@@ -174,18 +174,32 @@ def versioned_objects_strict(iter):
             yield obj
 
 
-if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
-    log.debug("Using strict flush checks")
-    versioned_objects = versioned_objects_strict  # noqa: F811
+def get_before_flush_handler():
+    if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+        log.debug("Using strict flush checks")
+
+        def before_flush(session, flush_context, instances):
+            for obj in session.new:
+                if hasattr(obj, "__strict_check_before_flush__"):
+                    obj.__strict_check_before_flush__()
+            for obj in versioned_objects_strict(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects_strict(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    else:
+
+        def before_flush(session, flush_context, instances):
+            for obj in versioned_objects(session.dirty):
+                obj.__create_version__(session)
+            for obj in versioned_objects(session.deleted):
+                obj.__create_version__(session, deleted=True)
+
+    return before_flush
 
 
 def versioned_session(session):
-    @event.listens_for(session, "before_flush")
-    def before_flush(session, flush_context, instances):
-        for obj in versioned_objects(session.dirty):
-            obj.__create_version__(session)
-        for obj in versioned_objects(session.deleted):
-            obj.__create_version__(session, deleted=True)
+    event.listens_for(session, "before_flush")(get_before_flush_handler())
 
 
 def ensure_object_added_to_session(object_to_add, *, object_in_session=None, session=None) -> bool:
@@ -201,7 +215,9 @@ def ensure_object_added_to_session(object_to_add, *, object_in_session=None, ses
     if session:
         session.add(object_to_add)
         return True
-    if object_in_session and object_session(object_in_session):
-        object_session(object_in_session).add(object_to_add)
-        return True
+    if object_in_session:
+        session = object_session(object_in_session)
+        if session:
+            session.add(object_to_add)
+            return True
     return False

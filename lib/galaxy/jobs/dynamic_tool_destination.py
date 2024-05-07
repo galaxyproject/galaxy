@@ -1773,11 +1773,13 @@ if __name__ == "__main__":
         "--check-config",
         dest="check_config",
         nargs="?",
-        help="Use this option to validate tool_destinations.yml."
-        + " Optionally, provide the path to the tool_destinations.yml"
-        + " that you would like to check, and/or the path to the related"
-        + " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
-        + "and galaxy/config/job_conf.xml",
+        help=(
+            "Use this option to validate tool_destinations.yml."
+            " Optionally, provide the path to the tool_destinations.yml"
+            " that you would like to check, and/or the path to the related"
+            " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
+            "and galaxy/config/job_conf.xml"
+        ),
     )
 
     parser.add_argument("-j", "--job-config", dest="job_config")

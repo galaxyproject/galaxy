@@ -9,13 +9,12 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { HistorySummary } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
+import { useHistoryContentStats } from "@/composables/historyContentStats";
 import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useUserStore } from "@/stores/userStore";
-
-import { useDetailedHistory } from "./usesDetailedHistory";
 
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
@@ -26,7 +25,7 @@ library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
 const props = withDefaults(
     defineProps<{
-        history: HistorySummary;
+        history: HistorySummaryExtended;
         isWatching?: boolean;
         lastChecked: Date;
         filterText?: string;
@@ -47,7 +46,9 @@ const emit = defineEmits(["update:filter-text", "reloadContents"]);
 const router = useRouter();
 const { config } = useConfig();
 const { currentUser } = storeToRefs(useUserStore());
-const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
+const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
+    toRef(props, "history")
+);
 
 const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");

@@ -31,6 +31,7 @@ import { NotificationsPreferences } from "components/User/Notifications";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
+import VisualizationFrame from "components/Visualizations/VisualizationFrame";
 import VisualizationPublished from "components/Visualizations/VisualizationPublished";
 import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import TrsImport from "components/Workflow/Import/TrsImport";
@@ -105,9 +106,6 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            ...AdminRoutes,
-            ...LibraryRoutes,
-            ...StorageDashboardRoutes,
             /** Login entry route */
             {
                 path: "/login/start",
@@ -171,6 +169,9 @@ export function getRouter(Galaxy) {
                 path: "/",
                 component: Analysis,
                 children: [
+                    ...AdminRoutes,
+                    ...LibraryRoutes,
+                    ...StorageDashboardRoutes,
                     {
                         path: "",
                         alias: "root",
@@ -450,6 +451,9 @@ export function getRouter(Galaxy) {
                         path: "user/notifications",
                         component: NotificationsList,
                         redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                        props: (route) => ({
+                            shouldOpenPreferences: Boolean(route.query.preferences),
+                        }),
                     },
                     {
                         path: "user/notifications/preferences",
@@ -475,6 +479,16 @@ export function getRouter(Galaxy) {
                         component: VisualizationsList,
                         props: (route) => ({
                             datasetId: route.query.dataset_id,
+                        }),
+                    },
+                    {
+                        path: "visualizations/display",
+                        component: VisualizationFrame,
+                        name: "VisualizationsDisplay",
+                        props: (route) => ({
+                            datasetId: route.query.dataset_id,
+                            visualization: route.query.visualization,
+                            visualizationId: route.query.visualization_id,
                         }),
                     },
                     {
@@ -542,7 +556,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/invocations/:invocationId",
                         component: WorkflowInvocationState,
-                        props: true,
+                        props: (route) => ({
+                            invocationId: route.params.invocationId,
+                            isFullPage: true,
+                        }),
                     },
                     {
                         path: "workflows/list",

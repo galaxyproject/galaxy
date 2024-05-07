@@ -27,7 +27,7 @@ class TestVisualizations(SeleniumTestCase):
         self.screenshot("visualization_plugins_png")
         self.components.visualization.plugin_item(id="annotate_image").wait_for_and_click()
 
-        with self.main_panel():
+        with self.visualization_panel():
             self.wait_for_selector("#image-annotate")
             self.screenshot("visualization_plugin_charts_image_annotate")
 
@@ -44,6 +44,6 @@ class TestVisualizations(SeleniumTestCase):
         self.screenshot("visualization_plugins_sam")
         self.components.visualization.plugin_item(id="nvd3_bar").wait_for_and_click()
 
-        with self.main_panel():
+        with self.visualization_panel():
             self.wait_for_selector("g.nvd3")
             self.screenshot("visualization_plugin_charts_nvd3_bar_landing")

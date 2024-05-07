@@ -77,8 +77,12 @@ export async function createWorkflow(workflowName: string, workflowAnnotation: s
     return data;
 }
 
-export async function getWorkflowFull(workflowId: string) {
-    const { data } = await axios.get(withPrefix(`/workflow/load_workflow?_=true&id=${workflowId}`));
+export async function getWorkflowFull(workflowId: string, version?: number) {
+    let url = `/workflow/load_workflow?_=true&id=${workflowId}`;
+    if (version !== undefined) {
+        url += `&version=${version}`;
+    }
+    const { data } = await axios.get(withPrefix(url));
     return data;
 }
 

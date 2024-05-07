@@ -68,16 +68,13 @@ from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
     ColorToolParameter,
-    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
-    is_runtime_value,
     parameter_types,
     raw_to_galaxy,
-    runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
 )
@@ -86,7 +83,12 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    ConnectedValue,
+    is_runtime_value,
+    runtime_to_json,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import (
     listify,
@@ -136,7 +138,7 @@ def to_cwl(value, hda_references, step):
         # I think the following two checks are needed but they may
         # not be needed.
         if not value.dataset.in_ready_state():
-            why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+            why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
             raise DelayedWorkflowEvaluation(why=why)
         if not value.is_ok:
             raise FailWorkflowEvaluation(
@@ -188,7 +190,7 @@ def from_cwl(value, hda_references, progress: "WorkflowProgress"):
             # This is going to re-file -> HDA this each iteration I think, not a good
             # implementation.
             return progress.raw_to_galaxy(value)
-        assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+        assert value["location"].startswith("step_input://"), f"Invalid location {value}"
         return hda_references[int(value["location"][len("step_input://") :]) - 1]
     elif isinstance(value, dict):
         raise NotImplementedError()
@@ -2002,18 +2004,6 @@ class ToolModule(WorkflowModule):
                     and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY
                 ):
                     if prefixed_name in input_connections_by_name:
-                        connection = input_connections_by_name[prefixed_name]
-                        output_step = next(
-                            output_step for output_step in steps if connection.output_step_id == output_step.id
-                        )
-                        if output_step.type.startswith("data"):
-                            output_inputs = output_step.module.get_runtime_inputs(output_step, connections=connections)
-                            output_value = output_inputs["input"].get_initial_value(self.trans, context)
-                            if input_type == "data" and isinstance(
-                                output_value, self.trans.app.model.HistoryDatasetCollectionAssociation
-                            ):
-                                return output_value.to_hda_representative()
-                            return output_value
                         return ConnectedValue()
                     else:
                         return input.get_initial_value(self.trans, context)
@@ -2406,13 +2396,14 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
-    def get_informal_replacement_parameters(self, step) -> List[str]:
+    def get_informal_replacement_parameters(self, step: WorkflowStep) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
-            for argument in pja.action_arguments.values():
-                for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
-                    replacement_parameters.add(match)
+            if action_arguments := pja.action_arguments:
+                for argument in action_arguments.values():
+                    for match in re.findall(r"\$\{(.+?)\}", unicodify(argument)):
+                        replacement_parameters.add(match)
 
         return list(replacement_parameters)
 
@@ -2436,6 +2427,7 @@ class WorkflowModuleFactory:
         Return module initialized from the WorkflowStep object `step`.
         """
         type = step.type
+        assert type
         return self.module_types[type].from_workflow_step(trans, step, **kwargs)
 
 
@@ -2581,11 +2573,13 @@ def populate_module_and_state(
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
-            raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
+            raise exceptions.MessageException(
+                "Error computing workflow step runtime state", err_data={step.order_index: step_errors}
+            )
         if step.upgrade_messages:
             if allow_tool_state_corrections:
                 log.debug('Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages)
             else:
                 raise exceptions.MessageException(
-                    step.upgrade_messages, err_data={step.order_index: step.upgrade_messages}
+                    "Workflow step has upgrade messages", err_data={step.order_index: step.upgrade_messages}
                 )

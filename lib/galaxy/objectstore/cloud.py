@@ -56,13 +56,6 @@ class CloudConfigMixin:
                 "name": self.bucket_name,
                 "use_reduced_redundancy": self.use_rr,
             },
-            "connection": {
-                "host": self.host,
-                "port": self.port,
-                "multipart": self.multipart,
-                "is_secure": self.is_secure,
-                "conn_path": self.conn_path,
-            },
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
@@ -86,7 +79,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.transfer_progress = 0
 
         bucket_dict = config_dict["bucket"]
-        connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
@@ -95,12 +87,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.bucket_name = bucket_dict.get("name")
         self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
         self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
-
-        self.host = connection_dict.get("host", None)
-        self.port = connection_dict.get("port", 6000)
-        self.multipart = connection_dict.get("multipart", True)
-        self.is_secure = connection_dict.get("is_secure", True)
-        self.conn_path = connection_dict.get("conn_path", "/")
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -131,6 +117,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         log.debug(f"Configuring `{provider}` Connection")
         if provider == "aws":
             config = {"aws_access_key": credentials["access_key"], "aws_secret_key": credentials["secret_key"]}
+            if "region" in credentials:
+                config["aws_region_name"] = credentials["region"]
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
             config = {
@@ -198,8 +186,9 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             if provider == "aws":
                 akey = auth_element.get("access_key")
                 skey = auth_element.get("secret_key")
-
                 config["auth"] = {"access_key": akey, "secret_key": skey}
+                if "region" in auth_element:
+                    config["auth"]["region"] = auth_element["region"]
             elif provider == "azure":
                 sid = auth_element.get("subscription_id")
                 if sid is None:
@@ -553,7 +542,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
-            return bool(self._size(obj, **kwargs) > 0)
+            return bool(self._size(obj, **kwargs) == 0)
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
@@ -692,7 +681,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
         return None
 
-    def _get_store_usage_percent(self):
+    def _get_store_usage_percent(self, obj):
         return 0.0
 
     def shutdown(self):

@@ -1,12 +1,11 @@
+import axios from "axios";
 import type { FetchArgType } from "openapi-typescript-fetch";
 
-import { DatasetDetails } from "@/api";
+import { HDADetailed } from "@/api";
 import { components, fetcher } from "@/api/schema";
 import { withPrefix } from "@/utils/redirect";
 
 export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
-
-export type HDASummary = components["schemas"]["HDASummary"];
 
 type GetDatasetsApiOptions = FetchArgType<typeof datasetsFetcher>;
 type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
@@ -42,16 +41,16 @@ export const fetchDataset = fetcher.path("/api/datasets/{dataset_id}").method("g
 
 export const fetchDatasetStorage = fetcher.path("/api/datasets/{dataset_id}/storage").method("get").create();
 
-export async function fetchDatasetDetails(params: { id: string }): Promise<DatasetDetails> {
+export async function fetchDatasetDetails(params: { id: string }): Promise<HDADetailed> {
     const { data } = await fetchDataset({ dataset_id: params.id, view: "detailed" });
     // We know that the server will return a DatasetDetails object because of the view parameter
     // but the type system doesn't, so we have to cast it.
-    return data as unknown as DatasetDetails;
+    return data as unknown as HDADetailed;
 }
 
 const updateDataset = fetcher.path("/api/datasets/{dataset_id}").method("put").create();
 
-export async function undeleteHistoryDataset(datasetId: string) {
+export async function undeleteDataset(datasetId: string) {
     const { data } = await updateDataset({
         dataset_id: datasetId,
         type: "dataset",
@@ -90,3 +89,9 @@ export function getCompositeDatasetLink(historyDatasetId: string, path: string) 
 
 export type DatasetExtraFiles = components["schemas"]["DatasetExtraFiles"];
 export const fetchDatasetExtraFiles = fetcher.path("/api/datasets/{dataset_id}/extra_files").method("get").create();
+
+export async function fetchDatasetAttributes(datasetId: string) {
+    const { data } = await axios.get(withPrefix(`/dataset/get_edit?dataset_id=${datasetId}`));
+
+    return data;
+}

@@ -81,7 +81,7 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
         install_model = mapping.init("sqlite:///:memory:", create_tables=True)
         self.app.tool_cache = ToolCache()
         self.app.install_model = install_model
-        self.app.reindex_tool_search = self.__reindex  # type: ignore[assignment]
+        self.app.reindex_tool_search = self.__reindex  # type: ignore[method-assign]
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
         self.app.watchers = ConfigWatchers(self.app)

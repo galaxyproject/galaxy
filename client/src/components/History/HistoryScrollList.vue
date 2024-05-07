@@ -9,7 +9,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { HistoryDetailed, HistorySummary } from "@/api";
+import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -121,11 +121,9 @@ watch(
 /** `historyStore` histories for current user */
 const historiesProxy = ref<HistorySummary[]>([]);
 watch(
-    () => histories.value as HistoryDetailed[],
-    (h: HistoryDetailed[]) => {
-        historiesProxy.value = h.filter(
-            (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)
-        );
+    () => histories.value as AnyHistory[],
+    (h: AnyHistory[]) => {
+        historiesProxy.value = h.filter((h) => userOwnsHistory(currentUser.value, h));
     },
     {
         immediate: true,
@@ -150,6 +148,10 @@ const filtered = computed<HistorySummary[]>(() => {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
             return 1;
+        } else if (isMultiviewPanel.value && isPinned(a.id) && !isPinned(b.id)) {
+            return -1;
+        } else if (isMultiviewPanel.value && !isPinned(a.id) && isPinned(b.id)) {
+            return 1;
         } else if (a.update_time < b.update_time) {
             return 1;
         } else {
@@ -163,16 +165,20 @@ const isMultiviewPanel = computed(() => !props.inModal && props.multiple);
 
 function isActiveItem(history: HistorySummary) {
     if (isMultiviewPanel.value) {
-        return pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id);
+        return isPinned(history.id);
     } else {
         return props.selectedHistories.some((item: PinnedHistory) => item.id == history.id);
     }
 }
 
+function isPinned(historyId: string) {
+    return pinnedHistories.value.some((item: PinnedHistory) => item.id == historyId);
+}
+
 function historyClicked(history: HistorySummary) {
     emit("selectHistory", history);
     if (isMultiviewPanel.value) {
-        if (pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id)) {
+        if (isPinned(history.id)) {
             historyStore.unpinHistories([history.id]);
         } else {
             openInMulti(history);
@@ -222,8 +228,8 @@ async function loadMore(noScroll = false) {
 <template>
     <div :class="isMultiviewPanel ? 'unified-panel' : 'flex-column-overflow'">
         <div class="unified-panel-controls">
-            <BBadge v-if="props.filter && !validFilter" class="alert-danger w-100 mb-2">
-                Search string too short!
+            <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
+                Search term is too short
             </BBadge>
             <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </div>
@@ -265,18 +271,14 @@ async function loadMore(noScroll = false) {
                                         <i v-if="history.id === currentHistoryId">(Current)</i>
                                     </Heading>
                                     <i
-                                        v-if="props.multiple && pinnedHistories.some((h) => h.id === history.id)"
-                                        v-b-tooltip.noninteractive.hover
+                                        v-if="props.multiple && isPinned(history.id)"
                                         title="This history is currently pinned in the multi-history view">
                                         (currently pinned)
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Amount of items in history')">
+                                    <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
                                     </BBadge>
                                     <BBadge

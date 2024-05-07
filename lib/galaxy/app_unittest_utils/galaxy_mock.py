@@ -125,7 +125,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self[ShortTermStorageMonitor] = sts_manager  # type: ignore[type-abstract]
         self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
-        self.tag_handler = tags.GalaxyTagHandler(self.model.context)
+        self.tag_handler = tags.GalaxyTagHandler(self.model.session)
         self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
         self.job_config = Bunch(

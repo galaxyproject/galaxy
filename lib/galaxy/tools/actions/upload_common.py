@@ -102,12 +102,12 @@ def handle_library_params(
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
         template = session.get(FormDefinition, template_id)
-        assert template
-        for field in template.fields:
-            field_name = field["name"]
-            if params.get(field_name, False):
-                field_value = util.restore_text(params.get(field_name, ""))
-                template_field_contents[field_name] = field_value
+        if template and template.fields:
+            for field in template.fields:
+                field_name = field["name"]  # type:ignore[index]
+                if params.get(field_name, False):
+                    field_value = util.restore_text(params.get(field_name, ""))
+                    template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
         role = session.get(Role, role_id)
@@ -140,8 +140,6 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
@@ -441,7 +439,6 @@ def active_folders(trans, folder):
         select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
         .options(joinedload(LibraryFolder.actions))
-        .unique()
         .order_by(LibraryFolder.name)
     )
-    return trans.sa_session.scalars(stmt).all()
+    return trans.sa_session.scalars(stmt).unique().all()

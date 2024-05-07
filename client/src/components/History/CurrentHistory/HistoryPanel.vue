@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistorySummary } from "@/api";
+import type { HistoryItemSummary, HistorySummaryExtended } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -13,7 +13,7 @@ import { Toast } from "@/composables/toast";
 import { useActiveElement } from "@/composables/useActiveElement";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
 import { useEventStore } from "@/stores/eventStore";
-import { type HistoryItem, useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setDrag } from "@/utils/setDrag";
@@ -47,7 +47,7 @@ interface BackendFilterError {
 
 interface Props {
     listOffset?: number;
-    history: HistorySummary;
+    history: HistorySummaryExtended;
     filter?: string;
     canEditHistory?: boolean;
     filterable?: boolean;
@@ -219,11 +219,11 @@ function dragSameHistory() {
 function getDragData() {
     const eventStore = useEventStore();
     const multiple = eventStore.multipleDragData;
-    let data: HistoryItem[] | undefined;
+    let data: HistoryItemSummary[] | undefined;
     let historyId: string | undefined;
     try {
         if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
             // set historyId to the first history_id in the multiple drag data
             const firstItem = Object.values(dragData)[0];
             if (firstItem) {
@@ -231,7 +231,7 @@ function getDragData() {
             }
             data = Object.values(dragData);
         } else {
-            data = [eventStore.getDragData() as HistoryItem];
+            data = [eventStore.getDragData() as HistoryItemSummary];
             if (data[0]) {
                 historyId = data[0].history_id;
             }
@@ -242,7 +242,7 @@ function getDragData() {
     return { data, sameHistory: historyId === props.history.id, multiple };
 }
 
-function getHighlight(item: HistoryItem) {
+function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
         return undefined;
     }
@@ -263,11 +263,11 @@ function getHighlight(item: HistoryItem) {
     return "input";
 }
 
-function hasMatches(items: HistoryItem[]) {
+function hasMatches(items: HistoryItemSummary[]) {
     return !!items && items.length > 0;
 }
 
-function isDataset(item: HistoryItem) {
+function isDataset(item: HistoryItemSummary) {
     return item.history_content_type === "dataset";
 }
 
@@ -288,18 +288,19 @@ async function loadHistoryItems() {
     }
 }
 
-async function onDelete(item: HistoryItem, recursive = false) {
+async function onDelete(item: HistoryItemSummary, recursive = false) {
     isLoading.value = true;
     setInvisible(item);
 
     try {
         await deleteContent(item, { recursive: recursive });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
 }
 
-function onHideSelection(selectedItems: HistoryItem[]) {
+function onHideSelection(selectedItems: HistoryItemSummary[]) {
     for (const item of selectedItems) {
         setInvisible(item);
     }
@@ -309,37 +310,43 @@ function onScroll(newOffset: number) {
     offsetQueryParam.value = newOffset;
 }
 
-async function onUndelete(item: HistoryItem) {
+async function onUndelete(item: HistoryItemSummary) {
     setInvisible(item);
     isLoading.value = true;
 
     try {
         await updateContentFields(item, { deleted: false });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
 }
 
-async function onUnhide(item: HistoryItem) {
+async function onUnhide(item: HistoryItemSummary) {
     setInvisible(item);
     isLoading.value = true;
 
     try {
         await updateContentFields(item, { visible: true });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
+}
+
+function updateContentStats() {
+    historyStore.updateContentStats(props.history.id);
 }
 
 function reloadContents() {
     startWatchingHistory();
 }
 
-function setInvisible(item: HistoryItem) {
+function setInvisible(item: HistoryItemSummary) {
     VueSet(unref(invisibleHistoryItems), item.hid, true);
 }
 
-function onTagChange(item: HistoryItem, newTags: string[]) {
+function onTagChange(item: HistoryItemSummary, newTags: string[]) {
     item.tags = newTags;
 }
 
@@ -417,11 +424,11 @@ function updateFilterValue(filterKey: string, newValue: any) {
     filterText.value = filterClass.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
-function getItemKey(item: HistoryItem) {
+function getItemKey(item: HistoryItemSummary) {
     return item.type_id;
 }
 
-function itemUniqueKey(item: HistoryItem) {
+function itemUniqueKey(item: HistoryItemSummary) {
     return `${item.history_content_type}-${item.id}`;
 }
 
@@ -441,7 +448,7 @@ onMounted(async () => {
     }
 });
 
-function arrowNavigate(item: HistoryItem, eventKey: string) {
+function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
     let nextItem = null;
     if (eventKey === "ArrowDown") {
         nextItem = historyItems.value[historyItems.value.indexOf(item) + 1];
@@ -456,9 +463,9 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
 }
 
 function setItemDragstart(
-    item: HistoryItem,
+    item: HistoryItemSummary,
     itemIsSelected: boolean,
-    selectedItems: Map<string, HistoryItem>,
+    selectedItems: Map<string, HistoryItemSummary>,
     selectionSize: number,
     event: DragEvent
 ) {
@@ -542,6 +549,7 @@ function setItemDragstart(
                     <HistoryOperations
                         v-if="canEditHistory"
                         :history="history"
+                        :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
                         :has-matches="hasMatches(historyItems)"
@@ -551,6 +559,7 @@ function setItemDragstart(
                         <template v-slot:selection-operations>
                             <HistorySelectionOperations
                                 :history="history"
+                                :is-multi-view-item="isMultiViewItem"
                                 :filter-text="filterText"
                                 :content-selection="selectedItems"
                                 :selection-size="selectionSize"
@@ -570,7 +579,7 @@ function setItemDragstart(
                         </template>
                     </HistoryOperations>
 
-                    <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
+                    <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
 
                     <OperationErrorDialog
                         v-if="operationError"

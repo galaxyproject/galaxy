@@ -68,7 +68,7 @@ def main():
     try:
         ini_file = args[0]
     except IndexError:
-        sys.exit("Usage: python %s <tool shed .ini file> [options]" % sys.argv[0])
+        sys.exit(f"Usage: python {sys.argv[0]} <tool shed .ini file> [options]")
     config_parser = configparser.ConfigParser({"here": os.getcwd()})
     config_parser.read(ini_file)
     config_dict = {}
@@ -103,11 +103,11 @@ def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
     elif url is None:
         print("# Environment variable TOOL_SHED_CANONICAL_URL not set, not sending email to repository owner.")
         return
-    subject = "Regarding your tool shed repositories at %s" % url
+    subject = f"Regarding your tool shed repositories at {url}"
     message_body_template = (
         "The tool shed automated repository checker has discovered that one or more of your repositories hosted "
-        + "at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans "
-        + "for these repositories, you can mark them as un-deprecated at any time."
+        "at this tool shed url ${url} have remained empty for over ${days} days, so they have been marked as deprecated. If you have plans "
+        "for these repositories, you can mark them as un-deprecated at any time."
     )
     message_template = string.Template(message_body_template)
     body = "\n".join(textwrap.wrap(message_template.safe_substitute(days=days, url=url), width=95))
@@ -123,7 +123,7 @@ def send_mail_to_owner(app, owner, email, repositories_deprecated, days=14):
         )
         return True
     except Exception as e:
-        print("# An error occurred attempting to send email: %s" % e)
+        print(f"# An error occurred attempting to send email: {e}")
         return False
 
 
@@ -193,7 +193,7 @@ class DeprecateRepositoriesApplication:
 
     def __init__(self, config):
         if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
+            config.database_connection = f"sqlite:///{config.database}?isolation_level=IMMEDIATE"
         # Setup the database engine and ORM
         self.model = tool_shed.webapp.model.mapping.init(
             config.file_path, config.database_connection, engine_options={}, create_tables=False

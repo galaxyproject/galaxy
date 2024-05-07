@@ -39,7 +39,7 @@ class FastAPIJobTokens:
         job_id: EncodedDatabaseIdField,
         job_key: str = Query(
             description=(
-                "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
+                "A key used to authenticate this request as acting on behalf or a job runner for the specified job"
             ),
         ),
         provider: str = Query(

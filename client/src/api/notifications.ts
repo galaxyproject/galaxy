@@ -25,7 +25,7 @@ export type NewSharedItemNotificationContentItemType =
 
 type UserNotificationUpdateRequest = components["schemas"]["UserNotificationUpdateRequest"];
 
-type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
+export type NotificationCreateRequest = components["schemas"]["NotificationCreateRequest"];
 
 type NotificationResponse = components["schemas"]["NotificationResponse"];
 

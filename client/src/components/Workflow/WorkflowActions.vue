@@ -20,6 +20,8 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
+import type { ColorVariant } from "../Common";
+
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 
 library.add(faCaretDown, faExternalLinkAlt, faEye, faFileExport, farStar, faStar, faTrash);
@@ -41,7 +43,7 @@ type BaseAction = {
     target?: "_blank";
     size: "sm" | "md" | "lg";
     component: "async" | "button";
-    variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
+    variant: ColorVariant | "link";
     onClick?: (e?: MouseEvent | KeyboardEvent) => void;
 };
 
@@ -124,7 +126,7 @@ async function onDelete() {
 const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
-            condition: !shared.value && !props.workflow.show_in_tool_panel,
+            condition: !props.workflow.deleted && !shared.value && !props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-add",
             component: "async",
             title: "Add bookmarks",
@@ -135,7 +137,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
             action: () => onToggleBookmark(true),
         },
         {
-            condition: !shared.value && props.workflow.show_in_tool_panel,
+            condition: !props.workflow.deleted && !shared.value && props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-remove",
             component: "async",
             title: "Remove bookmark",

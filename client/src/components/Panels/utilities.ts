@@ -12,7 +12,10 @@ import {
 } from "@/stores/toolStore";
 import levenshteinDistance from "@/utils/levenshtein";
 
-const TOOL_ID_KEYS = ["id", "tool_id"];
+const FILTER_KEYS = {
+    id: ["id", "tool_id"],
+    panel_section_name: ["section", "panel_section_name"],
+};
 const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
 const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
 const MINIMUM_WORD_MATCH = 2; // for word match
@@ -46,6 +49,7 @@ export interface ToolSearchKeys {
 
 interface SearchMatch {
     id: string;
+    /** The order of the match, higher number = higher rank in results */
     order: number;
 }
 
@@ -158,16 +162,22 @@ export function getValidToolsInCurrentView(
     isWorkflowPanel = false,
     excludedSectionIds: string[] = []
 ) {
-    const toolEntries = Object.entries(toolsById).filter(([, tool]) => {
-        // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
-        return (
-            !tool.hidden &&
-            tool.disabled !== true &&
-            !(isWorkflowPanel && !tool.is_workflow_compatible) &&
-            !excludedSectionIds.includes(tool.panel_section_id)
-        );
-    });
-    return Object.fromEntries(toolEntries);
+    const excludeSet = new Set(excludedSectionIds);
+    const validTools: Record<string, Tool> = {};
+
+    for (const [toolId, tool] of Object.entries(toolsById)) {
+        const { panel_section_id, hidden, disabled, is_workflow_compatible } = tool;
+        if (
+            !excludeSet.has(panel_section_id) &&
+            !hidden &&
+            disabled !== true &&
+            !(isWorkflowPanel && !is_workflow_compatible)
+        ) {
+            validTools[toolId] = tool;
+        }
+    }
+
+    return validTools;
 }
 
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
@@ -175,12 +185,16 @@ export function getValidToolsInEachSection(
     validToolIdsInCurrentView: string[],
     currentPanel: Record<string, Tool | ToolSection>
 ) {
+    // use a set for fast membership lookup
+    const idSet = new Set(validToolIdsInCurrentView);
     return Object.entries(currentPanel).map(([id, section]) => {
         const validatedSection = { ...section } as ToolSection;
-        if (validatedSection.tools && Array.isArray(validatedSection.tools)) {
+        // assign sectionTools to avoid repeated getter access
+        const sectionTools = validatedSection.tools;
+        if (sectionTools && Array.isArray(sectionTools)) {
             // filter on valid tools and panel labels in this section
-            validatedSection.tools = validatedSection.tools.filter((toolId) => {
-                if (typeof toolId === "string" && validToolIdsInCurrentView.includes(toolId)) {
+            validatedSection.tools = sectionTools.filter((toolId) => {
+                if (typeof toolId === "string" && idSet.has(toolId)) {
                     return true;
                 } else if (typeof toolId !== "string") {
                     // is a special case where there is a label within a section
@@ -254,11 +268,12 @@ export function searchToolsByKeys(
 } {
     const matchedTools: SearchMatch[] = [];
     let closestTerm = null;
-    // if user's query = "id:1234" or "tool_id:1234", only search for id
-    const id = processForId(query, TOOL_ID_KEYS);
-    if (id) {
-        query = id;
-        keys = { id: 1 };
+
+    // check if query is of the form "property:value" and then ONLY filter on that property
+    const { filteredQuery, filteredKeys } = filterOnKeys(query, FILTER_KEYS);
+    if (filteredQuery) {
+        query = filteredQuery;
+        keys = filteredKeys;
     }
 
     const queryWords = query.trim().toLowerCase().split(" ");
@@ -328,7 +343,7 @@ export function searchToolsByKeys(
         }
     }
     // no results with string.match(): recursive call with usesDL
-    if (!id && !usesDL && matchedTools.length == 0) {
+    if (!filteredQuery && !usesDL && matchedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, panelView, currentPanel, true);
     }
     const { idResults, resultPanel } = createSortedResultObject(matchedTools, currentPanel);
@@ -481,15 +496,32 @@ function sanitizeString(value: string, targets: string[] = [], substitute = "") 
 }
 
 /**
- * If the query is of the form "id:1234" (or "tool_id:1234"), return the id.
+ * If the query is of the form "property:value", return the value and keys which
+ * ONLY filter on that property.
+ * Otherwise, return null/empty object.
+ * @param query - the raw query
+ * @param keys - keys to filter for
+ */
+function filterOnKeys(query: string, keys: Record<string, string[]>) {
+    for (const key in keys) {
+        const filteredQuery = processForProperty(query, keys[key] || []);
+        if (filteredQuery) {
+            return { filteredQuery, filteredKeys: { [key]: 1 } };
+        }
+    }
+    return { filteredQuery: null, filteredKeys: {} };
+}
+
+/**
+ * If the query is of the form "property:value", return the value.
  * Otherwise, return null.
  * @param query - the raw query
- * @param keys - Optional: keys to check for (default: ["id"])
- * @returns id or null
+ * @param keys - keys to check for
+ * @returns value or null
  */
-function processForId(query: string, keys = ["id"]) {
+function processForProperty(query: string, keys: string[]) {
     for (const key of keys) {
-        if (query.includes(`${key}:`)) {
+        if (query.trim().startsWith(`${key}:`)) {
             return query.split(`${key}:`)[1]?.trim();
         }
     }

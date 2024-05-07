@@ -57,7 +57,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files import (
     ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.base import (
@@ -716,7 +716,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
                                 try:
                                     if dataset_instance.has_metadata_files:
-                                        dataset_instance.datatype.set_meta(dataset_instance)
+                                        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore[arg-type]
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
                                     dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
@@ -1047,7 +1047,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         for invocation_attrs in invocations_attrs:
             assert not self.import_options.allow_edit
             imported_invocation = model.WorkflowInvocation()
-            imported_invocation.user = self.user
             imported_invocation.history = history
             ensure_object_added_to_session(imported_invocation, object_in_session=history)
             workflow_key = invocation_attrs["workflow"]
@@ -1244,7 +1243,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 continue
 
             imported_job = model.Job()
-            imported_job.id = job_attrs.get("id")
+            imported_job.id = cast(int, job_attrs.get("id"))
             imported_job.user = self.user
             add_object_to_session(imported_job, history_sa_session)
             imported_job.history = history
@@ -1622,7 +1621,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             attrs = load(open(file_name))
         else:
             if required:
-                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+                raise Exception(f"Failed to find file [{file_name}] in model store archive")
             attrs = []
         return attrs
 
@@ -1903,7 +1902,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
-        self.user_context = ProvidesUserFileSourcesUserContext(user_context)
+        self.user_context = ProvidesFileSourcesUserContext(user_context)
         self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
@@ -1972,8 +1971,6 @@ class DirectoryModelExportStore(ModelExportStore):
 
         dir_name = "datasets"
         dir_path = os.path.join(export_directory, dir_name)
-        dataset_hid = as_dict["hid"]
-        assert dataset_hid, as_dict
 
         if dataset.dataset.id in self.dataset_id_to_path:
             file_name, extra_files_path = self.dataset_id_to_path[dataset.dataset.id]
@@ -1992,7 +1989,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 self.serialization_options.get_identifier(self.security, conversion) if conversion else None
             )
             target_filename = get_export_dataset_filename(
-                as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
             )
             arcname = os.path.join(dir_name, target_filename)
             src = file_name
@@ -2008,7 +2005,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             if len(file_list):
                 extra_files_target_filename = get_export_dataset_extra_files_dir_name(
-                    as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                    as_dict["encoded_id"], conversion_key=conversion_key
                 )
                 arcname = os.path.join(dir_name, extra_files_target_filename)
                 add(extra_files_path, os.path.join(export_directory, arcname))
@@ -2066,78 +2063,84 @@ class DirectoryModelExportStore(ModelExportStore):
                 output_dataset_collection_mapping: Dict[str, List[Union[str, int]]] = {}
                 implicit_output_dataset_collection_mapping: Dict[str, List[Union[str, int]]] = {}
 
-                for assoc in job.input_datasets:
+                for id_assoc in job.input_datasets:
                     # Optional data inputs will not have a dataset.
-                    if assoc.dataset:
-                        name = assoc.name
+                    if id_assoc.dataset:
+                        name = id_assoc.name
                         if name not in input_dataset_mapping:
                             input_dataset_mapping[name] = []
 
-                        input_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+                        input_dataset_mapping[name].append(self.exported_key(id_assoc.dataset))
                         if include_job_data:
-                            self.add_dataset(assoc.dataset)
+                            self.add_dataset(id_assoc.dataset)
 
-                for assoc in job.output_datasets:
+                for od_assoc in job.output_datasets:
                     # Optional data inputs will not have a dataset.
-                    if assoc.dataset:
-                        name = assoc.name
+                    if od_assoc.dataset:
+                        name = od_assoc.name
                         if name not in output_dataset_mapping:
                             output_dataset_mapping[name] = []
 
-                        output_dataset_mapping[name].append(self.exported_key(assoc.dataset))
+                        output_dataset_mapping[name].append(self.exported_key(od_assoc.dataset))
                         if include_job_data:
-                            self.add_dataset(assoc.dataset)
+                            self.add_dataset(od_assoc.dataset)
 
-                for assoc in job.input_dataset_collections:
+                for idc_assoc in job.input_dataset_collections:
                     # Optional data inputs will not have a dataset.
-                    if assoc.dataset_collection:
-                        name = assoc.name
+                    if idc_assoc.dataset_collection:
+                        name = idc_assoc.name
                         if name not in input_dataset_collection_mapping:
                             input_dataset_collection_mapping[name] = []
 
-                        input_dataset_collection_mapping[name].append(self.exported_key(assoc.dataset_collection))
+                        input_dataset_collection_mapping[name].append(self.exported_key(idc_assoc.dataset_collection))
                         if include_job_data:
-                            self.export_collection(assoc.dataset_collection)
+                            self.export_collection(idc_assoc.dataset_collection)
 
-                for assoc in job.input_dataset_collection_elements:
-                    if assoc.dataset_collection_element:
-                        name = assoc.name
+                for idce_assoc in job.input_dataset_collection_elements:
+                    if idce_assoc.dataset_collection_element:
+                        name = idce_assoc.name
                         if name not in input_dataset_collection_element_mapping:
                             input_dataset_collection_element_mapping[name] = []
 
                         input_dataset_collection_element_mapping[name].append(
-                            self.exported_key(assoc.dataset_collection_element)
+                            self.exported_key(idce_assoc.dataset_collection_element)
                         )
                         if include_job_data:
-                            if assoc.dataset_collection_element.is_collection:
-                                self.export_collection(assoc.dataset_collection_element.element_object)
+                            if idce_assoc.dataset_collection_element.is_collection:
+                                assert isinstance(
+                                    idce_assoc.dataset_collection_element.element_object, model.DatasetCollection
+                                )
+                                self.export_collection(idce_assoc.dataset_collection_element.element_object)
                             else:
-                                self.add_dataset(assoc.dataset_collection_element.element_object)
+                                assert isinstance(
+                                    idce_assoc.dataset_collection_element.element_object, model.DatasetInstance
+                                )
+                                self.add_dataset(idce_assoc.dataset_collection_element.element_object)
 
-                for assoc in job.output_dataset_collection_instances:
+                for odci_assoc in job.output_dataset_collection_instances:
                     # Optional data outputs will not have a dataset.
                     # These are implicit outputs, we don't need to export them
-                    if assoc.dataset_collection_instance:
-                        name = assoc.name
+                    if odci_assoc.dataset_collection_instance:
+                        name = odci_assoc.name
                         if name not in output_dataset_collection_mapping:
                             output_dataset_collection_mapping[name] = []
 
                         output_dataset_collection_mapping[name].append(
-                            self.exported_key(assoc.dataset_collection_instance)
+                            self.exported_key(odci_assoc.dataset_collection_instance)
                         )
 
-                for assoc in job.output_dataset_collections:
-                    if assoc.dataset_collection:
-                        name = assoc.name
+                for odc_assoc in job.output_dataset_collections:
+                    if odc_assoc.dataset_collection:
+                        name = odc_assoc.name
 
                         if name not in implicit_output_dataset_collection_mapping:
                             implicit_output_dataset_collection_mapping[name] = []
 
                         implicit_output_dataset_collection_mapping[name].append(
-                            self.exported_key(assoc.dataset_collection)
+                            self.exported_key(odc_assoc.dataset_collection)
                         )
                         if include_job_data:
-                            self.export_collection(assoc.dataset_collection)
+                            self.export_collection(odc_assoc.dataset_collection)
 
                 job_attrs["input_dataset_mapping"] = input_dataset_mapping
                 job_attrs["input_dataset_collection_mapping"] = input_dataset_collection_mapping
@@ -2168,12 +2171,12 @@ class DirectoryModelExportStore(ModelExportStore):
         sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
-        stmt = (
+        stmt_hdca = (
             select(model.HistoryDatasetCollectionAssociation)
             .where(model.HistoryDatasetCollectionAssociation.history == history)
             .where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
         )
-        collections = sa_session.scalars(stmt)
+        collections = sa_session.scalars(stmt_hdca)
 
         for collection in collections:
             # filter this ?
@@ -2185,9 +2188,9 @@ class DirectoryModelExportStore(ModelExportStore):
             self.export_collection(collection, include_deleted=include_deleted)
 
         # Write datasets' attributes to file.
-        actions_backref = model.Dataset.actions  # type: ignore[attr-defined]
+        actions_backref = model.Dataset.actions
 
-        stmt = (
+        stmt_hda = (
             select(model.HistoryDatasetAssociation)
             .where(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
@@ -2195,7 +2198,7 @@ class DirectoryModelExportStore(ModelExportStore):
             .order_by(model.HistoryDatasetAssociation.hid)
             .where(model.Dataset.purged == expression.false())
         )
-        datasets = sa_session.scalars(stmt).unique()
+        datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
@@ -2973,22 +2976,22 @@ def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: boo
             store_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
 
 
-def get_export_dataset_filename(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion_key: Optional[str]) -> str:
     """
     Builds a filename for a dataset using its name an extension.
     """
     base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)
     if not conversion_key:
-        return f"{base}_{hid}.{ext}"
+        return f"{base}_{encoded_id}.{ext}"
     else:
-        return f"{base}_{hid}_conversion_{conversion_key}.{ext}"
+        return f"{base}_{encoded_id}_conversion_{conversion_key}.{ext}"
 
 
-def get_export_dataset_extra_files_dir_name(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_extra_files_dir_name(encoded_id: str, conversion_key: Optional[str]) -> str:
     if not conversion_key:
-        return f"extra_files_path_{hid}"
+        return f"extra_files_path_{encoded_id}"
     else:
-        return f"extra_files_path_{hid}_conversion_{conversion_key}"
+        return f"extra_files_path_{encoded_id}_conversion_{conversion_key}"
 
 
 def imported_store_for_metadata(
@@ -3028,7 +3031,7 @@ def source_to_import_store(
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
-            user_context = ProvidesUserFileSourcesUserContext(user_context)
+            user_context = ProvidesFileSourcesUserContext(user_context)
             source_uri = stream_url_to_file(
                 source_uri, app.file_sources, prefix="gx_import_model_store", user_context=user_context
             )

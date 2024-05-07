@@ -95,6 +95,7 @@ class TagHandler:
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()
+        item.update()
         return item.tags
 
     def get_tag_assoc_class(self, item_class):
@@ -194,6 +195,7 @@ class TagHandler:
     def item_has_tag(self, user, item, tag):
         """Returns true if item is has a given tag."""
         # Get tag name.
+        tag_name = None
         if isinstance(tag, str):
             tag_name = tag
         elif isinstance(tag, galaxy.model.Tag):
@@ -295,7 +297,14 @@ class TagHandler:
         return None
 
     def _create_tag(self, tag_str: str):
-        """Create a Tag object from a tag string."""
+        """
+        Create or retrieve one or more Tag objects from a tag string. If there are multiple
+        hierarchical tags in the tag string, the string will be split along `self.hierarchy_separator` chars.
+        A Tag instance will be created for each non-empty prefix. If a prefix corresponds to the
+        name of an existing tag, that tag will be retrieved; otherwise, a new Tag object will be created.
+        For example, for the tag string `a.b.c` 3 Tag instances will be created: `a`, `a.b`, `a.b.c`.
+        Return the last tag created (`a.b.c`).
+        """
         tag_hierarchy = tag_str.split(self.hierarchy_separator)
         tag_prefix = ""
         parent_tag = None

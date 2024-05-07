@@ -5,6 +5,7 @@ DEFAULT_DELTA_FRAC = None
 
 DEFAULT_METRIC = "mae"
 DEFAULT_EPS = 0.01
+DEFAULT_PIN_LABELS = None
 
 
 def is_dict(item):

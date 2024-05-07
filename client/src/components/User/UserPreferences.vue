@@ -191,12 +191,20 @@ export default {
             return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
-            const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !this.config.single_user;
+            if (this.isConfigLoaded) {
+                const Galaxy = getGalaxyInstance();
+                return !!Galaxy.session_csrf_token && !this.config.single_user;
+            } else {
+                return false;
+            }
         },
         hasThemes() {
-            const themes = Object.keys(this.config.themes);
-            return themes?.length > 1 ?? false;
+            if (this.isConfigLoaded) {
+                const themes = Object.keys(this.config.themes);
+                return themes?.length > 1 ?? false;
+            } else {
+                return false;
+            }
         },
         userPermissionsUrl() {
             return withPrefix("/user/permissions");

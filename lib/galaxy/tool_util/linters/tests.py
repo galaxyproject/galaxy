@@ -144,11 +144,11 @@ class TestsExpectNumOutputs(Linter):
         for test_idx, test in enumerate(tests, start=1):
             # check if expect_num_outputs is set if there are outputs with filters
             # (except for tests with expect_failure .. which can't have test outputs)
-            filter = tool_xml.find("./outputs//filter")
+            has_no_filter = (
+                tool_xml.find("./outputs/data/filter") is None and tool_xml.find("./outputs/collection/filter") is None
+            )
             if not (
-                filter is None
-                or "expect_num_outputs" in test.attrib
-                or asbool(test.attrib.get("expect_failure", False))
+                has_no_filter or "expect_num_outputs" in test.attrib or asbool(test.attrib.get("expect_failure", False))
             ):
                 lint_ctx.warn(
                     f"Test {test_idx}: should specify 'expect_num_outputs' if outputs have filters",

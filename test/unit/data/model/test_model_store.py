@@ -545,6 +545,21 @@ def validate_invocation_collection_crate_directory(crate_directory):
         assert dataset in root["hasPart"]
 
 
+def test_export_history_with_missing_hid():
+    # The dataset's hid was used to compose the file name during the export but it
+    # can be missing sometimes. We now use the dataset's encoded id instead.
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    # Remove hid from d1
+    d1.hid = None
+    app.commit()
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+        export_store.export_history(history)
+
+
 def test_export_history_to_ro_crate(tmp_path):
     app = _mock_app()
     u, history, d1, d2, j = _setup_simple_cat_job(app)
@@ -1003,7 +1018,7 @@ def _setup_collection_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_collection_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -1029,7 +1044,7 @@ def _setup_simple_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"

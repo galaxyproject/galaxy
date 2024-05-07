@@ -28,12 +28,6 @@ withDefaults(defineProps<Props>(), {
     <div class="d-flex flex-column">
         <div class="d-flex">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Visualizations</Heading>
-            <div v-if="!userStore.isAnonymous">
-                <BButton size="sm" variant="outline-primary" to="/visualizations">
-                    <Icon :icon="faPlus" />
-                    <span v-localize>Create Visualization</span>
-                </BButton>
-            </div>
         </div>
         <BNav pills justified class="mb-2">
             <BNavItem

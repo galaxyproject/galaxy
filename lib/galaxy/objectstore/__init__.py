@@ -1513,8 +1513,8 @@ def local_extra_dirs(func):
                 if c.__name__ == "DiskObjectStore":
                     return getattr(c, func.__name__)(self, *args, **kwargs)
             raise Exception(
-                "Could not call DiskObjectStore's %s method, does your "
-                "Object Store plugin inherit from DiskObjectStore?" % func.__name__
+                f"Could not call DiskObjectStore's {func.__name__} method, does your "
+                "Object Store plugin inherit from DiskObjectStore?"
             )
 
     return wraps

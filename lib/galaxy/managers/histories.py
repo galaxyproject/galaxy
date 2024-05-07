@@ -127,6 +127,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         show_published = payload.show_published
         show_purged = False
         show_shared = payload.show_shared
+        show_archived = payload.show_archived
         is_admin = trans.user_is_admin
         user = trans.user
 
@@ -207,12 +208,20 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 self.model_class.deleted == (true() if show_deleted else false())
             )
 
+        # By default, return only non-archived histories when we are showing the current user's histories
+        # if listing other users' histories, we don't filter out archived histories as they may be
+        # public or shared with the current user
+        if show_own and not show_archived:
+            stmt = stmt.where(self.model_class.archived == false())
+
         stmt = stmt.distinct()
 
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
+
+        sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
             stmt = stmt.add_columns(sort_column)
@@ -221,11 +230,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if payload.sort_desc:
             sort_column = sort_column.desc()
         stmt = stmt.order_by(sort_column)
+
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     def copy(self, history, user, **kwargs):
         """
@@ -480,7 +490,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             .where(HistoryUserShareAssociation.user_id == user.id)
             .where(HistoryUserShareAssociation.history_id == history.id)
         )
-        return self.session().scalar(stmt)
+        return bool(self.session().scalar(stmt))
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
@@ -561,6 +571,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -595,6 +606,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -686,6 +698,7 @@ class HistoryExportManager:
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
+        assert history.update_time is not None, "History update time must be set"
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()

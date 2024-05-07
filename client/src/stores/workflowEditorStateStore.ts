@@ -3,6 +3,7 @@ import type { UnwrapRef } from "vue";
 import { computed, reactive, ref, set } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 
 import { defineScopedStore } from "./scopedStore";
 
@@ -28,6 +29,12 @@ type OutputTerminalPositions = { [index: number]: { [index: string]: OutputTermi
 type StepPosition = { [index: number]: UnwrapRef<UseElementBoundingReturn> };
 type StepLoadingState = { [index: number]: { loading?: boolean; error?: string } };
 
+export type WorkflowReport = {
+    markdown?: string;
+};
+
+export type WorkflowStateStore = ReturnType<typeof useWorkflowStateStore>;
+
 export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () => {
     const inputTerminals = ref<InputTerminalPositions>({});
     const outputTerminals = ref<OutputTerminalPositions>({});
@@ -37,6 +44,10 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const scale = ref(1);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
+    const hasChanges = ref(false);
+    const report = ref<WorkflowReport>({
+        markdown: reportDefault,
+    });
 
     function $reset() {
         inputTerminals.value = {};
@@ -47,6 +58,9 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
+        report.value = {
+            markdown: reportDefault,
+        };
     }
 
     const getInputTerminalPosition = computed(
@@ -91,6 +105,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         delete stepPosition.value[stepId];
     }
 
+    function deleteStepTerminals(stepId: number) {
+        delete inputTerminals.value[stepId];
+        delete outputTerminals.value[stepId];
+    }
+
     function setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
         set(stepLoadingState.value, stepId, { loading, error });
     }
@@ -102,6 +121,8 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        report,
+        hasChanges,
         stepPosition,
         stepLoadingState,
         $reset,
@@ -113,6 +134,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         deleteInputTerminalPosition,
         deleteOutputTerminalPosition,
         deleteStepPosition,
+        deleteStepTerminals,
         setStepPosition,
         setLoadingState,
     };

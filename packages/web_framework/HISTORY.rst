@@ -4,10 +4,44 @@ History
 .. to_doc
 
 ---------
-24.0.dev0
+24.1.dev0
 ---------
 
 
+
+-------------------
+24.0.2 (2024-05-07)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix KeyError in ``XForwardedHostMiddleware`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17955 <https://github.com/galaxyproject/galaxy/pull/17955>`_
+
+-------------------
+24.0.0 (2024-04-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Python 3.8 as minimum by `@mr-c <https://github.com/mr-c>`_ in `#16954 <https://github.com/galaxyproject/galaxy/pull/16954>`_
+* Vueify Admin User Grid by `@guerler <https://github.com/guerler>`_ in `#17030 <https://github.com/galaxyproject/galaxy/pull/17030>`_
+* Remove web framework dependency from tools by `@davelopez <https://github.com/davelopez>`_ in `#17058 <https://github.com/galaxyproject/galaxy/pull/17058>`_
+* Vueify Admin Groups Grid by `@guerler <https://github.com/guerler>`_ in `#17126 <https://github.com/galaxyproject/galaxy/pull/17126>`_
+* Migrate models to pydantic 2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17262 <https://github.com/galaxyproject/galaxy/pull/17262>`_
+* Update to black 2024 stable style by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17391 <https://github.com/galaxyproject/galaxy/pull/17391>`_
+* Removes outdated Grid controller and backbone modules by `@guerler <https://github.com/guerler>`_ in `#17434 <https://github.com/galaxyproject/galaxy/pull/17434>`_
 
 -------------------
 23.2.1 (2024-02-21)

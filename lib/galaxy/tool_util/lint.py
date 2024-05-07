@@ -212,10 +212,18 @@ class LintContext:
     def found_warns(self) -> bool:
         return len(self.warn_messages) > 0
 
-    def lint(self, name: str, lint_func: Callable[[LintTargetType, "LintContext"], None], lint_target: LintTargetType):
+    def lint(
+        self,
+        name: str,
+        lint_func: Callable[[LintTargetType, "LintContext"], None],
+        lint_target: LintTargetType,
+        module_name: Optional[str] = None,
+    ):
         if name.startswith("lint_"):
             name = name[len("lint_") :]
         if name in self.skip_types:
+            return
+        if module_name and module_name in self.skip_types:
             return
 
         if self.level < LintLevel.SILENT:
@@ -355,6 +363,7 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
     tool_type = tool_source.parse_tool_type() or "default"
 
     for module in linter_modules:
+        module_name = module.__name__.split(".")[-1]
         lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue
@@ -374,7 +383,7 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
                 else:
                     lint_context.lint(name, value, tool_source)
             elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
-                lint_context.lint(name, value.lint, tool_source)
+                lint_context.lint(name, value.lint, tool_source, module_name=module_name)
     return lint_context
 
 

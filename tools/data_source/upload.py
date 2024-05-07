@@ -155,7 +155,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
         if datatype.dataset_content_needs_grooming(dataset.path):
             err_msg = (
                 "The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be "
-                + "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
+                "<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed."
             )
             raise UploadProblemException(err_msg)
     if not link_data_only:

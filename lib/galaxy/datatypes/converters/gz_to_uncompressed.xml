@@ -6,7 +6,7 @@ gzip -dcf '$input1' > '$output1'
     <configfiles>
         <configfile name="ext_config">{"output1": {
   "name": "${input1.name[0:-len('.gz')] if $input1.name.endswith('.gz') else $input1.name} uncompressed",
-  "ext": "${input1.ext[0:-len('.gz')] if $input1.ext != 'vcf_bgzip' else 'vcf'}"
+  "ext": "${'vcf' if $input1.ext == 'vcf_bgzip' else $input1.ext[0:-len('.gz')] if $input1.ext.endswith('.gz') else $input1.ext}"
 }}</configfile>
     </configfiles>
     <inputs>
@@ -20,6 +20,15 @@ gzip -dcf '$input1' > '$output1'
         <test>
             <param name="input1" value="test.vcf.gz" ftype="vcf_bgzip"/>
             <output name="output1" file="test.vcf" ftype="vcf"/>
+        </test>
+        <test>
+            <param name="input1" value="1.fasta.gz" ftype="fasta.gz"/>
+            <output name="output1" file="1.fasta" ftype="fasta"/>
+        </test>
+        <!-- Test input with wrong format -->
+        <test>
+            <param name="input1" value="1.fasta.gz" ftype="fasta"/>
+            <output name="output1" file="1.fasta" ftype="fasta"/>
         </test>
     </tests>
     <help>

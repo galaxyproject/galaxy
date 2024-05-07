@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    cast,
     List,
     NamedTuple,
     Optional,
@@ -9,7 +8,7 @@ from typing import (
 from typing_extensions import Unpack
 
 from galaxy.exceptions import AuthenticationRequired
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     BaseFilesSource,
     FilesSourceProperties,
@@ -20,12 +19,11 @@ from galaxy.files.sources import (
 
 log = logging.getLogger(__name__)
 
-OptionalUserContext = Optional[ProvidesUserFileSourcesUserContext]
-
 
 class RDMFilesSourceProperties(FilesSourceProperties):
     url: str
     token: str
+    public_name: str
 
 
 class RecordFilename(NamedTuple):
@@ -80,7 +78,9 @@ class RDMRepositoryInteractor:
         """
         raise NotImplementedError()
 
-    def create_draft_record(self, title: str, user_context: OptionalUserContext = None):
+    def create_draft_record(
+        self, title: str, public_name: Optional[str] = None, user_context: OptionalUserContext = None
+    ):
         """Creates a draft record (directory) in the repository with basic metadata.
 
         The metadata is usually just the title of the record and the user that created it.
@@ -136,23 +136,18 @@ class RDMFilesSource(BaseFilesSource):
 
     plugin_kind = PluginKind.rdm
 
-    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+    def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)
-        base_url = props.get("url", None)
+        base_url = props.get("url")
         if not base_url:
             raise Exception("URL for RDM repository must be provided in configuration")
         self._repository_url = base_url
-        self._token = props.get("token", None)
         self._props = props
         self._repository_interactor = self.get_repository_interactor(base_url)
 
     @property
     def repository(self) -> RDMRepositoryInteractor:
         return self._repository_interactor
-
-    @property
-    def token(self) -> Optional[str]:
-        return self._token if self._token and not self._token.startswith("$") else None
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         """Returns an interactor compatible with the given repository URL.
@@ -190,25 +185,23 @@ class RDMFilesSource(BaseFilesSource):
     def get_record_id_from_path(self, source_path: str) -> str:
         return self.parse_path(source_path, record_id_only=True).record_id
 
-    def _serialization_props(self, user_context: OptionalUserContext = None) -> RDMFilesSourceProperties:
+    def _serialization_props(self, user_context: OptionalUserContext = None):
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        effective_props["url"] = self._repository_url
-        effective_props["token"] = self.safe_get_authorization_token(user_context)
-        return cast(RDMFilesSourceProperties, effective_props)
+        return effective_props
 
     def get_authorization_token(self, user_context: OptionalUserContext) -> str:
-        token = self.token
-        if not token and user_context:
-            vault = user_context.user_vault if user_context else None
-            token = vault.read_secret(f"preferences/{self.id}/token") if vault else None
-        if token is None:
-            raise AuthenticationRequired(f"No authorization token provided in user's settings for '{self.label}'")
+        token = None
+        if user_context:
+            effective_props = self._serialization_props(user_context)
+            token = effective_props.get("token")
+        if not token:
+            raise AuthenticationRequired(
+                f"Please provide a personal access token in your user's preferences for '{self.label}'"
+            )
         return token
 
-    def safe_get_authorization_token(self, user_context: OptionalUserContext) -> Optional[str]:
-        try:
-            return self.get_authorization_token(user_context)
-        except AuthenticationRequired:
-            return None
+    def get_public_name(self, user_context: OptionalUserContext) -> Optional[str]:
+        effective_props = self._serialization_props(user_context)
+        return effective_props.get("public_name")

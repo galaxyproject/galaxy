@@ -24,8 +24,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from galaxy import (
     exceptions,
@@ -46,6 +45,7 @@ from galaxy.model import (
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
@@ -176,7 +176,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """Get all jobs that are not ready yet and belong to the given user."""
         stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
         jobs = self.session().scalars(stmt)
-        return jobs
+        return jobs  # type:ignore[return-value]
 
     def undelete(self, user, flush=True):
         """Remove the deleted flag for the given user."""
@@ -195,7 +195,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 "The configuration of this Galaxy instance does not allow admins to delete or purge users."
             )
         if not user.deleted:
-            raise exceptions.MessageException("User '%s' has not been deleted, so they cannot be purged." % user.email)
+            raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
         private_role = self.app.security_agent.get_private_user_role(user)
         # Delete History
         for active_history in user.active_histories:
@@ -313,7 +313,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def by_oidc_access_token(self, access_token: str):
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)  # type: ignore[attr-defined]
+            user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)
             return user
         else:
             return None
@@ -873,7 +873,7 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         self.fn_filter_parsers.update({})
 
 
-def get_users_by_ids(session: Session, user_ids):
+def get_users_by_ids(session: galaxy_scoped_session, user_ids):
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
 

@@ -2,7 +2,10 @@ import tempfile
 
 import pytest
 
-from galaxy_test.conftest import pytest_configure  # noqa: F401
+from galaxy_test.conftest import (  # noqa: F401
+    pytest_configure,
+    pytest_plugins,
+)
 
 
 @pytest.fixture(scope="session")

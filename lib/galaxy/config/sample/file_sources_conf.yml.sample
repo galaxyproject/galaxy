@@ -202,10 +202,32 @@
   doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.
 
 - type: inveniordm
-  id: invenio
-  doc: Invenio RDM turn-key research data management repository
-  label: Invenio RDM Demo Repository
+  id: invenio_sandbox
+  doc: This is the Sandbox instance of Invenio. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Invenio RDM Sandbox Repository (TESTING ONLY)
   url: https://inveniordm.web.cern.ch/
+  token: ${user.user_vault.read_secret('preferences/invenio_sandbox/token')}
+  # token: ${user.preferences['invenio_sandbox|token']} # Alternatively use this for retrieving the token from user preferences instead of the Vault
+  public_name: ${user.preferences['invenio_sandbox|public_name']}
+  writable: true
+
+- type: zenodo
+  id: zenodo
+  doc: Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.
+  label: Zenodo
+  url: https://zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo/token')}
+  public_name: ${user.preferences['zenodo|public_name']}
+  writable: true
+
+- type: zenodo
+  id: zenodo_sandbox
+  doc: This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Zenodo Sandbox (TESTING ONLY)
+  url: https://sandbox.zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}
+  public_name: ${user.preferences['zenodo_sandbox|public_name']}
+  writable: true
 
 - type: onedata
   id: onedata1

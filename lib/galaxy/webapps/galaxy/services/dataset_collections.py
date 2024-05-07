@@ -32,6 +32,7 @@ from galaxy.schema.fields import (
     ModelClassField,
 )
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -184,7 +185,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         instance_type: DatasetCollectionInstanceType = "history",
-    ) -> HDCADetailed:
+        view: str = "element",
+    ) -> AnyHDCA:
         """
         Returns information about a particular dataset collection.
         """
@@ -203,7 +205,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             security=trans.security,
             url_builder=trans.url_builder,
             parent=parent,
-            view="element",
+            view=view,
         )
         return rval
 

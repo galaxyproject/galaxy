@@ -701,7 +701,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             hdca1_id = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], wait=True
             ).json()["outputs"][0]["id"]
-            self.dataset_populator.run_tool(
+            run_response = self.dataset_populator.run_tool(
                 tool_id="cat_data_and_sleep",
                 inputs={
                     "sleep_time": 15,
@@ -709,14 +709,33 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 },
                 history_id=history_id,
             )
+            output_hdca_id = run_response["implicit_collections"][0]["id"]
             run_response = self.dataset_populator.run_tool(
                 tool_id="__EXTRACT_DATASET__",
                 inputs={
-                    "data_collection": {"src": "hdca", "id": hdca1_id},
+                    "data_collection": {"src": "hdca", "id": output_hdca_id},
                 },
                 history_id=history_id,
             )
             assert run_response["outputs"][0]["state"] != "ok"
+
+    @skip_without_tool("__EXTRACT_DATASET__")
+    def test_extract_dataset_invalid_element_identifier(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            hdca1_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], wait=True
+            ).json()["outputs"][0]["id"]
+            run_response = self.dataset_populator.run_tool_raw(
+                tool_id="__EXTRACT_DATASET__",
+                inputs={
+                    "data_collection": {"src": "hdca", "id": hdca1_id},
+                    "which": {"which_dataset": "by_index", "index": 100},
+                },
+                history_id=history_id,
+                input_format="21.01",
+            )
+            assert run_response.status_code == 400
+            assert run_response.json()["err_msg"] == "Dataset collection has no element_index with key 100."
 
     @skip_without_tool("__FILTER_FAILED_DATASETS__")
     def test_filter_failed_list(self):
@@ -1659,9 +1678,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("cat1")
     def test_map_over_empty_collection(self, history_id):
-        hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[]).json()["outputs"][
-            0
-        ]["id"]
+        response = self.dataset_collection_populator.create_list_in_history(history_id, contents=[], wait=True).json()
+        hdca_id = response["output_collections"][0]["id"]
         inputs = {
             "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
         }

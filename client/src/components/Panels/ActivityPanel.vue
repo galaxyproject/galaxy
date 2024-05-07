@@ -59,7 +59,6 @@ const emit = defineEmits(["goToAll"]);
 
             .activity-panel-heading {
                 margin: 0;
-                padding-left: 0.25rem;
             }
         }
     }
@@ -69,7 +68,17 @@ const emit = defineEmits(["goToAll"]);
         flex-direction: column;
         flex-grow: 1;
         overflow-y: hidden;
-        padding: 0.2rem 0.2rem;
+        button:first-child {
+            background: none;
+            border: none;
+            text-align: left;
+            transition: none;
+            width: 100%;
+            border-color: transparent;
+        }
+        button:first-child:hover {
+            background: $gray-200;
+        }
     }
 
     .activity-panel-footer {

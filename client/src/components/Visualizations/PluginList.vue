@@ -136,13 +136,9 @@ export default {
             }
         },
         create(plugin) {
-            const href = `${plugin.href}?dataset_id=${this.selected}`;
-            if (plugin.target == "_top") {
-                window.location.href = href;
-            } else {
-                const galaxyMainElement = document.getElementById("galaxy_main");
-                galaxyMainElement.setAttribute("src", href);
-            }
+            this.$router.push(`/visualizations/display?visualization=${plugin.name}&dataset_id=${this.selected}`, {
+                title: plugin.name,
+            });
         },
         match(plugin) {
             const query = this.search.toLowerCase();

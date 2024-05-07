@@ -956,52 +956,6 @@ export interface paths {
         /** Cancel the specified workflow invocation. */
         delete: operations["cancel_invocation_api_invocations__invocation_id__delete"];
     };
-    "/api/invocations/{invocation_id}/biocompute": {
-        /**
-         * Return a BioCompute Object for the workflow invocation.
-         * @deprecated
-         * @description The BioCompute Object endpoints are in beta - important details such
-         * as how inputs and outputs are represented, how the workflow is encoded,
-         * and how author and version information is encoded, and how URLs are
-         * generated will very likely change in important ways over time.
-         *
-         * **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-         *
-         * 1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-         *     ```
-         *     {
-         *         model_store_format: bco.json
-         *     }
-         *     ```
-         * 2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-         *
-         * 3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-         */
-        get: operations["export_invocation_bco_api_invocations__invocation_id__biocompute_get"];
-    };
-    "/api/invocations/{invocation_id}/biocompute/download": {
-        /**
-         * Return a BioCompute Object for the workflow invocation as a file for download.
-         * @deprecated
-         * @description The BioCompute Object endpoints are in beta - important details such
-         * as how inputs and outputs are represented, how the workflow is encoded,
-         * and how author and version information is encoded, and how URLs are
-         * generated will very likely change in important ways over time.
-         *
-         * **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-         *
-         * 1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-         *     ```
-         *     {
-         *         model_store_format: bco.json
-         *     }
-         *     ```
-         * 2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-         *
-         * 3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-         */
-        get: operations["download_invocation_bco_api_invocations__invocation_id__biocompute_download_get"];
-    };
     "/api/invocations/{invocation_id}/jobs_summary": {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -1255,6 +1209,9 @@ export interface paths {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         get: operations["get_notification_preferences_api_notifications_preferences_get"];
         /**
@@ -2131,6 +2088,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "add_input";
             /** Collection Type */
@@ -2166,6 +2124,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "add_step";
             /**
@@ -2273,6 +2232,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -2389,6 +2349,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -2553,6 +2514,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             /**
@@ -2575,6 +2537,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             /**
@@ -2617,6 +2580,7 @@ export interface components {
              * Category
              * @default broadcast
              * @constant
+             * @enum {string}
              */
             category?: "broadcast";
             content: components["schemas"]["BroadcastNotificationContent"];
@@ -2665,6 +2629,7 @@ export interface components {
             /**
              * Browsable
              * @constant
+             * @enum {boolean}
              */
             browsable: true;
             /**
@@ -2722,6 +2687,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_datatype";
         };
@@ -2732,6 +2698,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "change_dbkey";
         };
@@ -2945,6 +2912,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "composite";
             /** Tags */
@@ -3045,6 +3013,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "connect";
             /** Input */
@@ -3438,6 +3407,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -3504,6 +3474,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -3584,7 +3555,10 @@ export interface components {
              */
             name: string;
         };
-        /** CustomBuildsCollection */
+        /**
+         * CustomBuildsCollection
+         * @description The custom builds associated with the user.
+         */
         CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
         /** CustomBuildsMetadataResponse */
         CustomBuildsMetadataResponse: {
@@ -3767,7 +3741,7 @@ export interface components {
              * Element Type
              * @description The type of the element. Used to interpret the `object` field.
              */
-            element_type: components["schemas"]["DCEType"];
+            element_type?: components["schemas"]["DCEType"] | null;
             /**
              * Dataset Collection Element ID
              * @example 0123456789ABCDEF
@@ -3777,16 +3751,18 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollectionElement";
             /**
              * Object
              * @description The element's specific data depending on the value of `element_type`.
              */
-            object:
+            object?:
                 | components["schemas"]["HDAObject"]
                 | components["schemas"]["HDADetailed"]
-                | components["schemas"]["DCObject"];
+                | components["schemas"]["DCObject"]
+                | null;
         };
         /**
          * DCEType
@@ -3826,6 +3802,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetCollection";
             /**
@@ -3931,6 +3908,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             tags: components["schemas"]["TagCollection"];
@@ -3993,6 +3971,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DatasetHash";
         };
@@ -4332,6 +4311,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "DefaultQuotaAssociation";
             /**
@@ -4559,6 +4539,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "disconnect";
             /** Input */
@@ -4745,6 +4726,7 @@ export interface components {
              * Source
              * @description The source of this dataset, which in the case of the model can only be `hdca`.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
         };
@@ -4831,6 +4813,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -5029,6 +5012,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "extract_input";
             /** Input */
@@ -5042,6 +5026,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "extract_untyped_parameter";
             /** Label */
@@ -5061,6 +5046,7 @@ export interface components {
         /**
          * FavoriteObjectType
          * @constant
+         * @enum {string}
          */
         FavoriteObjectType: "tools";
         /** FavoriteObjectsSummary */
@@ -5133,6 +5119,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "files";
             /** Tags */
@@ -5148,6 +5135,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "fill_defaults";
         };
@@ -5201,6 +5189,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "file";
             /**
@@ -5266,6 +5255,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "fill_step_defaults";
             /** Step */
@@ -5301,6 +5291,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "folder";
             /**
@@ -5357,6 +5348,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
@@ -5386,6 +5378,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "ftp_import";
             /** Tags */
@@ -5429,6 +5422,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /**
@@ -5448,6 +5442,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "GroupQuotaAssociation";
         };
@@ -5465,6 +5460,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Group";
             /** name of the group */
@@ -5788,6 +5784,7 @@ export interface components {
              * @description TODO
              * @default file
              * @constant
+             * @enum {string}
              */
             api_type?: "file";
             /** Copied From Ldda Id */
@@ -5889,6 +5886,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -5925,6 +5923,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -5973,6 +5972,7 @@ export interface components {
              * @description This is always `file` for datasets.
              * @default file
              * @constant
+             * @enum {string}
              */
             type?: "file";
             /**
@@ -6040,6 +6040,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
             /**
@@ -6094,6 +6095,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset` for datasets.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset";
             /**
@@ -6204,6 +6206,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -6240,6 +6243,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -6268,6 +6272,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type?: "collection";
             /**
@@ -6336,6 +6341,7 @@ export interface components {
              * History Content Type
              * @description This is always `dataset_collection` for dataset collections.
              * @constant
+             * @enum {string}
              */
             history_content_type: "dataset_collection";
             /**
@@ -6367,6 +6373,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
             /**
@@ -6390,6 +6397,7 @@ export interface components {
              * @description This is always `collection` for dataset collections.
              * @default collection
              * @constant
+             * @enum {string}
              */
             type?: "collection";
             /**
@@ -6526,6 +6534,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "hdas";
         };
@@ -6589,6 +6598,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "hdca";
         };
@@ -7021,6 +7031,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -7135,6 +7146,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "History";
             /**
@@ -7203,6 +7215,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -7246,6 +7259,7 @@ export interface components {
              * src
              * @description Indicates that the tool data should be resolved by a URI.
              * @constant
+             * @enum {string}
              */
             src: "uri";
             /**
@@ -7318,6 +7332,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "data_collection_input";
             /** When */
@@ -7360,6 +7375,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "data_input";
             /** When */
@@ -7402,6 +7418,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "parameter_input";
             /** When */
@@ -7499,6 +7516,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "ToolShedRepository";
             /**
@@ -7534,6 +7552,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "history_deleted";
         };
@@ -7542,6 +7561,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "cancelled_on_review";
             /**
@@ -7555,6 +7575,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "user_request";
         };
@@ -7568,6 +7589,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "workflow_output_not_found";
             /** Workflow step id of step that caused a warning. */
@@ -7589,6 +7611,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "collection_failed";
             /**
@@ -7613,6 +7636,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "dataset_failed";
             /**
@@ -7631,6 +7655,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "expression_evaluation_failed";
             /**
@@ -7655,6 +7680,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "job_failed";
             /**
@@ -7675,6 +7701,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "output_not_found";
             /**
@@ -7693,6 +7720,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "when_not_boolean";
             /**
@@ -7755,6 +7783,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**
@@ -7781,6 +7810,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset.
              * @constant
+             * @enum {string}
              */
             src: "hda";
             /**
@@ -7801,6 +7831,7 @@ export interface components {
              * Source
              * @description Source model of the output dataset collection.
              * @constant
+             * @enum {string}
              */
             src: "hdca";
             /**
@@ -7875,6 +7906,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Report";
             /**
@@ -7882,6 +7914,7 @@ export interface components {
              * @description Format of the invocation report.
              * @default markdown
              * @constant
+             * @enum {string}
              */
             render_format?: "markdown";
             /**
@@ -7930,6 +7963,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Implicit Collection Jobs ID
+             * @description The implicit collection job ID associated with the workflow invocation step.
+             */
+            implicit_collection_jobs_id?: string | null;
             /** Job Id */
             job_id: string | null;
             /**
@@ -7942,6 +7980,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocationStep";
             /**
@@ -8007,6 +8046,7 @@ export interface components {
              * @description The source model of the output.
              * @default hdca
              * @constant
+             * @enum {string}
              */
             src?: "hdca";
         };
@@ -8014,13 +8054,14 @@ export interface components {
         InvocationStepJobsResponseCollectionJobsModel: {
             /**
              * ID
-             * @description The encoded ID of the workflow invocation.
+             * @description The encoded ID of the collection job.
              * @example 0123456789ABCDEF
              */
             id: string;
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "ImplicitCollectionJobs";
             /**
@@ -8040,13 +8081,14 @@ export interface components {
         InvocationStepJobsResponseJobModel: {
             /**
              * ID
-             * @description The encoded ID of the workflow invocation.
+             * @description The encoded ID of the job.
              * @example 0123456789ABCDEF
              */
             id: string;
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "Job";
             /**
@@ -8073,6 +8115,7 @@ export interface components {
             /**
              * Model
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocationStep";
             /**
@@ -8101,6 +8144,7 @@ export interface components {
              * @description The source model of the output.
              * @default hda
              * @constant
+             * @enum {string}
              */
             src?: "hda";
             /**
@@ -8124,6 +8168,7 @@ export interface components {
             /**
              * Reason
              * @constant
+             * @enum {string}
              */
             reason: "unexpected_failure";
             /**
@@ -8358,6 +8403,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8521,6 +8567,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8719,6 +8766,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "Job";
             /**
@@ -8790,6 +8838,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -8923,6 +8972,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "library";
         };
@@ -8963,6 +9013,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "library_folder";
         };
@@ -9006,6 +9057,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "LibraryFolder";
             /**
@@ -9054,6 +9106,7 @@ export interface components {
         /**
          * LibraryFolderPermissionAction
          * @constant
+         * @enum {string}
          */
         LibraryFolderPermissionAction: "set_permissions";
         /** LibraryFolderPermissionsPayload */
@@ -9111,6 +9164,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -9221,6 +9275,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Library";
             /**
@@ -9334,11 +9389,13 @@ export interface components {
         /**
          * ListJstreeResponse
          * @deprecated
+         * @description List of files in Jstree format.
          * @default []
          */
         ListJstreeResponse: Record<string, never>[];
         /**
          * ListUriResponse
+         * @description List of directories and files.
          * @default []
          */
         ListUriResponse: (components["schemas"]["RemoteFile"] | components["schemas"]["RemoteDirectory"])[];
@@ -9348,6 +9405,7 @@ export interface components {
          *
          * The user will always receive notifications from these categories.
          * @constant
+         * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
         /** MaterializeDatasetInstanceAPIRequest */
@@ -9373,6 +9431,7 @@ export interface components {
              * Category
              * @default message
              * @constant
+             * @enum {string}
              */
             category?: "message";
             /**
@@ -9500,6 +9559,7 @@ export interface components {
              * Category
              * @default new_shared_item
              * @constant
+             * @enum {string}
              */
             category?: "new_shared_item";
             /**
@@ -9564,6 +9624,7 @@ export interface components {
              * Channels
              * @description The channels that the user wants to receive notifications from for this category.
              * @default {
+             *   "email": true,
              *   "push": true
              * }
              */
@@ -9580,6 +9641,12 @@ export interface components {
          * @description The settings for each channel of a notification category.
          */
         NotificationChannelSettings: {
+            /**
+             * Email
+             * @description Whether the user wants to receive email notifications for this category. This setting will be ignored unless the server supports asynchronous tasks.
+             * @default true
+             */
+            email?: boolean;
             /**
              * Push
              * @description Whether the user wants to receive push notifications in the browser for this category.
@@ -9628,10 +9695,7 @@ export interface components {
              */
             variant: components["schemas"]["NotificationVariant"];
         };
-        /**
-         * NotificationCreateRequest
-         * @description Contains the recipients and the notification to create.
-         */
+        /** NotificationCreateRequest */
         NotificationCreateRequest: {
             /**
              * Notification
@@ -9642,7 +9706,7 @@ export interface components {
              * Recipients
              * @description The recipients of the notification. Can be a combination of users, groups and roles.
              */
-            recipients: components["schemas"]["NotificationRecipients"];
+            recipients: components["schemas"]["NotificationRecipientsRequest"];
         };
         /** NotificationCreatedResponse */
         NotificationCreatedResponse: {
@@ -9657,11 +9721,8 @@ export interface components {
              */
             total_notifications_sent: number;
         };
-        /**
-         * NotificationRecipients
-         * @description The recipients of a notification. Can be a combination of users, groups and roles.
-         */
-        NotificationRecipients: {
+        /** NotificationRecipientsRequest */
+        NotificationRecipientsRequest: {
             /**
              * Group IDs
              * @description The list of encoded group IDs of the groups that should receive the notification.
@@ -9918,6 +9979,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -9993,6 +10055,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Page";
             /**
@@ -10083,6 +10146,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "pasted";
             /** Tags */
@@ -10142,6 +10206,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "path";
             /** Tags */
@@ -10189,6 +10254,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "pause";
             /** When */
@@ -10359,6 +10425,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -10411,6 +10478,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Quota";
             /**
@@ -10589,6 +10657,7 @@ export interface components {
             /**
              * Class
              * @constant
+             * @enum {string}
              */
             class: "Directory";
             /**
@@ -10612,6 +10681,7 @@ export interface components {
             /**
              * Class
              * @constant
+             * @enum {string}
              */
             class: "File";
             /**
@@ -10663,6 +10733,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "remove_unlabeled_workflow_outputs";
         };
@@ -10749,6 +10820,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Role";
             /**
@@ -10840,6 +10912,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "server_dir";
             /** Tags */
@@ -11271,6 +11344,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "Job";
             /**
@@ -11501,6 +11575,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "StoredWorkflow";
             /**
@@ -11611,6 +11686,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "subworkflow";
             /** When */
@@ -11802,6 +11878,7 @@ export interface components {
             /**
              * Type
              * @constant
+             * @enum {string}
              */
             type: "tool";
             /** When */
@@ -11924,6 +12001,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_annotation";
             /** Annotation */
@@ -11962,6 +12040,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_creator";
             /** Creator */
@@ -12060,6 +12139,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_license";
             /** License */
@@ -12070,6 +12150,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_name";
             /** Name */
@@ -12088,6 +12169,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_output_label";
             /** Output */
@@ -12141,6 +12223,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_report";
             report: components["schemas"]["Report"];
@@ -12150,6 +12233,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_step_label";
             /**
@@ -12168,6 +12252,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "update_step_position";
             position_shift: components["schemas"]["Position"];
@@ -12195,6 +12280,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_all_steps";
         };
@@ -12203,6 +12289,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_subworkflow";
             /** Content Id */
@@ -12218,6 +12305,7 @@ export interface components {
             /**
              * Action Type
              * @constant
+             * @enum {string}
              */
             action_type: "upgrade_tool";
             /**
@@ -12273,6 +12361,7 @@ export interface components {
             /**
              * Src
              * @constant
+             * @enum {string}
              */
             src: "url";
             /** Tags */
@@ -12368,6 +12457,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "User";
             /**
@@ -12507,6 +12597,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "UserQuotaAssociation";
             /**
@@ -12651,6 +12742,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -12731,6 +12823,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model_class: "WorkflowInvocation";
             /**
@@ -12795,6 +12888,7 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @constant
+             * @enum {string}
              */
             model: "WorkflowInvocation";
             /**
@@ -13337,8 +13431,10 @@ export interface operations {
         /** Returns detailed information about the given collection. */
         parameters: {
             /** @description The type of collection instance. Either `history` (default) or `library`. */
+            /** @description The view of collection instance to return. */
             query?: {
                 instance_type?: "history" | "library";
+                view?: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13353,7 +13449,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HDCADetailed"];
+                    "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -15652,6 +15748,7 @@ export interface operations {
         parameters?: {
             /** @description The maximum number of items to return. */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Whether to include archived histories. */
             /** @description Sort index by this specified attribute */
             /** @description Sort in descending order? */
             /**
@@ -15703,6 +15800,7 @@ export interface operations {
                 show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
+                show_archived?: boolean | null;
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 sort_desc?: boolean;
                 search?: string | null;
@@ -18651,100 +18749,6 @@ export interface operations {
             };
         };
     };
-    export_invocation_bco_api_invocations__invocation_id__biocompute_get: {
-        /**
-         * Return a BioCompute Object for the workflow invocation.
-         * @deprecated
-         * @description The BioCompute Object endpoints are in beta - important details such
-         * as how inputs and outputs are represented, how the workflow is encoded,
-         * and how author and version information is encoded, and how URLs are
-         * generated will very likely change in important ways over time.
-         *
-         * **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-         *
-         * 1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-         *     ```
-         *     {
-         *         model_store_format: bco.json
-         *     }
-         *     ```
-         * 2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-         *
-         * 3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-         */
-        parameters: {
-            query?: {
-                merge_history_metadata?: boolean | null;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the Invocation. */
-            path: {
-                invocation_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    download_invocation_bco_api_invocations__invocation_id__biocompute_download_get: {
-        /**
-         * Return a BioCompute Object for the workflow invocation as a file for download.
-         * @deprecated
-         * @description The BioCompute Object endpoints are in beta - important details such
-         * as how inputs and outputs are represented, how the workflow is encoded,
-         * and how author and version information is encoded, and how URLs are
-         * generated will very likely change in important ways over time.
-         *
-         * **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-         *
-         * 1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-         *     ```
-         *     {
-         *         model_store_format: bco.json
-         *     }
-         *     ```
-         * 2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-         *
-         * 3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-         */
-        parameters: {
-            query?: {
-                merge_history_metadata?: boolean | null;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the Invocation. */
-            path: {
-                invocation_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: never;
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -19399,7 +19403,7 @@ export interface operations {
          * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
          */
         parameters: {
-            /** @description A key used to authenticate this request as acting onbehalf or a job runner for the specified job */
+            /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
             /** @description OIDC provider name */
             query: {
                 job_key: string;
@@ -19981,7 +19985,9 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                    "application/json":
+                        | components["schemas"]["NotificationCreatedResponse"]
+                        | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Validation Error */
@@ -20153,6 +20159,9 @@ export interface operations {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

@@ -8,6 +8,7 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from requests import get
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
@@ -15,6 +16,7 @@ from galaxy.objectstore.caching import (
     CacheTarget,
     check_cache,
     InProcessCacheMonitor,
+    reset_cache,
 )
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
@@ -28,6 +30,7 @@ from galaxy.util import (
     directory_hash_id,
     unlink,
 )
+from galaxy.util.unittest_utils import skip_unless_environ
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -182,7 +185,7 @@ def test_disk_store_by_uuid():
                 directory.temp_directory,
                 "files1",
                 output_dataset.rel_path_for_uuid_test(),
-                "dataset_%s.dat" % output_dataset.uuid,
+                f"dataset_{output_dataset.uuid}.dat",
             )
             assert not os.path.exists(output_real_path)
             output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")
@@ -989,12 +992,6 @@ def test_config_parse_cloud():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1002,13 +999,12 @@ def test_config_parse_cloud():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1025,11 +1021,6 @@ def test_config_parse_cloud():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1054,12 +1045,6 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
-            assert object_store.host is None
-            assert object_store.port == 6000
-            assert object_store.multipart is True
-            assert object_store.is_secure is True
-            assert object_store.conn_path == "/"
-
             cache_target = object_store.cache_target
             assert cache_target.size == 1000.0
             assert cache_target.path == "database/object_store_cache"
@@ -1067,13 +1052,12 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
-            connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
             provider = as_dict["provider"]
@@ -1084,11 +1068,6 @@ def test_config_parse_cloud_noauth_for_aws():
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
-
-            _assert_key_has_value(connection_dict, "host", None)
-            _assert_key_has_value(connection_dict, "port", 6000)
-            _assert_key_has_value(connection_dict, "multipart", True)
-            _assert_key_has_value(connection_dict, "is_secure", True)
 
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1262,6 +1241,380 @@ def test_config_parse_azure_no_cache():
         with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
+
+
+def verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=True):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # without cache...
+    hello_world_dataset_2 = MockDataset(10)
+    object_store.update_from_file(hello_world_dataset_2, file_name=hello_path, create=True)
+    reset_cache(object_store.cache_target)
+    assert object_store.exists(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+    assert not object_store.empty(hello_world_dataset_2)
+    reset_cache(object_store.cache_target)
+
+    data = object_store.get_data(hello_world_dataset_2)
+    assert data == "Hello World!"
+    reset_cache(object_store.cache_target)
+    data = object_store.get_data(hello_world_dataset_2, start=1, count=6)
+    assert data == "ello W"
+    reset_cache(object_store.cache_target)
+    path = object_store.get_filename(hello_world_dataset_2)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test percent used (to some degree)
+    percent_store_used = object_store.get_store_usage_percent()
+    assert percent_store_used >= 0.0
+    assert percent_store_used < 100.0
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test delete no cache
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert object_store.delete(to_delete_dataset)
+    reset_cache(object_store.cache_target)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
+
+
+def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):
+    # Test no dataset with id 1 exists.
+    absent_dataset = MockDataset(1)
+    assert not object_store.exists(absent_dataset)
+
+    # Write empty dataset 2 in second backend, ensure it is empty and
+    # exists.
+    empty_dataset = MockDataset(2)
+    object_store.create(empty_dataset)
+    assert object_store.exists(empty_dataset)
+    assert object_store.empty(empty_dataset)
+
+    # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+    # with cache...
+    hello_world_dataset = MockDataset(3)
+    hello_path = tmp_path / "hello.txt"
+    hello_path.write_text("Hello World!")
+    object_store.update_from_file(hello_world_dataset, file_name=hello_path, create=True)
+    assert object_store.exists(hello_world_dataset)
+    assert not object_store.empty(hello_world_dataset)
+
+    # Test get_data
+    data = object_store.get_data(hello_world_dataset)
+    assert data == "Hello World!"
+
+    data = object_store.get_data(hello_world_dataset, start=1, count=6)
+    assert data == "ello W"
+    path = object_store.get_filename(hello_world_dataset)
+    assert open(path).read() == "Hello World!"
+
+    # Test Size
+
+    # Test absent and empty datasets yield size of 0.
+    assert object_store.size(absent_dataset) == 0
+    assert object_store.size(empty_dataset) == 0
+    # Elsewise
+    assert object_store.size(hello_world_dataset) == 12
+
+    # Test delete
+    to_delete_dataset = MockDataset(5)
+    object_store.create(to_delete_dataset)
+    assert object_store.exists(to_delete_dataset)
+    assert object_store.delete(to_delete_dataset)
+    assert not object_store.exists(to_delete_dataset)
+
+    # Test get_object_url returns a read-only URL
+    url = object_store.get_object_url(hello_world_dataset)
+    if check_get_url:
+        response = get(url)
+        response.raise_for_status()
+        assert response.text == "Hello World!"
+
+
+AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML = """
+type: azure_blob
+store_by: uuid
+auth:
+  account_name: ${account_name}
+  account_key: ${account_key}
+
+container:
+  name: ${container_name}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+    }
+    with TestConfig(AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML = """
+type: azure_blob
+store_by: uuid
+auth:
+  account_name: ${account_name}
+  account_key: ${account_key}
+  account_url: ${account_url}
+
+container:
+  name: ${container_name}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_URL")
+def test_real_azure_blob_store_with_account_url(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+        "account_url": os.environ["GALAXY_TEST_AZURE_ACCOUNT_URL"],
+    }
+    with TestConfig(AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML = """
+type: distributed
+backends:
+- type: azure_blob
+  id: azure1
+  store_by: uuid
+  name: Azure Store 1
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_1
+  - type: temp
+    path: database/tmp_azure_1
+- type: azure_blob
+  id: azure2
+  store_by: uuid
+  name: Azure Store 2
+  allow_selection: true
+  weight: 1
+  auth:
+    account_name: ${account_name}
+    account_key: ${account_key}
+
+  container:
+    name: ${container_name}
+
+  extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_azure_2
+  - type: temp
+    path: database/tmp_azure_2
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
+@skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
+def test_real_azure_blob_store_in_hierarchical(tmp_path):
+    template_vars = {
+        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
+        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
+        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
+    }
+    with TestConfig(AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
+type: aws_s3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+connection:
+  region: ${region}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_real_aws_s3_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
+    }
+    with TestConfig(AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_aws_via_cloudbridge_store(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        # disabling get_object_url check - cloudbridge in this config assumes the region
+        # is us-east-1 and generates a URL for that region. This functionality works and can
+        # be tested if a region is specified in the configuration (see next config and test case).
+        verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=False)
+
+
+AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML = """
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+  region: ${region}
+
+bucket:
+  name: ${bucket}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+@skip_unless_environ("GALAXY_TEST_AWS_REGION")
+def test_aws_via_cloudbridge_store_with_region(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "region": os.environ["GALAXY_TEST_AWS_REGION"],
+    }
+    with TestConfig(AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
 
 
 class MockDataset:

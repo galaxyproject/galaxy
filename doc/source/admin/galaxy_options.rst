@@ -1453,7 +1453,7 @@
     This option has no effect if the file specified by
     object_store_config_file exists. Otherwise, if this option is set,
     it overrides any other objectstore settings.
-    The syntax, available instrumenters, and documentation of their
+    The syntax, available storage plugins, and documentation of their
     options is explained in detail in the object store sample
     configuration file, `object_store_conf.sample.yml`
 :Default: ``None``
@@ -2156,7 +2156,7 @@
     Allow import of workflows from the TRS servers configured in the
     specified YAML or JSON file. The file should be a list with 'id',
     'label', and 'api_url' for each entry. Optionally, 'link_url' and
-    'doc' may be be specified as well for each entry.
+    'doc' may be specified as well for each entry.
     If this is null (the default), a simple configuration containing
     just Dockstore will be used.
     The value of this option will be resolved with respect to
@@ -2606,8 +2606,20 @@
 
 :Description:
     The upload store is a temporary directory in which files uploaded
-    by the tus middleware or server will be placed. Defaults to
-    new_file_path if not set.
+    by the tus middleware or server for user uploads will be placed.
+    Defaults to new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store_job_files``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server for remote job files (Pulsar) will
+    be placed. Defaults to tus_upload_store if not set.
 :Default: ``None``
 :Type: str
 
@@ -3014,6 +3026,17 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``use_access_logging_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log request start as well as request end. Disables uvicorn access
+    log handler.
 :Default: ``false``
 :Type: bool
 
@@ -4027,6 +4050,23 @@
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``oidc_backends_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``oidc_scope_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the prefix for OIDC scopes specific to this Galaxy instance.
+    If an API call is made against this Galaxy instance using an OIDC
+    bearer token, any scopes must be prefixed with this value e.g.
+    https://galaxyproject.org/api. More concretely, to request all
+    permissions that the user has, the scope would have to be
+    specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+    Currently, only * is recognised as a valid scope, and future
+    iterations may provide more fine-grained scopes.
+:Default: ``https://galaxyproject.org/api``
 :Type: str
 
 
@@ -5116,6 +5156,23 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``enable_celery_tasks``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Offload long-running tasks to a Celery task queue. Activate this
+    only if you have setup a Celery worker for Galaxy and you have
+    configured the `celery_conf` option below. Specifically, you need
+    to set the `result_backend` option in the `celery_conf` option to
+    a valid Celery result backend URL. By default, Galaxy uses an
+    SQLite database at '<data_dir>/results.sqlite' for storing task
+    results. For details, see
+    https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``celery_conf``
 ~~~~~~~~~~~~~~~
@@ -5125,28 +5182,18 @@
     To refer to a task by name, use the template `galaxy.foo` where
     `foo` is the function name of the task defined in the
     galaxy.celery.tasks module.
-    The `broker_url` option, if unset, defaults to the value of
-    `amqp_internal_connection`. The `result_backend` option must be
-    set if the `enable_celery_tasks` option is set.
+    The `broker_url` option, if unset or null, defaults to the value
+    of `amqp_internal_connection`. The `result_backend` option, if
+    unset or null, defaults to an SQLite database at
+    '<data_dir>/results.sqlite' for storing task results. Please use a
+    more robust backend (e.g. Redis) for production setups.
     The galaxy.fetch_data task can be disabled by setting its route to
     "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
     disabled on a per-task basis at this time.)
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
-:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Default: ``{'broker_url': None, 'result_backend': None, 'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
 :Type: any
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
-``enable_celery_tasks``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Offload long-running tasks to a Celery task queue. Activate this
-    only if you have setup a Celery worker for Galaxy. For details,
-    see https://docs.galaxyproject.org/en/master/admin/production.html
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5427,6 +5474,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``dispatch_notifications_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to dispatch notifications
+    to users (every 10 minutes by default). Runs in a Celery task.
+:Default: ``600``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``help_forum_api_url``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5439,15 +5497,12 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``help_forum_tool_panel_integration_enabled``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_help_forum_tool_panel_integration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
-
-
-

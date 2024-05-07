@@ -844,6 +844,7 @@ invocations:
     toggle_invocation_details: '.toggle-invocation-details'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
+    hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -952,6 +953,7 @@ admin:
       allowlist: '#admin-link-allowlist'
 
   selectors:
+    activity: '#activity-admin'
     warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
     jobs_title: '#jobs-title'
@@ -1079,7 +1081,7 @@ upload:
     composite_close_button: '#composite #btn-close'
     create_button: '#btn-new'
     file_dialog: '#btn-remote-files'
-    file_dialog_ok: '.file-dialog-modal-ok'
+    file_dialog_ok: '[data-description="selection dialog ok"]'
     file_source_selector:
       type: xpath
       selector: '//span[contains(@title, "${path}")]'

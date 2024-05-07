@@ -56,7 +56,7 @@ def create_repo(session, changeset, installed_changeset, config_filename=None):
         "tools": [
             {
                 "add_to_tool_panel": False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
-                "guid": "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                "guid": f"github.com/galaxyproject/example/test_tool/0.{changeset}",
                 "tool_config": "tool.xml",
             }
         ],

@@ -3,14 +3,13 @@ import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from 
 import { computed, reactive, ref } from "vue";
 
 import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
-import { ExportParamsModel } from "@/components/Common/models/exportRecordModel";
+import type { ExportParams } from "@/components/Common/models/exportRecordModel";
 
-const props = defineProps({
-    exportParams: {
-        type: ExportParamsModel,
-        required: true,
-    },
-});
+interface Props {
+    exportParams: ExportParams;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits(["onValueChanged"]);
 

@@ -881,6 +881,9 @@ class TestMappings(BaseModelTestCase):
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
 
+        # recover user after expunge
+        user = loaded_invocation.history.user
+
         step_1, step_2 = loaded_invocation.workflow.steps
 
         assert not step_1.subworkflow

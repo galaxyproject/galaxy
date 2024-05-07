@@ -4,7 +4,6 @@ import logging
 from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import object_session
 from sqlalchemy.sql import text
 
 import galaxy.util
@@ -198,7 +197,7 @@ FROM (
     WHERE
         dataset_id = :dataset_id
 )"""
-        engine = object_session(dataset).bind
+        engine = self.sa_session.get_bind()
 
         # Hack for older sqlite, would work on newer sqlite - 3.24.0
         for_sqlite = "sqlite" in engine.dialect.name

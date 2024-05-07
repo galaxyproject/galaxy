@@ -4,10 +4,83 @@ History
 .. to_doc
 
 ---------
-24.0.dev0
+24.1.dev0
 ---------
 
 
+
+-------------------
+24.0.2 (2024-05-07)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Tool linters: allow to skip by old linter names (by allowing to skip linter modules) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18091 <https://github.com/galaxyproject/galaxy/pull/18091>`_
+* tool linters: output filters should only consider child filter nodes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18096 <https://github.com/galaxyproject/galaxy/pull/18096>`_
+
+-------------------
+24.0.1 (2024-05-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix conditional Image imports by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17899 <https://github.com/galaxyproject/galaxy/pull/17899>`_
+
+-------------------
+24.0.0 (2024-04-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* xsd: reorder choices for permissive boolean by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17187 <https://github.com/galaxyproject/galaxy/pull/17187>`_
+* Allow for upper case container tags by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17254 <https://github.com/galaxyproject/galaxy/pull/17254>`_
+* Fixes for flake8-bugbear 24.1.17 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17340 <https://github.com/galaxyproject/galaxy/pull/17340>`_
+* Escape pipe character in tool XSD docs by `@neoformit <https://github.com/neoformit>`_ in `#17359 <https://github.com/galaxyproject/galaxy/pull/17359>`_
+* XSD schema doc building: quote pipe characters in attribute tables by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17364 <https://github.com/galaxyproject/galaxy/pull/17364>`_
+* Fix IUC best practices links, mention data_source_async in XSD by `@wm75 <https://github.com/wm75>`_ in `#17409 <https://github.com/galaxyproject/galaxy/pull/17409>`_
+* Fix data_source and data_source_async bugs by `@wm75 <https://github.com/wm75>`_ in `#17422 <https://github.com/galaxyproject/galaxy/pull/17422>`_
+* Add tool XML schema documention for outputs - collection - data by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17465 <https://github.com/galaxyproject/galaxy/pull/17465>`_
+* has_size assertion: implement size (as synonym for value) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17490 <https://github.com/galaxyproject/galaxy/pull/17490>`_
+* Yaml nested assertions: fix parsing by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17641 <https://github.com/galaxyproject/galaxy/pull/17641>`_
+
+============
+Enhancements
+============
+
+* build_mulled: also use namespace for building singularity images by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15657 <https://github.com/galaxyproject/galaxy/pull/15657>`_
+* Python 3.8 as minimum by `@mr-c <https://github.com/mr-c>`_ in `#16954 <https://github.com/galaxyproject/galaxy/pull/16954>`_
+* Extend regex groups in stdio regex matches by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17016 <https://github.com/galaxyproject/galaxy/pull/17016>`_
+* Split linters in separate classes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17081 <https://github.com/galaxyproject/galaxy/pull/17081>`_
+* Add select parameter with options from remote resources by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17087 <https://github.com/galaxyproject/galaxy/pull/17087>`_
+* Replace discouraged Mambaforge with Miniforge3 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17177 <https://github.com/galaxyproject/galaxy/pull/17177>`_
+* Clarify the meaning of lexical sorting of discovered datasets by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17190 <https://github.com/galaxyproject/galaxy/pull/17190>`_
+* Migrate models to pydantic 2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17262 <https://github.com/galaxyproject/galaxy/pull/17262>`_
+* Add element_identifier and ext to inputs config file export by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17357 <https://github.com/galaxyproject/galaxy/pull/17357>`_
+* Enable ``warn_unreachable`` mypy option by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17365 <https://github.com/galaxyproject/galaxy/pull/17365>`_
+* Fix type annotation of code using XML etree by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17367 <https://github.com/galaxyproject/galaxy/pull/17367>`_
+* Update to black 2024 stable style by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17391 <https://github.com/galaxyproject/galaxy/pull/17391>`_
+* Some additional typing for test interactor stuff. by `@jmchilton <https://github.com/jmchilton>`_ in `#17398 <https://github.com/galaxyproject/galaxy/pull/17398>`_
+* Allow using tool data bundles as inputs to reference data select parameters by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17435 <https://github.com/galaxyproject/galaxy/pull/17435>`_
+* `data_column` parameter: use `column_names` metadata if present by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17478 <https://github.com/galaxyproject/galaxy/pull/17478>`_
+* Fixing data_source tools and incrementing tool profile by `@wm75 <https://github.com/wm75>`_ in `#17515 <https://github.com/galaxyproject/galaxy/pull/17515>`_
+* Add `image_diff` comparison method for test output verification using images by `@kostrykin <https://github.com/kostrykin>`_ in `#17556 <https://github.com/galaxyproject/galaxy/pull/17556>`_
+* add shm_size based on ShmSize  by `@richard-burhans <https://github.com/richard-burhans>`_ in `#17565 <https://github.com/galaxyproject/galaxy/pull/17565>`_
+* Record missing outputs as test errors by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17874 <https://github.com/galaxyproject/galaxy/pull/17874>`_
+
+=============
+Other changes
+=============
+
+* consistently compare profile versions by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16492 <https://github.com/galaxyproject/galaxy/pull/16492>`_
 
 -------------------
 23.2.1 (2024-02-21)

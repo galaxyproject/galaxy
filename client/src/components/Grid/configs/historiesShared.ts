@@ -32,6 +32,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         show_own: false,
         show_published: false,
         show_shared: true,
+        show_archived: true,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];

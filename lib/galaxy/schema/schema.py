@@ -66,6 +66,8 @@ IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
 OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 
+TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
+
 
 class DatasetState(str, Enum):
     NEW = "new"
@@ -527,7 +529,7 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")]
+TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
 
 
 class TagCollection(RootModel):
@@ -969,13 +971,13 @@ class DCESummary(Model, WithModelClass):
         title="Element Identifier",
         description="The actual name of this element.",
     )
-    element_type: DCEType = Field(
-        ...,
+    element_type: Optional[DCEType] = Field(
+        None,
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDAObject, HDADetailed, DCObject] = Field(
-        ...,
+    object: Optional[Union[HDAObject, HDADetailed, DCObject]] = Field(
+        None,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
@@ -1561,14 +1563,14 @@ class CreateHistoryPayload(Model):
         default=None,
         title="History ID",
         description=(
-            "The encoded ID of the history to copy. " "Provide this value only if you want to copy an existing history."
+            "The encoded ID of the history to copy. Provide this value only if you want to copy an existing history."
         ),
     )
     all_datasets: Optional[bool] = Field(
         default=True,
         title="All Datasets",
         description=(
-            "Whether to copy also deleted HDAs/HDCAs. Only applies when " "providing a `history_id` to copy from."
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when providing a `history_id` to copy from."
         ),
     )
     archive_source: Optional[str] = Field(
@@ -3409,7 +3411,7 @@ class ShareWithPayload(Model):
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users " "that this resource will be shared with."
+            "A collection of encoded IDs (or email addresses) of users that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(

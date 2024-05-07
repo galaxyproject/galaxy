@@ -13,7 +13,7 @@ def assert_markdown_invalid(markdown, at_line=None):
         failed = True
         if at_line is not None:
             assert "Invalid line %d" % (at_line + 1) in str(e)
-    assert failed, "Expected markdown [%s] to fail validation but it did not." % markdown
+    assert failed, f"Expected markdown [{markdown}] to fail validation but it did not."
 
 
 def test_markdown_validation():

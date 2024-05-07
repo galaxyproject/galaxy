@@ -68,6 +68,7 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
+from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +126,7 @@ class HDAManager(
         #     return True
         return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, item: model.Base, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(self, item, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
@@ -178,7 +179,7 @@ class HDAManager(
             True,  # attached...
             object_store=self.app.object_store,
             file_sources=self.app.file_sources,
-            sa_session=self.app.model.context,
+            sa_session=self.app.model.session(),
         )
         user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
@@ -201,7 +202,12 @@ class HDAManager(
         if not isinstance(item, model.HistoryDatasetAssociation):
             raise TypeError()
         hda = item
-        copy = hda.copy(parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush)
+        copy = hda.copy(
+            parent_id=kwargs.get("parent_id"),
+            copy_hid=False,
+            copy_tags=hda.tags,  # type:ignore[attr-defined]
+            flush=False,
+        )
         if hide_copy:
             copy.visible = False
         if history:
@@ -215,16 +221,11 @@ class HDAManager(
             if history:
                 history.add_pending_items()
             session = object_session(copy)
+            assert session
             with transaction(session):
                 session.commit()
 
         return copy
-
-    def copy_ldda(self, history, ldda, **kwargs):
-        """
-        Copy this HDA as a LDDA and return.
-        """
-        return ldda.to_history_dataset_association(history, add_to_history=True)
 
     # .... deletion and purging
     def purge(self, hda, flush=True, **kwargs):
@@ -251,6 +252,7 @@ class HDAManager(
             user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
             # TODO: don't flush above if we're going to re-flush here
             session = object_session(user)
+            assert session
             with transaction(session):
                 session.commit()
 
@@ -303,11 +305,13 @@ class HDAManager(
         # For now, cannot get data from non-text datasets.
         if not isinstance(hda.datatype, datatypes.data.Text):
             return truncated, hda_data
-        if not os.path.exists(hda.get_file_name()):
+        file_path = hda.get_file_name()
+        if not os.path.exists(file_path):
             return truncated, hda_data
 
-        truncated = preview and os.stat(hda.get_file_name()).st_size > MAX_PEEK_SIZE
-        hda_data = open(hda.get_file_name()).read(MAX_PEEK_SIZE)
+        truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
+        with get_fileobj(file_path) as fh:
+            hda_data = fh.read(MAX_PEEK_SIZE)
         return truncated, hda_data
 
     # .... annotatable
@@ -357,12 +361,13 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),
+                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )
         )
         result = self.hda_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -386,7 +391,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),
+                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )
@@ -558,6 +563,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
         serializers: Dict[str, base.Serializer] = {
+            "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
