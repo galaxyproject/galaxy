@@ -189,7 +189,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             log.exception("Could not get size of blob '%s' from Azure", rel_path)
             return -1
 
-    def _in_azure(self, rel_path):
+    def _exists_remotely(self, rel_path: str):
         try:
             exists = self._blob_client(rel_path).exists()
         except AzureHttpError:
@@ -289,7 +289,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             return True
 
         in_cache = self._in_cache(rel_path)
-        in_azure = self._in_azure(rel_path)
+        in_azure = self._exists_remotely(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in azure: %s" % (rel_path, in_cache, in_azure))
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get("dir_only", False)
@@ -408,7 +408,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
-                if self._in_azure(rel_path):
+                if self._exists_remotely(rel_path):
                     log.debug("Deleting from Azure: %s", rel_path)
                     self._blob_client(rel_path).delete_blob()
                     return True

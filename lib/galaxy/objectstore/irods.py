@@ -337,7 +337,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
             log.debug("irods_pt _get_size_in_irods: %s", ipt_timer)
 
     # rel_path is file or folder?
-    def _data_object_exists(self, rel_path):
+    def _exists_remotely(self, rel_path):
         ipt_timer = ExecutionTimer()
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
@@ -354,7 +354,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
             log.debug("Collection or data object (%s) does not exist", data_object_path)
             return False
         finally:
-            log.debug("irods_pt _data_object_exists: %s", ipt_timer)
+            log.debug("irods_pt _exists_remotely: %s", ipt_timer)
 
     def _download(self, rel_path):
         ipt_timer = ExecutionTimer()
@@ -487,7 +487,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         rel_path = self._construct_path(obj, **kwargs)
 
         # Check cache and irods
-        if self._in_cache(rel_path) or self._data_object_exists(rel_path):
+        if self._in_cache(rel_path) or self._exists_remotely(rel_path):
             log.debug("irods_pt _exists: %s", ipt_timer)
             return True
 

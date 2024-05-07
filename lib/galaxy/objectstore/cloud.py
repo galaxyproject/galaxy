@@ -272,7 +272,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
-    def _key_exists(self, rel_path):
+    def _exists_remotely(self, rel_path):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
@@ -406,7 +406,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         if self._in_cache(rel_path):
             in_cache = True
         # Check cloud
-        in_cloud = self._key_exists(rel_path)
+        in_cloud = self._exists_remotely(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
         dir_only = kwargs.get("dir_only", False)
@@ -505,7 +505,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
-                if self._key_exists(rel_path):
+                if self._exists_remotely(rel_path):
                     key = self.bucket.objects.get(rel_path)
                     log.debug("Deleting key %s", key.name)
                     key.delete()
