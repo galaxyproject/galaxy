@@ -1,6 +1,8 @@
 <template>
     <div class="history-import-component" aria-labelledby="history-import-heading">
-        <h1 id="history-import-heading" class="h-lg">Import a {{ identifierText }} from an archive</h1>
+        <h1 id="history-import-heading" class="h-lg">
+            Import {{ identifierText === "invocation" ? "an" : "a" }} {{ identifierText }} from an archive
+        </h1>
 
         <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
@@ -22,8 +24,7 @@
                 <span class="mb-1 h-sm">Done!</span>
                 <p>
                     {{ identifierTextCapitalized }} imported, check out
-                    <a :href="historyLink">your {{ identifierTextPlural }}</a
-                    >.
+                    <router-link :to="linkToList">your {{ identifierTextPlural }}</router-link>
                 </p>
             </b-alert>
         </div>
@@ -157,8 +158,8 @@ export default {
                 return false;
             }
         },
-        historyLink() {
-            return `${getAppRoot()}histories/list`;
+        linkToList() {
+            return this.invocationImport ? `/workflows/invocations` : `/histories/list`;
         },
         identifierText() {
             return this.invocationImport ? "invocation" : "history";
