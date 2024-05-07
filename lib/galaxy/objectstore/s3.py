@@ -300,7 +300,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
-    def _key_exists(self, rel_path):
+    def _exists_remotely(self, rel_path):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
@@ -330,7 +330,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         # looking likely to be implementable reliably.
         # if os.path.exists(cache_path):
         #     # print("***1 %s exists" % cache_path)
-        #     if self._key_exists(rel_path):
+        #     if self._exists_remotely(rel_path):
         #         # print("***2 %s exists in S3" % rel_path)
         #         # Make sure the size in cache is available in its entirety
         #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path)))
@@ -474,7 +474,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         if self._in_cache(rel_path):
             in_cache = True
         # Check S3
-        in_s3 = self._key_exists(rel_path)
+        in_s3 = self._exists_remotely(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
         if dir_only:
@@ -572,7 +572,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
-                if self._key_exists(rel_path):
+                if self._exists_remotely(rel_path):
                     key = Key(self._bucket, rel_path)
                     log.debug("Deleting key %s", key.name)
                     key.delete()
