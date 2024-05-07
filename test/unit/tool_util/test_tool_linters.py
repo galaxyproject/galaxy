@@ -29,7 +29,6 @@ from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import (
     ElementTree,
-    parse_xml,
     submodules,
 )
 from galaxy.util.unittest_utils import skip_if_site_down
