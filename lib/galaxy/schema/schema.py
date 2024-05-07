@@ -3750,7 +3750,7 @@ class DatasetSummary(Model):
 
 class ValidationErrorModel(BaseModel):
     type: str
-    loc: tuple[int, ...]
+    loc: List[int]
     msg: str
     input: Any
 
