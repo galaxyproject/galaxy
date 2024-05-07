@@ -398,25 +398,37 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
-                results = self.bucket.objects.list(prefix=rel_path)
-                for key in results:
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
-                return True
+                return self._delete_remote_all(rel_path)
             else:
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._exists_remotely(rel_path):
-                    key = self.bucket.objects.get(rel_path)
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
-                    return True
-        except Exception:
-            log.exception("Could not delete key '%s' from cloud", rel_path)
+                    return self._delete_existing_remote(rel_path)
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
+
+    def _delete_remote_all(self, rel_path: str) -> bool:
+        try:
+            results = self.bucket.objects.list(prefix=rel_path)
+            for key in results:
+                log.debug("Deleting key %s", key.name)
+                key.delete()
+            return True
+        except Exception:
+            log.exception("Could not delete key '%s' from cloud", rel_path)
+            return False
+
+    def _delete_existing_remote(self, rel_path: str) -> bool:
+        try:
+            key = self.bucket.objects.get(rel_path)
+            log.debug("Deleting key %s", key.name)
+            key.delete()
+            return True
+        except Exception:
+            log.exception("Could not delete key '%s' from cloud", rel_path)
+            return False
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

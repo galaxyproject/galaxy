@@ -429,26 +429,38 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
-                results = self._bucket.get_all_keys(prefix=rel_path)
-                for key in results:
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
-                return True
+                return self._delete_remote_all(rel_path)
             else:
                 # Delete from cache first
                 unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._exists_remotely(rel_path):
-                    key = Key(self._bucket, rel_path)
-                    log.debug("Deleting key %s", key.name)
-                    key.delete()
-                    return True
-        except S3ResponseError:
-            log.exception("Could not delete key '%s' from S3", rel_path)
+                    self._delete_existing_remote(rel_path)
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
+
+    def _delete_remote_all(self, rel_path: str) -> bool:
+        try:
+            results = self._bucket.get_all_keys(prefix=rel_path)
+            for key in results:
+                log.debug("Deleting key %s", key.name)
+                key.delete()
+            return True
+        except S3ResponseError:
+            log.exception("Could not delete blob '%s' from S3", rel_path)
+            return False
+
+    def _delete_existing_remote(self, rel_path: str) -> bool:
+        try:
+            key = Key(self._bucket, rel_path)
+            log.debug("Deleting key %s", key.name)
+            key.delete()
+            return True
+        except S3ResponseError:
+            log.exception("Could not delete blob '%s' from S3", rel_path)
+            return False
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         download_directory(self._bucket, rel_path, cache_path)
