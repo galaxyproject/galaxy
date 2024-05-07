@@ -85,7 +85,10 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     );
 
     const { shift, space, alt, ctrl } = useMagicKeys();
-    const inputCatcherEnabled = computed(() => !(shift?.value || space?.value || alt?.value || ctrl?.value));
+    const modifierPressed = computed(() => shift?.value || space?.value || alt?.value || ctrl?.value);
+    const inputCatcherTemporarilyDisabled = ref(false);
+
+    const inputCatcherEnabled = computed(() => !modifierPressed.value && !inputCatcherTemporarilyDisabled.value);
 
     function emitInputCatcherEvent(type: InputCatcherEventType, event: InputCatcherEvent) {
         inputCatcherEventListeners.forEach((listener) => {
@@ -102,6 +105,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
         currentTool,
         inputCatcherActive,
         inputCatcherEnabled,
+        inputCatcherTemporarilyDisabled,
         commentOptions,
         inputCatcherPressed,
         onInputCatcherEvent,

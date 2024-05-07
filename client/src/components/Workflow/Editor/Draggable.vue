@@ -127,6 +127,7 @@ function getSnappedPosition<T extends Position>(position: T) {
 
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
+    toolbarStore.inputCatcherTemporarilyDisabled = true;
 
     if (event.type == "drag" && event.x == 0 && event.y == 0) {
         // the last drag event has no coordinate ... this is obviously a hack!
@@ -175,6 +176,8 @@ const onMove = (position: Position, event: DragEvent) => {
 };
 
 const onEnd = (_position: Position, event: DragEvent) => {
+    toolbarStore.inputCatcherTemporarilyDisabled = false;
+
     if (dragImg) {
         document.body.removeChild(dragImg);
         dragImg = null;

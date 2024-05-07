@@ -21,8 +21,35 @@ const inverseCanvasTransform = computed(() =>
         .inverse()
 );
 
+const zIndexLow = 0;
+const zIndexHigh = 1500;
+
+const zIndex = ref(zIndexHigh);
+
+watch(
+    () => toolbarStore.currentTool,
+    () => {
+        if (toolbarStore.currentTool === "boxSelect") {
+            zIndex.value = zIndexLow;
+        } else {
+            zIndex.value = zIndexHigh;
+        }
+    }
+);
+
+toolbarStore.onInputCatcherEvent("pointerdown", () => {
+    zIndex.value = zIndexHigh;
+});
+
+toolbarStore.onInputCatcherEvent("pointerup", () => {
+    if (toolbarStore.currentTool === "boxSelect") {
+        zIndex.value = zIndexLow;
+    }
+});
+
 const style = computed(() => ({
     transform: `matrix(${inverseCanvasTransform.value.matrix.join(",")})`,
+    "z-index": `${zIndex.value}`,
 }));
 
 let lastPosition = [0, 0] as [number, number];
@@ -66,7 +93,6 @@ watch(
     top: 0;
     left: 0;
     transform-origin: top left;
-    z-index: 1500;
     width: 100%;
     height: 100%;
     cursor: crosshair;
