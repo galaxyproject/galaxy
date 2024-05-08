@@ -60,7 +60,7 @@ onMounted(() => {
             class="drilldown-option d-inline"
             value="true"
             :checked="isChecked"
-            @change="handleClick(option.value)">
+            @change="handleClick(option.value, $event)">
             {{ option.name }}
         </component>
         <FormDrilldownList

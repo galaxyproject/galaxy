@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type ComputedRef } from "vue";
 
-import { getAllValues, type Option, type Value } from "./utilities";
+import { findDescendants, flattenValues, getAllValues, type Option, type Value } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
 
@@ -53,28 +53,40 @@ const selectAllIndeterminate: ComputedRef<boolean> = computed(() => {
 });
 
 // Handle click on individual check/radio element
-function handleClick(value: string): void {
+function handleClick(clickedElement: string, value: string): void {
     if (props.multiple) {
-        const newValue: string[] = currentValue.value.slice();
-        const index: number = newValue.indexOf(value);
-        if (index !== -1) {
-            newValue.splice(index, 1);
-        } else {
-            newValue.push(value);
-        }
-        if (newValue.length === 0) {
+        const clickedElements: string[] = addDescendants(props.options, clickedElement);
+        const selectedElements: string[] = setElementValues(currentValue.value, clickedElements, value);
+        if (selectedElements.length === 0) {
             emit("input", null);
         } else {
-            emit("input", newValue);
+            emit("input", selectedElements);
         }
     } else {
-        emit("input", value);
+        emit("input", clickedElement);
     }
 }
 
 // Handle click on select all checkbox to either select or unselect all values
 function onSelectAll(selected: boolean): void {
     emit("input", selected ? allValues.value : null);
+}
+
+// Returns the descendant values and the selected/parent value (regardless of unselected or selected)
+function addDescendants(selectOptions: any[], selectedValue: string): string[] {
+    const descendants: any[] | null = findDescendants(selectOptions, selectedValue);
+    const allValues = flattenValues(descendants);
+    allValues.unshift(selectedValue);
+    return allValues;
+}
+
+function setElementValues(oldArray: string[], newArray: string[], value: string): string[] {
+    if (value) {
+        return Array.from(new Set([...oldArray, ...newArray]));
+    } else {
+        const newSet = new Set(newArray);
+        return oldArray.filter((item) => !newSet.has(item));
+    }
 }
 </script>
 
