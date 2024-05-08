@@ -76,6 +76,7 @@
     "linkify-html": "^4.1.1",
     "linkifyjs": "^4.1.1",
     "lodash.isequal": "^4.5.0",
+    "lucide-vue": "^0.344.0",
     "markdown-it": "^13.0.2",
     "markdown-it-regexp": "^0.4.0",
     "object-hash": "^3.0.0",

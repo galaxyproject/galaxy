@@ -7,6 +7,8 @@ import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";
+
 export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;
     fromValue: Step[K];
@@ -323,7 +325,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(this.step), false);
+        this.stepStore.addStep(structuredClone(this.step), false, false);
         this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
         this.stateStore.activeNodeId = this.step.id;
         this.stateStore.hasChanges = true;
@@ -341,7 +343,9 @@ export class CopyStepAction extends UndoRedoAction {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
-        this.step = structuredClone(step);
+
+        const labelSet = getLabelSet(stepStore);
+        this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
     }
 
@@ -359,6 +363,43 @@ export class CopyStepAction extends UndoRedoAction {
     undo() {
         assertDefined(this.stepId);
         this.stepStore.removeStep(this.stepId);
+    }
+}
+
+export class ToggleStepSelectedAction extends UndoRedoAction {
+    stateStore;
+    stepStore;
+    stepId;
+    toggleTo: boolean;
+
+    constructor(stateStore: WorkflowStateStore, stepStore: WorkflowStepStore, stepId: number) {
+        super();
+
+        this.stateStore = stateStore;
+        this.stepStore = stepStore;
+        this.stepId = stepId;
+        this.toggleTo = !this.stateStore.getStepMultiSelected(stepId);
+    }
+
+    get stepLabel() {
+        const label = this.stepStore.getStep(this.stepId)?.label;
+        return label ?? `${this.stepId + 1}`;
+    }
+
+    get name() {
+        if (this.toggleTo === true) {
+            return `add step ${this.stepLabel} to selection`;
+        } else {
+            return `remove step ${this.stepLabel} from selection`;
+        }
+    }
+
+    run() {
+        this.stateStore.setStepMultiSelected(this.stepId, this.toggleTo);
+    }
+
+    undo() {
+        this.stateStore.setStepMultiSelected(this.stepId, !this.toggleTo);
     }
 }
 

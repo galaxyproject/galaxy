@@ -113,7 +113,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         lazyActionTimeout = setTimeout(() => flushLazyAction(), timeout);
     }
 
-    const isQueued = computed(() => (action?: UndoRedoAction | null) => pendingLazyAction.value === action);
+    const isQueued = computed(() => (action?: UndoRedoAction | null) => action && pendingLazyAction.value === action);
 
     const nextUndoAction = computed(() => undoActionStack.value[undoActionStack.value.length - 1]);
     const nextRedoAction = computed(() => redoActionStack.value[redoActionStack.value.length - 1]);

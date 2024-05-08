@@ -598,7 +598,6 @@ export default {
                 ...sourceStep,
                 id: null,
                 uuid: null,
-                label: null,
                 position: defaultPosition(this.graphOffset, this.transform),
             });
         },
@@ -618,7 +617,8 @@ export default {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
-                    defaultPosition(this.graphOffset, this.transform)
+                    defaultPosition(this.graphOffset, this.transform),
+                    true
                 );
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -948,7 +948,7 @@ export default {
 
     .editor-title {
         overflow: hidden;
-        white-space: no-wrap;
+        white-space: nowrap;
         text-overflow: ellipsis;
     }
 }

@@ -714,6 +714,12 @@ workflow_editor:
       line_thickness: "[data-option='line-thickness']"
       smoothing: "[data-option='smoothing']"
       remove_freehand: "[data-option='remove-freehand']"
+      select_mode_add: "[data-option='select-mode-add']"
+      select_mode_remove: "[data-option='select-mode-remove']"
+      selection_count: ".selection-options > span"
+      clear_selection: "[title='clear selection']"
+      duplicate_selection: "[title='duplicate selected']"
+      delete_selection: "[title='delete selected']"
   comment:
     selectors:
       _: ".workflow-editor-comment"

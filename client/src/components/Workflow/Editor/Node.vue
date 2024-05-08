@@ -5,18 +5,21 @@
         class="workflow-node card"
         :scale="scale"
         :root-offset="rootOffset"
+        :position="position"
         :name="name"
         :node-label="title"
         :class="classes"
         :style="style"
         :disabled="readonly"
+        :selected="stateStore.getStepMultiSelected(props.id)"
         @move="onMoveTo"
         @pan-by="onPanBy">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             class="unselectable clearfix card-header py-1 px-2"
             :class="headerClass"
-            @click="makeActive"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
@@ -88,7 +91,8 @@
             variant="danger"
             show
             class="node-error m-0 rounded-0 rounded-bottom"
-            @click="makeActive">
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
@@ -96,7 +100,8 @@
             v-else
             class="node-body position-relative card-body p-0 mx-2"
             :class="{ 'cursor-pointer': isInvocation }"
-            @click="makeActive"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
@@ -143,7 +148,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
+import { type UseElementBoundingReturn, type UseScrollReturn, type VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
@@ -157,6 +162,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -209,12 +215,14 @@ function remove() {
     emit("onRemove", props.id);
 }
 
+const position = computed(() => ({ x: props.step.position?.left ?? 0, y: props.step.position?.top ?? 0 }));
+
 const el: Ref<VueInstance | null> = ref(null);
 const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLElement | undefined) ?? null);
 
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const { connectionStore, stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
     elHtml,
@@ -230,11 +238,13 @@ const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);
+
 const classes = computed(() => {
     return {
         "node-on-scroll-to": scrolledTo.value,
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
+        "node-multi-selected": stateStore.getStepMultiSelected(props.id),
     };
 });
 const style = computed(() => {
@@ -317,6 +327,10 @@ function onClone() {
 function makeActive() {
     emit("onActivate", props.id);
 }
+
+function toggleSelected() {
+    undoRedoStore.applyAction(new ToggleStepSelectedAction(stateStore, stepStore, props.id));
+}
 </script>
 
 <style scoped lang="scss">
@@ -328,10 +342,20 @@ function makeActive() {
     width: $workflow-node-width;
     border: solid $brand-primary 1px;
 
+    $multi-selected: lighten($brand-info, 20%);
+
+    &.node-multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+    }
+
     &.node-highlight {
         z-index: 1001;
         border: solid $white 1px;
         box-shadow: 0 0 0 2px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+        }
     }
 
     &.node-on-scroll-to {
@@ -345,6 +369,10 @@ function makeActive() {
         z-index: 1001;
         border: solid $white 1px;
         box-shadow: 0 0 0 3px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+        }
     }
 
     .node-header {
