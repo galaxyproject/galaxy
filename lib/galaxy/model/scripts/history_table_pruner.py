@@ -63,14 +63,19 @@ class HistoryTablePruner:
         return today.replace(month=today.month - 1)
 
     def _run_batch(self, low, high):
+        empty_batch_msg = f"No histories to delete in the id range {low}-{high}"
         self._mark_histories_as_deleted_and_purged(low, high)
         histories = self._get_histories(low, high)
+        if not histories:
+            logging.info(empty_batch_msg)
+            return
+
         exclude = self._get_histories_to_exclude(low, high)
 
         # Calculate set of histories to delete.
         to_delete = set(histories) - exclude
         if not to_delete:
-            logging.info(f"No histories to delete in the id range {low}-{high}")
+            logging.info(empty_batch_msg)
             return
 
         self._create_tmp_table()
