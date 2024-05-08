@@ -263,28 +263,30 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         return exists
 
     def _download(self, rel_path):
+        local_destination = self._get_cache_path(rel_path)
         try:
-            log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+            log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self.bucket.objects.get(rel_path)
+            remote_size = key.size
             # Test if cache is large enough to hold the new file
-            if not self.cache_target.fits_in_cache(key.size):
+            if not self.cache_target.fits_in_cache(remote_size):
                 log.critical(
                     "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
-                    key.size,
+                    remote_size,
                     self.cache_target.log_description,
                 )
                 return False
             if self.use_axel:
-                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
                 ret_code = subprocess.call(f"axel -a -n {ncores} '{url}'")
                 if ret_code == 0:
                     return True
             else:
-                log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-                with open(self._get_cache_path(rel_path), "wb+") as downloaded_file_handle:
+                log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
+                with open(local_destination, "wb+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
                 return True
         except Exception:
