@@ -2,7 +2,6 @@ import hashlib
 import logging
 import os
 import shutil
-from typing import Optional
 
 try:
     import rucio.common
@@ -32,12 +31,10 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from . import ConcreteObjectStore
+from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
-    InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
-    UsesCache,
 )
 
 log = logging.getLogger(__name__)
@@ -272,15 +269,13 @@ class RucioBroker:
         return True
 
 
-class RucioObjectStore(ConcreteObjectStore, UsesCache):
+class RucioObjectStore(CachingConcreteObjectStore):
     """
     Object store implementation that uses ORNL remote data broker.
 
     This implementation should be considered beta and may be dropped from
     Galaxy at some future point or significantly modified.
     """
-
-    cache_monitor: Optional[InProcessCacheMonitor] = None
 
     store_type = "rucio"
 

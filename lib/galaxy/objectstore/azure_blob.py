@@ -8,7 +8,6 @@ from datetime import (
     datetime,
     timedelta,
 )
-from typing import Optional
 
 try:
     from azure.common import AzureHttpError
@@ -20,12 +19,10 @@ try:
 except ImportError:
     BlobServiceClient = None
 
-from . import ConcreteObjectStore
+from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
-    InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
-    UsesCache,
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
@@ -72,7 +69,7 @@ def parse_config_xml(config_xml):
             },
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
-            "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
+            "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -80,14 +77,13 @@ def parse_config_xml(config_xml):
         raise
 
 
-class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
+class AzureBlobObjectStore(CachingConcreteObjectStore):
     """
     Object store that stores objects as blobs in an Azure Blob Container. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
 
-    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "azure_blob"
 
     def __init__(self, config, config_dict):

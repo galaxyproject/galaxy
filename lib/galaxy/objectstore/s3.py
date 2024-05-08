@@ -8,7 +8,6 @@ import os
 import subprocess
 import time
 from datetime import datetime
-from typing import Optional
 
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
@@ -23,11 +22,10 @@ from galaxy.util import (
     string_as_bool,
     which,
 )
-from . import ConcreteObjectStore
+from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
-    UsesCache,
 )
 from .s3_multipart_upload import multipart_upload
 
@@ -109,7 +107,7 @@ def parse_config_xml(config_xml):
             },
             "cache": cache_dict,
             "extra_dirs": extra_dirs,
-            "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
+            "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -144,14 +142,13 @@ class CloudConfigMixin:
         }
 
 
-class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
+class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
 
-    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "aws_s3"
 
     def __init__(self, config, config_dict):
