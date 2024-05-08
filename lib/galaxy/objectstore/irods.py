@@ -20,20 +20,12 @@ try:
 except ImportError:
     irods = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
 from galaxy.util import (
-    directory_hash_id,
     ExecutionTimer,
     string_as_bool,
-    umask_fix_perms,
     unlink,
 )
-from galaxy.util.path import safe_relpath
 from . import DiskObjectStore
-from ._util import fix_permissions
 from .caching import UsesCache
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"

@@ -4,7 +4,6 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 
 import logging
 import os
-import shutil
 from datetime import (
     datetime,
     timedelta,
@@ -21,17 +20,7 @@ try:
 except ImportError:
     BlobServiceClient = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    unlink,
-)
-from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
-from ._util import fix_permissions
 from .caching import (
     CacheTarget,
     enable_cache_monitor,

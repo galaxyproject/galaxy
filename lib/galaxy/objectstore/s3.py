@@ -5,7 +5,6 @@ Object Store plugin for the Amazon Simple Storage Service (S3)
 import logging
 import multiprocessing
 import os
-import shutil
 import subprocess
 import time
 from datetime import datetime
@@ -20,19 +19,11 @@ try:
 except ImportError:
     boto = None  # type: ignore[assignment]
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
 from galaxy.util import (
-    directory_hash_id,
     string_as_bool,
-    unlink,
     which,
 )
-from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
-from ._util import fix_permissions
 from .caching import (
     CacheTarget,
     enable_cache_monitor,
