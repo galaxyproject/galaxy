@@ -351,7 +351,12 @@ class RemoteUserCreationPayload(Model):
 
 
 class UserDeletionPayload(Model):
-    purge: bool = Field(default=Required, title="Purge user", description="Purge the user")
+    purge: bool = Field(
+        default=False,
+        title="Purge user",
+        description="Purge the user. Deprecated, please use the `purge` query parameter instead.",
+        deprecated=True,
+    )
 
 
 class FavoriteObject(Model):
