@@ -192,12 +192,13 @@ Please mind `http` and `https`.
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8080/authnz/azure/callback</redirect_uri>
-        <!-- Azure client_id, client_secret, and api_url can be obtained by folowing the instructions at
+        <!-- Azure client_id, client_secret, and tenant_id can be obtained by folowing the instructions at
         https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app
 
-        The api_url will typiclly be https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize
+        The required API URL will be automatically constructed from the provided tenant_id. In previous Galaxy versions
+         the entire "api_url" had to be provided including the tenant ID, this is no longer a valid configuration option.
          -->
-        <api_url> ... </api_url>
+        <tenant_id> ... </tenant_id>
     </provider>
 
     <!-- Documentation: https://docs.egi.eu/providers/check-in/sp -->
