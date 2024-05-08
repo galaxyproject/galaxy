@@ -461,23 +461,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         finally:
             log.debug("irods_pt _push_to_irods: %s", ipt_timer)
 
-    def _size(self, obj, **kwargs) -> int:
-        ipt_timer = ExecutionTimer()
-        rel_path = self._construct_path(obj, **kwargs)
-        if self._in_cache(rel_path):
-            try:
-                return os.path.getsize(self._get_cache_path(rel_path))
-            except OSError as ex:
-                log.info("Could not get size of file '%s' in local cache, will try iRODS. Error: %s", rel_path, ex)
-            finally:
-                log.debug("irods_pt _size: %s", ipt_timer)
-        elif self._exists(obj, **kwargs):
-            log.debug("irods_pt _size: %s", ipt_timer)
-            return self._get_remote_size(rel_path)
-        log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
-        log.debug("irods_pt _size: %s", ipt_timer)
-        return 0
-
     def _delete(self, obj, entire_dir=False, **kwargs):
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
