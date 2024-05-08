@@ -116,9 +116,7 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
 
         self._configure_connection()
-
-        if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
+        self._start_cache_monitor_if_needed()
 
     def to_dict(self):
         as_dict = super().to_dict()

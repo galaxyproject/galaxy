@@ -501,6 +501,10 @@ class UsesCache:
     def _shutdown_cache_monitor(self) -> None:
         self.cache_monitor and self.cache_monitor.shutdown()
 
+    def _start_cache_monitor_if_needed(self):
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
+
     def _get_remote_size(self, rel_path: str) -> int: ...
 
     def _exists_remotely(self, rel_path: str) -> bool: ...
