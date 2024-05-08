@@ -225,20 +225,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
                 self.pithos.upload_from_string(rel_path, "")
         return self
 
-    def _size(self, obj, **kwargs) -> int:
-        """
-        :returns: The size of the object, or 0 if it doesn't exist (sorry for
-            that, not our fault, the ObjectStore interface is like that some
-            times)
-        """
-        path = self._construct_path(obj, **kwargs)
-        if self._in_cache(path):
-            try:
-                return os.path.getsize(self._get_cache_path(path))
-            except OSError as ex:
-                log.warning("Could not get size of file %s in local cache, will try Pithos. Error: %s", path, ex)
-        return self._get_remote_size(path)
-
     def _get_remote_size(self, path):
         try:
             file = self.pithos.get_object_info(path)

@@ -440,18 +440,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             raise
         return False
 
-    def _size(self, obj, **kwargs):
-        rel_path = self._construct_path(obj, **kwargs)
-        if self._in_cache(rel_path):
-            try:
-                return os.path.getsize(self._get_cache_path(rel_path))
-            except OSError as ex:
-                log.info("Could not get size of file '%s' in local cache, will try S3. Error: %s", rel_path, ex)
-        elif self._exists(obj, **kwargs):
-            return self._get_remote_size(rel_path)
-        log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
-        return 0
-
     def _delete(self, obj, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get("extra_dir", None)
