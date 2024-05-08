@@ -265,7 +265,7 @@ class Cloud(CachingConcreteObjectStore):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(f"axel -a -n {ncores} '{url}'")
+                ret_code = subprocess.call(["axel", "-a", "-o", local_destination, "-n", str(ncores), url])
                 if ret_code == 0:
                     return True
             else:
