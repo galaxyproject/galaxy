@@ -12,7 +12,6 @@ from typing import Optional
 
 from . import ConcreteObjectStore
 from .caching import (
-    CacheTarget,
     enable_cache_monitor,
     InProcessCacheMonitor,
     UsesCache,
@@ -225,14 +224,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    @property
-    def cache_target(self) -> CacheTarget:
-        return CacheTarget(
-            self.staging_path,
-            self.cache_size,
-            0.9,
-        )
-
     def _get_bucket(self, bucket_name):
         try:
             bucket = self.conn.storage.buckets.get(bucket_name)
@@ -404,4 +395,4 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         return 0.0
 
     def shutdown(self):
-        self.cache_monitor and self.cache_monitor.shutdown()
+        self._shutdown_cache_monitor()

@@ -25,7 +25,6 @@ from galaxy.util import (
 )
 from . import ConcreteObjectStore
 from .caching import (
-    CacheTarget,
     enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
@@ -253,14 +252,6 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    @property
-    def cache_target(self) -> CacheTarget:
-        return CacheTarget(
-            self.staging_path,
-            self.cache_size,
-            0.9,
-        )
-
     def _get_bucket(self, bucket_name):
         """Sometimes a handle to a bucket is not established right away so try
         it a few times. Raise error is connection is not established."""
@@ -440,7 +431,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         return 0.0
 
     def shutdown(self):
-        self.cache_monitor and self.cache_monitor.shutdown()
+        self._shutdown_cache_monitor()
 
 
 class GenericS3ObjectStore(S3ObjectStore):

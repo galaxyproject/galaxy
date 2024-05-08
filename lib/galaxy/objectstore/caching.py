@@ -490,6 +490,17 @@ class UsesCache:
                 f"objectstore.update_from_file, object does not exist: {str(obj)}, kwargs: {str(kwargs)}"
             )
 
+    @property
+    def cache_target(self) -> CacheTarget:
+        return CacheTarget(
+            self.staging_path,
+            self.cache_size,
+            0.9,
+        )
+
+    def _shutdown_cache_monitor(self) -> None:
+        self.cache_monitor and self.cache_monitor.shutdown()
+
     def _get_remote_size(self, rel_path: str) -> int: ...
 
     def _exists_remotely(self, rel_path: str) -> bool: ...
