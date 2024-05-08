@@ -3,12 +3,11 @@ Object Store plugin for Cloud storage.
 """
 
 import logging
-import multiprocessing
 import os
 import os.path
-import subprocess
 
 from ._caching_base import CachingConcreteObjectStore
+from ._util import UsesAxel
 from .caching import enable_cache_monitor
 from .s3 import parse_config_xml
 
@@ -30,7 +29,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-class Cloud(CachingConcreteObjectStore):
+class Cloud(CachingConcreteObjectStore, UsesAxel):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
@@ -65,12 +64,7 @@ class Cloud(CachingConcreteObjectStore):
         self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
         self._start_cache_monitor_if_needed()
-        # Test if 'axel' is available for parallel download and pull the key into cache
-        try:
-            subprocess.call("axel")
-            self.use_axel = True
-        except OSError:
-            self.use_axel = False
+        self._init_axel()
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -263,11 +257,8 @@ class Cloud(CachingConcreteObjectStore):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
-                ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(["axel", "-a", "-o", local_destination, "-n", str(ncores), url])
-                if ret_code == 0:
-                    return True
+                return self._axel_download(url, local_destination)
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 with open(local_destination, "wb+") as downloaded_file_handle:
