@@ -1322,6 +1322,14 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     reset_cache(object_store.cache_target)
     assert not object_store.exists(to_delete_dataset)
 
+    # Test bigger file to force multi-process.
+    big_file_dataset = MockDataset(6)
+    size = 1024
+    path = tmp_path / "big_file.bytes"
+    with path.open("wb") as f:
+        f.write(os.urandom(size))
+    object_store.update_from_file(big_file_dataset, file_name=hello_path, create=True)
+
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
     if check_get_url:
@@ -1573,6 +1581,40 @@ def test_real_aws_s3_store_boto3(tmp_path):
         "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
     }
     with TestConfig(AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML = """
+type: boto3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+transfer:
+  multipart_threshold: 10
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_real_aws_s3_store_boto3_multipart(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+    }
+    with TestConfig(AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
