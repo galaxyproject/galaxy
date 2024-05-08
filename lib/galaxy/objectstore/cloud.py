@@ -8,14 +8,9 @@ import os
 import os.path
 import subprocess
 from datetime import datetime
-from typing import Optional
 
-from . import ConcreteObjectStore
-from .caching import (
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-    UsesCache,
-)
+from ._caching_base import CachingConcreteObjectStore
+from .caching import enable_cache_monitor
 from .s3 import parse_config_xml
 
 try:
@@ -53,14 +48,13 @@ class CloudConfigMixin:
         }
 
 
-class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
+class Cloud(CachingConcreteObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and the cloud storage.
     """
 
-    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "cloud"
 
     def __init__(self, config, config_dict):

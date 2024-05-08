@@ -25,8 +25,7 @@ from galaxy.util import (
     string_as_bool,
     unlink,
 )
-from . import DiskObjectStore
-from .caching import UsesCache
+from ._caching_base import CachingConcreteObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
@@ -109,7 +108,7 @@ def parse_config_xml(config_xml):
                 "cache_updated_data": cache_updated_data,
             },
             "extra_dirs": extra_dirs,
-            "private": DiskObjectStore.parse_private_from_config_xml(config_xml),
+            "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -145,7 +144,7 @@ class CloudConfigMixin:
         }
 
 
-class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
+class IRODSObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
     """
     Object store that stores files as data objects in an iRODS Zone. A local cache
     exists that is used as an intermediate location for files between Galaxy and iRODS.

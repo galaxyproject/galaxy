@@ -17,8 +17,7 @@ except ImportError:
     KamakiClient = None
 
 from galaxy.util import directory_hash_id
-from . import ConcreteObjectStore
-from .caching import UsesCache
+from ._caching_base import CachingConcreteObjectStore
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -69,7 +68,7 @@ def parse_config_xml(config_xml):
             log.error(msg)
             raise Exception(msg)
         r["extra_dirs"] = [{k: e.get(k) for k in attrs} for e in extra_dirs]
-        r["private"] = ConcreteObjectStore.parse_private_from_config_xml(config_xml)
+        r["private"] = CachingConcreteObjectStore.parse_private_from_config_xml(config_xml)
         if "job_work" not in (d["type"] for d in r["extra_dirs"]):
             msg = f'No value for {tag}:type="job_work" in XML tree'
             log.error(msg)
@@ -80,7 +79,7 @@ def parse_config_xml(config_xml):
     return r
 
 
-class PithosObjectStore(ConcreteObjectStore, UsesCache):
+class PithosObjectStore(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.
