@@ -65,7 +65,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
-        self.transfer_progress = 0
 
         bucket_dict = config_dict["bucket"]
         cache_dict = config_dict.get("cache") or {}
@@ -241,9 +240,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             log.exception(f"Could not get bucket '{bucket_name}'")
         raise Exception
 
-    def _get_transfer_progress(self):
-        return self.transfer_progress
-
     def _get_remote_size(self, rel_path):
         try:
             obj = self.bucket.objects.get(rel_path)
@@ -270,9 +266,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
             return False
         return exists
 
-    def _transfer_cb(self, complete, total):
-        self.transfer_progress += 10
-
     def _download(self, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
@@ -295,7 +288,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
                     return True
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-                self.transfer_progress = 0  # Reset transfer progress counter
                 with open(self._get_cache_path(rel_path), "wb+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
                 return True
@@ -334,7 +326,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
                         os.path.getsize(source_file),
                         rel_path,
                     )
-                    self.transfer_progress = 0  # Reset transfer progress counter
                     if not self.bucket.objects.get(rel_path):
                         created_obj = self.bucket.objects.create(rel_path)
                         created_obj.upload_from_file(source_file)
