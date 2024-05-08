@@ -186,11 +186,12 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if not self.cache_target.fits_in_cache(self._get_remote_size(rel_path)):
+            remote_size = self._get_remote_size(rel_path)
+            if not self.cache_target.fits_in_cache(remote_size):
                 log.critical(
                     "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
                     rel_path,
-                    self._get_remote_size(rel_path),
+                    remote_size,
                     self.cache_target.log_description,
                 )
                 return False

@@ -300,33 +300,35 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
         self.transfer_progress += 10
 
     def _download(self, rel_path):
+        local_destination = self._get_cache_path(rel_path)
         try:
-            log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+            log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self._bucket.get_key(rel_path)
             if key is None:
                 message = f"Attempting to download an invalid key for path {rel_path}."
                 log.critical(message)
                 raise Exception(message)
+            remote_size = key.size
             # Test if cache is large enough to hold the new file
-            if not self.cache_target.fits_in_cache(key.size):
+            if not self.cache_target.fits_in_cache(remote_size):
                 log.critical(
                     "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
-                    key.size,
+                    remote_size,
                     self.cache_target.log_description,
                 )
                 return False
             if self.use_axel:
-                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
                 ret_code = subprocess.call(["axel", "-a", "-n", str(ncores), url])
                 if ret_code == 0:
                     return True
             else:
-                log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+                log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 self.transfer_progress = 0  # Reset transfer progress counter
-                key.get_contents_to_filename(self._get_cache_path(rel_path), cb=self._transfer_cb, num_cb=10)
+                key.get_contents_to_filename(local_destination, cb=self._transfer_cb, num_cb=10)
                 return True
         except S3ResponseError:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)

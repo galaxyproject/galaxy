@@ -350,7 +350,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
 
     def _download(self, rel_path):
         ipt_timer = ExecutionTimer()
-        log.debug("Pulling data object '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
+        cache_path = self._get_cache_path(rel_path)
+        log.debug("Pulling data object '%s' into cache to %s", rel_path, cache_path)
 
         p = Path(rel_path)
         data_object_name = p.stem + p.suffix
@@ -364,7 +365,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
-            cache_path = self._get_cache_path(rel_path)
             self.session.data_objects.get(data_object_path, cache_path, **options)
             log.debug("Pulled data object '%s' into cache to %s", rel_path, cache_path)
             return True
