@@ -382,7 +382,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
-    def _push_to_irods(self, rel_path, source_file=None, from_string=None):
+    def _push_to_os(self, rel_path, source_file=None, from_string=None):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -459,7 +459,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
                 )
             return True
         finally:
-            log.debug("irods_pt _push_to_irods: %s", ipt_timer)
+            log.debug("irods_pt _push_to_os: %s", ipt_timer)
 
     def _delete(self, obj, entire_dir=False, **kwargs):
         ipt_timer = ExecutionTimer()
@@ -528,33 +528,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin, UsesCache):
         finally:
             log.debug("irods_pt _delete: %s", ipt_timer)
         return False
-
-    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
-        ipt_timer = ExecutionTimer()
-        if create:
-            self._create(obj, **kwargs)
-        if self._exists(obj, **kwargs):
-            rel_path = self._construct_path(obj, **kwargs)
-            # Choose whether to use the dataset file itself or an alternate file
-            if file_name:
-                source_file = os.path.abspath(file_name)
-                # Copy into cache
-                cache_file = self._get_cache_path(rel_path)
-                try:
-                    if source_file != cache_file and self.cache_updated_data:
-                        # FIXME? Should this be a `move`?
-                        shutil.copy2(source_file, cache_file)
-                    fix_permissions(self.config, cache_file)
-                except OSError:
-                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
-            else:
-                source_file = self._get_cache_path(rel_path)
-            # Update the file on iRODS
-            self._push_to_irods(rel_path, source_file)
-        else:
-            log.debug("irods_pt _update_from_file: %s", ipt_timer)
-            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
-        log.debug("irods_pt _update_from_file: %s", ipt_timer)
 
     # Unlike S3, url is not really applicable to iRODS
     def _get_object_url(self, obj, **kwargs):
