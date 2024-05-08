@@ -704,6 +704,7 @@ steps:
         editor.remove_tags_input.wait_for_and_send_keys("#oldboringtag" + Keys.ENTER + Keys.ESCAPE)
         self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
+        editor.label_input.wait_for_and_send_keys(Keys.BACKSPACE * 20)
         editor.label_input.wait_for_and_send_keys("cloned label")
         output_label = editor.label_output(output="out_file1")
         self.set_text_element(output_label, "cloned output label")
@@ -1281,11 +1282,8 @@ steps:
 
         assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
 
-        # rename original node
-        editor.label_input.wait_for_and_send_keys("_original")
-
         # move the node
-        tool_node_new = editor.node._(label="tool_node").wait_for_present()
+        tool_node_new = editor.node._(label="tool_node 2").wait_for_present()
         self.mouse_drag(from_element=tool_node_new, to_element=canvas, to_offset=(0, 100))
 
         # clear selection
@@ -1293,7 +1291,7 @@ steps:
         editor.tool_bar.selection_count.wait_for_absent_or_hidden()
 
         # select both using box
-        tool_node_original = editor.node._(label="tool_node_original").wait_for_present()
+        tool_node_original = editor.node._(label="tool_node").wait_for_present()
         editor.tool_bar.tool(tool="box_select").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -1307,8 +1305,8 @@ steps:
         # delete steps
         editor.tool_bar.delete_selection.wait_for_and_click()
         editor.tool_bar.selection_count.wait_for_absent_or_hidden()
-        editor.node._(label="tool_node_original").wait_for_absent()
         editor.node._(label="tool_node").wait_for_absent()
+        editor.node._(label="tool_node 2").wait_for_absent()
 
         # place comments
         editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
