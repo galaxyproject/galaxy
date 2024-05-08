@@ -3,6 +3,7 @@
 
 import logging
 import os
+import shutil
 import threading
 import time
 from math import inf
@@ -430,6 +431,34 @@ class UsesCache:
         # I'm placing a no-op here to match their behavior but we should
         # maybe implement this for those object stores.
         pass
+
+    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
+        if create:
+            self._create(obj, **kwargs)
+
+        if self._exists(obj, **kwargs):
+            rel_path = self._construct_path(obj, **kwargs)
+            # Chose whether to use the dataset file itself or an alternate file
+            if file_name:
+                source_file = os.path.abspath(file_name)
+                # Copy into cache
+                cache_file = self._get_cache_path(rel_path)
+                try:
+                    if source_file != cache_file and self.cache_updated_data:
+                        # FIXME? Should this be a `move`?
+                        shutil.copy2(source_file, cache_file)
+                    fix_permissions(self.config, cache_file)
+                except OSError:
+                    log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
+            else:
+                source_file = self._get_cache_path(rel_path)
+
+            self._push_to_os(rel_path, source_file)
+
+        else:
+            raise ObjectNotFound(
+                f"objectstore.update_from_file, object does not exist: {str(obj)}, kwargs: {str(kwargs)}"
+            )
 
     def _get_remote_size(self, rel_path: str) -> int: ...
 

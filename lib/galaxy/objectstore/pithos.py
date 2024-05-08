@@ -264,28 +264,6 @@ class PithosObjectStore(ConcreteObjectStore, UsesCache):
             log.exception(f"Could not delete {path} from Pithos, {ce}")
         return False
 
-    def _update_from_file(self, obj, **kwargs):
-        """Update the store when a file is updated"""
-        if kwargs.get("create"):
-            self._create(obj, **kwargs)
-        if not self._exists(obj, **kwargs):
-            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
-
-        path = self._construct_path(obj, **kwargs)
-        cache_path = self._get_cache_path(path)
-        file_name = kwargs.get("file_name")
-        if file_name:
-            source_path = os.path.abspath(file_name)
-            try:
-                if source_path != cache_path:
-                    shutil.copy2(source_path, cache_path)
-                fix_permissions(self.config, cache_path)
-            except OSError:
-                log.exception('Trouble copying source file "%s" to cache "%s"', source_path, cache_path)
-        else:
-            with open(cache_path) as f:
-                self.pithos.upload_object(obj, f)
-
     def _get_object_url(self, obj, **kwargs):
         """
         :returns: URL for direct access, None if no object
