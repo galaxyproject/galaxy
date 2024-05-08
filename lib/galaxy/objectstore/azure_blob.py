@@ -22,7 +22,6 @@ except ImportError:
 
 from . import ConcreteObjectStore
 from .caching import (
-    CacheTarget,
     enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
@@ -308,13 +307,5 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
         # https://learn.microsoft.com/en-us/azure/storage/blobs/scalability-targets
         return 0.0
 
-    @property
-    def cache_target(self) -> CacheTarget:
-        return CacheTarget(
-            self.staging_path,
-            self.cache_size,
-            0.9,
-        )
-
     def shutdown(self):
-        self.cache_monitor and self.cache_monitor.shutdown()
+        self._shutdown_cache_monitor()
