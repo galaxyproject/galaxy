@@ -144,10 +144,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
         )
         return as_dict
 
-    ###################
-    # Private Methods #
-    ###################
-
     # config_xml is an ElementTree object.
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -259,10 +255,6 @@ class AzureBlobObjectStore(ConcreteObjectStore, UsesCache):
         except AzureHttpError:
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
         return False
-
-    ##################
-    # Public Methods #
-    ##################
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
