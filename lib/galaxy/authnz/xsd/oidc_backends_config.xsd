@@ -114,6 +114,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="tenant_id" minOccurs="0" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Tenant ID for the IdP.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                             <xs:element name="pkce_support" minOccurs="0" type="xs:boolean">
                                 <xs:annotation>
                                     <xs:documentation>
