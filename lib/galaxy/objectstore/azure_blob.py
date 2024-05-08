@@ -191,57 +191,22 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             log.exception("Problem downloading '%s' from Azure", rel_path)
         return False
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
-        """
-        Push the file pointed to by ``rel_path`` to the object store naming the blob
-        ``rel_path``. If ``source_file`` is provided, push that file instead while
-        still using ``rel_path`` as the blob name.
-        If ``from_string`` is provided, set contents of the file to the value of
-        the string.
-        """
+    def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
-            source_file = source_file or self._get_cache_path(rel_path)
-
-            if from_string is None and not os.path.exists(source_file):
-                log.error(
-                    "Tried updating blob '%s' from source file '%s', but source file does not exist.",
-                    rel_path,
-                    source_file,
-                )
-                return False
-
-            if from_string is None and os.path.getsize(source_file) == 0:
-                log.debug(
-                    "Wanted to push file '%s' to azure blob '%s' but its size is 0; skipping.", source_file, rel_path
-                )
-                return True
-
-            if from_string is not None:
-                self._blob_client(rel_path).upload_blob(from_string, overwrite=True)
-                log.debug("Pushed data from string '%s' to blob '%s'", from_string, rel_path)
-            else:
-                start_time = datetime.now()
-                log.debug(
-                    "Pushing cache file '%s' of size %s bytes to '%s'",
-                    source_file,
-                    os.path.getsize(source_file),
-                    rel_path,
-                )
-                with open(source_file, "rb") as f:
-                    self._blob_client(rel_path).upload_blob(f, overwrite=True)
-                end_time = datetime.now()
-                log.debug(
-                    "Pushed cache file '%s' to blob '%s' (%s bytes transferred in %s sec)",
-                    source_file,
-                    rel_path,
-                    os.path.getsize(source_file),
-                    end_time - start_time,
-                )
+            self._blob_client(rel_path).upload_blob(from_string, overwrite=True)
             return True
+        except AzureHttpError:
+            log.exception("Trouble pushing to Azure Blob '%s' from string", rel_path)
+            return False
 
+    def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
+        try:
+            with open(source_file, "rb") as f:
+                self._blob_client(rel_path).upload_blob(f, overwrite=True)
+            return True
         except AzureHttpError:
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
-        return False
+            return False
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:

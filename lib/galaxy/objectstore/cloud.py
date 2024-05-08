@@ -7,7 +7,6 @@ import multiprocessing
 import os
 import os.path
 import subprocess
-from datetime import datetime
 
 from ._caching_base import CachingConcreteObjectStore
 from .caching import enable_cache_monitor
@@ -278,61 +277,29 @@ class Cloud(CachingConcreteObjectStore):
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
-        """
-        Push the file pointed to by ``rel_path`` to the object store naming the key
-        ``rel_path``. If ``source_file`` is provided, push that file instead while
-        still using ``rel_path`` as the key name.
-        If ``from_string`` is provided, set contents of the file to the value of
-        the string.
-        """
+    def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
-            source_file = source_file if source_file else self._get_cache_path(rel_path)
-            if os.path.exists(source_file):
-                if os.path.getsize(source_file) == 0 and (self.bucket.objects.get(rel_path) is not None):
-                    log.debug(
-                        "Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file, rel_path
-                    )
-                    return True
-                if from_string:
-                    if not self.bucket.objects.get(rel_path):
-                        created_obj = self.bucket.objects.create(rel_path)
-                        created_obj.upload(source_file)
-                    else:
-                        self.bucket.objects.get(rel_path).upload(source_file)
-                    log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
-                else:
-                    start_time = datetime.now()
-                    log.debug(
-                        "Pushing cache file '%s' of size %s bytes to key '%s'",
-                        source_file,
-                        os.path.getsize(source_file),
-                        rel_path,
-                    )
-                    if not self.bucket.objects.get(rel_path):
-                        created_obj = self.bucket.objects.create(rel_path)
-                        created_obj.upload_from_file(source_file)
-                    else:
-                        self.bucket.objects.get(rel_path).upload_from_file(source_file)
-
-                    end_time = datetime.now()
-                    log.debug(
-                        "Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
-                        source_file,
-                        rel_path,
-                        os.path.getsize(source_file),
-                        end_time - start_time,
-                    )
-                return True
+            if not self.bucket.objects.get(rel_path):
+                created_obj = self.bucket.objects.create(rel_path)
+                created_obj.upload(from_string)
             else:
-                log.error(
-                    "Tried updating key '%s' from source file '%s', but source file does not exist.",
-                    rel_path,
-                    source_file,
-                )
+                self.bucket.objects.get(rel_path).upload(from_string)
+            return True
         except Exception:
-            log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
-        return False
+            log.exception("Trouble pushing to cloud '%s' from string", rel_path)
+            return False
+
+    def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
+        try:
+            if not self.bucket.objects.get(rel_path):
+                created_obj = self.bucket.objects.create(rel_path)
+                created_obj.upload_from_file(source_file)
+            else:
+                self.bucket.objects.get(rel_path).upload_from_file(source_file)
+            return True
+        except Exception:
+            log.exception("Trouble pushing to cloud '%s' from file '%s'", rel_path, source_file)
+            return False
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:

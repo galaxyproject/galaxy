@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from datetime import datetime
 from typing import (
     Any,
     Dict,
@@ -193,6 +194,44 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self.cache_target.log_description,
             )
             return False
+        return True
+
+    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+        source_file = source_file or self._get_cache_path(rel_path)
+        if from_string is None and not os.path.exists(source_file):
+            log.error(
+                "Tried updating remote path '%s' from source file '%s', but source file does not exist.",
+                rel_path,
+                source_file,
+            )
+            return False
+
+        if from_string is None and os.path.getsize(source_file) == 0:
+            log.debug(
+                "Wanted to push file '%s' to remote path '%s' but its size is 0; skipping.", source_file, rel_path
+            )
+            return True
+
+        if from_string is not None:
+            return self._push_string_to_path(rel_path, from_string)
+        else:
+            start_time = datetime.now()
+            log.debug(
+                "Pushing cache file '%s' of size %s bytes to '%s'",
+                source_file,
+                os.path.getsize(source_file),
+                rel_path,
+            )
+            success = self._push_file_to_path(rel_path, source_file)
+            end_time = datetime.now()
+            log.debug(
+                "Pushed cache file '%s' to blob '%s' (%s bytes transferred in %s sec)",
+                source_file,
+                rel_path,
+                os.path.getsize(source_file),
+                end_time - start_time,
+            )
+            return success
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -308,7 +347,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
     @property
     def cache_target(self) -> CacheTarget:
-        print("GRABBING CACHE_TARGET>...")
         return CacheTarget(
             self.staging_path,
             self.cache_size,
@@ -328,12 +366,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def _exists_remotely(self, rel_path: str) -> bool:
         raise NotImplementedError()
 
-    def _push_to_os(self, rel_path, source_file: Optional[str] = None, from_string: Optional[str] = None) -> None:
-        raise NotImplementedError()
-
-    # def _get_object_id(self, obj: Any) -> str:
-    #    raise NotImplementedError()
-
     def _download(self, rel_path: str) -> bool:
         raise NotImplementedError()
 
@@ -342,4 +374,11 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise NotImplementedError()
 
     def _delete_remote_all(self, rel_path) -> bool:
+        raise NotImplementedError()
+
+    # Do not need to override these if instead replacing _push_to_os
+    def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
+        raise NotImplementedError()
+
+    def _push_file_to_path(self, rel_path: str, target_file: str) -> bool:
         raise NotImplementedError()
