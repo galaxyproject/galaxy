@@ -450,6 +450,7 @@ export default {
         },
         async onRefactor(response) {
             this.resetStores();
+            await nextTick();
             await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
         },
