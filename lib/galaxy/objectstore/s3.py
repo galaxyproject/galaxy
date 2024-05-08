@@ -3,9 +3,7 @@ Object Store plugin for the Amazon Simple Storage Service (S3)
 """
 
 import logging
-import multiprocessing
 import os
-import subprocess
 import time
 from datetime import datetime
 
@@ -18,11 +16,9 @@ try:
 except ImportError:
     boto = None  # type: ignore[assignment]
 
-from galaxy.util import (
-    string_as_bool,
-    which,
-)
+from galaxy.util import string_as_bool
 from ._caching_base import CachingConcreteObjectStore
+from ._util import UsesAxel
 from .caching import (
     enable_cache_monitor,
     parse_caching_config_dict_from_xml,
@@ -142,7 +138,7 @@ class CloudConfigMixin:
         }
 
 
-class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
+class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between
@@ -205,11 +201,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
         self._start_cache_monitor_if_needed()
-        # Test if 'axel' is available for parallel download and pull the key into cache
-        if which("axel"):
-            self.use_axel = True
-        else:
-            self.use_axel = False
+        self._init_axel()
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
@@ -310,11 +302,8 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
-                ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(["axel", "-a", "-o", local_destination, "-n", str(ncores), url])
-                if ret_code == 0:
-                    return True
+                return self._axel_download(url, local_destination)
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
                 self.transfer_progress = 0  # Reset transfer progress counter

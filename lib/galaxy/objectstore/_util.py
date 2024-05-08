@@ -1,6 +1,11 @@
+import multiprocessing
 import os
+import subprocess
 
-from galaxy.util import umask_fix_perms
+from galaxy.util import (
+    umask_fix_perms,
+    which,
+)
 
 
 def fix_permissions(config, rel_path: str):
@@ -13,3 +18,18 @@ def fix_permissions(config, rel_path: str):
             if os.path.islink(path):
                 continue
             umask_fix_perms(path, config.umask, 0o666, config.gid)
+
+
+class UsesAxel:
+    use_axel: bool
+
+    def _init_axel(self) -> None:
+        if which("axel"):
+            self.use_axel = True
+        else:
+            self.use_axel = False
+
+    def _axel_download(self, url: str, path: str):
+        ncores = multiprocessing.cpu_count()
+        ret_code = subprocess.call(["axel", "-a", "-o", path, "-n", str(ncores), url])
+        return ret_code == 0
