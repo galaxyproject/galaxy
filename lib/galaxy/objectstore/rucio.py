@@ -32,7 +32,6 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,

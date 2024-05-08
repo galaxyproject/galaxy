@@ -4,7 +4,6 @@
 
 import logging
 import os
-import shutil
 
 try:
     from kamaki.clients import (
@@ -17,17 +16,8 @@ try:
 except ImportError:
     KamakiClient = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    umask_fix_perms,
-)
-from galaxy.util.path import safe_relpath
+from galaxy.util import directory_hash_id
 from . import ConcreteObjectStore
-from ._util import fix_permissions
 from .caching import UsesCache
 
 NO_KAMAKI_ERROR_MESSAGE = (
