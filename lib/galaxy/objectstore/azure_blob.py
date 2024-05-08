@@ -3,7 +3,6 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 """
 
 import logging
-import os
 from datetime import (
     datetime,
     timedelta,
@@ -182,14 +181,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            remote_size = self._get_remote_size(rel_path)
-            if not self.cache_target.fits_in_cache(remote_size):
-                log.critical(
-                    "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
-                    rel_path,
-                    remote_size,
-                    self.cache_target.log_description,
-                )
+            if not self._caching_allowed(rel_path):
                 return False
             else:
                 with open(local_destination, "wb") as f:

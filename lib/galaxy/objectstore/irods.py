@@ -116,35 +116,7 @@ def parse_config_xml(config_xml):
         raise
 
 
-class CloudConfigMixin:
-    def _config_to_dict(self):
-        return {
-            "auth": {
-                "username": self.username,
-                "password": self.password,
-            },
-            "resource": {
-                "name": self.resource,
-            },
-            "zone": {
-                "name": self.zone,
-            },
-            "connection": {
-                "host": self.host,
-                "port": self.port,
-                "timeout": self.timeout,
-                "refresh_time": self.refresh_time,
-                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
-            },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
-        }
-
-
-class IRODSObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
+class IRODSObjectStore(CachingConcreteObjectStore):
     """
     Object store that stores files as data objects in an iRODS Zone. A local cache
     exists that is used as an intermediate location for files between Galaxy and iRODS.
@@ -306,6 +278,32 @@ class IRODSObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
         as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
+
+    def _config_to_dict(self):
+        return {
+            "auth": {
+                "username": self.username,
+                "password": self.password,
+            },
+            "resource": {
+                "name": self.resource,
+            },
+            "zone": {
+                "name": self.zone,
+            },
+            "connection": {
+                "host": self.host,
+                "port": self.port,
+                "timeout": self.timeout,
+                "refresh_time": self.refresh_time,
+                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
+            },
+            "cache": {
+                "size": self.cache_size,
+                "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
+            },
+        }
 
     # rel_path is file or folder?
     def _get_remote_size(self, rel_path):

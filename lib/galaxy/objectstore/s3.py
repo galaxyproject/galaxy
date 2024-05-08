@@ -306,14 +306,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin):
                 log.critical(message)
                 raise Exception(message)
             remote_size = key.size
-            # Test if cache is large enough to hold the new file
-            if not self.cache_target.fits_in_cache(remote_size):
-                log.critical(
-                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
-                    rel_path,
-                    remote_size,
-                    self.cache_target.log_description,
-                )
+            if not self._caching_allowed(rel_path, remote_size):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)

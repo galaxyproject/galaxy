@@ -31,24 +31,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-class CloudConfigMixin:
-    def _config_to_dict(self):
-        return {
-            "provider": self.provider,
-            "auth": self.credentials,
-            "bucket": {
-                "name": self.bucket_name,
-                "use_reduced_redundancy": self.use_rr,
-            },
-            "cache": {
-                "size": self.cache_size,
-                "path": self.staging_path,
-                "cache_updated_data": self.cache_updated_data,
-            },
-        }
-
-
-class Cloud(CachingConcreteObjectStore, CloudConfigMixin):
+class Cloud(CachingConcreteObjectStore):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
@@ -213,6 +196,21 @@ class Cloud(CachingConcreteObjectStore, CloudConfigMixin):
         as_dict.update(self._config_to_dict())
         return as_dict
 
+    def _config_to_dict(self):
+        return {
+            "provider": self.provider,
+            "auth": self.credentials,
+            "bucket": {
+                "name": self.bucket_name,
+                "use_reduced_redundancy": self.use_rr,
+            },
+            "cache": {
+                "size": self.cache_size,
+                "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
+            },
+        }
+
     def _get_bucket(self, bucket_name):
         try:
             bucket = self.conn.storage.buckets.get(bucket_name)
@@ -262,14 +260,7 @@ class Cloud(CachingConcreteObjectStore, CloudConfigMixin):
             log.debug("Pulling key '%s' into cache to %s", rel_path, local_destination)
             key = self.bucket.objects.get(rel_path)
             remote_size = key.size
-            # Test if cache is large enough to hold the new file
-            if not self.cache_target.fits_in_cache(remote_size):
-                log.critical(
-                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
-                    rel_path,
-                    remote_size,
-                    self.cache_target.log_description,
-                )
+            if not self._caching_allowed(rel_path, remote_size):
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)

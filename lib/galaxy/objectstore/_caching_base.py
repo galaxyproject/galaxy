@@ -182,6 +182,18 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._push_to_os(rel_path, from_string="")
         return self
 
+    def _caching_allowed(self, rel_path: str, remote_size: Optional[int] = None) -> bool:
+        if remote_size is None:
+            remote_size = self._get_remote_size(rel_path)
+        if not self.cache_target.fits_in_cache(remote_size):
+            log.critical(
+                "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
+                rel_path,
+                remote_size,
+                self.cache_target.log_description,
+            )
+            return False
+
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
             return self._size(obj, **kwargs) == 0
