@@ -26,7 +26,6 @@ from galaxy.util import (
 from . import ConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
-    InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
     UsesCache,
 )
@@ -208,16 +207,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin, UsesCache):
 
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
-        self.start_cache_monitor()
+        self._start_cache_monitor_if_needed()
         # Test if 'axel' is available for parallel download and pull the key into cache
         if which("axel"):
             self.use_axel = True
         else:
             self.use_axel = False
-
-    def start_cache_monitor(self):
-        if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")

@@ -308,8 +308,7 @@ class RucioObjectStore(ConcreteObjectStore, UsesCache):
         self._initialize()
 
     def _initialize(self):
-        if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
+        self._start_cache_monitor_if_needed()
 
     def _pull_into_cache(self, rel_path, auth_token):
         log.debug("rucio _pull_into_cache: %s", rel_path)

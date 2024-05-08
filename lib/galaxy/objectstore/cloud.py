@@ -88,17 +88,13 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin, UsesCache):
 
         self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
-        self.start_cache_monitor()
+        self._start_cache_monitor_if_needed()
         # Test if 'axel' is available for parallel download and pull the key into cache
         try:
             subprocess.call("axel")
             self.use_axel = True
         except OSError:
             self.use_axel = False
-
-    def start_cache_monitor(self):
-        if self.enable_cache_monitor:
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @staticmethod
     def _get_connection(provider, credentials):
