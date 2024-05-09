@@ -17,6 +17,14 @@ export const initSentry = (galaxy, config) => {
         Sentry.init({
             dsn: sentry_dsn_public,
             release: release,
+            beforeSend(event, hint) {
+                const error = hint.originalException;
+                if (["AdminRequired", "RegisteredUserRequired"].includes(error?.name)) {
+                    // ignore these error events
+                    return null;
+                }
+                return event;
+            },
         });
         if (email) {
             Sentry.configureScope((scope) => {
