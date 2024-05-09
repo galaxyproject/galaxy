@@ -87,6 +87,7 @@ async function onViewDatasetCollectionElement(element: DCESummary) {
     if (!isCollectionElement(element)) {
         return;
     }
+    offset.value = 0;
     const collection: SubCollection = {
         ...element.object,
         name: element.element_identifier,
