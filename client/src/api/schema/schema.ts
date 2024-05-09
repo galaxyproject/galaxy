@@ -9576,9 +9576,11 @@ export interface components {
         UserDeletionPayload: {
             /**
              * Purge user
-             * @description Purge the user
+             * @deprecated
+             * @description Purge the user. Deprecated, please use the `purge` query parameter instead.
+             * @default false
              */
-            purge: boolean;
+            purge?: boolean;
         };
         /** UserEmail */
         UserEmail: {
@@ -18633,6 +18635,10 @@ export interface operations {
     delete_user_api_users__user_id__delete: {
         /** Delete a user. Only admins can delete others or purge users. */
         parameters: {
+            /** @description Whether to definitely remove this user. Only deleted users can be purged. */
+            query?: {
+                purge?: boolean;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;

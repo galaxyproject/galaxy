@@ -22,6 +22,7 @@ from fastapi import (
 )
 from markupsafe import escape
 from pydantic import Required
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -135,7 +136,6 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
-UserDeletionBody = Body(default=None, title="Purge user", description="Purge the user.")
 UserUpdateBody = Body(default=Required, title="Update user", description="The user values to update.")
 FavoriteObjectBody = Body(
     default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
@@ -656,13 +656,17 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        payload: Optional[UserDeletionPayload] = UserDeletionBody,
+        purge: Annotated[
+            bool,
+            Query(
+                title="Purge user",
+                description="Whether to definitely remove this user. Only deleted users can be purged.",
+            ),
+        ] = False,
+        payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
-        if payload:
-            purge = payload.purge
-        else:
-            purge = False
+        purge = payload and payload.purge or purge
         if trans.user_is_admin:
             if purge:
                 log.debug("Purging user %s", user_to_update)
