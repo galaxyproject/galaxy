@@ -15,7 +15,6 @@ from galaxy.exceptions import (
 from galaxy.objectstore import ConcreteObjectStore
 from galaxy.util import (
     directory_hash_id,
-    ExecutionTimer,
     unlink,
 )
 from galaxy.util.path import safe_relpath
@@ -99,7 +98,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         return os.path.exists(cache_path)
 
     def _pull_into_cache(self, rel_path) -> bool:
-        ipt_timer = ExecutionTimer()
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
@@ -107,7 +105,6 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         # Now pull in the file
         file_ok = self._download(rel_path)
         fix_permissions(self.config, self._get_cache_path(rel_path_dir))
-        log.debug("_pull_into_cache: %s\n\n\n\n\n\n", ipt_timer)
         return file_ok
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -146,7 +143,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
 
         # TODO: Sync should probably not be done here. Add this to an async upload stack?
         if in_cache and not exists_remotely:
-            self._push_to_os(rel_path, source_file=self._get_cache_path(rel_path))
+            self._push_to_storage(rel_path, source_file=self._get_cache_path(rel_path))
             return True
         elif exists_remotely:
             return True
@@ -180,7 +177,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             if not dir_only:
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
-                self._push_to_os(rel_path, from_string="")
+                self._push_to_storage(rel_path, from_string="")
         return self
 
     def _caching_allowed(self, rel_path: str, remote_size: Optional[int] = None) -> bool:
@@ -196,7 +193,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return False
         return True
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
         source_file = source_file or self._get_cache_path(rel_path)
         if from_string is None and not os.path.exists(source_file):
             log.error(
@@ -338,7 +335,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             else:
                 source_file = self._get_cache_path(rel_path)
 
-            self._push_to_os(rel_path, source_file)
+            self._push_to_storage(rel_path, source_file)
 
         else:
             raise ObjectNotFound(
@@ -376,7 +373,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     def _delete_remote_all(self, rel_path) -> bool:
         raise NotImplementedError()
 
-    # Do not need to override these if instead replacing _push_to_os
+    # Do not need to override these if instead replacing _push_to_storage
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         raise NotImplementedError()
 

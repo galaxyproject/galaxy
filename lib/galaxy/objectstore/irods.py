@@ -371,7 +371,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _download: %s", ipt_timer)
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
         """
         Push the file pointed to by ``rel_path`` to the iRODS. Extract folder name
         from rel_path as iRODS collection name, and extract file name from rel_path
@@ -448,7 +448,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
                 )
             return True
         finally:
-            log.debug("irods_pt _push_to_os: %s", ipt_timer)
+            log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
     def _delete(self, obj, entire_dir=False, **kwargs):
         ipt_timer = ExecutionTimer()
