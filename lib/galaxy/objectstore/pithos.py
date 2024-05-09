@@ -99,6 +99,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
         if KamakiClient is None:
             raise Exception(NO_KAMAKI_ERROR_MESSAGE)
 
+        self._ensure_staging_path_writable()
         log.info("Authenticate Synnefo account")
         self._authenticate()
         log.info("Initialize Pithos+ client")

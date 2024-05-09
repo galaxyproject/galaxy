@@ -207,6 +207,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
         if boto3 is None:
             raise Exception(NO_BOTO_ERROR_MESSAGE)
 
+        self._ensure_staging_path_writable()
         self._configure_connection()
         self._start_cache_monitor_if_needed()
 

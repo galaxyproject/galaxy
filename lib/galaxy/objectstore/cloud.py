@@ -63,6 +63,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
 
         self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
+        self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
         self._init_axel()
 

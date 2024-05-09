@@ -111,6 +111,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
 
         self._configure_connection()
+        self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
 
     def to_dict(self):
