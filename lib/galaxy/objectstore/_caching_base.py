@@ -37,6 +37,18 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
     cache_monitor: Optional[InProcessCacheMonitor] = None
     cache_monitor_interval: int
 
+    def _ensure_staging_path_writable(self):
+        staging_path = self.staging_path
+        if not os.path.exists(staging_path):
+            os.makedirs(staging_path, exist_ok=True)
+            if not os.path.exists(staging_path):
+                raise Exception(f"Caching object store created with path '{staging_path}' that does not exist")
+
+        if not os.access(staging_path, os.R_OK):
+            raise Exception(f"Caching object store created with path '{staging_path}' that does not readable")
+        if not os.access(staging_path, os.W_OK):
+            raise Exception(f"Caching object store created with path '{staging_path}' that does not writable")
+
     def _construct_path(
         self,
         obj,

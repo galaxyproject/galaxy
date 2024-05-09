@@ -303,6 +303,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         self._initialize()
 
     def _initialize(self):
+        self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
 
     def _pull_into_cache(self, rel_path, auth_token):

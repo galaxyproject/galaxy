@@ -198,6 +198,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             "conn_path": self.conn_path,
         }
 
+        self._ensure_staging_path_writable()
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
         self._start_cache_monitor_if_needed()
