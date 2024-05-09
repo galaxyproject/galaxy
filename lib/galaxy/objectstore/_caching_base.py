@@ -104,7 +104,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
-        fix_permissions(self.config, self._get_cache_path(rel_path_dir))
+        if file_ok:
+            fix_permissions(self.config, self._get_cache_path(rel_path_dir))
+        else:
+            unlink(self._get_cache_path(rel_path), ignore_errors=True)
         return file_ok
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
