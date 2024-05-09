@@ -18635,7 +18635,7 @@ export interface operations {
     delete_user_api_users__user_id__delete: {
         /** Delete a user. Only admins can delete others or purge users. */
         parameters: {
-            /** @description Purge user. Only deleted users can be purged. */
+            /** @description Whether to definitely remove this user. Only deleted users can be purged. */
             query?: {
                 purge?: boolean;
             };

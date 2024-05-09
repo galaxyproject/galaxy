@@ -22,6 +22,7 @@ from fastapi import (
 )
 from markupsafe import escape
 from pydantic import Required
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -655,7 +656,13 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        purge: bool = Query(False, title="Purge user", description="Purge user. Only deleted users can be purged."),
+        purge: Annotated[
+            bool,
+            Query(
+                title="Purge user",
+                description="Whether to definitely remove this user. Only deleted users can be purged.",
+            ),
+        ] = False,
         payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
