@@ -250,6 +250,8 @@ bucket:
 connection:
   endpoint_url: https://swift.example.org:6000/
   # region: some services may make use of region is specified.
+  # older style host, port, secure, and conn_path available to generic_s3 work
+  # here also - Galaxy will just infer a endpoint_url from those.
 cache:
   path: database/object_store_cache_swift
   size: 1000
