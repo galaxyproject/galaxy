@@ -938,10 +938,10 @@ class GalaxyInteractorApi:
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.post(url, **kwd)
 
-    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False, params=None):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
-        kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
+        kwd = self._prepare_request_params(data=data, as_json=json, params=params, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.delete(url, **kwd)
 
