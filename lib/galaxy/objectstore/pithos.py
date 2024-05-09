@@ -92,7 +92,6 @@ class PithosObjectStore(CachingConcreteObjectStore):
         self.staging_path = self.config.file_path
         log.info("Parse config_xml for pithos object store")
         self.config_dict = config_dict
-        log.debug(self.config_dict)
 
         self._initialize()
 
