@@ -387,7 +387,7 @@ class UserDeletionPayload(Model):
         default=False,
         title="Purge user",
         description="Purge the user. Deprecated, please use the `purge` query parameter instead.",
-        deprecated=True,
+        json_schema_extra={"deprecated": True},
     )
 
 
