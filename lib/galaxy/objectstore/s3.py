@@ -313,7 +313,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self._bucket.name)
         return False
 
-    def _push_to_os(self, rel_path, source_file=None, from_string=None):
+    def _push_to_storage(self, rel_path, source_file=None, from_string=None):
         """
         Push the file pointed to by ``rel_path`` to the object store naming the key
         ``rel_path``. If ``source_file`` is provided, push that file instead while
