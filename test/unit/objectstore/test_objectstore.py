@@ -1614,7 +1614,10 @@ def test_real_aws_s3_store_boto3_multipart(tmp_path):
         "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
         "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
     }
-    with TestConfig(AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with TestConfig(AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
@@ -1773,6 +1776,48 @@ def test_gcp_via_s3_interop_and_boto3(tmp_path):
         "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
     }
     with TestConfig(GOOGLE_INTEROP_VIA_BOTO3_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
+        _,
+        object_store,
+    ):
+        verify_caching_object_store_functionality(tmp_path, object_store)
+
+
+GOOGLE_INTEROP_VIA_BOTO3_WITH_LEGACY_PARAMS_TEMPLATE_TEST_CONFIG_YAML = """
+type: boto3
+store_by: uuid
+auth:
+  access_key: ${access_key}
+  secret_key: ${secret_key}
+
+bucket:
+  name: ${bucket}
+
+connection:
+  host: storage.googleapis.com
+  port: 443
+  secure: true
+  conn_pat: '/'
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
+def test_gcp_via_s3_interop_and_boto3_with_legacy_params(tmp_path):
+    template_vars = {
+        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
+        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
+        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
+    }
+    with TestConfig(
+        GOOGLE_INTEROP_VIA_BOTO3_WITH_LEGACY_PARAMS_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars
+    ) as (
         _,
         object_store,
     ):

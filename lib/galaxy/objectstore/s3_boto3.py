@@ -43,6 +43,16 @@ NO_BOTO_ERROR_MESSAGE = (
 log = logging.getLogger(__name__)
 
 
+def host_to_endpoint(mapping):
+    # convert older-style boto parameters to boto3 endpoint_url.
+    host = mapping["host"]
+    port = mapping.get("port", 6000)
+    is_secure = asbool(mapping.get("is_secure", "True"))
+    conn_path = mapping.get("conn_path", "/")
+    scheme = "https" if is_secure else "http"
+    return f"{scheme}://{host}:{port}{conn_path}"
+
+
 def parse_config_xml(config_xml):
     try:
         a_xml = config_xml.findall("auth")[0]
@@ -58,6 +68,10 @@ def parse_config_xml(config_xml):
         else:
             cn_xml = cn_xml[0]
         endpoint_url = cn_xml.get("endpoint_url")
+
+        # for admin ease - allow older style host, port, is_secure, conn_path to be used.
+        if endpoint_url is None and cn_xml.get("host") is not None:
+            endpoint_url = host_to_endpoint(cn_xml)
         region = cn_xml.get("region")
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
@@ -175,6 +189,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
         self.bucket = bucket_dict.get("name")
 
         self.endpoint_url = connection_dict.get("endpoint_url")
+        if self.endpoint_url is None and "host" in connection_dict:
+            self.endpoint_url = host_to_endpoint(connection_dict)
+
         self.region = connection_dict.get("region")
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
