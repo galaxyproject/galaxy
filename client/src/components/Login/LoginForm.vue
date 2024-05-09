@@ -106,12 +106,12 @@ import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
+import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 import NewUserConfirmation from "./NewUserConfirmation";
 
 Vue.use(BootstrapVue);
-
 export default {
     components: {
         ExternalLogin,
@@ -212,12 +212,12 @@ export default {
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response && error.response.data && error.response.data.err_msg;
+                    const message = errorMessageAsString(error, "Login failed for an unknown reason.");
                     if (this.connectExternalProvider && message && message.toLowerCase().includes("invalid")) {
                         this.messageText =
                             message + " Try logging in to the existing account through an external provider below.";
                     } else {
-                        this.messageText = message || "Login failed for an unknown reason.";
+                        this.messageText = message;
                     }
                 });
         },
@@ -233,8 +233,7 @@ export default {
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Password reset failed for an unknown reason.";
+                    this.messageText = errorMessageAsString(error, "Password reset failed for an unknown reason.");
                 });
         },
         returnToLogin() {

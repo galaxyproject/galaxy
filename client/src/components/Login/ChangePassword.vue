@@ -17,6 +17,7 @@
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
+import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);
@@ -64,8 +65,7 @@ export default {
                 })
                 .catch((error) => {
                     this.variant = "danger";
-                    const message = error.response && error.response.data && error.response.data.err_msg;
-                    this.message = message || "Password change failed for an unknown reason.";
+                    this.message = errorMessageAsString(error, "Password change failed for an unknown reason.");
                 });
         },
     },
