@@ -385,7 +385,7 @@ class FastAPIJobs:
     ) -> JobConsoleOutput:
         """
         Get the stdout and/or stderr of a job. The position parameters are the index
-        of where to start reading stdout/stderr. The length parameterscontrol how much
+        of where to start reading stdout/stderr. The length parameters control how much
         stdout/stderr is read.
         """
         job = self.service.get_job(trans, job_id)
