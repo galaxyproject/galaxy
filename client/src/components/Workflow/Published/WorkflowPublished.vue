@@ -232,7 +232,7 @@ onMounted(async () => {
                     </span>
                 </div>
 
-                <div class="workflow-preview">
+                <div class="workflow-preview" :class="{ 'only-preview': !props.showAbout }">
                     <BCard class="workflow-card d-flex flex-grow-1">
                         <WorkflowGraph
                             v-if="workflow && datatypesMapper"
@@ -268,8 +268,11 @@ onMounted(async () => {
     .published-workflow {
         display: grid;
         gap: 0.5rem 1rem;
-        grid-template-rows: 1fr min-content;
+        grid-template-rows: max-content;
         grid-template-columns: auto auto 30%;
+
+        inset: 0;
+        position: absolute;
 
         .workflow-header {
             grid-column: 1 / span 3;
@@ -277,6 +280,10 @@ onMounted(async () => {
 
         .workflow-preview {
             grid-column: 1 / span 2;
+
+            &.only-preview {
+                grid-column: 1 / span 3;
+            }
 
             .workflow-card {
                 width: 100%;
