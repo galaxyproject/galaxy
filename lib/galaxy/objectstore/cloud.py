@@ -256,18 +256,34 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
             remote_size = key.size
             if not self._caching_allowed(rel_path, remote_size):
                 return False
-            if self.use_axel:
-                log.debug("Parallel pulled key '%s' into cache to %s", rel_path, local_destination)
-                url = key.generate_url(7200)
-                return self._axel_download(url, local_destination)
-            else:
-                log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
-                with open(local_destination, "wb+") as downloaded_file_handle:
-                    key.save_content(downloaded_file_handle)
-                return True
+            log.debug("Pulled key '%s' into cache to %s", rel_path, local_destination)
+            self._download_to(key, local_destination)
+            return True
         except Exception:
             log.exception("Problem downloading key '%s' from S3 bucket '%s'", rel_path, self.bucket.name)
         return False
+
+    def _download_directory_into_cache(self, rel_path, cache_path):
+        # List objects in the specified cloud folder
+        objects = self.bucket.objects.list(prefix=rel_path)
+
+        for obj in objects:
+            remote_file_path = obj.name
+            local_file_path = os.path.join(cache_path, os.path.relpath(remote_file_path, rel_path))
+
+            # Create directories if they don't exist
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            # Download the file
+            self._download_to(obj, local_file_path)
+
+    def _download_to(self, key, local_destination):
+        if self.use_axel:
+            url = key.generate_url(7200)
+            return self._axel_download(url, local_destination)
+        else:
+            with open(local_destination, "wb+") as downloaded_file_handle:
+                key.save_content(downloaded_file_handle)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:

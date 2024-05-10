@@ -93,6 +93,9 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             assert base
             return os.path.join(base, rel_path)
 
+        # This is how the remote file stores represent folders
+        rel_path = f"{rel_path}/"
+
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{object_id}.dat")
 
@@ -294,10 +297,14 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
     def _download_directory_into_cache(self, rel_path, cache_path):
-        # azure, pithos, irod, and cloud did not do this prior to refactoring so I am assuming
-        # there is just operations that fail with these object stores,
-        # I'm placing a no-op here to match their behavior but we should
-        # maybe implement this for those object stores.
+        # pithos & irods never did this prior to refactoring so I am assuming
+        # there is just operations that fail with these object stores.
+        # As part of the refactoring that resulted in this method
+        # https://github.com/galaxyproject/galaxy/pull/18117 I wrote test
+        # cases and I verified the other object stores that didn't implement
+        # this had issues - I implemented this new functionality in the
+        # Azure and Cloud object stores to fix those object stores. New
+        # object stores should definitely override this.
         pass
 
     def _delete(self, obj, entire_dir=False, **kwargs):

@@ -3,6 +3,7 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 """
 
 import logging
+import os
 from datetime import (
     datetime,
     timedelta,
@@ -167,9 +168,20 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             log.exception("Could not get size of blob '%s' from Azure", rel_path)
             return -1
 
+    def _blobs_from(self, rel_path):
+        return self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
+
     def _exists_remotely(self, rel_path: str):
         try:
-            exists = self._blob_client(rel_path).exists()
+            is_dir = rel_path[-1] == "/"
+            if is_dir:
+                blobs = self._blobs_from(rel_path)
+                if blobs:
+                    return True
+                else:
+                    return False
+            else:
+                exists = self._blob_client(rel_path).exists()
         except AzureHttpError:
             log.exception("Trouble checking existence of Azure blob '%s'", rel_path)
             return False
@@ -185,12 +197,27 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
             if not self._caching_allowed(rel_path):
                 return False
             else:
-                with open(local_destination, "wb") as f:
-                    self._blob_client(rel_path).download_blob().download_to_stream(f)
+                self._download_to_file(rel_path, local_destination)
                 return True
         except AzureHttpError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
         return False
+
+    def _download_to_file(self, rel_path, local_destination):
+        with open(local_destination, "wb") as f:
+            self._blob_client(rel_path).download_blob().download_to_stream(f)
+
+    def _download_directory_into_cache(self, rel_path, cache_path):
+        blobs = self._blobs_from(rel_path)
+        for blob in blobs:
+            key = blob.name
+            local_file_path = os.path.join(cache_path, os.path.relpath(key, rel_path))
+
+            # Create directories if they don't exist
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            # Download the file
+            self._download_to_file(key, local_file_path)
 
     def _push_string_to_path(self, rel_path: str, from_string: str) -> bool:
         try:
@@ -211,7 +238,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
 
     def _delete_remote_all(self, rel_path: str) -> bool:
         try:
-            blobs = self.service.get_container_client(self.container_name).list_blobs(name_starts_with=rel_path)
+            blobs = self._blobs_from(rel_path)
             for blob in blobs:
                 log.debug("Deleting from Azure: %s", blob)
                 self._blob_client(blob.name).delete_blob()

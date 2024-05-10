@@ -41,6 +41,10 @@ NO_BOTO_ERROR_MESSAGE = (
 )
 
 log = logging.getLogger(__name__)
+# This object store generates a lot of logging by default, fairly sure it is an anti-pattern
+# to just disable library logging.
+# logging.getLogger("botocore").setLevel(logging.INFO)
+# logging.getLogger("s3transfer").setLevel(logging.INFO)
 
 
 def host_to_endpoint(mapping):
@@ -296,8 +300,15 @@ class S3ObjectStore(CachingConcreteObjectStore):
 
     def _exists_remotely(self, rel_path: str) -> bool:
         try:
-            self._client.head_object(Bucket=self.bucket, Key=rel_path)
-            return True
+            is_dir = rel_path[-1] == "/"
+            if is_dir:
+                for _ in self._keys(rel_path):
+                    return True
+
+                return False
+            else:
+                self._client.head_object(Bucket=self.bucket, Key=rel_path)
+                return True
         except ClientError as e:
             if e.response["Error"]["Code"] == "404":
                 return False
@@ -367,7 +378,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
             # Download the file
-            self._client.download_file(self.bucket, rel_path, local_file_path)
+            self._client.download_file(self.bucket, key, local_file_path)
 
     def _get_object_url(self, obj, **kwargs):
         try:
