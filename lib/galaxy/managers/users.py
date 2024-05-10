@@ -243,9 +243,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
                 role.description = role.description.replace(user.email, email_hash)
-            private_role.name = email_hash
-            private_role.description = f"Private Role for {email_hash}"
-            self.session().add(private_role)
+            self.session().add(role)
+        private_role.name = email_hash
+        private_role.description = f"Private Role for {email_hash}"
+        self.session().add(private_role)
         # Redact user's email and username
         user.email = email_hash
         user.username = uname_hash

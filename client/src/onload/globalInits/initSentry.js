@@ -23,6 +23,14 @@ export const initSentry = (galaxy, config) => {
             replaysSessionSampleRate: 0,
             replaysOnErrorSampleRate: 1.0,
             release: release,
+            beforeSend(event, hint) {
+                const error = hint.originalException;
+                if (["AdminRequired", "RegisteredUserRequired"].includes(error?.name)) {
+                    // ignore these error events
+                    return null;
+                }
+                return event;
+            },
         });
         if (email) {
             Sentry.configureScope((scope) => {
