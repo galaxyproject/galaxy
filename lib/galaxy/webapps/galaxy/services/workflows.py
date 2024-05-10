@@ -370,7 +370,9 @@ class WorkflowsService(ServiceBase):
         workflow_id: int,
     ):
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
-        workflow_dict = payload.model_dump(exclude_unset=True)
+        payload_dict = payload.model_dump(exclude_unset=True)
+        workflow_dict = payload_dict.get("workflow", {})
+        workflow_dict.update({k: v for k, v in payload_dict.items() if k not in workflow_dict})
         if workflow_dict:
             require_flush = False
             raw_workflow_description = self._workflow_contents_manager.normalize_workflow_format(trans, workflow_dict)
@@ -439,7 +441,7 @@ class WorkflowsService(ServiceBase):
 
             if "steps" in workflow_dict or "comments" in workflow_dict:
                 try:
-                    workflow_update_options = WorkflowUpdateOptions(**payload.model_dump(exclude_unset=True))
+                    workflow_update_options = WorkflowUpdateOptions(**payload_dict)
                     workflow, errors = self._workflow_contents_manager.update_workflow_from_raw_description(
                         trans,
                         stored_workflow,
