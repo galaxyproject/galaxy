@@ -1419,8 +1419,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         try:
                             shutil.move(dataset_path.false_path, dataset_path.real_path)
                             log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
-                        except OSError as e:
-                            log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+                        except FileNotFoundError as e:
+                            log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
