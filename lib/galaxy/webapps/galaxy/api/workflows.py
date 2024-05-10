@@ -892,7 +892,7 @@ class FastAPIWorkflows:
         payload: WorkflowUpdatePayload,
         instance: InstanceQueryParam = False,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> StoredWorkflowDetailed:
         return self.service.update_workflow(trans, payload, instance, workflow_id)
 
     @router.delete(
