@@ -11,10 +11,10 @@ import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } fro
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
+import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
 import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
 import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
-import FilterMenuQuotaSource from "@/components/Common/FilterMenuQuotaSource.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
 
 library.add(faAngleDoubleUp, faQuestion, faSearch);
@@ -116,6 +116,14 @@ const localAdvancedToggle = computed({
         emit("update:show-advanced", value);
     },
 });
+
+/** Returns the `typeError` or `msg` for a given `field` */
+function errorForField(field: string) {
+    if (formattedSearchError.value && formattedSearchError.value?.index == field) {
+        return formattedSearchError.value.typeError || formattedSearchError.value.msg;
+    }
+    return "";
+}
 
 /** Returns the `ValidFilter<any>` for given `filter`
  *
@@ -251,9 +259,13 @@ function updateFilterText(newFilterText: string) {
                             :filter="getValidFilter(filter)"
                             :filters="filters"
                             @change="onOption" />
-                        <FilterMenuQuotaSource
-                            v-else-if="validFilters[filter]?.type == 'QuotaSource'"
+                        <FilterMenuDropdown
+                            v-else-if="
+                                validFilters[filter]?.type == 'Dropdown' || validFilters[filter]?.type == 'QuotaSource'
+                            "
+                            :type="validFilters[filter]?.type"
                             :name="filter"
+                            :error="errorForField(filter) || undefined"
                             :filter="getValidFilter(filter)"
                             :filters="filters"
                             :identifier="identifier"
@@ -263,7 +275,7 @@ function updateFilterText(newFilterText: string) {
                             :name="filter"
                             :filter="getValidFilter(filter)"
                             :filters="filters"
-                            :error="formattedSearchError || undefined"
+                            :error="errorForField(filter) || undefined"
                             :identifier="identifier"
                             @change="onOption"
                             @on-enter="onSearch"

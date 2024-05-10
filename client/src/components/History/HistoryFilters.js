@@ -17,10 +17,20 @@ const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     name_eq: { handler: equals("name"), menuItem: false },
     extension: { placeholder: "extension", type: String, handler: equals("extension"), menuItem: true },
+    history_content_type: {
+        placeholder: "content type",
+        type: "Dropdown",
+        handler: equals("history_content_type"),
+        datalist: [
+            { value: "dataset", text: "Datasets Only" },
+            { value: "dataset_collection", text: "Collections Only" },
+        ],
+        menuItem: true,
+    },
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
     state: {
         placeholder: "state",
-        type: String,
+        type: "Dropdown",
         handler: equals("state"),
         datalist: states,
         helpInfo: StatesInfo,

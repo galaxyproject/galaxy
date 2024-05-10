@@ -100,7 +100,7 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
             placeholder: "EDAM ontology",
             type: String,
             handler: contains("ontology"),
-            datalist: ontologyList,
+            datalist: ontologyList.value,
             menuItem: true,
         },
         id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
@@ -115,9 +115,9 @@ const toolStore = useToolStore();
 const { searchWorker } = storeToRefs(toolStore);
 
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
-const ontologyList = toolStore
-    .sectionDatalist("ontology:edam_topics")
-    .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+const ontologyList = computed(() =>
+    toolStore.sectionDatalist("ontology:edam_topics").concat(toolStore.sectionDatalist("ontology:edam_operations"))
+);
 
 onMounted(() => {
     // initialize worker
