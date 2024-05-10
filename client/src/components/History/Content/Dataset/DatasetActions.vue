@@ -172,10 +172,6 @@ function onHighlight() {
                     @click.stop="onHighlight">
                     <FontAwesomeIcon :icon="faSitemap" />
                 </BButton>
-
-                <BButton v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
-                    <FontAwesomeIcon :icon="faQuestion" />
-                </BButton>
             </div>
         </div>
     </div>

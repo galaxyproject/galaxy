@@ -180,7 +180,6 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .rerun-btn'
       alltags: '${_} .stateless-tags .tag'
 
