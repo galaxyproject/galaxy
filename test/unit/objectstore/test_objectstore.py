@@ -1346,14 +1346,12 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
         extra_files_dataset._extra_files_rel_path,
     )
 
-    # kind of a huge problem, the object stores that pass the following
-    # tests, do not do so if we use Galaxy's cache cleaning which does
-    # not remove directories. The @mvdbeek integration test cache clearing
-    # here (remove and restore the whole caching directory) does work and
-    # definitely should work. We just need to also figure out how to make
-    # reset_cache work here.
+    # The following checks used to exhibit different behavior depending
+    # on how the cache was cleaned - removing the whole directory vs
+    # just cleaning up files the way Galaxy's internal caching works with
+    # reset_cache. So we test both here.
 
-    # reset_cache(object_store.cache_target)
+    # hard reset
     shutil.rmtree(object_store.cache_target.path)
     os.makedirs(object_store.cache_target.path)
 
@@ -1361,7 +1359,16 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
     assert os.path.exists(extra_path)
     expected_extra_file = os.path.join(extra_path, "new_value.txt")
     assert os.path.exists(expected_extra_file)
-    assert open(expected_extra_file, "r").read() == "My new value"
+    assert open(expected_extra_file).read() == "My new value"
+
+    # Redo the above test with Galaxy's reset_cache which leaves empty directories
+    # around.
+    reset_cache(object_store.cache_target)
+    extra_path = _extra_file_path(object_store, extra_files_dataset)
+    assert os.path.exists(extra_path)
+    expected_extra_file = os.path.join(extra_path, "new_value.txt")
+    assert os.path.exists(expected_extra_file)
+    assert open(expected_extra_file).read() == "My new value"
 
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
@@ -1375,9 +1382,7 @@ def _extra_file_path(object_store, dataset):
     # invoke the magic calls the model layer would invoke here...
     if object_store.exists(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path):
         return object_store.get_filename(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path)
-    return object_store.construct_path(
-        dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path, in_cache=True
-    )
+    return object_store.construct_path(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path, in_cache=True)
 
 
 def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):

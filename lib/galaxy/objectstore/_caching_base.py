@@ -283,7 +283,10 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             return cache_path
 
         # Check if the file exists in the cache first, always pull if file size in cache is zero
-        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
+        # For dir_only - the cache cleaning may have left empty directories so I think we need to
+        # always resync the cache. Gotta make sure we're being judicious in out data.extra_files_path
+        # calls I think.
+        if not dir_only and self._in_cache(rel_path) and os.path.getsize(self._get_cache_path(rel_path)) > 0:
             return cache_path
 
         # Check if the file exists in persistent storage and, if it does, pull it into cache
