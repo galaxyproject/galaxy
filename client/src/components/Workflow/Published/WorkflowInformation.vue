@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
@@ -81,9 +82,9 @@ const userOwned = computed(() => {
 
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
-            <router-link :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
+            <RouterLink :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
                 All published Workflows by {{ workflowInfo.owner }}
-            </router-link>
+            </RouterLink>
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">
@@ -133,12 +134,13 @@ const userOwned = computed(() => {
                 Use the following link to share preview of this workflow:
 
                 <a :href="fullLink" target="_blank">{{ fullLink }}</a>
-                <CopyToClipboard message="Link copied to clipboard" :text="fullLink" title="Copy link" />
+                <CopyToClipboard message="Link copied to clipboard" :text="fullLink" title="Copy link" />. Manage
+                sharing settings <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">here</RouterLink>.
             </span>
 
             <span v-else-if="userOwned">
                 This workflow is not published and cannot be shared.
-                <router-link :to="`/workflows/sharing?id=${workflowInfo.id}`">Publish this workflow</router-link>
+                <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">Publish this workflow</RouterLink>
             </span>
         </div>
     </aside>
