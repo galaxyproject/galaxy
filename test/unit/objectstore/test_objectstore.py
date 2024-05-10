@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 import time
 from tempfile import (
     mkdtemp,
@@ -12,6 +13,7 @@ import pytest
 from requests import get
 
 from galaxy.exceptions import ObjectInvalid
+from galaxy.objectstore import persist_extra_files_for_dataset
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.caching import (
     CacheTarget,
@@ -1330,12 +1332,52 @@ def verify_caching_object_store_functionality(tmp_path, object_store, check_get_
         f.write(os.urandom(size))
     object_store.update_from_file(big_file_dataset, file_name=hello_path, create=True)
 
+    extra_files_dataset = MockDataset(7)
+    object_store.create(extra_files_dataset)
+    extra = tmp_path / "extra"
+    extra.mkdir()
+    extra_file = extra / "new_value.txt"
+    extra_file.write_text("My new value")
+
+    persist_extra_files_for_dataset(
+        object_store,
+        extra,
+        extra_files_dataset,  # type: ignore[arg-type,unused-ignore]
+        extra_files_dataset._extra_files_rel_path,
+    )
+
+    # kind of a huge problem, the object stores that pass the following
+    # tests, do not do so if we use Galaxy's cache cleaning which does
+    # not remove directories. The @mvdbeek integration test cache clearing
+    # here (remove and restore the whole caching directory) does work and
+    # definitely should work. We just need to also figure out how to make
+    # reset_cache work here.
+
+    # reset_cache(object_store.cache_target)
+    shutil.rmtree(object_store.cache_target.path)
+    os.makedirs(object_store.cache_target.path)
+
+    extra_path = _extra_file_path(object_store, extra_files_dataset)
+    assert os.path.exists(extra_path)
+    expected_extra_file = os.path.join(extra_path, "new_value.txt")
+    assert os.path.exists(expected_extra_file)
+    assert open(expected_extra_file, "r").read() == "My new value"
+
     # Test get_object_url returns a read-only URL
     url = object_store.get_object_url(hello_world_dataset)
     if check_get_url:
         response = get(url)
         response.raise_for_status()
         assert response.text == "Hello World!"
+
+
+def _extra_file_path(object_store, dataset):
+    # invoke the magic calls the model layer would invoke here...
+    if object_store.exists(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path):
+        return object_store.get_filename(dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path)
+    return object_store.construct_path(
+        dataset, dir_only=True, extra_dir=dataset._extra_files_rel_path, in_cache=True
+    )
 
 
 def verify_object_store_functionality(tmp_path, object_store, check_get_url=True):
@@ -1834,6 +1876,10 @@ class MockDataset:
     def rel_path_for_uuid_test(self):
         rel_path = os.path.join(*directory_hash_id(self.uuid))
         return rel_path
+
+    @property
+    def _extra_files_rel_path(self):
+        return f"dataset_{self.uuid}_files"
 
 
 def _assert_has_keys(the_dict, keys):
