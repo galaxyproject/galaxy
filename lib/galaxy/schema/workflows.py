@@ -1032,25 +1032,25 @@ class WorkflowDictFormat2WrappedYamlSummary(Model):
 
 
 class WorkflowUpdatePayload(Model):
-    workflow: Any = Field(
-        ...,
+    workflow: Optional[Any] = Field(
+        None,
         title="Workflow",
-        description="The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`",
+        description="The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`. The workflow contents will be updated to target this.",
     )
     name: Optional[str] = Field(
         None,
         title="Name",
-        description="String name for the workflow, if not present in payload, name defaults to existing name",
+        description="Name for the workflow, if not present in payload, name defaults to existing name",
     )
     annotation: Optional[str] = Field(
         None,
         title="Annotation",
-        description="String annotation for the workflow, if not present in payload, annotation defaults to existing annotation",
+        description="Annotation for the workflow, if not present in payload, annotation defaults to existing annotation",
     )
     menu_entry: Optional[bool] = Field(
         None,
         title="Menu Entry",
-        description="Boolean marking if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified",
+        description="Flag indicating if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified",
     )
     tags: Optional[List[str]] = Field(
         None,
@@ -1059,6 +1059,12 @@ class WorkflowUpdatePayload(Model):
     )
     from_tool_form: Optional[bool] = Field(
         None, title="From Tool Form", description="True iff encoded state coming in is encoded for the tool form."
+    )
+    published: Optional[bool] = Field(
+        None,
+    )
+    importable: Optional[bool] = Field(
+        None,
     )
 
 
