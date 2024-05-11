@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
