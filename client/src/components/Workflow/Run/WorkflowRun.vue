@@ -10,35 +10,30 @@
             </b-alert>
             <WorkflowRunSuccess v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
-                <div class="ui-form-composite-messages mb-4">
-                    <b-alert v-if="hasUpgradeMessages" variant="warning" show>
-                        Some tools in this workflow may have changed since it was last saved or some errors were found.
-                        The workflow may still run, but any new options will have default values. Please review the
-                        messages below to make a decision about whether the changes will affect your analysis.
-                    </b-alert>
-                    <b-alert v-if="hasStepVersionChanges" variant="warning" show>
-                        Some tools are being executed with different versions compared to those available when this
-                        workflow was last saved because the other versions are not or no longer available on this Galaxy
-                        instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save
-                        it.
-                    </b-alert>
-                    <b-alert v-if="submissionError" variant="danger" show>
+                <b-alert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
+                    The <b>`{{ model.name }}`</b> workflow may contain tools which have changed since it was last saved
+                    or some error have been detected. Please
+                    <a :to="editorLink" :href="editorLink">click here to edit and review the issues</a> before running
+                    this workflow.
+                </b-alert>
+                <div v-else>
+                    <b-alert v-if="submissionError" class="mb-4" variant="danger" show>
                         Workflow submission failed: {{ submissionError }}
                     </b-alert>
+                    <WorkflowRunFormSimple
+                        v-else-if="simpleForm"
+                        :model="model"
+                        :target-history="simpleFormTargetHistory"
+                        :use-job-cache="simpleFormUseJobCache"
+                        @submissionSuccess="handleInvocations"
+                        @submissionError="handleSubmissionError"
+                        @showAdvanced="showAdvanced" />
+                    <WorkflowRunForm
+                        v-else
+                        :model="model"
+                        @submissionSuccess="handleInvocations"
+                        @submissionError="handleSubmissionError" />
                 </div>
-                <WorkflowRunFormSimple
-                    v-if="simpleForm"
-                    :model="model"
-                    :target-history="simpleFormTargetHistory"
-                    :use-job-cache="simpleFormUseJobCache"
-                    @submissionSuccess="handleInvocations"
-                    @submissionError="handleSubmissionError"
-                    @showAdvanced="showAdvanced" />
-                <WorkflowRunForm
-                    v-else
-                    :model="model"
-                    @submissionSuccess="handleInvocations"
-                    @submissionError="handleSubmissionError" />
             </div>
         </span>
     </span>
@@ -99,6 +94,9 @@ export default {
     computed: {
         ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        editorLink() {
+            return `/workflows/edit?id=${this.model.workflowId}`;
+        },
         historyStatusKey() {
             return `${this.currentHistoryId}_${this.lastUpdateTime}`;
         },
