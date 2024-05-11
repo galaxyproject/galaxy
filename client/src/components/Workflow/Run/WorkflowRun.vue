@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -132,10 +133,10 @@ watch(
                 :invocations="invocations"
                 :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
-                <BAlert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
+                <BAlert v-if="!hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
                     The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
                     saved or some error have been detected. Please
-                    <a :to="editorLink" :href="editorLink">click here to edit and review the issues</a> before running
+                    <RouterLink :to="editorLink">click here to edit and review the issues</RouterLink> before running
                     this workflow.
                 </BAlert>
                 <div v-else>
