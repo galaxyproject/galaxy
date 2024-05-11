@@ -30,10 +30,7 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions
 from galaxy.managers import (
     annotatable,
     base,
@@ -107,7 +104,7 @@ class SharableModelManager(
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user  # type:ignore[attr-defined]
+        return item.user == user
 
     def is_accessible(self, item: U, user: Optional[User], **kwargs: Any) -> bool:
         """
