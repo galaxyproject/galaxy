@@ -3,7 +3,9 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
+import { useRouter } from "vue-router/composables";
 
+import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -20,6 +22,7 @@ import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 const { currentUser } = storeToRefs(useUserStore());
+const router = useRouter();
 
 interface Props {
     workflowId: string;
@@ -104,7 +107,10 @@ function loadRun() {
         });
 }
 
-function onImport() {}
+async function onImport() {
+    const response = await copyWorkflow(props.workflowId, workflowModel.value.runData.owner);
+    router.push(`/workflows/edit?id=${response.id}`);
+}
 
 function showAdvanced() {
     simpleForm.value = false;
