@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -118,29 +119,29 @@ watch(
 
 <template>
     <span>
-        <b-alert v-if="formError" variant="danger" show>
+        <BAlert v-if="formError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ formError }}
-        </b-alert>
+        </BAlert>
         <span v-else>
-            <b-alert v-if="loading" variant="info" show>
+            <BAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Loading workflow run data" />
-            </b-alert>
+            </BAlert>
             <WorkflowRunSuccess
                 v-else-if="invocations.length > 0"
                 :invocations="invocations"
                 :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
-                <b-alert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
+                <BAlert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
                     The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
                     saved or some error have been detected. Please
                     <a :to="editorLink" :href="editorLink">click here to edit and review the issues</a> before running
                     this workflow.
-                </b-alert>
+                </BAlert>
                 <div v-else>
-                    <b-alert v-if="submissionError" class="mb-4" variant="danger" show>
+                    <BAlert v-if="submissionError" class="mb-4" variant="danger" show>
                         Workflow submission failed: {{ submissionError }}
-                    </b-alert>
+                    </BAlert>
                     <WorkflowRunFormSimple
                         v-else-if="simpleForm"
                         :model="workflowModel"
