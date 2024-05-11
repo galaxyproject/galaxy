@@ -12,8 +12,13 @@ from datetime import datetime
 from typing import (
     Any,
     Dict,
+    Generic,
     List,
     Optional,
+    overload,
+    Type,
+    TYPE_CHECKING,
+    Union,
 )
 
 from markupsafe import escape
@@ -25,6 +30,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.exc import NoResultFound
+from typing_extensions import TypeVar
 
 from galaxy import (
     exceptions,
@@ -55,9 +61,13 @@ from galaxy.security.validate_user_input import (
 )
 from galaxy.structured_app import (
     BasicSharedApp,
+    MinimalApp,
     MinimalManagerApp,
 )
 from galaxy.util.hash_util import new_secure_hash_v2
+
+if TYPE_CHECKING:
+    from tool_shed.webapp.model import User as ToolShedUser
 
 log = logging.getLogger(__name__)
 
@@ -76,8 +86,10 @@ can also copy and paste it into your browser.
 TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.txt"
 HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.html"
 
+U = TypeVar("U", bound=Union[User, "ToolShedUser"], default=User)
 
-class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
+
+class BaseUserManager(Generic[U], base.ModelManager[U], deletable.PurgableManagerMixin[U]):
     foreign_key_name = "user"
 
     # TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
@@ -155,117 +167,23 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.app.security_agent.create_user_role(user, self.app)
         return user
 
-    def delete(self, user, flush=True):
+    def delete(self, item: U, flush=True, **kwargs):
         """Mark the given user deleted."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException(
-                "The configuration of this Galaxy instance does not allow admins to delete users."
+                f"The configuration of this {self.app_type.capitalize()} instance does not allow admins to delete users."
             )
-        super().delete(user, flush=flush)
-        self._stop_all_jobs_from_user(user)
+        super().delete(item, flush=flush)
 
-    def _stop_all_jobs_from_user(self, user):
-        active_jobs = self._get_all_active_jobs_from_user(user)
-        session = self.session()
-        for job in active_jobs:
-            job.mark_deleted(self.app.config.track_jobs_in_database)
-        with transaction(session):
-            session.commit()
-
-    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
-        """Get all jobs that are not ready yet and belong to the given user."""
-        stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
-        jobs = self.session().scalars(stmt)
-        return jobs  # type:ignore[return-value]
-
-    def undelete(self, user, flush=True):
+    def undelete(self, item: U, flush=True, **kwargs):
         """Remove the deleted flag for the given user."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException(
                 "The configuration of this Galaxy instance does not allow admins to undelete users."
             )
-        if user.purged:
+        if item.purged:
             raise exceptions.ItemDeletionException("Purged user cannot be undeleted.")
-        super().undelete(user, flush=flush)
-
-    def purge(self, user, flush=True):
-        """Purge the given user. They must have the deleted flag already."""
-        if not self.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException(
-                "The configuration of this Galaxy instance does not allow admins to delete or purge users."
-            )
-        if not user.deleted:
-            raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
-        private_role = self.app.security_agent.get_private_user_role(user)
-        # Delete History
-        for active_history in user.active_histories:
-            self.session().refresh(active_history)
-            for hda in active_history.active_datasets:
-                # Delete HistoryDatasetAssociation
-                hda.deleted = True
-                self.session().add(hda)
-            active_history.deleted = True
-            self.session().add(active_history)
-        # Delete UserGroupAssociations
-        for uga in user.groups:
-            self.session().delete(uga)
-        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-        for ura in user.roles:
-            if ura.role_id != private_role.id:
-                self.session().delete(ura)
-        # Delete UserAddresses
-        for address in user.addresses:
-            self.session().delete(address)
-        compliance_log = logging.getLogger("COMPLIANCE")
-        compliance_log.info(f"delete-user-event: {user.username}")
-        # Maybe there is some case in the future where an admin needs
-        # to prove that a user was using a server for some reason (e.g.
-        # a court case.) So we make this painfully hard to recover (and
-        # not immediately reversable) in line with GDPR, but still
-        # leave open the possibility to prove someone was part of the
-        # server just in case. By knowing the exact email + approximate
-        # time of deletion, one could run through hashes for every
-        # second of the surrounding days/weeks.
-        pseudorandom_value = str(int(time.time()))
-        # Replace email + username with a (theoretically) unreversable
-        # hash. If provided with the username we can probably re-hash
-        # to identify if it is needed for some reason.
-        #
-        # Deleting multiple times will re-hash the username/email
-        email_hash = new_secure_hash_v2(user.email + pseudorandom_value)
-        uname_hash = new_secure_hash_v2(user.username + pseudorandom_value)
-        # Redact all roles user has
-        for role in user.all_roles():
-            if self.app.config.redact_username_during_deletion:
-                role.name = role.name.replace(user.username, uname_hash)
-                role.description = role.description.replace(user.username, uname_hash)
-
-            if self.app.config.redact_email_during_deletion:
-                role.name = role.name.replace(user.email, email_hash)
-                role.description = role.description.replace(user.email, email_hash)
-            self.session().add(role)
-        private_role.name = email_hash
-        private_role.description = f"Private Role for {email_hash}"
-        self.session().add(private_role)
-        # Redact user's email and username
-        user.email = email_hash
-        user.username = uname_hash
-        # Redact user addresses as well
-        if self.app.config.redact_user_address_during_deletion:
-            stmt = select(UserAddress).where(UserAddress.user_id == user.id)
-            for addr in self.session().scalars(stmt):
-                addr.desc = new_secure_hash_v2(addr.desc + pseudorandom_value)
-                addr.name = new_secure_hash_v2(addr.name + pseudorandom_value)
-                addr.institution = new_secure_hash_v2(addr.institution + pseudorandom_value)
-                addr.address = new_secure_hash_v2(addr.address + pseudorandom_value)
-                addr.city = new_secure_hash_v2(addr.city + pseudorandom_value)
-                addr.state = new_secure_hash_v2(addr.state + pseudorandom_value)
-                addr.postal_code = new_secure_hash_v2(addr.postal_code + pseudorandom_value)
-                addr.country = new_secure_hash_v2(addr.country + pseudorandom_value)
-                addr.phone = new_secure_hash_v2(addr.phone + pseudorandom_value)
-                self.session().add(addr)
-        # Purge the user
-        super().purge(user, flush=flush)
+        super().undelete(item, flush=flush)
 
     def _error_on_duplicate_email(self, email: str) -> None:
         """
@@ -277,11 +195,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id: int) -> model.User:
+    def by_id(self, user_id: int) -> U:
         return self.app.model.session.get(self.model_class, user_id)
 
     # ---- filters
-    def by_email(self, email: str, filters=None, **kwargs) -> Optional[model.User]:
+    def by_email(self, email: str, filters=None, **kwargs) -> Optional[U]:
         """
         Find a user by their email.
         """
@@ -292,7 +210,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         except exceptions.ObjectNotFound:
             return None
 
-    def by_api_key(self, api_key: str, sa_session=None):
+    def by_api_key(self, api_key: str, sa_session=None) -> Union[U, schema.BootstrapAdminUser]:
         """
         Find a user by API key.
         """
@@ -312,7 +230,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
 
-    def by_oidc_access_token(self, access_token: str):
+    def by_oidc_access_token(self, access_token: str) -> Optional[U]:
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
             user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)
             return user
@@ -329,7 +247,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
     # ---- admin
-    def is_admin(self, user: Optional[model.User], trans=None) -> bool:
+    def is_admin(self, user: Optional[U], trans=None) -> bool:
         """Return True if this user is an admin (or session is authenticated as admin).
 
         Do not pass trans to simply check if an existing user object is an admin user,
@@ -341,7 +259,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return trans and trans.user_is_admin
         return self.app.config.is_admin_user(user)
 
-    def admins(self, filters=None, **kwargs):
+    def admins(self, filters=None, **kwargs) -> List[U]:
         """
         Return a list of admin Users.
         """
@@ -361,14 +279,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- anonymous
-    def is_anonymous(self, user: Optional[model.User]) -> bool:
+    def is_anonymous(self, user: Optional[U]) -> bool:
         """
         Return True if `user` is anonymous.
         """
         # define here for single point of change and make more readable
         return user is None
 
-    def error_if_anonymous(self, user, msg="Log-in required", **kwargs):
+    def error_if_anonymous(self, user: Optional[U], msg="Log-in required", **kwargs):
         """
         Raise an error if `user` is anonymous.
         """
@@ -377,9 +295,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed(msg, **kwargs)
         return user
 
-    def get_user_by_identity(self, identity):
+    def get_user_by_identity(self, identity) -> Optional[U]:
         """Get user by username or email."""
-        user = None
         if VALID_EMAIL_RE.match(identity):
             # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
             user = get_user_by_email(self.session(), identity, self.model_class)
@@ -391,70 +308,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- current
-    def current_user(self, trans):
+    def current_user(self, trans) -> Optional[U]:
         # define here for single point of change and make more readable
         # TODO: trans
         return trans.user
-
-    def user_can_do_run_as(self, user) -> bool:
-        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
-        if not run_as_users:
-            return False
-        user_in_run_as_users = user and user.email in run_as_users
-        # Can do if explicitly in list or master_api_key supplied.
-        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
-        return can_do_run_as
-
-    # ---- preferences
-    def preferences(self, user):
-        return dict(user.preferences.items())
-
-    # ---- roles and permissions
-    def private_role(self, user):
-        return self.app.security_agent.get_private_user_role(user)
-
-    def sharing_roles(self, user):
-        return self.app.security_agent.get_sharing_roles(user)
-
-    def default_permissions(self, user):
-        return self.app.security_agent.user_get_default_permissions(user)
-
-    def quota(self, user, total=False, quota_source_label=None):
-        if total:
-            return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
-        return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
-
-    def quota_bytes(self, user, quota_source_label: Optional[str] = None):
-        return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
-
-    def tags_used(self, user, tag_models=None):
-        """
-        Return a list of distinct 'user_tname:user_value' strings that the
-        given user has used.
-        """
-        # TODO: simplify and unify with tag manager
-        if self.is_anonymous(user):
-            return []
-
-        # get all the taggable model TagAssociations
-        if not tag_models:
-            tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
-
-        if not tag_models:
-            return []
-
-        # create a union of select statements for each tag model for this user - getting only the tname and user_value
-        all_stmts = []
-        for tag_model in tag_models:
-            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
-            all_stmts.append(stmt)
-        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
-
-        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
-        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
-        # consider named tags while sorting
-        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
@@ -488,7 +345,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             else:
                 return user, "User not found."
 
-    def __set_password(self, trans, user, password, confirm):
+    def __set_password(self, trans, user: U, password, confirm):
         if not password:
             return "Please provide a new password."
         if user:
@@ -518,14 +375,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
-    def impersonate(self, trans, user):
+    def impersonate(self, trans, user: U):
         if not trans.app.config.allow_user_impersonation:
-            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+            raise exceptions.MessageException("User impersonation is not enabled in this instance of Galaxy.")
         if user:
             trans.handle_user_logout()
             trans.handle_user_login(user)
         else:
-            raise exceptions.Message("Please provide a valid user.")
+            raise exceptions.MessageException("Please provide a valid user.")
 
     def send_activation_email(self, trans, email, username):
         """
@@ -566,7 +423,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
         """
-        user = get_user_by_email(trans.sa_session, email, self.app.model.User)
+        user = get_user_by_email(trans.sa_session, email, self.model_class)
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
@@ -635,22 +492,169 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 log.exception("Subscribing to the mailing list has failed.")
                 return "Subscribing to the mailing list has failed."
 
-    def activate(self, user):
+    def activate(self, user: User):
         user.active = True
         self.session().add(user)
         session = self.session()
         with transaction(session):
             session.commit()
 
-    def get_or_create_remote_user(self, remote_user_email):
+    def _get_user_by_email_case_insensitive(self, session, email):
+        stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
+        return session.scalars(stmt).first()
+
+
+class UserManager(BaseUserManager[User]):
+
+    def purge(self, item: User, flush=True, **kwargs):
+        """Purge the given user. They must have the deleted flag already."""
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException(
+                "The configuration of this Galaxy instance does not allow admins to delete or purge users."
+            )
+        if not item.deleted:
+            raise exceptions.MessageException(f"User '{item.email}' has not been deleted, so they cannot be purged.")
+        private_role = self.app.security_agent.get_private_user_role(item)
+        # Delete History
+        for active_history in item.active_histories:
+            self.session().refresh(active_history)
+            for hda in active_history.active_datasets:
+                # Delete HistoryDatasetAssociation
+                hda.deleted = True
+                self.session().add(hda)
+            active_history.deleted = True
+            self.session().add(active_history)
+        # Delete UserGroupAssociations
+        for uga in item.groups:
+            self.session().delete(uga)
+        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
+        for ura in item.roles:
+            if ura.role_id != private_role.id:
+                self.session().delete(ura)
+        # Delete UserAddresses
+        for address in item.addresses:
+            self.session().delete(address)
+        compliance_log = logging.getLogger("COMPLIANCE")
+        compliance_log.info(f"delete-user-event: {item.username}")
+        # Maybe there is some case in the future where an admin needs
+        # to prove that a user was using a server for some reason (e.g.
+        # a court case.) So we make this painfully hard to recover (and
+        # not immediately reversable) in line with GDPR, but still
+        # leave open the possibility to prove someone was part of the
+        # server just in case. By knowing the exact email + approximate
+        # time of deletion, one could run through hashes for every
+        # second of the surrounding days/weeks.
+        pseudorandom_value = str(int(time.time()))
+        # Replace email + username with a (theoretically) unreversable
+        # hash. If provided with the username we can probably re-hash
+        # to identify if it is needed for some reason.
+        #
+        # Deleting multiple times will re-hash the username/email
+        email_hash = new_secure_hash_v2(item.email + pseudorandom_value)
+        uname_hash = new_secure_hash_v2(item.username + pseudorandom_value)
+        # Redact all roles user has
+        for role in item.all_roles():
+            if self.app.config.redact_username_during_deletion:
+                role.name = role.name.replace(item.username, uname_hash)
+                role.description = role.description.replace(item.username, uname_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                role.name = role.name.replace(item.email, email_hash)
+                role.description = role.description.replace(item.email, email_hash)
+            self.session().add(role)
+        private_role.name = email_hash
+        private_role.description = f"Private Role for {email_hash}"
+        self.session().add(private_role)
+        # Redact user's email and username
+        item.email = email_hash
+        item.username = uname_hash
+        # Redact user addresses as well
+        if self.app.config.redact_user_address_during_deletion:
+            stmt = select(UserAddress).where(UserAddress.user_id == item.id)
+            for addr in self.session().scalars(stmt):
+                addr.desc = new_secure_hash_v2(addr.desc + pseudorandom_value)
+                addr.name = new_secure_hash_v2(addr.name + pseudorandom_value)
+                addr.institution = new_secure_hash_v2(addr.institution + pseudorandom_value)
+                addr.address = new_secure_hash_v2(addr.address + pseudorandom_value)
+                addr.city = new_secure_hash_v2(addr.city + pseudorandom_value)
+                addr.state = new_secure_hash_v2(addr.state + pseudorandom_value)
+                addr.postal_code = new_secure_hash_v2(addr.postal_code + pseudorandom_value)
+                addr.country = new_secure_hash_v2(addr.country + pseudorandom_value)
+                addr.phone = new_secure_hash_v2(addr.phone + pseudorandom_value)
+                self.session().add(addr)
+        # Purge the user
+        super().purge(item, flush=flush)
+
+    def user_can_do_run_as(self, user: Union[U, schema.BootstrapAdminUser]) -> bool:
+        run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
+        if not run_as_users:
+            return False
+        user_in_run_as_users = user and user.email in run_as_users
+        # Can do if explicitly in list or master_api_key supplied.
+        can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
+        return can_do_run_as
+
+    # ---- preferences
+    def preferences(self, user: User):
+        return dict(user.preferences.items())
+
+    # ---- roles and permissions
+    def private_role(self, user: User):
+        return self.app.security_agent.get_private_user_role(user)
+
+    def sharing_roles(self, user: User):
+        return self.app.security_agent.get_sharing_roles(user)
+
+    def default_permissions(self, user: User):
+        return self.app.security_agent.user_get_default_permissions(user)
+
+    def quota(self, user: User, total=False, quota_source_label=None):
+        if total:
+            return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
+        return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
+
+    def quota_bytes(self, user: User, quota_source_label: Optional[str] = None):
+        return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
+
+    def tags_used(self, user: User, tag_models=None):
+        """
+        Return a list of distinct 'user_tname:user_value' strings that the
+        given user has used.
+        """
+        # TODO: simplify and unify with tag manager
+        if self.is_anonymous(user):
+            return []
+
+        # get all the taggable model TagAssociations
+        if not tag_models and isinstance(self.app, MinimalApp):
+            tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
+
+        if not tag_models:
+            return []
+
+        # create a union of select statements for each tag model for this user - getting only the tname and user_value
+        all_stmts = []
+        for tag_model in tag_models:
+            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
+            all_stmts.append(stmt)
+        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
+
+        # boil the tag tuples down into a sorted list of DISTINCT name:val strings
+        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
+        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
+        # consider named tags while sorting
+        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
+
+    def get_or_create_remote_user(self, remote_user_email) -> User:
         """
         Create a remote user with the email remote_user_email and return it
         """
         if not self.app.config.use_remote_user:
-            return None
+            # All calling code checks this, so should be unreachable.
+            raise Exception("Remote user creation not enabled on this instance")
         if getattr(self.app.config, "normalize_remote_user_email", False):
             remote_user_email = remote_user_email.lower()
-        user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
+        user = get_user_by_email(self.session(), remote_user_email, self.model_class)
         if user:
             # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
             # role and default user / history permissions were not set for remote users.  When a
@@ -689,9 +693,23 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
-    def _get_user_by_email_case_insensitive(self, session, email):
-        stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
-        return session.scalars(stmt).first()
+    def delete(self, item: User, flush=True, **kwargs):
+        super().delete(item, flush, **kwargs)
+        self._stop_all_jobs_from_user(item)
+
+    def _stop_all_jobs_from_user(self, user):
+        active_jobs = self._get_all_active_jobs_from_user(user)
+        session = self.session()
+        for job in active_jobs:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+        with transaction(session):
+            session.commit()
+
+    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
+        """Get all jobs that are not ready yet and belong to the given user."""
+        stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
+        jobs = self.session().scalars(stmt)
+        return jobs  # type:ignore[return-value]
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -879,10 +897,15 @@ def get_users_by_ids(session: galaxy_scoped_session, user_ids):
     return session.scalars(stmt).all()
 
 
-# The get_user_by_email and get_user_by_username functions may be called from
-# the tool_shed app, which has its own User model, which is different from
-# galaxy.model.User. In that case, the tool_shed user model should be passed as
-# the model_class argument.
+# https://github.com/python/mypy/issues/3737#issuecomment-316263133
+
+
+@overload
+def get_user_by_email(session, email: str, model_class: Type[User] = User, case_sensitive=True) -> Optional[User]: ...
+@overload
+def get_user_by_email(session, email: str, model_class: Type[U], case_sensitive=True) -> Optional[U]: ...
+
+
 def get_user_by_email(session, email: str, model_class=User, case_sensitive=True):
     filter_clause = model_class.email == email
     if not case_sensitive:
