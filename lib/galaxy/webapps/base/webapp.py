@@ -14,6 +14,8 @@ from typing import (
     Any,
     Dict,
     Optional,
+    TYPE_CHECKING,
+    Union,
 )
 from urllib.parse import urlparse
 
@@ -64,6 +66,10 @@ from galaxy.web.framework import (
     url_for,
 )
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
+
+if TYPE_CHECKING:
+    from galaxy.model import User
+    from galaxy.schema import BootstrapAdminUser
 
 log = logging.getLogger(__name__)
 
@@ -310,7 +316,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     ) -> None:
         self._app = app
         self.webapp = webapp
-        self.user_manager = app[UserManager]
+        self.user_manager: UserManager = app[UserManager]
         self.session_manager = app[GalaxySessionManager]
         super().__init__(environ)
         config = self.app.config
@@ -544,6 +550,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         api_key = self.request.params.get("key", None) or self.request.headers.get("x-api-key", None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get("is_api_request", False) and api_key
+        user: Optional[Union[User, BootstrapAdminUser]]
         if api_key_supplied:
             # Sessionless API transaction, we just need to associate a user.
             try:

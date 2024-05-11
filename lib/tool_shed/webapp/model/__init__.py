@@ -41,6 +41,7 @@ from sqlalchemy.orm import (
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
+from galaxy.model import _HasTable
 from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
@@ -76,7 +77,7 @@ else:
 mapper_registry = registry()
 
 
-class Base(metaclass=DeclarativeMeta):
+class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata

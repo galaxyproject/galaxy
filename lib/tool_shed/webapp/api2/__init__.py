@@ -28,7 +28,6 @@ from starlette_context import context as request_context
 
 from galaxy.exceptions import AdminRequiredException
 from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.users import UserManager
 from galaxy.model.base import transaction
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
@@ -46,6 +45,7 @@ from tool_shed.context import (
     SessionRequestContext,
     SessionRequestContextImpl,
 )
+from tool_shed.managers.users import UserManager
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp import app as tool_shed_app_mod
 from tool_shed.webapp.model import (

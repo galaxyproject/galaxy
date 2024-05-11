@@ -14,6 +14,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
 )
 from urllib.parse import (
     urlencode,
@@ -72,6 +73,7 @@ from galaxy.exceptions import (
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
+from galaxy.schema import BootstrapAdminUser
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
@@ -156,7 +158,8 @@ def get_api_user(
             "Only admins and designated users can make API calls on behalf of other users."
         ),
     ),
-) -> Optional[User]:
+) -> Optional[Union[User, BootstrapAdminUser]]:
+    user: Optional[Union[User, BootstrapAdminUser]]
     if api_key := key or x_api_key:
         user = user_manager.by_api_key(api_key=api_key)
     elif bearer_token:
@@ -164,7 +167,7 @@ def get_api_user(
     else:
         return None
     if run_as:
-        if user_manager.user_can_do_run_as(user):
+        if user and user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)
         else:
             raise UserCannotRunAsException

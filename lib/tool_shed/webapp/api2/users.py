@@ -23,7 +23,6 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.api_keys import ApiKeyManager
-from galaxy.managers.users import UserManager
 from galaxy.model.base import transaction
 from galaxy.webapps.base.webapp import create_new_session
 from tool_shed.context import SessionRequestContext
@@ -31,6 +30,7 @@ from tool_shed.managers.users import (
     api_create_user,
     get_api_user,
     index,
+    UserManager,
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import (

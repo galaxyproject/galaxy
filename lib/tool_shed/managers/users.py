@@ -3,6 +3,7 @@ from typing import List
 from sqlalchemy import select
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.managers.users import BaseUserManager
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -16,6 +17,10 @@ from tool_shed_client.schema import (
     CreateUserRequest,
     UserV2 as ApiUser,
 )
+
+
+class UserManager(BaseUserManager[User]):
+    pass
 
 
 def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
