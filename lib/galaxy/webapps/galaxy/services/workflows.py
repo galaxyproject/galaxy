@@ -390,7 +390,12 @@ class WorkflowsService(ServiceBase):
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
-                trans.sa_session.add(workflow, stored_workflow)
+
+                # TODO MyPy complains about this line, but it seems to be working
+                # trans.sa_session.add(workflow, stored_workflow)
+                # TODO: This also appears to work. Is it better?
+                trans.sa_session.add(workflow)
+
                 require_flush = True
 
             if "hidden" in workflow_dict and stored_workflow.hidden != workflow_dict["hidden"]:
