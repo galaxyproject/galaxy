@@ -213,9 +213,10 @@ export interface User extends QuotaUsageResponse {
 }
 
 export interface AnonymousUser {
+    id: undefined;
     isAnonymous: true;
-    username?: string;
     is_admin?: false;
+    username?: string;
 }
 
 export type GenericUser = User | AnonymousUser;

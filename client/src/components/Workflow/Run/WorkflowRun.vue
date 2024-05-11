@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { WorkflowRunModel } from "./model";
@@ -17,6 +19,7 @@ import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const { currentUser } = storeToRefs(useUserStore());
 
 interface Props {
     workflowId: string;
@@ -44,6 +47,7 @@ const workflowModel: any = ref(null);
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
 const editorLink = computed(() => `/workflows/edit?id=${props.workflowId}`);
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
+const isOwner = computed(() => currentUser.value?.id === workflowModel.value.runData.id);
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
 
 function handleInvocations(incomingInvocations: any) {
