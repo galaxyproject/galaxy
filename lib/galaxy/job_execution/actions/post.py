@@ -9,10 +9,7 @@ from markupsafe import escape
 
 from galaxy.model import PostJobActionAssociation
 from galaxy.model.base import transaction
-from galaxy.util import (
-    send_mail,
-    unicodify,
-)
+from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -70,8 +67,8 @@ class EmailAction(DefaultJobAction):
             if link_invocation:
                 body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
             send_mail(app.config.email_from, to, subject, body, app.config)
-        except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
+        except Exception:
+            log.exception("EmailAction PJA Failed")
 
     @classmethod
     def get_short_str(cls, pja):
