@@ -1113,7 +1113,6 @@ auth:
 
 container:
   name: unique_container_name
-  max_chunk_size: 250
 
 cache:
   path: database/object_store_cache
@@ -1134,7 +1133,6 @@ def test_config_parse_azure():
             assert object_store.account_key == "password123"
 
             assert object_store.container_name == "unique_container_name"
-            assert object_store.max_chunk_size == 250
 
             cache_target = object_store.cache_target
             assert cache_target.size == 100
@@ -1155,7 +1153,6 @@ def test_config_parse_azure():
             _assert_key_has_value(auth_dict, "account_key", "password123")
 
             _assert_key_has_value(container_dict, "name", "unique_container_name")
-            _assert_key_has_value(container_dict, "max_chunk_size", 250)
 
             _assert_key_has_value(cache_dict, "size", 100)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
@@ -1214,7 +1211,7 @@ def test_fits_in_cache_check(tmp_path):
 
 AZURE_BLOB_NO_CACHE_TEST_CONFIG = """<object_store type="azure_blob">
     <auth account_name="azureact" account_key="password123" />
-    <container name="unique_container_name" max_chunk_size="250"/>
+    <container name="unique_container_name" max_chunk_size="250"/><!-- max_chunk_size was never used, but keeping here to ensure we can parse old configs -->
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>

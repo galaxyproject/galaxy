@@ -43,7 +43,24 @@ def parse_config_xml(config_xml):
 
         container_xml = config_xml.find("container")
         container_name = container_xml.get("name")
-        max_chunk_size = int(container_xml.get("max_chunk_size", 250))  # currently unused
+
+        transfer_xml = config_xml.findall("transfer")
+        if not transfer_xml:
+            transfer_xml = {}
+        else:
+            transfer_xml = transfer_xml[0]
+        transfer_dict = {}
+        for key in [
+            "max_concurrency",
+            "download_max_concurrency",
+            "upload_max_concurrency",
+            "max_single_put_size",
+            "max_single_get_size",
+            "max_block_size",
+        ]:
+            value = transfer_xml.get(key)
+            if transfer_xml.get(key) is not None:
+                transfer_dict[key] = value
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
@@ -65,9 +82,9 @@ def parse_config_xml(config_xml):
             "auth": auth,
             "container": {
                 "name": container_name,
-                "max_chunk_size": max_chunk_size,
             },
             "cache": cache_dict,
+            "transfer": transfer_dict,
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
@@ -99,7 +116,20 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         self.account_key = auth_dict.get("account_key")
 
         self.container_name = container_dict.get("name")
-        self.max_chunk_size = container_dict.get("max_chunk_size", 250)  # currently unused
+        raw_transfer_dict = config_dict.get("transfer", {})
+        typed_transfer_dict = {}
+        for key in [
+            "max_concurrency",
+            "download_max_concurrency",
+            "upload_max_concurrency",
+            "max_single_put_size",
+            "max_single_get_size",
+            "max_block_size",
+        ]:
+            value = raw_transfer_dict.get(key)
+            if value is not None:
+                typed_transfer_dict[key] = int(value)
+        self.transfer_dict = typed_transfer_dict
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -128,8 +158,8 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                 "auth": auth,
                 "container": {
                     "name": self.container_name,
-                    "max_chunk_size": self.max_chunk_size,
                 },
+                "transfer": self.transfer_dict,
                 "cache": {
                     "size": self.cache_size,
                     "path": self.staging_path,
@@ -146,16 +176,27 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
 
     def _configure_connection(self):
         log.debug("Configuring Connection")
+        extra_kwds = {}
+        for key in [
+            "max_single_put_size",
+            "max_single_get_size",
+            "max_block_size",
+        ]:
+            if key in self.transfer_dict:
+                extra_kwds[key] = self.transfer_dict[key]
+
         if self.account_url:
             # https://pypi.org/project/azure-storage-blob/
             service = BlobServiceClient(
                 account_url=self.account_url,
                 credential={"account_name": self.account_name, "account_key": self.account_key},
+                **extra_kwds,
             )
         else:
             service = BlobServiceClient(
                 account_url=f"https://{self.account_name}.blob.core.windows.net",
                 credential=self.account_key,
+                **extra_kwds,
             )
         self.service = service
 
@@ -204,8 +245,14 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
         return False
 
     def _download_to_file(self, rel_path, local_destination):
+        kwd = {}
+        max_concurrency = self.transfer_dict.get("download_max_concurrency") or self.transfer_dict.get(
+            "max_concurrency"
+        )
+        if max_concurrency is not None:
+            kwd["max_concurrency"] = max_concurrency
         with open(local_destination, "wb") as f:
-            self._blob_client(rel_path).download_blob().download_to_stream(f)
+            self._blob_client(rel_path).download_blob().download_to_stream(f, **kwd)
 
     def _download_directory_into_cache(self, rel_path, cache_path):
         blobs = self._blobs_from(rel_path)
@@ -230,7 +277,13 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
     def _push_file_to_path(self, rel_path: str, source_file: str) -> bool:
         try:
             with open(source_file, "rb") as f:
-                self._blob_client(rel_path).upload_blob(f, overwrite=True)
+                kwd = {}
+                max_concurrency = self.transfer_dict.get("upload_max_concurrency") or self.transfer_dict.get(
+                    "max_concurrency"
+                )
+                if max_concurrency is not None:
+                    kwd["max_concurrency"] = max_concurrency
+                self._blob_client(rel_path).upload_blob(f, overwrite=True, **kwd)
             return True
         except AzureHttpError:
             log.exception("Trouble pushing to Azure Blob '%s' from file '%s'", rel_path, source_file)
