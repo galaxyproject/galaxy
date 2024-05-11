@@ -492,6 +492,25 @@ class DatasetAssociationManager(
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
+    def ensure_dataset_on_disk(self, trans, dataset: DI):
+        # Not a guarantee data is really present, but excludes a lot of expected cases
+        if dataset.purged or dataset.dataset.purged:
+            raise exceptions.ItemDeletionException("The dataset you are attempting to view has been purged.")
+        elif dataset.deleted and not (trans.user_is_admin or self.is_owner(dataset, trans.get_user())):
+            raise exceptions.ItemDeletionException("The dataset you are attempting to view has been deleted.")
+        elif dataset.state == Dataset.states.UPLOAD:
+            raise exceptions.Conflict("Please wait until this dataset finishes uploading before attempting to view it.")
+        elif dataset.state == Dataset.states.DISCARDED:
+            raise exceptions.ItemDeletionException("The dataset you are attempting to view has been discarded.")
+        elif dataset.state == Dataset.states.DEFERRED:
+            raise exceptions.Conflict(
+                "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
+            )
+        elif dataset.state == Dataset.states.PAUSED:
+            raise exceptions.Conflict(
+                "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
+            )
+
     def ensure_can_change_datatype(self, dataset: model.DatasetInstance, raiseException: bool = True) -> bool:
         if not dataset.datatype.is_datatype_change_allowed():
             if not raiseException:
