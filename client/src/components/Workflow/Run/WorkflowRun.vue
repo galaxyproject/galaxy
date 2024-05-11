@@ -104,6 +104,8 @@ function loadRun() {
         });
 }
 
+function onImport() {}
+
 function showAdvanced() {
     simpleForm.value = false;
 }
@@ -138,10 +140,13 @@ watch(
                 :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <BAlert v-if="!hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
-                    The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
-                    saved or some error have been detected. Please
-                    <RouterLink :to="editorLink">click here to edit and review the issues</RouterLink> before running
-                    this workflow.
+                    <span>
+                        The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
+                        saved or some error have been detected. Please
+                    </span>
+                    <RouterLink v-if="isOwner" :to="editorLink">click here to edit and review the issues</RouterLink>
+                    <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
+                    <span>before running this workflow.</span>
                 </BAlert>
                 <div v-else>
                     <BAlert v-if="submissionError" class="mb-4" variant="danger" show>
