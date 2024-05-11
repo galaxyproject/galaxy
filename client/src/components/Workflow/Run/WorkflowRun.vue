@@ -47,7 +47,7 @@ const workflowModel: any = ref(null);
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
 const editorLink = computed(() => `/workflows/edit?id=${props.workflowId}`);
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
-const isOwner = computed(() => currentUser.value?.id === workflowModel.value.runData.id);
+const isOwner = computed(() => currentUser.value?.username === workflowModel.value.runData.owner);
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
 
 function handleInvocations(incomingInvocations: any) {
