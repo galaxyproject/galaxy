@@ -96,7 +96,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
+class HistoryManager(sharable.SharableModelManager[History], deletable.PurgableManagerMixin[History], SortableManager):
     model_class = model.History
     foreign_key_name = "history"
     user_share_model = model.HistoryUserShareAssociation
@@ -259,7 +259,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def is_owner(
         self,
-        item: model.Base,
+        item: model.History,
         user: Optional[model.User],
         current_history: Optional[model.History] = None,
         **kwargs: Any,

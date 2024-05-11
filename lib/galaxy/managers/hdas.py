@@ -78,8 +78,8 @@ class HistoryDatasetAssociationNoHistoryException(Exception):
 
 
 class HDAManager(
-    datasets.DatasetAssociationManager,
-    secured.OwnableManagerMixin,
+    datasets.DatasetAssociationManager[model.HistoryDatasetAssociation],
+    secured.OwnableManagerMixin[model.HistoryDatasetAssociation],
     annotatable.AnnotatableManagerMixin,
 ):
     """
@@ -126,7 +126,9 @@ class HDAManager(
         #     return True
         return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, item, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(
+        self, item: model.HistoryDatasetAssociation, user: Optional[model.User], current_history=None, **kwargs: Any
+    ) -> bool:
         """
         Use history to see if current user owns HDA.
         """

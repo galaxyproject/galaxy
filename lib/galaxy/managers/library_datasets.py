@@ -27,7 +27,7 @@ from galaxy.util import validation
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(datasets.DatasetAssociationManager):
+class LibraryDatasetsManager(datasets.DatasetAssociationManager[model.LibraryDatasetDatasetAssociation]):
     """Interface/service object for interacting with library datasets."""
 
     model_class = model.LibraryDatasetDatasetAssociation

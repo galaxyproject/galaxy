@@ -145,7 +145,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManagerMixin):
+class WorkflowsManager(sharable.SharableModelManager[StoredWorkflow], deletable.DeletableManagerMixin[StoredWorkflow]):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.

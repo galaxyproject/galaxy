@@ -14,10 +14,13 @@ import logging
 import re
 from typing import (
     Any,
+    Generic,
     List,
     Optional,
     Set,
     Type,
+    TypeVar,
+    Union,
 )
 
 from sqlalchemy import (
@@ -41,8 +44,12 @@ from galaxy.managers import (
 )
 from galaxy.managers.base import combine_lists
 from galaxy.model import (
+    History,
+    Page,
+    StoredWorkflow,
     User,
     UserShareAssociation,
+    Visualization,
 )
 from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
@@ -56,10 +63,13 @@ from galaxy.util.hash_util import md5_hash_str
 
 log = logging.getLogger(__name__)
 
+U = TypeVar("U", bound=Union[History, Page, Visualization, StoredWorkflow])
+
 
 class SharableModelManager(
-    base.ModelManager,
-    secured.OwnableManagerMixin,
+    Generic[U],
+    base.ModelManager[U],
+    secured.OwnableManagerMixin[U],
     secured.AccessibleManagerMixin,
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
@@ -80,7 +90,7 @@ class SharableModelManager(
         self.tag_handler = app[GalaxyTagHandler]
 
     # .... has a user
-    def by_user(self, user: User, **kwargs: Any) -> List[Any]:
+    def by_user(self, user: User, **kwargs: Any) -> List[U]:
         """
         Return list for all items (of model_class type) associated with the given
         `user`.
@@ -90,7 +100,7 @@ class SharableModelManager(
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: U, user: Optional[User], **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
@@ -99,7 +109,7 @@ class SharableModelManager(
             return True
         return item.user == user  # type:ignore[attr-defined]
 
-    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item: U, user: Optional[User], **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -116,7 +126,7 @@ class SharableModelManager(
         return False
 
     # .... importable
-    def make_importable(self, item, flush=True):
+    def make_importable(self, item: U, flush=True):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
         Does not flush/commit changes, however. Item must have name, user,
@@ -125,7 +135,7 @@ class SharableModelManager(
         self.create_unique_slug(item, flush=False)
         return self._session_setattr(item, "importable", True, flush=flush)
 
-    def make_non_importable(self, item, flush=True):
+    def make_non_importable(self, item: U, flush=True):
         """
         Makes item accessible--viewable and importable--and sets item's slug.
         Does not flush/commit changes, however. Item must have name, user,
@@ -137,7 +147,7 @@ class SharableModelManager(
         return self._session_setattr(item, "importable", False, flush=flush)
 
     # .... published
-    def publish(self, item, flush=True):
+    def publish(self, item: U, flush=True):
         """
         Set both the importable and published flags on `item` to True.
         """
@@ -146,13 +156,13 @@ class SharableModelManager(
             self.make_importable(item, flush=False)
         return self._session_setattr(item, "published", True, flush=flush)
 
-    def unpublish(self, item, flush=True):
+    def unpublish(self, item: U, flush=True):
         """
         Set the published flag on `item` to False.
         """
         return self._session_setattr(item, "published", False, flush=flush)
 
-    def list_published(self, filters=None, **kwargs):
+    def list_published(self, filters=None, **kwargs) -> List[U]:
         """
         Return a list of all published items.
         """
@@ -162,7 +172,7 @@ class SharableModelManager(
 
     # .... user sharing
     # sharing is often done via a 3rd table btwn a User and an item -> a <Item>UserShareAssociation
-    def get_share_assocs(self, item, user=None):
+    def get_share_assocs(self, item: U, user=None):
         """
         Get the UserShareAssociations for the `item`.
 
@@ -173,7 +183,7 @@ class SharableModelManager(
             query = query.filter_by(user=user)
         return query.all()
 
-    def share_with(self, item, user: User, flush: bool = True):
+    def share_with(self, item: U, user: User, flush: bool = True):
         """
         Get or create a share for the given user.
         """
@@ -184,7 +194,7 @@ class SharableModelManager(
             return existing.pop(0)
         return self._create_user_share_assoc(item, user, flush=flush)
 
-    def _create_user_share_assoc(self, item, user, flush=True):
+    def _create_user_share_assoc(self, item: U, user, flush=True):
         """
         Create a share for the given user.
         """
@@ -203,7 +213,7 @@ class SharableModelManager(
                 session.commit()
         return user_share_assoc
 
-    def unshare_with(self, item, user: User, flush: bool = True):
+    def unshare_with(self, item: U, user: User, flush: bool = True):
         """
         Delete a user share from the database.
         """
@@ -228,7 +238,7 @@ class SharableModelManager(
         query = query.filter(self.user_share_model.user == user)
         return self._filter_and_order_query(query, **kwargs)
 
-    def list_shared_with(self, user, filters=None, order_by=None, limit=None, offset=None, **kwargs):
+    def list_shared_with(self, user, filters=None, order_by=None, limit=None, offset=None, **kwargs) -> List[U]:
         """
         Return a list of those models shared with a particular user.
         """
@@ -248,7 +258,7 @@ class SharableModelManager(
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
     def get_sharing_extra_information(
-        self, trans, item, users: Set[User], errors: Set[str], option: Optional[SharingOptions] = None
+        self, trans, item: U, users: Set[User], errors: Set[str], option: Optional[SharingOptions] = None
     ) -> Optional[ShareWithExtra]:
         """Returns optional extra information about the shareability of the given item.
 
@@ -256,14 +266,14 @@ class SharableModelManager(
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
-    def make_members_public(self, trans, item):
+    def make_members_public(self, trans, item: U):
         """Make potential elements of this item public.
 
         This method must be overridden in managers that need to change permissions of internal elements
         contained associated with the given item.
         """
 
-    def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
+    def update_current_sharing_with_users(self, item: U, new_users_shared_with: Set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
         users and removing missing ones."""
         current_shares = self.get_share_assocs(item)
@@ -286,7 +296,7 @@ class SharableModelManager(
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
     # TODO: as validator, deserializer, etc. (maybe another object entirely?)
-    def set_slug(self, item, new_slug, user, flush=True):
+    def set_slug(self, item: U, new_slug, user, flush=True):
         """
         Validate and set the new slug for `item`.
         """
@@ -332,7 +342,7 @@ class SharableModelManager(
             return item.title.lower()
         return item.name.lower()
 
-    def get_unique_slug(self, item):
+    def get_unique_slug(self, item: U):
         """
         Returns a slug that is unique among user's importable items
         for item's class.
@@ -357,7 +367,7 @@ class SharableModelManager(
 
         return new_slug
 
-    def create_unique_slug(self, item, flush=True):
+    def create_unique_slug(self, item: U, flush=True):
         """
         Set a new, unique slug on the item.
         """

@@ -196,8 +196,12 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
 U = TypeVar("U", bound=model._HasTable)
 
 
+class HasModelClass(Generic[U]):
+    model_class: Type[U]
+
+
 # -----------------------------------------------------------------------------
-class ModelManager(Generic[U]):
+class ModelManager(Generic[U], HasModelClass[U]):
     """
     Base class for all model/resource managers.
 
@@ -205,7 +209,6 @@ class ModelManager(Generic[U]):
     over the ORM.
     """
 
-    model_class: Type[U]
     foreign_key_name: str
     app: BasicSharedApp
 
@@ -215,7 +218,7 @@ class ModelManager(Generic[U]):
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item: model.Base, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: U, attr: str, val: Any, flush: bool = True):
         setattr(item, attr, val)
 
         self.session().add(item)

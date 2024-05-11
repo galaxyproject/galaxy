@@ -59,7 +59,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class VisualizationManager(sharable.SharableModelManager):
+class VisualizationManager(sharable.SharableModelManager[model.Visualization]):
     """
     Handle operations outside and between visualizations and other models.
     """

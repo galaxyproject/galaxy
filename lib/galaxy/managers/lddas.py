@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from galaxy import model
 from galaxy.managers import base as manager_base
@@ -8,7 +9,7 @@ from galaxy.structured_app import MinimalManagerApp
 log = logging.getLogger(__name__)
 
 
-class LDDAManager(DatasetAssociationManager):
+class LDDAManager(DatasetAssociationManager[model.LibraryDatasetDatasetAssociation]):
     """
     A fairly sparse manager for LDDAs.
     """
@@ -20,6 +21,16 @@ class LDDAManager(DatasetAssociationManager):
         Set up and initialize other managers needed by lddas.
         """
         super().__init__(app)
+
+    def is_owner(
+        self, item: model.LibraryDatasetDatasetAssociation, user: Optional[model.User], trans=None, **kwargs
+    ) -> bool:
+        return manager_base.get_object(
+            trans,
+            id,
+            "LibraryDatasetDatasetAssociation",
+            check_ownership=True,
+        )
 
     def get(self, trans, id: int, check_accessible=True) -> model.LibraryDatasetDatasetAssociation:
         return manager_base.get_object(

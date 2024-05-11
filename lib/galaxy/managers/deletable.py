@@ -12,19 +12,20 @@ attribute 'purged'.
 from typing import (
     Any,
     Dict,
+    Generic,
     Set,
 )
 
-from galaxy.model import Base
 from .base import (
     Deserializer,
     ModelValidator,
     OrmFilterParsersType,
     parse_bool,
+    U,
 )
 
 
-class DeletableManagerMixin:
+class DeletableManagerMixin(Generic[U]):
     """
     A mixin/interface for a model that is deletable (i.e. has a 'deleted' attr).
 
@@ -33,15 +34,15 @@ class DeletableManagerMixin:
     removed by an admin/script.
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
+    def _session_setattr(self, item: U, attr: str, val: Any, flush: bool = True): ...
 
-    def delete(self, item, flush=True, **kwargs):
+    def delete(self, item: U, flush=True, **kwargs):
         """
         Mark as deleted and return.
         """
         return self._session_setattr(item, "deleted", True, flush=flush)
 
-    def undelete(self, item, flush=True, **kwargs):
+    def undelete(self, item: U, flush=True, **kwargs):
         """
         Mark as not deleted and return.
         """
@@ -84,16 +85,16 @@ class DeletableFiltersMixin:
         self.orm_filter_parsers.update({"deleted": {"op": ("eq"), "val": parse_bool}})
 
 
-class PurgableManagerMixin(DeletableManagerMixin):
+class PurgableManagerMixin(Generic[U], DeletableManagerMixin[U]):
     """
     A manager interface/mixin for a resource that allows deleting and purging where
     purging is often removal of some additional, non-db resource (e.g. a dataset's
     file).
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
+    def _session_setattr(self, item: U, attr: str, val: Any, flush: bool = True): ...
 
-    def purge(self, item, flush=True, **kwargs):
+    def purge(self, item: U, flush=True, **kwargs):
         """
         Mark as purged and return.
 

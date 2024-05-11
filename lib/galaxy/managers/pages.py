@@ -122,7 +122,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class PageManager(sharable.SharableModelManager, UsesAnnotations):
+class PageManager(sharable.SharableModelManager[Page], UsesAnnotations):
     """Provides operations for managing a Page."""
 
     model_class = model.Page
