@@ -1,18 +1,139 @@
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { WorkflowRunModel } from "./model";
+import { getRunData } from "./services";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowRunForm from "@/components/Workflow/Run/WorkflowRunForm.vue";
+import WorkflowRunFormSimple from "@/components/Workflow/Run/WorkflowRunFormSimple.vue";
+import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue";
+
+const historyStore = useHistoryStore();
+const historyItemsStore = useHistoryItemsStore();
+
+interface Props {
+    workflowId: string;
+    preferSimpleForm?: boolean;
+    simpleFormTargetHistory?: string;
+    simpleFormUseJobCache?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    preferSimpleForm: false,
+    simpleFormTargetHistory: "current",
+    simpleFormUseJobCache: false,
+});
+
+const formError = ref("");
+const loading = ref(true);
+const hasUpgradeMessages = ref(false);
+const hasStepVersionChanges = ref(false);
+const invocations = ref([]);
+const simpleForm = ref(false);
+const submissionError = ref("");
+const workflowName = ref("");
+const workflowModel: any = ref(null);
+
+const currentHistoryId = computed(() => historyStore.currentHistoryId);
+const editorLink = computed(() => `/workflows/edit?id=${props.workflowId}`);
+const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
+const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
+
+function handleInvocations(incomingInvocations: any) {
+    invocations.value = incomingInvocations;
+    // make sure any new histories are added to historyStore
+    invocations.value.forEach((invocation: any) => {
+        historyStore.getHistoryById(invocation.history_id);
+    });
+}
+
+function handleSubmissionError(error: string) {
+    submissionError.value = errorMessageAsString(error);
+}
+
+function loadRun() {
+    getRunData(props.workflowId)
+        .then((runData) => {
+            const incomingModel = new WorkflowRunModel(runData);
+            simpleForm.value = props.preferSimpleForm;
+            if (simpleForm.value) {
+                // These only work with PJA - the API doesn't evaluate them at
+                // all outside that context currently. The main workflow form renders
+                // these dynamically and takes care of all the validation and setup details
+                // on the frontend. If these are implemented on the backend at some
+                // point this restriction can be lifted.
+                if (incomingModel.hasReplacementParametersInToolForm) {
+                    console.log("cannot render simple workflow form - has ${} values in tool steps");
+                    simpleForm.value = false;
+                }
+                // If there are required parameters in a tool form (a disconnected runtime
+                // input), we have to render the tool form steps and cannot use the
+                // simplified tool form.
+                if (incomingModel.hasOpenToolSteps) {
+                    console.log(
+                        "cannot render simple workflow form - one or more tools have disconnected runtime inputs"
+                    );
+                    simpleForm.value = false;
+                }
+                // Just render the whole form for resource request parameters (kind of
+                // niche - I'm not sure anyone is using these currently anyway).
+                if (incomingModel.hasWorkflowResourceParameters) {
+                    console.log(`Cannot render simple workflow form - workflow resource parameters are configured`);
+                    simpleForm.value = false;
+                }
+            }
+            hasUpgradeMessages.value = incomingModel.hasUpgradeMessages;
+            hasStepVersionChanges.value = incomingModel.hasStepVersionChanges;
+            workflowName.value = incomingModel.name;
+            workflowModel.value = incomingModel;
+            loading.value = false;
+        })
+        .catch((response) => {
+            formError.value = errorMessageAsString(response);
+        });
+}
+
+function showAdvanced() {
+    simpleForm.value = false;
+}
+
+onMounted(() => {
+    loadRun();
+});
+
+watch(
+    () => historyStatusKey.value,
+    () => {
+        if (invocations.value.length === 0) {
+            loadRun();
+        }
+    }
+);
+</script>
+
 <template>
     <span>
-        <b-alert v-if="error" variant="danger" show>
+        <b-alert v-if="formError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
-            {{ error }}
+            {{ formError }}
         </b-alert>
         <span v-else>
             <b-alert v-if="loading" variant="info" show>
                 <LoadingSpan message="Loading workflow run data" />
             </b-alert>
-            <WorkflowRunSuccess v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
+            <WorkflowRunSuccess
+                v-else-if="invocations.length > 0"
+                :invocations="invocations"
+                :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <b-alert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
-                    The <b>`{{ model.name }}`</b> workflow may contain tools which have changed since it was last saved
-                    or some error have been detected. Please
+                    The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
+                    saved or some error have been detected. Please
                     <a :to="editorLink" :href="editorLink">click here to edit and review the issues</a> before running
                     this workflow.
                 </b-alert>
@@ -22,7 +143,7 @@
                     </b-alert>
                     <WorkflowRunFormSimple
                         v-else-if="simpleForm"
-                        :model="model"
+                        :model="workflowModel"
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
                         @submissionSuccess="handleInvocations"
@@ -30,7 +151,7 @@
                         @showAdvanced="showAdvanced" />
                     <WorkflowRunForm
                         v-else
-                        :model="model"
+                        :model="workflowModel"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError" />
                 </div>
@@ -38,137 +159,3 @@
         </span>
     </span>
 </template>
-
-<script>
-import LoadingSpan from "components/LoadingSpan";
-import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/historyItemsStore";
-import { errorMessageAsString } from "utils/simple-error";
-
-import { useHistoryStore } from "@/stores/historyStore";
-
-import { WorkflowRunModel } from "./model";
-import { getRunData } from "./services";
-import WorkflowRunForm from "./WorkflowRunForm";
-import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
-import WorkflowRunSuccess from "./WorkflowRunSuccess";
-
-export default {
-    components: {
-        LoadingSpan,
-        WorkflowRunSuccess,
-        WorkflowRunForm,
-        WorkflowRunFormSimple,
-    },
-    props: {
-        workflowId: {
-            type: String,
-            required: true,
-        },
-        preferSimpleForm: {
-            type: Boolean,
-            default: false,
-        },
-        simpleFormTargetHistory: {
-            type: String,
-            default: "current",
-        },
-        simpleFormUseJobCache: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            error: null,
-            loading: true,
-            hasUpgradeMessages: false,
-            hasStepVersionChanges: false,
-            workflowName: "",
-            invocations: null,
-            simpleForm: null,
-            submissionError: null,
-            model: null,
-        };
-    },
-    computed: {
-        ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
-        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
-        editorLink() {
-            return `/workflows/edit?id=${this.model.workflowId}`;
-        },
-        historyStatusKey() {
-            return `${this.currentHistoryId}_${this.lastUpdateTime}`;
-        },
-    },
-    watch: {
-        historyStatusKey() {
-            if (!this.invocations) {
-                this.loadRun();
-            }
-        },
-    },
-    created() {
-        this.loadRun();
-    },
-    methods: {
-        handleInvocations(invocations) {
-            this.invocations = invocations;
-            // make sure any new histories are added to historyStore
-            this.invocations.forEach((invocation) => {
-                this.getHistoryById(invocation.history_id);
-            });
-        },
-        handleSubmissionError(error) {
-            this.submissionError = errorMessageAsString(error);
-        },
-        loadRun() {
-            getRunData(this.workflowId)
-                .then((runData) => {
-                    this.loading = false;
-                    const model = new WorkflowRunModel(runData);
-                    let simpleForm = this.preferSimpleForm;
-                    if (simpleForm) {
-                        // These only work with PJA - the API doesn't evaluate them at
-                        // all outside that context currently. The main workflow form renders
-                        // these dynamically and takes care of all the validation and setup details
-                        // on the frontend. If these are implemented on the backend at some
-                        // point this restriction can be lifted.
-                        if (model.hasReplacementParametersInToolForm) {
-                            console.log("cannot render simple workflow form - has ${} values in tool steps");
-                            simpleForm = false;
-                        }
-                        // If there are required parameters in a tool form (a disconnected runtime
-                        // input), we have to render the tool form steps and cannot use the
-                        // simplified tool form.
-                        if (model.hasOpenToolSteps) {
-                            console.log(
-                                "cannot render simple workflow form - one or more tools have disconnected runtime inputs"
-                            );
-                            simpleForm = false;
-                        }
-                        // Just render the whole form for resource request parameters (kind of
-                        // niche - I'm not sure anyone is using these currently anyway).
-                        if (model.hasWorkflowResourceParameters) {
-                            console.log(
-                                `Cannot render simple workflow form - workflow resource parameters are configured`
-                            );
-                            simpleForm = false;
-                        }
-                    }
-                    this.simpleForm = simpleForm;
-                    this.model = model;
-                    this.hasUpgradeMessages = model.hasUpgradeMessages;
-                    this.hasStepVersionChanges = model.hasStepVersionChanges;
-                    this.workflowName = this.model.name;
-                })
-                .catch((response) => {
-                    this.error = errorMessageAsString(response);
-                });
-        },
-        showAdvanced() {
-            this.simpleForm = false;
-        },
-    },
-};
-</script>
