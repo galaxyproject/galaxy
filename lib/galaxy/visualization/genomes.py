@@ -380,7 +380,7 @@ class Genomes:
         else:
             dbkey_user = trans.user
 
-        if not self.has_reference_data(dbkey, dbkey_user):
+        if not self.has_reference_data(dbkey, dbkey_user) or not dbkey_user:
             raise ReferenceDataError(f"No reference data for {dbkey}")
 
         #

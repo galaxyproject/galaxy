@@ -636,7 +636,7 @@ class FastAPIUsers:
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view="element", value_mapper={"total_disk_usage": float})
-        return item
+        return CreatedUserModel(**item)
 
     @router.get(
         "/api/users",

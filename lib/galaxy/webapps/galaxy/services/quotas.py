@@ -130,7 +130,12 @@ class QuotasService(ServiceBase):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                return get_user_by_email(trans.sa_session, item).id
+                user = get_user_by_email(trans.sa_session, item)
+                if user:
+                    return user.id
+                else:
+                    # caught in loop below
+                    raise Exception("No user found")
 
         def get_group_id(item):
             try:

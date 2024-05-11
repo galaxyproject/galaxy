@@ -21,6 +21,7 @@ class TestUserPreferences(integration_util.IntegrationTestCase):
         app = cast(Any, self._test_driver.app if self._test_driver else None)
 
         db_user = get_user_by_email(app.model.session, user["email"])
+        assert db_user
 
         # create some initial data
         put(url)

@@ -505,7 +505,8 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         Returns number of histories for the current user.
         """
         current_user = self.user_manager.current_user(trans)
-        if self.user_manager.is_anonymous(current_user):
+        if current_user is None:
+            # user is anonymous
             current_history = self.manager.get_current(trans)
             return 1 if current_history else 0
         return self.manager.get_active_count(current_user)
