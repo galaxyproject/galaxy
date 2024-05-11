@@ -145,7 +145,7 @@ watch(
                 :invocations="invocations"
                 :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
-                <BAlert v-if="!hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
+                <BAlert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
                     <span>
                         The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
                         saved or some error have been detected. Please
