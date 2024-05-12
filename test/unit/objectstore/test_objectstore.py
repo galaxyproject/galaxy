@@ -917,6 +917,18 @@ def test_config_parse_azure():
             assert len(extra_dirs) == 2
 
 
+@patch_object_stores_to_skip_initialize
+def test_config_parse_azure_transfer():
+    for config_str in [get_example("azure_transfer.xml"), get_example("azure_transfer.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            as_dict = object_store.to_dict()["transfer"]
+            assert as_dict["download_max_concurrency"] == 1
+            assert as_dict["upload_max_concurrency"] == 2
+            assert as_dict["max_single_put_size"] == 10
+            assert as_dict["max_single_get_size"] == 20
+            assert as_dict["max_block_size"] == 3
+
+
 def test_cache_monitor_thread(tmp_path):
     cache_dir = tmp_path
     path = cache_dir / "a_file_0"
