@@ -26,6 +26,7 @@ from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.examples import get_example
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
+from galaxy.objectstore.s3_boto3 import S3ObjectStore as Boto3ObjectStore
 from galaxy.objectstore.unittest_utils import (
     Config as TestConfig,
     DISK_TEST_CONFIG,
@@ -51,6 +52,11 @@ class UninitializedS3ObjectStore(S3ObjectStore):
         pass
 
 
+class UninitializedBoto3ObjectStore(Boto3ObjectStore):
+    def _initialize(self):
+        pass
+
+
 class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
     def _initialize(self):
         pass
@@ -65,6 +71,7 @@ def patch_object_stores_to_skip_initialize(f):
 
     @wraps(f)
     @patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+    @patch("galaxy.objectstore.s3_boto3.S3ObjectStore", UninitializedBoto3ObjectStore)
     @patch("galaxy.objectstore.pithos.PithosObjectStore", UninitializedPithosObjectStore)
     @patch("galaxy.objectstore.cloud.Cloud", UninitializedCloudObjectStore)
     @patch("galaxy.objectstore.azure_blob.AzureBlobObjectStore", UninitializedAzureBlobObjectStore)
@@ -644,6 +651,111 @@ def test_config_parse_s3_with_default_cache():
         with TestConfig(config_str) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3():
+    for config_str in [get_example("boto3_simple.xml"), get_example("boto3_simple.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.access_key == "access_moo"
+            assert object_store.secret_key == "secret_cow"
+
+            assert object_store.bucket == "unique_bucket_name_all_lowercase"
+
+            # defaults to AWS
+            assert object_store.endpoint_url is None
+
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000
+            assert cache_target.path == "database/object_store_cache"
+            assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
+            assert object_store.extra_dirs["temp"] == "database/tmp_s3"
+
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "boto3")
+
+            auth_dict = as_dict["auth"]
+            bucket_dict = as_dict["bucket"]
+            cache_dict = as_dict["cache"]
+
+            _assert_key_has_value(auth_dict, "access_key", "access_moo")
+            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+
+            _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
+
+            _assert_key_has_value(cache_dict, "size", 1000)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_custom_connection():
+    for config_str in [get_example("boto3_custom_connection.xml"), get_example("boto3_custom_connection.yml")]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert object_store.endpoint_url == "https://s3.example.org/"
+            assert object_store.region == "the_example_region"
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_merged_transfer_options():
+    for config_str in [
+        get_example("boto3_merged_transfer_options.xml"),
+        get_example("boto3_merged_transfer_options.yml"),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            as_dict = object_store.to_dict()
+            transfer_dict = as_dict["transfer"]
+            assert transfer_dict["multipart_threshold"] == 13
+            assert transfer_dict["max_concurrency"] == 13
+            assert transfer_dict["multipart_chunksize"] == 13
+            assert transfer_dict["num_download_attempts"] == 13
+            assert transfer_dict["max_io_queue"] == 13
+            assert transfer_dict["io_chunksize"] == 13
+            assert transfer_dict["use_threads"] is False
+            assert transfer_dict["max_bandwidth"] == 13
+
+            for transfer_type in ["upload", "download"]:
+                transfer_config = object_store._transfer_config(transfer_type)
+                assert transfer_config.multipart_threshold == 13
+                assert transfer_config.max_concurrency == 13
+                assert transfer_config.multipart_chunksize == 13
+                assert transfer_config.num_download_attempts == 13
+                assert transfer_config.max_io_queue == 13
+                assert transfer_config.io_chunksize == 13
+                assert transfer_config.use_threads is False
+                assert transfer_config.max_bandwidth == 13
+
+
+@patch_object_stores_to_skip_initialize
+def test_config_parse_boto3_separated_transfer_options():
+    for config_str in [
+        get_example("boto3_separated_transfer_options.xml"),
+        get_example("boto3_separated_transfer_options.yml"),
+    ]:
+        with TestConfig(config_str) as (directory, object_store):
+            transfer_config = object_store._transfer_config("upload")
+            assert transfer_config.multipart_threshold == 13
+            assert transfer_config.max_concurrency == 13
+            assert transfer_config.multipart_chunksize == 13
+            assert transfer_config.num_download_attempts == 13
+            assert transfer_config.max_io_queue == 13
+            assert transfer_config.io_chunksize == 13
+            assert transfer_config.use_threads is False
+            assert transfer_config.max_bandwidth == 13
+
+            transfer_config = object_store._transfer_config("download")
+            assert transfer_config.multipart_threshold == 14
+            assert transfer_config.max_concurrency == 14
+            assert transfer_config.multipart_chunksize == 14
+            assert transfer_config.num_download_attempts == 14
+            assert transfer_config.max_io_queue == 14
+            assert transfer_config.io_chunksize == 14
+            assert transfer_config.use_threads is True
+            assert transfer_config.max_bandwidth == 14
 
 
 CLOUD_AWS_TEST_CONFIG = get_example("cloud_aws_simple.xml")

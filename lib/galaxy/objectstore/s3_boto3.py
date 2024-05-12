@@ -154,7 +154,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
     """
 
     _client: "S3Client"
-    store_type = "aws_s3_boto3"
+    store_type = "boto3"
     cloud = True
 
     def __init__(self, config, config_dict):
@@ -413,7 +413,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
             "use_threads",
             "max_bandwidth",
         ]:
-            specific_key = f"{prefix}_key"
+            specific_key = f"{prefix}_{key}"
             if specific_key in self.transfer_dict:
                 config[key] = self.transfer_dict[specific_key]
             elif key in self.transfer_dict:
