@@ -108,3 +108,30 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
             :handle-click="handleClick" />
     </div>
 </template>
+
+<style lang="scss">
+@import "theme/blue.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+.ui-form-field {
+    div > .ui-drilldown {
+        $ui-drilldown-padding: 1rem;
+        $ui-drilldown-border: 0.5px solid $gray-500;
+
+        .indent {
+            padding-left: calc($ui-drilldown-padding + $ui-drilldown-padding/2);
+        }
+        .align-indent {
+            display: inline-block;
+            width: $ui-drilldown-padding;
+            border-bottom: $ui-drilldown-border;
+        }
+        .align-checkbox {
+            width: $ui-drilldown-padding;
+        }
+        /* selector: all except first nested drilldown */
+        & > * .descendant-lines {
+            border-left: $ui-drilldown-border;
+        }
+    }
+}
+</style>
