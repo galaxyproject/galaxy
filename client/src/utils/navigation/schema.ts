@@ -101,7 +101,6 @@ interface Roothistory_panelitem extends Component {
     delete_button: SelectorTemplate;
     download_button: SelectorTemplate;
     info_button: SelectorTemplate;
-    tool_help_button: SelectorTemplate;
     rerun_button: SelectorTemplate;
     alltags: SelectorTemplate;
 }

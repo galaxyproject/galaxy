@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faBug,
-    faChartBar,
-    faInfoCircle,
-    faLink,
-    faQuestion,
-    faRedo,
-    faSitemap,
-} from "@fortawesome/free-solid-svg-icons";
+import { faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -23,7 +15,7 @@ import { type ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
-library.add(faBug, faChartBar, faInfoCircle, faLink, faQuestion, faRedo, faSitemap);
+library.add(faBug, faChartBar, faInfoCircle, faLink, faRedo, faSitemap);
 
 interface Props {
     item: HDADetailed;
@@ -171,10 +163,6 @@ function onHighlight() {
                     variant="link"
                     @click.stop="onHighlight">
                     <FontAwesomeIcon :icon="faSitemap" />
-                </BButton>
-
-                <BButton v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
-                    <FontAwesomeIcon :icon="faQuestion" />
                 </BButton>
             </div>
         </div>
