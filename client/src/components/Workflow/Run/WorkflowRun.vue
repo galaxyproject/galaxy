@@ -37,13 +37,13 @@ const props = withDefaults(defineProps<Props>(), {
     simpleFormUseJobCache: false,
 });
 
-const formError = ref("");
 const loading = ref(true);
 const hasUpgradeMessages = ref(false);
 const hasStepVersionChanges = ref(false);
 const invocations = ref([]);
 const simpleForm = ref(false);
 const submissionError = ref("");
+const workflowError = ref("");
 const workflowName = ref("");
 const workflowModel: any = ref(null);
 
@@ -103,7 +103,7 @@ function loadRun() {
             loading.value = false;
         })
         .catch((response) => {
-            formError.value = errorMessageAsString(response);
+            workflowError.value = errorMessageAsString(response);
         });
 }
 
@@ -128,13 +128,22 @@ watch(
         }
     }
 );
+
+defineExpose({
+    loading,
+    simpleForm,
+    submissionError,
+    handleSubmissionError,
+    workflowError,
+    workflowModel,
+});
 </script>
 
 <template>
     <span>
-        <BAlert v-if="formError" variant="danger" show>
+        <BAlert v-if="workflowError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
-            {{ formError }}
+            {{ workflowError }}
         </BAlert>
         <span v-else>
             <BAlert v-if="loading" variant="info" show>
@@ -145,7 +154,12 @@ watch(
                 :invocations="invocations"
                 :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
-                <BAlert v-if="hasUpgradeMessages || hasStepVersionChanges" class="mb-4" variant="warning" show>
+                <BAlert
+                    v-if="hasUpgradeMessages || hasStepVersionChanges"
+                    class="mb-4"
+                    variant="warning"
+                    show
+                    data-description="workflow run warning">
                     <span>
                         The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
                         saved or some error have been detected. Please
