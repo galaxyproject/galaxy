@@ -2,6 +2,7 @@ import os
 import random
 import shutil
 import time
+from functools import wraps
 from tempfile import (
     mkdtemp,
     mkstemp,
@@ -22,6 +23,7 @@ from galaxy.objectstore.caching import (
     reset_cache,
 )
 from galaxy.objectstore.cloud import Cloud
+from galaxy.objectstore.examples import get_example
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
 from galaxy.objectstore.unittest_utils import (
@@ -57,6 +59,19 @@ class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
 class UninitializedCloudObjectStore(Cloud):
     def _initialize(self):
         pass
+
+
+def patch_object_stores_to_skip_initialize(f):
+
+    @wraps(f)
+    @patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+    @patch("galaxy.objectstore.pithos.PithosObjectStore", UninitializedPithosObjectStore)
+    @patch("galaxy.objectstore.cloud.Cloud", UninitializedCloudObjectStore)
+    @patch("galaxy.objectstore.azure_blob.AzureBlobObjectStore", UninitializedAzureBlobObjectStore)
+    def wrapper(*args, **kwd):
+        f(*args, **kwd)
+
+    return wrapper
 
 
 def test_unlink_path():
@@ -239,61 +254,8 @@ def test_disk_store_alt_name_abspath():
             pass
 
 
-HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="hierarchical">
-    <backends>
-        <backend id="files1" type="disk" weight="1" order="0" name="Newer Cool Storage">
-            <description>
-              This is our new storage cluster, check out the storage
-              on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
-            </description>
-            <files_dir path="${temp_directory}/files1"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-        </backend>
-        <backend id="files2" type="disk" weight="1" order="1" name="Older Legacy Storage">
-            <description>
-              This is our older legacy storage cluster, check out the storage
-              on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
-            </description>
-            <files_dir path="${temp_directory}/files2"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
-        </backend>
-    </backends>
-</object_store>
-"""
-
-HIERARCHICAL_TEST_CONFIG_YAML = """
-type: hierarchical
-backends:
-   - id: files1
-     name: Newer Cool Storage
-     description: |
-      This is our new storage cluster, check out the storage
-      on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
-     type: disk
-     weight: 1
-     files_dir: "${temp_directory}/files1"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp1"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory1"
-   - id: files2
-     name: Older Legacy Storage
-     description: |
-      This is our older legacy storage cluster, check out the storage
-      on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
-     type: disk
-     weight: 1
-     files_dir: "${temp_directory}/files2"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp2"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory2"
-"""
+HIERARCHICAL_TEST_CONFIG = get_example("hierarchical_simple.xml")
+HIERARCHICAL_TEST_CONFIG_YAML = get_example("hierarchical_simple.yml")
 
 
 def test_hierarchical_store():
@@ -395,7 +357,6 @@ def test_mixed_private():
     # Distributed object store can combine private and non-private concrete objectstores
     with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
         ids = object_store.object_store_ids()
-        print(ids)
         assert len(ids) == 2
 
         ids = object_store.object_store_ids(private=True)
@@ -427,40 +388,8 @@ def test_empty_cache_targets_for_disk_nested_stores():
         assert len(object_store.cache_targets()) == 0
 
 
-BADGES_TEST_1_CONFIG_XML = """<?xml version="1.0"?>
-<object_store type="disk">
-    <files_dir path="${temp_directory}/files1"/>
-    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-    <badges>
-        <short_term />
-        <faster>Fast interconnects.</faster>
-        <less_stable />
-        <more_secure />
-        <backed_up>Storage is backed up to tape nightly.</backed_up>
-    </badges>
-</object_store>
-"""
-
-
-BADGES_TEST_1_CONFIG_YAML = """
-type: disk
-files_dir: "${temp_directory}/files1"
-store_by: uuid
-extra_dirs:
-  - type: temp
-    path: "${temp_directory}/tmp1"
-  - type: job_work
-    path: "${temp_directory}/job_working_directory1"
-badges:
-  - type: short_term
-  - type: faster
-    message: Fast interconnects.
-  - type: less_stable
-  - type: more_secure
-  - type: backed_up
-    message: Storage is backed up to tape nightly.
-"""
+BADGES_TEST_1_CONFIG_XML = get_example("disk_badges.xml")
+BADGES_TEST_1_CONFIG_YAML = get_example("disk_badges.yml")
 
 
 def test_badges_parsing():
@@ -527,54 +456,8 @@ def test_badges_parsing_conflicts():
         assert exception_raised
 
 
-DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="distributed">
-    <backends>
-        <backend id="files1" type="disk" weight="2" device="primary_disk">
-            <quota source="1files" />
-            <files_dir path="${temp_directory}/files1"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
-        </backend>
-        <backend id="files2" type="disk" weight="1" device="primary_disk">
-            <quota source="2files" />
-            <files_dir path="${temp_directory}/files2"/>
-            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
-            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
-        </backend>
-    </backends>
-</object_store>
-"""
-
-
-DISTRIBUTED_TEST_CONFIG_YAML = """
-type: distributed
-backends:
-   - id: files1
-     quota:
-       source: 1files
-     type: disk
-     weight: 2
-     device: primary_disk
-     files_dir: "${temp_directory}/files1"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp1"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory1"
-   - id: files2
-     quota:
-       source: 2files
-     type: disk
-     weight: 1
-     device: primary_disk
-     files_dir: "${temp_directory}/files2"
-     extra_dirs:
-     - type: temp
-       path: "${temp_directory}/tmp2"
-     - type: job_work
-       path: "${temp_directory}/job_working_directory2"
-"""
+DISTRIBUTED_TEST_CONFIG = get_example("distributed_disk.xml")
+DISTRIBUTED_TEST_CONFIG_YAML = get_example("distributed_disk.yml")
 
 
 def test_distributed_store():
@@ -608,7 +491,6 @@ def test_distributed_store():
 
             device_source_map = object_store.get_device_source_map()
             assert device_source_map
-            print(device_source_map.backends)
             assert device_source_map.get_device_id("files1") == "primary_disk"
             assert device_source_map.get_device_id("files2") == "primary_disk"
 
@@ -619,48 +501,10 @@ def test_distributed_store_empty_cache_targets():
             assert len(object_store.cache_targets()) == 0
 
 
-DISTRIBUTED_TEST_S3_CONFIG_YAML = """
-type: distributed
-backends:
-  - id: files1
-    weight: 1
-    type: s3
-    auth:
-      access_key: access_moo
-      secret_key: secret_cow
-
-    bucket:
-      name: unique_bucket_name_all_lowercase
-      use_reduced_redundancy: false
-
-    extra_dirs:
-    - type: job_work
-      path: ${temp_directory}/job_working_directory_s3
-    - type: temp
-      path: ${temp_directory}/tmp_s3
-  - id: files2
-    weight: 1
-    type: s3
-    auth:
-      access_key: access_moo
-      secret_key: secret_cow
-
-    bucket:
-      name: unique_bucket_name_all_lowercase_2
-      use_reduced_redundancy: false
-
-    extra_dirs:
-    - type: job_work
-      path: ${temp_directory}/job_working_directory_s3_2
-    - type: temp
-      path: ${temp_directory}/tmp_s3_2
-"""
-
-
-@patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+@patch_object_stores_to_skip_initialize
 def test_distributed_store_with_cache_targets():
-    for config_str in [DISTRIBUTED_TEST_S3_CONFIG_YAML]:
-        with TestConfig(config_str) as (directory, object_store):
+    for config_str in [get_example("distributed_s3.yml")]:
+        with TestConfig(config_str) as (_, object_store):
             assert len(object_store.cache_targets()) == 2
 
 
@@ -694,37 +538,14 @@ def test_hiercachical_backend_must_share_quota_source():
     assert the_exception is not None
 
 
-PITHOS_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="pithos">
-    <auth url="http://example.org/" token="extoken123" />
-    <container name="foo" project="cow" />
-    <extra_dir type="temp" path="database/tmp_pithos"/>
-    <extra_dir type="job_work" path="database/working_pithos"/>
-</object_store>
-"""
+PITHOS_TEST_CONFIG = get_example("pithos_simple.xml")
+PITHOS_TEST_CONFIG_YAML = get_example("pithos_simple.yml")
 
 
-PITHOS_TEST_CONFIG_YAML = """
-type: pithos
-auth:
-  url: http://example.org/
-  token: extoken123
-
-container:
-  name: foo
-  project: cow
-
-extra_dirs:
-  - type: temp
-    path: database/tmp_pithos
-  - type: job_work
-    path: database/working_pithos
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedPithosObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             configured_config_dict = object_store.config_dict
             _assert_has_keys(configured_config_dict, ["auth", "container", "extra_dirs"])
 
@@ -758,42 +579,14 @@ def test_config_parse_pithos():
             assert len(extra_dirs) == 2
 
 
-S3_TEST_CONFIG = """<object_store type="s3" private="true">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
-     <extra_dir type="temp" path="database/tmp_s3"/>
-</object_store>
-"""
+S3_TEST_CONFIG = get_example("s3_simple.xml")
+S3_TEST_CONFIG_YAML = get_example("s3_simple.yml")
 
 
-S3_TEST_CONFIG_YAML = """
-type: s3
-private: true
-auth:
-  access_key: access_moo
-  secret_key: secret_cow
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_s3
-- type: temp
-  path: database/tmp_s3
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_s3():
     for config_str in [S3_TEST_CONFIG, S3_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.private
             assert object_store.access_key == "access_moo"
             assert object_store.secret_key == "secret_cow"
@@ -841,140 +634,29 @@ def test_config_parse_s3():
             assert len(extra_dirs) == 2
 
 
-S3_DEFAULT_CACHE_TEST_CONFIG = """<object_store type="s3" private="true">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
-     <extra_dir type="temp" path="database/tmp_s3"/>
-</object_store>
-"""
+S3_DEFAULT_CACHE_TEST_CONFIG = get_example("s3_global_cache.xml")
+S3_DEFAULT_CACHE_TEST_CONFIG_YAML = get_example("s3_global_cache.yml")
 
 
-S3_DEFAULT_CACHE_TEST_CONFIG_YAML = """
-type: s3
-private: true
-auth:
-  access_key: access_moo
-  secret_key: secret_cow
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_s3
-- type: temp
-  path: database/tmp_s3
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_s3_with_default_cache():
     for config_str in [S3_DEFAULT_CACHE_TEST_CONFIG, S3_DEFAULT_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
-CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth access_key="access_moo" secret_key="secret_cow" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+CLOUD_AWS_TEST_CONFIG = get_example("cloud_aws_simple.xml")
+CLOUD_AWS_TEST_CONFIG_YAML = get_example("cloud_aws_simple.yml")
+
+CLOUD_AZURE_TEST_CONFIG = get_example("cloud_azure_simple.xml")
+CLOUD_AZURE_TEST_CONFIG_YAML = get_example("cloud_azure_simple.yml")
+
+CLOUD_GOOGLE_TEST_CONFIG = get_example("cloud_gcp_simple.xml")
+CLOUD_GOOGLE_TEST_CONFIG_YAML = get_example("cloud_gcp_simple.yml")
 
 
-CLOUD_AWS_TEST_CONFIG_YAML = """
-type: cloud
-provider: aws
-auth:
-  access_key: access_moo
-  secret_key: secret_cow
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_cloud
-- type: temp
-  path: database/tmp_cloud
-"""
-
-
-CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
-     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key"
-     tenant="and_some_tenant_info" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
-
-CLOUD_AZURE_TEST_CONFIG_YAML = """
-type: cloud
-provider: azure
-auth:
-  subscription_id: a_sub_id
-  client_id: and_a_client_id
-  secret: and_a_secret_key
-  tenant: and_some_tenant_info
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_cloud
-- type: temp
-  path: database/tmp_cloud
-"""
-
-
-CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
-     <auth credentials_file="gcp.config" />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
-
-CLOUD_GOOGLE_TEST_CONFIG_YAML = """
-type: cloud
-provider: google
-auth:
-  credentials_file: gcp.config
-
-bucket:
-  name: unique_bucket_name_all_lowercase
-  use_reduced_redundancy: false
-
-cache:
-  path: database/object_store_cache
-  size: 1000
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_cloud
-- type: temp
-  path: database/tmp_cloud
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud():
     for config_str in [
         CLOUD_AWS_TEST_CONFIG,
@@ -991,7 +673,7 @@ def test_config_parse_cloud():
             path = os.path.join(tmpdir, "gcp.config")
             open(path, "w").write("some_gcp_config")
             config_str = config_str.replace("gcp.config", path)
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -1032,19 +714,13 @@ def test_config_parse_cloud():
             assert len(extra_dirs) == 2
 
 
-CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+CLOUD_AWS_NO_AUTH_TEST_CONFIG = get_example("cloud_aws_no_auth.xml")
 
 
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_noauth_for_aws():
     for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -1065,7 +741,6 @@ def test_config_parse_cloud_noauth_for_aws():
 
             provider = as_dict["provider"]
             assert provider == "aws"
-            print(auth_dict["access_key"])
             _assert_key_has_value(auth_dict, "access_key", None)
             _assert_key_has_value(auth_dict, "secret_key", None)
 
@@ -1079,56 +754,25 @@ def test_config_parse_cloud_noauth_for_aws():
             assert len(extra_dirs) == 2
 
 
-CLOUD_AWS_NO_CACHE_TEST_CONFIG = """<object_store type="cloud" provider="aws">
-     <auth />
-     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
-     <extra_dir type="temp" path="database/tmp_cloud"/>
-</object_store>
-"""
+CLOUD_AWS_NO_CACHE_TEST_CONFIG = get_example("cloud_aws_default_cache.xml")
 
 
+@patch_object_stores_to_skip_initialize
 def test_config_parse_cloud_no_cache_for_aws():
     for config_str in [CLOUD_AWS_NO_CACHE_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.staging_path == directory.global_config.object_store_cache_path
             assert object_store.cache_size == -1
 
 
-AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
-    <auth account_name="azureact" account_key="password123" />
-    <container name="unique_container_name" max_chunk_size="250"/>
-    <cache path="database/object_store_cache" size="100" />
-    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
-    <extra_dir type="temp" path="database/tmp_azure"/>
-</object_store>
-"""
+AZURE_BLOB_TEST_CONFIG = get_example("azure_simple.xml")
+AZURE_BLOB_TEST_CONFIG_YAML = get_example("azure_simple.yml")
 
 
-AZURE_BLOB_TEST_CONFIG_YAML = """
-type: azure_blob
-auth:
-  account_name: azureact
-  account_key: password123
-
-container:
-  name: unique_container_name
-
-cache:
-  path: database/object_store_cache
-  size: 100
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_azure():
     for config_str in [AZURE_BLOB_TEST_CONFIG, AZURE_BLOB_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.account_name == "azureact"
             assert object_store.account_key == "password123"
 
@@ -1209,36 +853,14 @@ def test_fits_in_cache_check(tmp_path):
     assert noop_cache_target.fits_in_cache(1024 * 1024 * 1024 * 100)
 
 
-AZURE_BLOB_NO_CACHE_TEST_CONFIG = """<object_store type="azure_blob">
-    <auth account_name="azureact" account_key="password123" />
-    <container name="unique_container_name" max_chunk_size="250"/><!-- max_chunk_size was never used, but keeping here to ensure we can parse old configs -->
-    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
-    <extra_dir type="temp" path="database/tmp_azure"/>
-</object_store>
-"""
+AZURE_BLOB_NO_CACHE_TEST_CONFIG = get_example("azure_default_cache.xml")
+AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML = get_example("azure_default_cache.yml")
 
 
-AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML = """
-type: azure_blob
-auth:
-  account_name: azureact
-  account_key: password123
-
-container:
-  name: unique_container_name
-  max_chunk_size: 250
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+@patch_object_stores_to_skip_initialize
 def test_config_parse_azure_no_cache():
     for config_str in [AZURE_BLOB_NO_CACHE_TEST_CONFIG, AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str) as (directory, object_store):
             assert object_store.cache_size == -1
             assert object_store.staging_path == directory.global_config.object_store_cache_path
 
@@ -1435,54 +1057,16 @@ def verify_object_store_functionality(tmp_path, object_store, check_get_url=True
         assert response.text == "Hello World!"
 
 
-AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML = """
-type: azure_blob
-store_by: uuid
-auth:
-  account_name: ${account_name}
-  account_key: ${account_key}
-
-container:
-  name: ${container_name}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
+def integration_test_config(example_filename: str):
+    return TestConfig(get_example(example_filename), inject_galaxy_test_env=True)
 
 
 @skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
 def test_real_azure_blob_store(tmp_path):
-    template_vars = {
-        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
-        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
-        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
-    }
-    with TestConfig(AZURE_BLOB_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with integration_test_config("azure_integration_test.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
-
-
-AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML = """
-type: azure_blob
-store_by: uuid
-auth:
-  account_name: ${account_name}
-  account_key: ${account_key}
-  account_url: ${account_url}
-
-container:
-  name: ${container_name}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
@@ -1490,96 +1074,19 @@ extra_dirs:
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_URL")
 def test_real_azure_blob_store_with_account_url(tmp_path):
-    template_vars = {
-        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
-        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
-        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
-        "account_url": os.environ["GALAXY_TEST_AZURE_ACCOUNT_URL"],
-    }
-    with TestConfig(AZURE_BLOB_TEMPLATE_WITH_ACCOUNT_URL_TEST_CONFIG_YAML, template_vars=template_vars) as (
+    with integration_test_config("azure_integration_test_with_account_url.yml") as (
         _,
         object_store,
     ):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
-AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML = """
-type: distributed
-backends:
-- type: azure_blob
-  id: azure1
-  store_by: uuid
-  name: Azure Store 1
-  allow_selection: true
-  weight: 1
-  auth:
-    account_name: ${account_name}
-    account_key: ${account_key}
-
-  container:
-    name: ${container_name}
-
-  extra_dirs:
-  - type: job_work
-    path: database/job_working_directory_azure_1
-  - type: temp
-    path: database/tmp_azure_1
-- type: azure_blob
-  id: azure2
-  store_by: uuid
-  name: Azure Store 2
-  allow_selection: true
-  weight: 1
-  auth:
-    account_name: ${account_name}
-    account_key: ${account_key}
-
-  container:
-    name: ${container_name}
-
-  extra_dirs:
-  - type: job_work
-    path: database/job_working_directory_azure_2
-  - type: temp
-    path: database/tmp_azure_2
-"""
-
-
 @skip_unless_environ("GALAXY_TEST_AZURE_CONTAINER_NAME")
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_KEY")
 @skip_unless_environ("GALAXY_TEST_AZURE_ACCOUNT_NAME")
 def test_real_azure_blob_store_in_hierarchical(tmp_path):
-    template_vars = {
-        "container_name": os.environ["GALAXY_TEST_AZURE_CONTAINER_NAME"],
-        "account_key": os.environ["GALAXY_TEST_AZURE_ACCOUNT_KEY"],
-        "account_name": os.environ["GALAXY_TEST_AZURE_ACCOUNT_NAME"],
-    }
-    with TestConfig(AZURE_BLOB_IN_HIERARCHICAL_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("azure_integration_test_distributed.yml") as (_, object_store):
         verify_object_store_functionality(tmp_path, object_store)
-
-
-AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
-type: aws_s3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-connection:
-  region: ${region}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
@@ -1587,150 +1094,44 @@ extra_dirs:
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
 @skip_unless_environ("GALAXY_TEST_AWS_REGION")
 def test_real_aws_s3_store(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
-        "region": os.environ["GALAXY_TEST_AWS_REGION"],
-    }
-    with TestConfig(AMAZON_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with integration_test_config("aws_s3_integration_test.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
-
-
-AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML = """
-type: boto3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
 def test_real_aws_s3_store_boto3(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
-    }
-    with TestConfig(AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with integration_test_config("boto3_integration_test_aws.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
-
-
-AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML = """
-type: boto3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-transfer:
-  multipart_threshold: 10
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
 def test_real_aws_s3_store_boto3_multipart(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
-    }
-    with TestConfig(AMAZON_BOTO3_S3_MULTITHREAD_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("boto3_integration_test_multithreaded.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
 def test_real_aws_s3_store_boto3_new_bucket(tmp_path):
-    rand_int = random.randint(100000, 999999)
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": f"mynewbucket{rand_int}",
-    }
-    with TestConfig(AMAZON_BOTO3_S3_SIMPLE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with integration_test_config("boto3_integration_test_aws_new_bucket.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
-AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML = """
-type: cloud
-store_by: uuid
-provider: aws
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+# this test fails if you have axel installed because axel requires URLs to work and that requires
+# setting a region with the cloudbridge store.
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
 def test_aws_via_cloudbridge_store(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
-    }
-    with TestConfig(AMAZON_CLOUDBRIDGE_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (_, object_store):
+    with integration_test_config("cloud_integration_test_aws.yml") as (_, object_store):
         # disabling get_object_url check - cloudbridge in this config assumes the region
         # is us-east-1 and generates a URL for that region. This functionality works and can
         # be tested if a region is specified in the configuration (see next config and test case).
         verify_caching_object_store_functionality(tmp_path, object_store, check_get_url=False)
-
-
-AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML = """
-type: cloud
-store_by: uuid
-provider: aws
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-  region: ${region}
-
-bucket:
-  name: ${bucket}
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
@@ -1738,133 +1139,33 @@ extra_dirs:
 @skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
 @skip_unless_environ("GALAXY_TEST_AWS_REGION")
 def test_aws_via_cloudbridge_store_with_region(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
-        "region": os.environ["GALAXY_TEST_AWS_REGION"],
-    }
-    with TestConfig(AMAZON_CLOUDBRIDGE_WITH_REGION_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("cloud_integration_test_aws_with_region.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
-
-
-GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML = """
-type: generic_s3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-connection:
-  host: storage.googleapis.com
-  port: 443
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
 def test_gcp_via_s3_interop(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
-    }
-    with TestConfig(GOOGLE_S3_INTEROP_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("gcp_s3_integration_test.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
-
-
-GOOGLE_INTEROP_VIA_BOTO3_TEMPLATE_TEST_CONFIG_YAML = """
-type: boto3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-connection:
-  endpoint_url: https://storage.googleapis.com
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
 
 
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
 def test_gcp_via_s3_interop_and_boto3(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
-    }
-    with TestConfig(GOOGLE_INTEROP_VIA_BOTO3_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("gcp_boto3_integration_test.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 
-GOOGLE_INTEROP_VIA_BOTO3_WITH_LEGACY_PARAMS_TEMPLATE_TEST_CONFIG_YAML = """
-type: boto3
-store_by: uuid
-auth:
-  access_key: ${access_key}
-  secret_key: ${secret_key}
-
-bucket:
-  name: ${bucket}
-
-connection:
-  host: storage.googleapis.com
-  port: 443
-  secure: true
-  conn_pat: '/'
-
-extra_dirs:
-- type: job_work
-  path: database/job_working_directory_azure
-- type: temp
-  path: database/tmp_azure
-"""
-
-
+# Ensure's boto3 will use legacy connection parameters that the generic_s3 object store
+# would consume.
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY")
 @skip_unless_environ("GALAXY_TEST_GOOGLE_BUCKET")
 def test_gcp_via_s3_interop_and_boto3_with_legacy_params(tmp_path):
-    template_vars = {
-        "access_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY"],
-        "secret_key": os.environ["GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY"],
-        "bucket": os.environ["GALAXY_TEST_GOOGLE_BUCKET"],
-    }
-    with TestConfig(
-        GOOGLE_INTEROP_VIA_BOTO3_WITH_LEGACY_PARAMS_TEMPLATE_TEST_CONFIG_YAML, template_vars=template_vars
-    ) as (
-        _,
-        object_store,
-    ):
+    with integration_test_config("gcp_boto3_integration_test_legacy_params.yml") as (_, object_store):
         verify_caching_object_store_functionality(tmp_path, object_store)
 
 

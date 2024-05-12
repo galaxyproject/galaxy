@@ -1,6 +1,7 @@
 """Utilities for configuring and using objectstores in unit tests."""
 
 import os
+import random
 from io import StringIO
 from shutil import rmtree
 from string import Template
@@ -32,10 +33,22 @@ extra_dirs:
 
 
 class Config:
-    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id", template_vars=None):
+    def __init__(
+        self,
+        config_str=DISK_TEST_CONFIG,
+        clazz=None,
+        store_by="id",
+        template_vars=None,
+        inject_galaxy_test_env=False,
+    ):
         self.temp_directory = mkdtemp()
-        template_vars = template_vars or {}
+        template_vars = {}
         template_vars["temp_directory"] = self.temp_directory
+        if inject_galaxy_test_env:
+            template_vars["test_random_int"] = random.randint(100000, 999999)
+            for key, value in os.environ.items():
+                if key.startswith("GALAXY_TEST_"):
+                    template_vars[key] = value
         self.template_vars = template_vars
         if config_str.startswith("<"):
             config_file = "store.xml"

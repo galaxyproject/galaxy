@@ -1,0 +1,14 @@
+type: boto3
+store_by: uuid
+auth:
+  access_key: ${GALAXY_TEST_AWS_ACCESS_KEY}
+  secret_key: ${GALAXY_TEST_AWS_SECRET_KEY}
+
+bucket:
+  name: mycoolbucket${test_random_int}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
