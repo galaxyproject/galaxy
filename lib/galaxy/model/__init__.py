@@ -777,7 +777,7 @@ class User(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
-    username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
+    username: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
     external: Mapped[Optional[bool]] = mapped_column(default=False)
@@ -6834,10 +6834,10 @@ class HistoryDatasetCollectionAssociation(
     __tablename__ = "history_dataset_collection_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    hid: Mapped[Optional[int]]
+    hid: Mapped[int]
     visible: Mapped[Optional[bool]]
     deleted: Mapped[Optional[bool]] = mapped_column(default=False)
     copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
@@ -6852,7 +6852,7 @@ class HistoryDatasetCollectionAssociation(
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
 
     collection = relationship("DatasetCollection")
-    history: Mapped[Optional["History"]] = relationship(back_populates="dataset_collections")
+    history: Mapped["History"] = relationship(back_populates="dataset_collections")
 
     copied_from_history_dataset_collection_association = relationship(
         "HistoryDatasetCollectionAssociation",

@@ -572,15 +572,18 @@ class UserManager(BaseUserManager[User]):
         if self.app.config.redact_user_address_during_deletion:
             stmt = select(UserAddress).where(UserAddress.user_id == item.id)
             for addr in self.session().scalars(stmt):
-                addr.desc = new_secure_hash_v2(addr.desc + pseudorandom_value)
+                if addr.desc:
+                    addr.desc = new_secure_hash_v2(addr.desc + pseudorandom_value)
                 addr.name = new_secure_hash_v2(addr.name + pseudorandom_value)
-                addr.institution = new_secure_hash_v2(addr.institution + pseudorandom_value)
+                if addr.institution:
+                    addr.institution = new_secure_hash_v2(addr.institution + pseudorandom_value)
                 addr.address = new_secure_hash_v2(addr.address + pseudorandom_value)
                 addr.city = new_secure_hash_v2(addr.city + pseudorandom_value)
                 addr.state = new_secure_hash_v2(addr.state + pseudorandom_value)
                 addr.postal_code = new_secure_hash_v2(addr.postal_code + pseudorandom_value)
                 addr.country = new_secure_hash_v2(addr.country + pseudorandom_value)
-                addr.phone = new_secure_hash_v2(addr.phone + pseudorandom_value)
+                if addr.phone:
+                    addr.phone = new_secure_hash_v2(addr.phone + pseudorandom_value)
                 self.session().add(addr)
         # Purge the user
         super().purge(item, flush=flush)
