@@ -177,7 +177,7 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
 
     @selenium_test
@@ -189,7 +189,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
         workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
         workflow_with_rules_json = json.dumps(workflow_with_rules)
