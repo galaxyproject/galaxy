@@ -19,6 +19,10 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 from tool_shed.webapp.framework.decorators import require_login
+from tool_shed.webapp.model import (
+    APIKeys,
+    User as ToolShedUser,
+)
 
 log = logging.getLogger(__name__)
 
@@ -312,7 +316,7 @@ class User(BaseUser):
         message = escape(util.restore_text(params.get("message", "")))
         status = params.get("status", "done")
         if params.get("new_api_key_button", False):
-            ApiKeyManager(trans.app).create_api_key(trans.user)
+            ApiKeyManager[APIKeys, ToolShedUser](trans.app).create_api_key(trans.user)
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template(

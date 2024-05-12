@@ -722,7 +722,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.test_data_resolver = self._register_singleton(
             TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         )
-        self.api_keys_manager = self._register_singleton(ApiKeyManager)
+        self.api_keys_manager = self._register_singleton(ApiKeyManager[galaxy.model.APIKeys, galaxy.model.User])
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
