@@ -1,5 +1,4 @@
 import os
-import random
 import shutil
 import time
 from functools import wraps

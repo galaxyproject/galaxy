@@ -17,7 +17,7 @@ try:
         generate_blob_sas,
     )
 except ImportError:
-    BlobServiceClient = None
+    BlobServiceClient = None  # type: ignore[assignment,unused-ignore,misc]
 
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
