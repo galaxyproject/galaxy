@@ -55,7 +55,7 @@ class UsersService(ServiceBase):
         self,
         security: IdEncodingHelper,
         user_manager: UserManager,
-        api_key_manager: api_keys.ApiKeyManager,
+        api_key_manager: api_keys.GalaxyApiKeyManager,
         user_serializer: UserSerializer,
         user_deserializer: UserDeserializer,
         quota_agent: QuotaAgent,

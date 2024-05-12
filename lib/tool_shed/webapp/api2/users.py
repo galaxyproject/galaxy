@@ -22,10 +22,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.model.base import transaction
 from galaxy.webapps.base.webapp import create_new_session
 from tool_shed.context import SessionRequestContext
+from tool_shed.managers.api_keys import ToolShedApiKeyManager
 from tool_shed.managers.users import (
     api_create_user,
     get_api_user,
@@ -102,7 +102,7 @@ INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
 class FastAPIUsers:
     app: ToolShedApp = depends(ToolShedApp)
     user_manager: UserManager = depends(UserManager)
-    api_key_manager: ApiKeyManager = depends(ApiKeyManager)
+    api_key_manager: ToolShedApiKeyManager = depends(ToolShedApiKeyManager)
 
     @router.get(
         "/api/users",

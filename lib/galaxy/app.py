@@ -47,7 +47,7 @@ from galaxy.files.plugins import (
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
-from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.api_keys import GalaxyApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
@@ -722,7 +722,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.test_data_resolver = self._register_singleton(
             TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         )
-        self.api_keys_manager = self._register_singleton(ApiKeyManager[galaxy.model.APIKeys, galaxy.model.User])
+        self.api_keys_manager = self._register_singleton(GalaxyApiKeyManager)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)

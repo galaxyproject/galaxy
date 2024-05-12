@@ -13,7 +13,7 @@ from starlette.requests import Request as StartletteRequest
 
 from galaxy import exceptions
 from galaxy.auth import AuthManager
-from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.api_keys import GalaxyApiKeyManager
 from galaxy.managers.users import UserManager
 from galaxy.util import (
     smart_str,
@@ -29,7 +29,7 @@ class APIKeyResponse(BaseModel):
 
 
 class AuthenticationService:
-    def __init__(self, user_manager: UserManager, auth_manager: AuthManager, api_keys_manager: ApiKeyManager):
+    def __init__(self, user_manager: UserManager, auth_manager: AuthManager, api_keys_manager: GalaxyApiKeyManager):
         self._user_manager = user_manager
         self._auth_manager = auth_manager
         self._api_keys_manager = api_keys_manager

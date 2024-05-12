@@ -43,6 +43,7 @@ from galaxy.workflow.trs_proxy import TrsProxy
 if TYPE_CHECKING:
     from galaxy.config_watchers import ConfigWatchers
     from galaxy.jobs import JobConfiguration
+    from galaxy.managers.api_keys import GalaxyApiKeyManager
     from galaxy.managers.collections import DatasetCollectionManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
@@ -159,5 +160,5 @@ class StructuredApp(MinimalManagerApp):
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
-    api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'
+    api_keys_manager: "GalaxyApiKeyManager"  # 'galaxy.managers.api_keys.ApiKeyManager'
     visualizations_registry: Any  # 'galaxy.visualization.plugins.registry.VisualizationsRegistry'

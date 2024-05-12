@@ -672,9 +672,9 @@ class ToolEvaluator:
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
 
-                    environment_variable_template = api_keys.ApiKeyManager[model.APIKeys, model.User](
-                        self.app
-                    ).get_or_create_api_key(self._user)
+                    environment_variable_template = api_keys.GalaxyApiKeyManager(self.app).get_or_create_api_key(
+                        self._user
+                    )
                 else:
                     environment_variable_template = ""
                 is_template = False

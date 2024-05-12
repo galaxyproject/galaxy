@@ -76,3 +76,7 @@ class ApiKeyManager(Generic[A, U]):
             .execution_options(synchronize_session="evaluate")
         )
         return self.session.execute(stmt)
+
+
+class GalaxyApiKeyManager(ApiKeyManager["GalaxyAPIKeys", "GalaxyUser"]):
+    pass
