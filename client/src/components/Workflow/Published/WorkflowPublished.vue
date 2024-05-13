@@ -260,6 +260,7 @@ onMounted(async () => {
 
 .workflow-published {
     display: flex;
+    height: 100%;
 
     .container-root {
         container-type: inline-size;
@@ -271,8 +272,7 @@ onMounted(async () => {
         grid-template-rows: max-content;
         grid-template-columns: auto auto 30%;
 
-        inset: 0;
-        position: absolute;
+        height: 100%;
 
         .workflow-header {
             grid-column: 1 / span 3;
@@ -292,9 +292,9 @@ onMounted(async () => {
         }
 
         &:deep(.workflow-information-container) {
-            grid-column: 3;
             height: 100%;
             max-width: 500px;
+            overflow: auto;
         }
     }
 
@@ -314,7 +314,7 @@ onMounted(async () => {
             }
 
             .workflow-information-container {
-                grid-column: 1;
+                grid-column: 1 / span 3;
             }
         }
     }
