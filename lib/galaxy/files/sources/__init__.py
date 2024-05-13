@@ -299,6 +299,7 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
+    serialize_extra_props: ClassVar[List[str]] = []  # Extra properties safe to serialize
 
     def get_browsable(self) -> bool:
         # Check whether the list method has been overridden
@@ -376,6 +377,9 @@ class BaseFilesSource(FilesSource):
             rval["uri_root"] = self.get_uri_root()
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
+        if self.serialize_extra_props:
+            for prop in self.serialize_extra_props:
+                rval[prop] = getattr(self, prop, None)
         return rval
 
     def to_dict_time(self, ctime):
