@@ -101,6 +101,7 @@ import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload";
+import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -186,8 +187,7 @@ export default {
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
+                    this.messageText = errorMessageAsString(error, "Login failed for an unknown reason.");
                     this.loading = false;
                 });
         },
@@ -208,9 +208,7 @@ export default {
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-
-                    this.messageText = message || "Login failed for an unknown reason.";
+                    this.messageText = errorMessageAsString(error, "Login failed for an unknown reason.");
                     this.loading = false;
                 });
         },

@@ -106,6 +106,7 @@ import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
+import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);
@@ -198,8 +199,7 @@ export default {
                 .catch((error) => {
                     this.disableCreate = false;
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Registration failed for an unknown reason.";
+                    this.messageText = errorMessageAsString(error, "Registration failed for an unknown reason.");
                 });
         },
     },
