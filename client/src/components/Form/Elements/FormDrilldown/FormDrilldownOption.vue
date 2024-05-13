@@ -73,3 +73,23 @@ onMounted(() => {
             :handle-click="handleClick" />
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+.ui-drilldown {
+    $ui-drilldown-padding: 1rem;
+    $ui-drilldown-border: 0.5px solid $gray-500;
+
+    .indent {
+        padding-left: calc($ui-drilldown-padding + $ui-drilldown-padding/2);
+    }
+    .align-indent {
+        display: inline-block;
+        width: $ui-drilldown-padding;
+        border-bottom: $ui-drilldown-border;
+    }
+    .align-checkbox {
+        width: $ui-drilldown-padding;
+    }
+}
+</style>

@@ -22,3 +22,15 @@ defineProps<{
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+.ui-drilldown {
+    $ui-drilldown-border: 0.5px solid $gray-500;
+
+    /* selector: all except first nested drilldown */
+    & > * .descendant-lines {
+        border-left: $ui-drilldown-border;
+    }
+}
+</style>
