@@ -2737,6 +2737,7 @@ def raw_to_galaxy(trans, as_dict_value):
             name=name,
             collection=collection,
         )
+        app.model.session.add(hdca)
 
         def write_elements_to_collection(has_elements, collection_builder):
             element_dicts = has_elements.get("elements")
@@ -2753,8 +2754,9 @@ def raw_to_galaxy(trans, as_dict_value):
         collection_builder = builder.BoundCollectionBuilder(collection)
         write_elements_to_collection(as_dict_value, collection_builder)
         collection_builder.populate()
-        trans.sa_session.add(hdca)
-        trans.sa_session.flush()
+        history.stage_addition(hdca)
+        history.add_pending_items()
+        app.model.session.flush()
         return hdca
 
 
