@@ -2702,6 +2702,15 @@ export interface components {
              */
             requires_roles?: string | null;
             /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
+            /**
              * Type
              * @description The type of the plugin.
              */
@@ -5336,6 +5345,15 @@ export interface components {
              */
             requires_roles?: string | null;
             /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
+            /**
              * Type
              * @description The type of the plugin.
              */
@@ -5359,6 +5377,27 @@ export interface components {
             | components["schemas"]["BrowsableFilesSourcePlugin"]
             | components["schemas"]["FilesSourcePlugin"]
         )[];
+        /** FilesSourceSupports */
+        FilesSourceSupports: {
+            /**
+             * Pagination
+             * @description Whether this file source supports server-side pagination.
+             * @default false
+             */
+            pagination?: boolean;
+            /**
+             * Search
+             * @description Whether this file source supports server-side search.
+             * @default false
+             */
+            search?: boolean;
+            /**
+             * Sorting
+             * @description Whether this file source supports server-side sorting.
+             * @default false
+             */
+            sorting?: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**

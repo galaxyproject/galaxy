@@ -80,6 +80,17 @@ class PluginKind(str, Enum):
     """
 
 
+class FileSourceSupports(TypedDict):
+    """Feature support flags for a file source plugin"""
+
+    # Indicates whether the file source supports pagination for listing files
+    pagination: NotRequired[bool]
+    # Indicates whether the file source supports server-side search for listing files
+    search: NotRequired[bool]
+    # Indicates whether the file source supports server-side sorting for listing files
+    sorting: NotRequired[bool]
+
+
 class FilesSourceProperties(TypedDict):
     """Initial set of properties used to initialize a filesource.
 
@@ -101,9 +112,7 @@ class FilesSourceProperties(TypedDict):
     type: NotRequired[str]
     browsable: NotRequired[bool]
     url: NotRequired[Optional[str]]
-    supports_pagination: NotRequired[bool]
-    supports_search: NotRequired[bool]
-    supports_sorting: NotRequired[bool]
+    supports: NotRequired[FileSourceSupports]
 
 
 @dataclass
@@ -397,9 +406,11 @@ class BaseFilesSource(FilesSource):
             "requires_groups": self.requires_groups,
             "disable_templating": self.disable_templating,
             "scheme": self.get_scheme(),
-            "supports_pagination": self.supports_pagination,
-            "supports_search": self.supports_search,
-            "supports_sorting": self.supports_sorting,
+            "supports": {
+                "pagination": self.supports_pagination,
+                "search": self.supports_search,
+                "sorting": self.supports_sorting,
+            },
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
