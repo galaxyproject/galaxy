@@ -148,7 +148,7 @@ onMounted(async () => {
     <div id="columns" class="workflow-published">
         <ActivityBar v-if="!props.embed && !props.quickView" />
 
-        <div id="center" class="container-root m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="container-root" :class="{ 'm-3': !props.quickView }">
             <div v-if="loading">
                 <Heading h1 separator size="xl">
                     <FontAwesomeIcon :icon="faSpinner" spin />
@@ -163,87 +163,83 @@ onMounted(async () => {
                 </BAlert>
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
-                <div class="workflow-header">
-                    <span v-if="props.showHeading || props.showButtons" class="d-flex justify-content-end">
-                        <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
-                            <span v-if="props.showAbout"> Workflow Preview </span>
-                            <span v-else> {{ workflowInfo.name }} </span>
-                        </Heading>
+                <div v-if="props.showHeading || props.showButtons" class="workflow-header">
+                    <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                        <span v-if="props.showAbout"> Workflow Preview </span>
+                        <span v-else> {{ workflowInfo.name }} </span>
+                    </Heading>
 
-                        <span v-if="props.showButtons">
-                            <BButton
-                                v-b-tooltip.hover.noninteractive
-                                title="Download workflow in .ga format"
-                                variant="outline-primary"
-                                size="md"
-                                :href="downloadUrl">
-                                <FontAwesomeIcon :icon="faDownload" />
-                                Download
-                            </BButton>
+                    <span v-if="props.showButtons">
+                        <BButton
+                            v-b-tooltip.hover.noninteractive
+                            title="Download workflow in .ga format"
+                            variant="outline-primary"
+                            size="md"
+                            :href="downloadUrl">
+                            <FontAwesomeIcon :icon="faDownload" />
+                            Download
+                        </BButton>
 
-                            <BButton
-                                v-if="!props.embed && sharedWorkflow"
-                                :href="importUrl"
-                                :disabled="userStore.isAnonymous"
-                                :title="logInTitle('Import Workflow')"
-                                data-description="workflow import"
-                                target="_blank"
-                                variant="outline-primary"
-                                size="md">
-                                <FontAwesomeIcon :icon="faEdit" />
-                                Import
-                            </BButton>
+                        <BButton
+                            v-if="!props.embed && sharedWorkflow"
+                            :href="importUrl"
+                            :disabled="userStore.isAnonymous"
+                            :title="logInTitle('Import Workflow')"
+                            data-description="workflow import"
+                            target="_blank"
+                            variant="outline-primary"
+                            size="md">
+                            <FontAwesomeIcon :icon="faEdit" />
+                            Import
+                        </BButton>
 
-                            <BButton
-                                v-else-if="!props.embed && !sharedWorkflow"
-                                v-b-tooltip.hover.noninteractive
-                                :disabled="workflowInfo.deleted"
-                                class="workflow-edit-button"
-                                :title="editButtonTitle"
-                                variant="outline-primary"
-                                size="md"
-                                :to="`/workflows/edit?id=${workflowInfo.id}`">
-                                <FontAwesomeIcon :icon="faEdit" fixed-width />
-                                Edit
-                            </BButton>
+                        <BButton
+                            v-else-if="!props.embed && !sharedWorkflow"
+                            v-b-tooltip.hover.noninteractive
+                            :disabled="workflowInfo.deleted"
+                            class="workflow-edit-button"
+                            :title="editButtonTitle"
+                            variant="outline-primary"
+                            size="md"
+                            :to="`/workflows/edit?id=${workflowInfo.id}`">
+                            <FontAwesomeIcon :icon="faEdit" fixed-width />
+                            Edit
+                        </BButton>
 
-                            <BButton
-                                v-if="!props.embed"
-                                :to="runUrl"
-                                :disabled="userStore.isAnonymous"
-                                :title="logInTitle('Run Workflow')"
-                                variant="primary"
-                                size="md">
-                                <FontAwesomeIcon :icon="faPlay" />
-                                Run
-                            </BButton>
+                        <BButton
+                            v-if="!props.embed"
+                            :to="runUrl"
+                            :disabled="userStore.isAnonymous"
+                            :title="logInTitle('Run Workflow')"
+                            variant="primary"
+                            size="md">
+                            <FontAwesomeIcon :icon="faPlay" />
+                            Run
+                        </BButton>
 
-                            <BButton
-                                v-if="props.embed"
-                                :href="viewUrl"
-                                target="blank"
-                                variant="primary"
-                                size="md"
-                                class="view-button font-weight-bold">
-                                <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
-                                View In Galaxy
-                            </BButton>
-                        </span>
+                        <BButton
+                            v-if="props.embed"
+                            :href="viewUrl"
+                            target="blank"
+                            variant="primary"
+                            size="md"
+                            class="view-button font-weight-bold">
+                            <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
+                            View In Galaxy
+                        </BButton>
                     </span>
                 </div>
 
-                <div class="workflow-preview" :class="{ 'only-preview': !props.showAbout }">
-                    <BCard class="workflow-card d-flex flex-grow-1">
-                        <WorkflowGraph
-                            v-if="workflow && datatypesMapper"
-                            :steps="workflow.steps"
-                            :datatypes-mapper="datatypesMapper"
-                            :initial-position="initialPosition"
-                            :show-minimap="props.showMinimap"
-                            :show-zoom-controls="props.showZoomControls"
-                            readonly />
-                    </BCard>
-                </div>
+                <BCard class="workflow-preview" :class="{ 'only-preview': !props.showAbout }">
+                    <WorkflowGraph
+                        v-if="workflow && datatypesMapper"
+                        :steps="workflow.steps"
+                        :datatypes-mapper="datatypesMapper"
+                        :initial-position="initialPosition"
+                        :show-minimap="props.showMinimap"
+                        :show-zoom-controls="props.showZoomControls"
+                        readonly />
+                </BCard>
 
                 <WorkflowInformation
                     v-if="props.showAbout && workflowInfo"
@@ -264,6 +260,8 @@ onMounted(async () => {
 
     .container-root {
         container-type: inline-size;
+        width: 100%;
+        overflow: auto;
     }
 
     .published-workflow {
@@ -276,6 +274,9 @@ onMounted(async () => {
 
         .workflow-header {
             grid-column: 1 / span 3;
+
+            display: flex;
+            justify-content: end;
         }
 
         .workflow-preview {
@@ -283,11 +284,6 @@ onMounted(async () => {
 
             &.only-preview {
                 grid-column: 1 / span 3;
-            }
-
-            .workflow-card {
-                width: 100%;
-                height: 100%;
             }
         }
 
