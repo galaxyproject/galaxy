@@ -19,7 +19,7 @@ type SortKeyLiteral = "create_time" | "update_time" | "None" | null | undefined;
 /**
  * Request and return invocations from server
  */
-async function getData(
+export async function getData(
     offset: number,
     limit: number,
     search: string,

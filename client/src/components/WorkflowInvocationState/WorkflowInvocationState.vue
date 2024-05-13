@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowLeft,
+    faClock,
+    faEdit,
+    faEye,
+    faHdd,
+    faPlay,
+    faSitemap,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup, BTab, BTabs } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -26,13 +35,14 @@ import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTa
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
+library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap, faTimes);
 
 interface Props {
     invocationId: string;
     index?: number;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
+    fromPanel?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -164,6 +174,7 @@ function getWorkflowName() {
 
             <div>
                 <BButton
+                    v-if="!props.fromPanel"
                     v-b-tooltip.hover.noninteractive
                     :title="localize('Return to Invocations List')"
                     class="text-nowrap"
@@ -172,6 +183,16 @@ function getWorkflowName() {
                     to="/workflows/invocations">
                     <FontAwesomeIcon :icon="faArrowLeft" class="mr-1" />
                     <span v-localize>Invocations List</span>
+                </BButton>
+                <BButton
+                    v-else
+                    v-b-tooltip.hover.noninteractive
+                    :title="localize('Close invocation')"
+                    size="sm"
+                    variant="outline-primary"
+                    to="/">
+                    <FontAwesomeIcon :icon="faTimes" class="mr-1" />
+                    <span v-localize>Close</span>
                 </BButton>
             </div>
         </div>
