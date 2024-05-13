@@ -4797,6 +4797,11 @@ export interface components {
              */
             tool_id: string;
             /**
+             * Tool Version
+             * @description Version of the tool that generated this job.
+             */
+            tool_version?: string | null;
+            /**
              * Update Time
              * Format: date-time
              * @description The last time and date this item was updated.
@@ -4824,6 +4829,44 @@ export interface components {
              * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
              */
             src: components["schemas"]["DataItemSourceType"];
+        };
+        /** ExecuteToolResponse */
+        ExecuteToolResponse: {
+            /**
+             * Errors
+             * @description Errors encountered while executing the tool.
+             * @default []
+             */
+            errors?: Record<string, never>[];
+            /**
+             * Implicit Collections
+             * @description The implicit dataset collections of the job.
+             * @default []
+             */
+            implicit_collections?: components["schemas"]["HDCAToolOutput"][];
+            /**
+             * Jobs
+             * @description The jobs of the tool.
+             * @default []
+             */
+            jobs?: components["schemas"]["JobBaseModel"][];
+            /**
+             * Output Collections
+             * @description The output dataset collections of the job.
+             * @default []
+             */
+            output_collections?: components["schemas"]["HDCAToolOutput"][];
+            /**
+             * Outputs
+             * @description The outputs of the job.
+             * @default []
+             */
+            outputs?: components["schemas"]["HDAToolOutput"][];
+            /**
+             * Produces Entry Points
+             * @description Flag indicating whether the creation of the tool produces entry points for interactive tools.
+             */
+            produces_entry_points: boolean;
         };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
@@ -6258,6 +6301,249 @@ export interface components {
              */
             visible: boolean;
         };
+        /** HDAToolOutput */
+        HDAToolOutput: {
+            /**
+             * Accessible
+             * @description Whether this item is accessible to the current user due to permissions.
+             */
+            accessible?: boolean | null;
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * API Type
+             * @deprecated
+             * @description TODO
+             */
+            api_type?: "file" | null;
+            /** Copied From Ldda Id */
+            copied_from_ldda_id?: string | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Created from basename
+             * @description The basename of the output that produced this dataset.
+             */
+            created_from_basename?: string | null;
+            /**
+             * Creating Job ID
+             * @description The encoded ID of the job that created this dataset.
+             */
+            creating_job?: string | null;
+            /**
+             * Data Type
+             * @description The fully qualified name of the class implementing the data type of this dataset.
+             */
+            data_type?: string | null;
+            /**
+             * Dataset ID
+             * @description The encoded ID of the dataset associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            dataset_id?: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Display Applications
+             * @description Contains new-style display app urls.
+             */
+            display_apps?: components["schemas"]["DisplayApp"][] | null;
+            /**
+             * Legacy Display Applications
+             * @description Contains old-style display app urls.
+             */
+            display_types?: components["schemas"]["DisplayApp"][] | null;
+            /**
+             * Download URL
+             * @description The URL to download this item from the server.
+             */
+            download_url?: string | null;
+            /**
+             * DRS ID
+             * @description The DRS ID of the dataset.
+             */
+            drs_id?: string | null;
+            /**
+             * Extension
+             * @description The extension of the dataset.
+             */
+            extension?: string | null;
+            /**
+             * File extension
+             * @description The extension of the file.
+             */
+            file_ext?: string | null;
+            /**
+             * File Name
+             * @description The full path to the dataset file.
+             */
+            file_name?: string | null;
+            /**
+             * File Size
+             * @description The file size in bytes.
+             */
+            file_size?: number | null;
+            /**
+             * Genome Build
+             * @description TODO
+             */
+            genome_build?: string | null;
+            /**
+             * Hashes
+             * @description The list of hashes associated with this dataset.
+             */
+            hashes?: components["schemas"]["DatasetHash"][] | null;
+            /**
+             * HDA or LDDA
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
+            hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid?: number | null;
+            /**
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             */
+            history_content_type?: "dataset" | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Metadata Files
+             * @description Collection of metadata files associated with this dataset.
+             */
+            meta_files?: components["schemas"]["MetadataFile"][] | null;
+            /**
+             * Metadata
+             * @description The metadata associated with this dataset.
+             */
+            metadata?: Record<string, never> | null;
+            /**
+             * Miscellaneous Blurb
+             * @description TODO
+             */
+            misc_blurb?: string | null;
+            /**
+             * Miscellaneous Information
+             * @description TODO
+             */
+            misc_info?: string | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "HistoryDatasetAssociation";
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name?: string | null;
+            /**
+             * Output Name
+             * @description The name of the tool output
+             */
+            output_name: string;
+            /**
+             * Peek
+             * @description A few lines of contents from the start of the file.
+             */
+            peek?: string | null;
+            /**
+             * Permissions
+             * @description Role-based access and manage control permissions for the dataset.
+             */
+            permissions?: components["schemas"]["DatasetPermissions"] | null;
+            /**
+             * Purged
+             * @description Whether this dataset has been removed from disk.
+             */
+            purged?: boolean | null;
+            /**
+             * Rerunnable
+             * @description Whether the job creating this dataset can be run again.
+             */
+            rerunnable?: boolean | null;
+            /**
+             * Resubmitted
+             * @description Whether the job creating this dataset has been resubmitted.
+             */
+            resubmitted?: boolean | null;
+            /**
+             * Sources
+             * @description The list of sources associated with this dataset.
+             */
+            sources?: components["schemas"]["DatasetSource"][] | null;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state?: components["schemas"]["DatasetState"] | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Type
+             * @description This is always `file` for datasets.
+             */
+            type?: "file" | null;
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /** Uuid */
+            uuid?: string | null;
+            /**
+             * Validated State
+             * @description The state of the datatype validation for this dataset.
+             */
+            validated_state?: components["schemas"]["DatasetValidatedState"] | null;
+            /**
+             * Validated State Message
+             * @description The message with details about the datatype validation result for this dataset.
+             */
+            validated_state_message?: string | null;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible?: boolean | null;
+            /**
+             * Visualizations
+             * @description The collection of visualizations that can be applied to this dataset.
+             */
+            visualizations?: components["schemas"]["Visualization"][] | null;
+            [key: string]: unknown | undefined;
+        };
         /**
          * HDCADetailed
          * @description History Dataset Collection Association detailed information.
@@ -6488,6 +6774,154 @@ export interface components {
              * @description The name of the item.
              */
             name: string | null;
+            /**
+             * Populated State
+             * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
+             */
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
+            /**
+             * Populated State Message
+             * @description Optional message with further information in case the population of the dataset collection failed.
+             */
+            populated_state_message?: string | null;
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Type
+             * @description This is always `collection` for dataset collections.
+             * @default collection
+             * @constant
+             * @enum {string}
+             */
+            type?: "collection";
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible: boolean;
+        };
+        /** HDCAToolOutput */
+        HDCAToolOutput: {
+            /**
+             * Dataset Collection ID
+             * @example 0123456789ABCDEF
+             */
+            collection_id: string;
+            /**
+             * Collection Type
+             * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
+             */
+            collection_type: string;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url: string;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Element Count
+             * @description The number of elements contained in the dataset collection. It may be None or undefined if the collection could not be populated.
+             */
+            element_count?: number | null;
+            /**
+             * Elements
+             * @description The summary information of each of the elements inside the dataset collection.
+             * @default []
+             */
+            elements?: components["schemas"]["DCESummary"][];
+            /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid: number;
+            /**
+             * History Content Type
+             * @description This is always `dataset_collection` for dataset collections.
+             * @constant
+             * @enum {string}
+             */
+            history_content_type: "dataset_collection";
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Implicit Collection Jobs Id
+             * @description Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
+             * Job Source ID
+             * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
+             */
+            job_source_id?: string | null;
+            /**
+             * Job Source Type
+             * @description The type of job (model class) that produced this dataset collection. Used to track the state of the job.
+             */
+            job_source_type?: components["schemas"]["JobSourceType"] | null;
+            /**
+             * Job State Summary
+             * @description Overview of the job states working inside the dataset collection.
+             */
+            job_state_summary?: components["schemas"]["HDCJobStateSummary"] | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
+             */
+            model_class: "HistoryDatasetCollectionAssociation";
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name: string | null;
+            /**
+             * Output Name
+             * @description The name of the tool output
+             */
+            output_name: string;
+            /**
+             * Populated
+             * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
+             */
+            populated?: boolean;
             /**
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
@@ -8504,6 +8938,11 @@ export interface components {
              */
             tool_id: string;
             /**
+             * Tool Version
+             * @description Version of the tool that generated this job.
+             */
+            tool_version?: string | null;
+            /**
              * Update Time
              * Format: date-time
              * @description The last time and date this item was updated.
@@ -8667,6 +9106,11 @@ export interface components {
              * @description Identifier of the tool that generated this job.
              */
             tool_id: string;
+            /**
+             * Tool Version
+             * @description Version of the tool that generated this job.
+             */
+            tool_version?: string | null;
             /**
              * Update Time
              * Format: date-time
@@ -8938,6 +9382,11 @@ export interface components {
              * @description Identifier of the tool that generated this job.
              */
             tool_id: string;
+            /**
+             * Tool Version
+             * @description Version of the tool that generated this job.
+             */
+            tool_version?: string | null;
             /**
              * Update Time
              * Format: date-time
@@ -11540,6 +11989,11 @@ export interface components {
              */
             tool_stdout?: string | null;
             /**
+             * Tool Version
+             * @description Version of the tool that generated this job.
+             */
+            tool_version?: string | null;
+            /**
              * Update Time
              * Format: date-time
              * @description The last time and date this item was updated.
@@ -12068,48 +12522,6 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
-        };
-        /** ToolResponse */
-        ToolResponse: {
-            /**
-             * Errors
-             * @description Job errors related to the creation of the tool.
-             * @default []
-             */
-            errors?: Record<string, never>[];
-            /**
-             * Implicit Collections
-             * @description The implicit dataset collections of the tool.
-             * @default []
-             */
-            implicit_collections?: Record<string, never>[];
-            /**
-             * Jobs
-             * @description The jobs of the tool.
-             * @default []
-             */
-            jobs?: (
-                | components["schemas"]["ShowFullJobResponse"]
-                | components["schemas"]["EncodedJobDetails"]
-                | components["schemas"]["JobSummary"]
-            )[];
-            /**
-             * Output Collections
-             * @description The output dataset collections of the tool.
-             * @default []
-             */
-            output_collections?: Record<string, never>[];
-            /**
-             * Outputs
-             * @description The outputs of the tool.
-             * @default []
-             */
-            outputs?: Record<string, never>[];
-            /**
-             * Produces Entry Points
-             * @description Flag indicating whether the creation of the tool produces entry points.
-             */
-            produces_entry_points: boolean;
         };
         /** ToolStep */
         ToolStep: {
@@ -22727,7 +23139,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["ToolResponse"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -22755,7 +23167,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["ToolResponse"];
+                    "application/json": components["schemas"]["ExecuteToolResponse"];
                 };
             };
             /** @description Validation Error */
