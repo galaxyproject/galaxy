@@ -15567,6 +15567,7 @@ export interface operations {
             /** @description Maximum number of entries to return. */
             /** @description Number of entries to skip. */
             /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
@@ -21890,6 +21891,7 @@ export interface operations {
             /** @description Maximum number of entries to return. */
             /** @description Number of entries to skip. */
             /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;

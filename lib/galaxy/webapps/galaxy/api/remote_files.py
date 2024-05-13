@@ -35,13 +35,11 @@ log = logging.getLogger(__name__)
 router = Router(tags=["remote files"])
 
 TargetQueryParam: str = Query(
-    default=RemoteFilesTarget.ftpdir,
     title="Target source",
     description=("The source to load datasets from. Possible values: ftpdir, userdir, importdir"),
 )
 
 FormatQueryParam: Optional[RemoteFilesFormat] = Query(
-    default=RemoteFilesFormat.uri,
     title="Response format",
     description=(
         "The requested format of returned data. Either `flat` to simply list all the files"
@@ -51,7 +49,6 @@ FormatQueryParam: Optional[RemoteFilesFormat] = Query(
 )
 
 RecursiveQueryParam: Optional[bool] = Query(
-    default=None,
     title="Recursive",
     description=(
         "Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`."
@@ -59,7 +56,6 @@ RecursiveQueryParam: Optional[bool] = Query(
 )
 
 DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
-    default=None,
     title="Disable mode",
     description=(
         "(This only applies when `format` is `jstree`)"
@@ -69,7 +65,6 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
 )
 
 WriteableQueryParam: Optional[bool] = Query(
-    default=None,
     title="Writeable",
     description=(
         "Whether the query is made with the intention of writing to the source."
@@ -78,7 +73,6 @@ WriteableQueryParam: Optional[bool] = Query(
 )
 
 BrowsableQueryParam: Optional[bool] = Query(
-    default=True,
     title="Browsable filesources only",
     description=(
         "Whether to return browsable filesources only. The default is `True`, which will omit filesources"
@@ -102,18 +96,16 @@ ExcludeKindQueryParam = Query(
     ),
 )
 
-LimitQueryParam = Query(default=None, title="Limit", description="Maximum number of entries to return.")
+LimitQueryParam = Query(title="Limit", description="Maximum number of entries to return.")
 
-OffsetQueryParam = Query(default=None, title="Offset", description="Number of entries to skip.")
+OffsetQueryParam = Query(title="Offset", description="Number of entries to skip.")
 
 SearchQueryParam = Query(
-    default=None,
     title="Query",
     description="Search query to filter entries by. The syntax could be different depending on the target source.",
 )
 
 SortByQueryParam = Query(
-    default=None,
     title="Sort by",
     description="Sort the entries by the specified field.",
 )
@@ -136,15 +128,15 @@ class FastAPIRemoteFiles:
     async def index(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
-        target: str = TargetQueryParam,
-        format: Optional[RemoteFilesFormat] = FormatQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
-        writeable: Optional[bool] = WriteableQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        query: Optional[str] = SearchQueryParam,
-        sort_by: Optional[str] = None,
+        target: Annotated[str, TargetQueryParam] = RemoteFilesTarget.ftpdir,
+        format: Annotated[Optional[RemoteFilesFormat], FormatQueryParam] = RemoteFilesFormat.uri,
+        recursive: Annotated[Optional[bool], RecursiveQueryParam] = None,
+        disable: Annotated[Optional[RemoteFilesDisableMode], DisableModeQueryParam] = None,
+        writeable: Annotated[Optional[bool], WriteableQueryParam] = None,
+        limit: Annotated[Optional[int], LimitQueryParam] = None,
+        offset: Annotated[Optional[int], OffsetQueryParam] = None,
+        query: Annotated[Optional[str], SearchQueryParam] = None,
+        sort_by: Annotated[Optional[str], SortByQueryParam] = None,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
         return self.manager.index(
@@ -159,7 +151,7 @@ class FastAPIRemoteFiles:
     async def plugins(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
-        browsable_only: Optional[bool] = BrowsableQueryParam,
+        browsable_only: Annotated[Optional[bool], BrowsableQueryParam] = True,
         include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
         exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
     ) -> FilesSourcePluginList:
