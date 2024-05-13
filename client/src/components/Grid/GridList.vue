@@ -327,7 +327,7 @@ watch(operationMessage, () => {
     <div :id="gridConfig.id" class="d-flex flex-column overflow-auto">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
-        <div class="grid-header d-flex justify-content-between pb-2 flex-column">
+        <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
                     <span v-localize>{{ gridConfig.title }}</span>
