@@ -170,7 +170,7 @@ def check_expression(text):
 
     statements = module.body
     if not len(statements) == 1:
-        return False  # type: ignore[unreachable]
+        return False
     expression = statements[0]
     if expression.__class__.__name__ != "Expr":
         return False

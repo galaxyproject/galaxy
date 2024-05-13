@@ -1,4 +1,4 @@
-import { datasetsFetcher, purgeHistoryDataset, undeleteHistoryDataset } from "@/api/datasets";
+import { datasetsFetcher, purgeDataset, undeleteDataset } from "@/api/datasets";
 import { archivedHistoriesFetcher, deleteHistory, historiesFetcher, undeleteHistory } from "@/api/histories";
 
 export interface ItemSizeSummary {
@@ -33,14 +33,37 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
     return allHistoriesTakingStorageResponse;
 }
 
-export async function fetchHistoryContentsSizeSummary(historyId: string, limit = 5000) {
+export async function fetchHistoryContentsSizeSummary(
+    historyId: string,
+    limit: number = 5000,
+    objectStoreId: string | null = null
+) {
+    const q = ["purged", "history_content_type"];
+    const qv = ["false", "dataset"];
+
+    if (objectStoreId) {
+        q.push("object_store_id");
+        qv.push(objectStoreId);
+    }
+
     const response = await datasetsFetcher({
         history_id: historyId,
         keys: itemSizeSummaryFields,
         limit,
         order: "size-dsc",
-        q: ["purged", "history_content_type"],
-        qv: ["false", "dataset"],
+        q: q,
+        qv: qv,
+    });
+    return response.data as unknown as ItemSizeSummary[];
+}
+
+export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string, limit = 5000) {
+    const response = await datasetsFetcher({
+        keys: itemSizeSummaryFields,
+        limit,
+        order: "size-dsc",
+        q: ["purged", "history_content_type", "object_store_id"],
+        qv: ["false", "dataset", objectStoreId],
     });
     return response.data as unknown as ItemSizeSummary[];
 }
@@ -55,12 +78,12 @@ export async function purgeHistoryById(historyId: string): Promise<PurgeableItem
     return response.data as unknown as PurgeableItemSizeSummary;
 }
 
-export async function undeleteDatasetById(historyId: string, datasetId: string): Promise<ItemSizeSummary> {
-    const data = await undeleteHistoryDataset(historyId, datasetId);
+export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSummary> {
+    const data = await undeleteDataset(datasetId);
     return data as unknown as ItemSizeSummary;
 }
 
-export async function purgeDatasetById(historyId: string, datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const data = await purgeHistoryDataset(historyId, datasetId);
+export async function purgeDatasetById(datasetId: string): Promise<PurgeableItemSizeSummary> {
+    const data = await purgeDataset(datasetId);
     return data as unknown as PurgeableItemSizeSummary;
 }

@@ -1094,6 +1094,16 @@ mapping:
           Default cache size for caching object stores if cache not configured for
           that object store entry.
 
+      object_store_always_respect_user_selection:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Set this to true to indicate in the UI that a user's object store selection
+          isn't simply a "preference" that job destinations often respect but in fact
+          will always be respected. This should be set to true to simplify the UI as
+          long as job destinations never override 'object_store_id's for a jobs.
+
       object_store_store_by:
         type: str
         required: false
@@ -3745,10 +3755,24 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
+      enable_celery_tasks:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Offload long-running tasks to a Celery task queue.
+          Activate this only if you have setup a Celery worker for Galaxy and you have
+          configured the `celery_conf` option below. Specifically, you need to set the
+          `result_backend` option in the `celery_conf` option to a valid Celery result
+          backend URL. By default, Galaxy uses an SQLite database at '<data_dir>/results.sqlite' for storing task results.
+          For details, see https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
+          
       celery_conf:
         type: any
         required: false
         default:
+          broker_url: null
+          result_backend: null
           task_routes:
             'galaxy.fetch_data': 'galaxy.external'
             'galaxy.set_job_metadata': 'galaxy.external'
@@ -3758,22 +3782,15 @@ mapping:
           To refer to a task by name, use the template `galaxy.foo` where `foo` is the function name
           of the task defined in the galaxy.celery.tasks module.
 
-          The `broker_url` option, if unset, defaults to the value of `amqp_internal_connection`.
-          The `result_backend` option must be set if the `enable_celery_tasks` option is set.
+          The `broker_url` option, if unset or null, defaults to the value of `amqp_internal_connection`.
+          The `result_backend` option, if unset or null, defaults to an SQLite database at '<data_dir>/results.sqlite'
+          for storing task results. Please use a more robust backend (e.g. Redis) for production setups.
 
           The galaxy.fetch_data task can be disabled by setting its route to "disabled": `galaxy.fetch_data: disabled`.
           (Other tasks cannot be disabled on a per-task basis at this time.)
 
           For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 
-      enable_celery_tasks:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Offload long-running tasks to a Celery task queue.
-          Activate this only if you have setup a Celery worker for Galaxy.
-          For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
       celery_user_rate_limit:
         type: float
@@ -3972,6 +3989,13 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      dispatch_notifications_interval:
+        type: int
+        required: false
+        default: 600
+        desc: |
+          The interval in seconds between attempts to dispatch notifications to users (every 10 minutes by default). Runs in a Celery task.
 
       help_forum_api_url:
         type: str

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from galaxy.config import BaseAppConfiguration
@@ -46,7 +48,7 @@ def get_schema(app_mapping):
 
 @pytest.fixture
 def mock_init(monkeypatch):
-    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(None, "_"))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(Path("no path"), "_"))
     monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(MOCK_SCHEMA))
     monkeypatch.setattr(BaseAppConfiguration, "deprecated_dirs", MOCK_DEPRECATED_DIRS)
     monkeypatch.setattr(BaseAppConfiguration, "listify_options", {"path4"})

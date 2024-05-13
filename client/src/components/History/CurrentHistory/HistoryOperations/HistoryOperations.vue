@@ -3,17 +3,18 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import type { HistorySummary } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 
 import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
 
 library.add(faCheckSquare, faCompress);
 
 interface Props {
-    history: HistorySummary;
+    history: HistorySummaryExtended;
     hasMatches: boolean;
     expandedCount: number;
     showSelection: boolean;
+    isMultiViewItem: boolean;
 }
 
 const props = defineProps<Props>();
@@ -60,6 +61,7 @@ function onUpdateOperationStatus(updateTime: number) {
             </BButtonGroup>
 
             <DefaultOperations
+                v-if="!isMultiViewItem"
                 v-show="!showSelection"
                 :history="history"
                 @update:operation-running="onUpdateOperationStatus" />

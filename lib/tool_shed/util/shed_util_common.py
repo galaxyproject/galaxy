@@ -287,7 +287,7 @@ def handle_email_alerts(
                     email_alerts.append(user.email)
         else:
             subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
-            email_alerts = json.loads(repository.email_alerts)
+            email_alerts = json.loads(repository.email_alerts)  # type:ignore[arg-type]
         for email in email_alerts:
             to = email.strip()
             # Send it

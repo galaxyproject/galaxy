@@ -2,6 +2,8 @@ import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
 
+import { useUserStore } from "@/stores/userStore";
+
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
@@ -41,18 +43,9 @@ export function fetchMenu(options = {}) {
     }
 
     //
-    // 'Data Items' or Libraries tab.
+    // 'Data' tab.
     //
-    if (Galaxy.config.single_user) {
-        // Single user can still use libraries, especially as we may grow that
-        // functionality as a representation for external data.  The rest is
-        // hidden though.
-        menu.push({
-            title: _l("Data Libraries"),
-            url: "/libraries",
-            id: "libraries",
-        });
-    } else if (Galaxy.user.id) {
+    if (Galaxy.user.id) {
         menu.push({
             id: "resources",
             title: _l("Data"),
@@ -62,7 +55,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Data Libraries"),
                     url: "/libraries",
-                    target: "_top",
                 },
                 {
                     title: _l("Datasets"),
@@ -100,11 +92,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Data Libraries"),
                     url: "/libraries",
-                    target: "_top",
-                },
-                {
-                    title: _l("Datasets"),
-                    url: "/datasets/list_published",
                 },
                 {
                     title: _l("Histories"),
@@ -136,7 +123,10 @@ export function fetchMenu(options = {}) {
             url: "/admin",
             tooltip: _l("Administer this Galaxy"),
             cls: "admin-only",
-            target: "_top",
+            onclick: () => {
+                const userStore = useUserStore();
+                userStore.toggleSideBar("admin");
+            },
         });
     }
 

@@ -121,6 +121,12 @@ ShowSharedQueryParam: bool = Query(
     default=False, title="Include histories shared with authenticated user.", description=""
 )
 
+ShowArchivedQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Show Archived",
+    description="Whether to include archived histories.",
+)
+
 SortByQueryParam: HistorySortByEnum = Query(
     default="update_time",
     title="Sort attribute",
@@ -174,6 +180,7 @@ class FastAPIHistories:
         show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
+        show_archived: Optional[bool] = ShowArchivedQueryParam,
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
@@ -196,6 +203,7 @@ class FastAPIHistories:
                 show_own=show_own,
                 show_published=show_published,
                 show_shared=show_shared,
+                show_archived=show_archived,
                 sort_by=sort_by,
                 sort_desc=sort_desc,
                 limit=limit,

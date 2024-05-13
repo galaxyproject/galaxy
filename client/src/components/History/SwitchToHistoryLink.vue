@@ -18,6 +18,7 @@ const historyStore = useHistoryStore();
 
 interface Props {
     historyId: string;
+    filters?: Record<string, string | boolean>;
 }
 
 const props = defineProps<Props>();
@@ -26,11 +27,23 @@ const history = computed(() => historyStore.getHistoryById(props.historyId));
 
 const canSwitch = computed(() => !!history.value && !history.value.archived && !history.value.purged);
 
-const actionText = computed(() => (canSwitch.value ? "Switch to" : "View in new tab"));
+const actionText = computed(() => {
+    if (canSwitch.value) {
+        if (props.filters) {
+            return "Show in history";
+        }
+        return "Switch to";
+    }
+    return "View in new tab";
+});
 
 function onClick(history: HistorySummary) {
     if (canSwitch.value) {
-        historyStore.setCurrentHistory(history.id);
+        if (props.filters) {
+            historyStore.applyFilters(history.id, props.filters);
+        } else {
+            historyStore.setCurrentHistory(history.id);
+        }
         return;
     }
     viewHistoryInNewTab(history);

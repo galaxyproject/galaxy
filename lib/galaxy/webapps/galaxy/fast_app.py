@@ -12,7 +12,7 @@ from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
-from galaxy.schema.invocation import CustomJsonSchema
+from galaxy.schema.generics import CustomJsonSchema
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,

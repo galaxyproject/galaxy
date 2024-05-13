@@ -5,7 +5,7 @@ from typing import (
 )
 
 import twill.commands as tc
-from twill.browser import FormElement
+from twill.browser import FormElement  # type:ignore[attr-defined, unused-ignore]
 
 from galaxy.util import smart_str
 from .browser import (
@@ -19,13 +19,13 @@ tc.timeout(240)
 
 
 def visit_url(url: str, allowed_codes: List[int]) -> str:
-    new_url = tc.go(url)
+    tc.go(url)
     return_code = tc.browser.code
     assert return_code in allowed_codes, "Invalid HTTP return code {}, allowed codes: {}".format(
         return_code,
         ", ".join(str(code) for code in allowed_codes),
     )
-    return new_url
+    return url
 
 
 def page_content() -> str:

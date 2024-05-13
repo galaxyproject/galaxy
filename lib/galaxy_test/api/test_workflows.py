@@ -903,6 +903,33 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         workflow_dict = self.workflow_populator.download_workflow(workflow["id"])
         assert workflow_dict["name"] == original_name
 
+    @skip_without_tool("select_from_dataset_in_conditional")
+    def test_workflow_run_form_with_broken_dataset(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  dataset: data
+steps:
+  select_from_dataset_in_conditional:
+    tool_id: select_from_dataset_in_conditional
+    in:
+      single: dataset
+    state:
+      cond:
+        cond: single
+        select_single: abc
+        inner_cond:
+          inner_cond: single
+          select_single: abc
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="a", file_type="tabular", wait=True)
+            workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            assert not workflow["has_upgrade_messages"]
+            assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
@@ -942,6 +969,36 @@ steps:
         # this time dry_run was default of False, so the label is indeed changed
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["steps"]["0"]["label"] == "new_label"
+
+    def test_refactor_tool_state_upgrade(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+steps:
+  multiple_versions_changes:
+    tool_id: multiple_versions_changes
+    tool_version: "0.1"
+    state:
+      inttest: 1
+      cond:
+        bool_to_select: false
+"""
+        )
+        actions = [{"action_type": "upgrade_all_steps"}]
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=True)
+        refactor_response.raise_for_status()
+        refactor_result = refactor_response.json()
+        upgrade_result = refactor_result["action_executions"][0]
+        assert upgrade_result["action"]["action_type"] == "upgrade_all_steps"
+        message_one, message_two = upgrade_result["messages"]
+        assert message_one["message"] == "No value found for 'floattest'. Using default: '1.0'."
+        assert message_one["input_name"] == "floattest"
+        assert message_two["message"] == "The selected case is unavailable/invalid. Using default: 'b'."
+        assert message_two["input_name"] == "cond|bool_to_select"
+
+        refactor_response = self.workflow_populator.refactor_workflow(workflow_id, actions, dry_run=False)
+        refactor_response.raise_for_status()
 
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
@@ -3970,6 +4027,31 @@ test_data:
                 assert_ok=True,
             )
 
+    @skip_without_tool("implicit_conversion_format_input")
+    def test_run_with_implicit_collection_map_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  collection: collection
+steps:
+  map_over:
+    tool_id: implicit_conversion_format_input
+    in:
+      input1: collection
+test_data:
+  collection:
+    collection_type: list
+    elements:
+      - identifier: 1
+        value: 1.fasta.gz
+        type: File
+""",
+                history_id=history_id,
+                assert_ok=True,
+            )
+
     @skip_without_tool("random_lines1")
     def test_change_datatype_collection_map_over(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3999,6 +4081,36 @@ text_input1:
             forward, reverse = hdca["elements"][0]["object"]["elements"]
             assert forward["object"]["file_ext"] == "csv"
             assert reverse["object"]["file_ext"] == "csv"
+
+    @skip_without_tool("collection_split_on_column")
+    def test_change_datatype_discovered_outputs(self):
+        with self.dataset_populator.test_history() as history_id:
+            jobs_summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  split:
+    tool_id: collection_split_on_column
+    in:
+      input1: input
+    outputs:
+        split_output:
+          change_datatype: csv
+outputs:
+  output:
+    outputSource: split/split_output
+test_data:
+  input: "1\t2\t3"
+""",
+                history_id=history_id,
+            )
+            inv = self.workflow_populator.get_invocation(jobs_summary.invocation_id, step_details=True)
+            details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=inv["output_collections"]["output"]["id"]
+            )
+            assert details["elements"][0]["object"]["file_ext"] == "csv"
 
     @skip_without_tool("collection_type_source_map_over")
     def test_mapping_and_subcollection_mapping(self):
@@ -5447,7 +5559,7 @@ steps:
     tool_id: output_filter
     state:
       produce_out_1: False
-      filter_text_1: '1'
+      filter_text_1: 'foo'
       produce_collection: False
 """,
                 test_data={},

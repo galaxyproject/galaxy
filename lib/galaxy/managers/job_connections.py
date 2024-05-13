@@ -54,7 +54,7 @@ class JobConnectionsManager:
             for val in graph["outputs"] + graph["inputs"]:
                 item_class = get_class(val["src"])
                 item_hid = self.sa_session.execute(select(item_class.hid).where(item_class.id == val["id"])).scalar()
-                result.append(item_hid)
+                result.append(item_hid)  # type:ignore[arg-type]
         return result
 
     def _get_union_results(self, *selects):

@@ -22,8 +22,10 @@ from sqlalchemy import (
     nullsfirst,
     nullslast,
     select,
+    Select,
     sql,
     true,
+    UnaryExpression,
 )
 from sqlalchemy.orm import (
     joinedload,
@@ -134,7 +136,7 @@ class HistoryContentsManager(base.SortableManager):
             attribute_dsc = f"{attribute}-dsc"
             attribute_asc = f"{attribute}-asc"
             if order_by_string in (attribute, attribute_dsc):
-                order_by = desc(attribute)
+                order_by: UnaryExpression = desc(attribute)
                 if attribute == "size":
                     return nullslast(order_by)
                 return order_by
@@ -163,12 +165,10 @@ class HistoryContentsManager(base.SortableManager):
             base.ModelFilterParser.parsed_filter("orm", sql.column("visible") == true()),
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
-        statement = (
-            sql.select(sql.column("state"), func.count("*"))
-            .select_from(contents_subquery)
-            .group_by(sql.column("state"))
+        statement: Select = (
+            select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.context.execute(statement).fetchall()
+        counts = self.app.model.session().execute(statement).fetchall()
         return dict(counts)
 
     def active_counts(self, history):
@@ -413,10 +413,10 @@ class HistoryContentsManager(base.SortableManager):
         component_class = self.contained_class
         stmt = (
             select(component_class)
-            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
+            .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
-            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.tags))  # type: ignore[attr-defined]
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         result = self._session().scalars(stmt).unique()

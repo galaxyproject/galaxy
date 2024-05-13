@@ -172,7 +172,6 @@ const emit = defineEmits([
     "onActivate",
     "onChange",
     "onCreate",
-    "onUpdate",
     "onClone",
     "onUpdateStepPosition",
     "pan-by",

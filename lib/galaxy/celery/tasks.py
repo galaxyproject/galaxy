@@ -43,6 +43,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.schema.notifications import NotificationCreateRequest
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -195,7 +196,7 @@ def set_metadata(
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
-        dataset_instance.datatype.set_meta(dataset_instance)
+        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore [arg-type]
         dataset_instance.set_peek()
         # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
         dataset_instance.set_metadata_success_state()
@@ -228,6 +229,7 @@ def setup_fetch_data(
 ):
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.get(Job, job_id)
+    assert job
     # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
     job.handler = self.request.hostname
     job.job_runner_name = "celery"
@@ -260,6 +262,7 @@ def finish_job(
 ):
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.get(Job, job_id)
+    assert job
     # TODO: assert state ?
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
     mini_job_wrapper.finish("", "")
@@ -320,6 +323,7 @@ def fetch_data(
     task_user_id: Optional[int] = None,
 ) -> str:
     job = sa_session.get(Job, job_id)
+    assert job
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
     return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
@@ -480,3 +484,21 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
 @galaxy_task(action="prune object store cache directories")
 def clean_object_store_caches(object_store: BaseObjectStore):
     check_caches(object_store.cache_targets())
+
+
+@galaxy_task(action="send notifications to all recipients")
+def send_notification_to_recipients_async(
+    request: NotificationCreateRequest, notification_manager: NotificationManager
+):
+    """Send a notification to a list of users."""
+    _, notifications_sent = notification_manager.send_notification_to_recipients(request=request)
+
+    log.info(f"Successfully sent {notifications_sent} notifications.")
+
+
+@galaxy_task(action="dispatch pending notifications")
+def dispatch_pending_notifications(notification_manager: NotificationManager):
+    """Dispatch pending notifications."""
+    count = notification_manager.dispatch_pending_notifications_via_channels()
+    if count:
+        log.info(f"Successfully dispatched {count} notifications.")

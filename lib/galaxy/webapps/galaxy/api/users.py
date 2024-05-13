@@ -38,6 +38,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Role,
     UserAddress,
+    UserObjectstoreUsage,
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
@@ -305,6 +306,21 @@ class FastAPIUsers:
             return []
 
     @router.get(
+        "/api/users/{user_id}/objectstore_usage",
+        name="get_user_objectstore_usage",
+        summary="Return the user's object store usage summary broken down by object store ID",
+    )
+    def objectstore_usage(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    ) -> List[UserObjectstoreUsage]:
+        if user := self.service.get_user_full(trans, user_id, False):
+            return user.dictify_objectstore_usage()
+        else:
+            return []
+
+    @router.get(
         "/api/users/{user_id}/usage/{label}",
         name="get_user_usage_for_label",
         summary="Return the user's quota usage summary for a given quota source label",
@@ -515,6 +531,7 @@ class FastAPIUsers:
             else:
                 build_dict["fasta"] = trans.security.decode_id(len_value)
                 dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
+                assert dataset
                 try:
                     new_len = dataset.get_converted_dataset(trans, "len")
                     new_linecount = new_len.get_converted_dataset(trans, "linecount")

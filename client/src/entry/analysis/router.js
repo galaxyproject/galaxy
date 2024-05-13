@@ -105,9 +105,6 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            ...AdminRoutes,
-            ...LibraryRoutes,
-            ...StorageDashboardRoutes,
             /** Login entry route */
             {
                 path: "/login/start",
@@ -123,7 +120,11 @@ export function getRouter(Galaxy) {
                 }),
             },
             /** Workflow editor */
-            { path: "/workflows/edit", component: WorkflowEditorModule },
+            {
+                path: "/workflows/edit",
+                component: WorkflowEditorModule,
+                redirect: redirectAnon(),
+            },
             /** Published resources routes */
             {
                 path: "/published/history",
@@ -167,6 +168,9 @@ export function getRouter(Galaxy) {
                 path: "/",
                 component: Analysis,
                 children: [
+                    ...AdminRoutes,
+                    ...LibraryRoutes,
+                    ...StorageDashboardRoutes,
                     {
                         path: "",
                         alias: "root",
@@ -446,6 +450,9 @@ export function getRouter(Galaxy) {
                         path: "user/notifications",
                         component: NotificationsList,
                         redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                        props: (route) => ({
+                            shouldOpenPreferences: Boolean(route.query.preferences),
+                        }),
                     },
                     {
                         path: "user/notifications/preferences",
@@ -521,6 +528,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/import",
                         component: WorkflowImport,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/invocations",
@@ -564,6 +572,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/run",
                         component: Home,
+                        redirect: redirectAnon(),
                         props: (route) => ({
                             config: Galaxy.config,
                             query: { workflow_id: route.query.id },

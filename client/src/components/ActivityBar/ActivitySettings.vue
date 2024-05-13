@@ -61,7 +61,7 @@ function onQuery(newQuery: string) {
 <template>
     <div class="activity-settings rounded no-highlight">
         <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
-        <div v-if="foundActivities" class="activity-settings-content">
+        <div v-if="foundActivities" class="activity-settings-content mt-2">
             <div v-for="activity in filteredActivities" :key="activity.id">
                 <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">
@@ -77,12 +77,12 @@ function onQuery(newQuery: string) {
                                 icon="fas fa-check-square"
                                 fa-fw />
                             <FontAwesomeIcon v-else class="mr-1" icon="far fa-square" fa-fw />
-                            <small>
+                            <span>
                                 <icon class="mr-1" :icon="activity.icon" />
                                 <span v-localize class="font-weight-bold">{{
                                     activity.title || "No title available"
                                 }}</span>
-                            </small>
+                            </span>
                         </span>
                         <b-button
                             v-if="activity.mutable"
@@ -94,9 +94,9 @@ function onQuery(newQuery: string) {
                             <FontAwesomeIcon icon="fa-trash" fa-fw />
                         </b-button>
                     </div>
-                    <small v-localize>
+                    <div v-localize class="text-muted">
                         {{ activity.description || "No description available" }}
-                    </small>
+                    </div>
                 </button>
             </div>
         </div>
@@ -134,14 +134,6 @@ function onQuery(newQuery: string) {
     }
 }
 .activity-settings-item:hover {
-    background: $brand-primary;
-    color: $brand-light;
-    border-radius: $border-radius-large;
-    .icon-check {
-        color: $brand-light;
-    }
-    .button-delete {
-        color: $brand-light;
-    }
+    background: $gray-200;
 }
 </style>

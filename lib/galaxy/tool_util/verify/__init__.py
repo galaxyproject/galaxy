@@ -31,17 +31,19 @@ except ImportError:
 try:
     from PIL import Image
 except ImportError:
-    pass
+    Image = None  # type: ignore[assignment, unused-ignore]
 try:
     import tifffile
 except ImportError:
-    pass
+    tifffile = None  # type: ignore[assignment, unused-ignore]
+
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_EPS,
     DEFAULT_METRIC,
+    DEFAULT_PIN_LABELS,
 )
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
@@ -192,7 +194,12 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             elif compare == "image_diff":
-                files_image_diff(local_name, temp_name, attributes=attributes)
+                if Image and tifffile:
+                    files_image_diff(local_name, temp_name, attributes=attributes)
+                else:
+                    raise Exception(
+                        "pillow and tifffile are not installed, but required to compare files using the 'image_diff' method"
+                    )
             else:
                 raise Exception(f"Unimplemented Compare type: {compare}")
         except AssertionError as err:
@@ -456,43 +463,87 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
+def _singleobject_intersection_over_union(
+    mask1: "numpy.typing.NDArray",
+    mask2: "numpy.typing.NDArray",
+) -> "numpy.floating":
+    return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
+
+
 def _multiobject_intersection_over_union(
-    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", repeat_reverse: bool = True
+    mask1: "numpy.typing.NDArray",
+    mask2: "numpy.typing.NDArray",
+    pin_labels: Optional[List[int]] = None,
+    repeat_reverse: bool = True,
 ) -> List["numpy.floating"]:
     iou_list = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
-        cc1_iou_list = []
-        for label2 in numpy.unique(mask2[cc1]):
-            cc2 = mask2 == label2
-            cc1_iou_list.append(intersection_over_union(cc1, cc2))
-        iou_list.append(max(cc1_iou_list))
+
+        # If the label is in `pin_labels`, then use the same label value to find the corresponding object in the second mask.
+        if pin_labels is not None and label1 in pin_labels:
+            cc2 = mask2 == label1
+            iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
+
+        # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
+        else:
+            cc1_iou_list = []
+            for label2 in numpy.unique(mask2[cc1]):
+                if pin_labels is not None and label2 in pin_labels:
+                    continue
+                cc2 = mask2 == label2
+                cc1_iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
+            iou_list.append(max(cc1_iou_list))
+
     if repeat_reverse:
-        iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, repeat_reverse=False))
+        iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, pin_labels, repeat_reverse=False))
+
     return iou_list
 
 
-def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray") -> "numpy.floating":
+def intersection_over_union(
+    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
+) -> "numpy.floating":
+    """Compute the intersection over union (IoU) for the objects in two masks containing lables.
+
+    The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
+    To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
+    The object correspondences are not necessarily symmetric.
+
+    By default, the corresponding object in the other mask is determined as the one with the largest IoU value.
+    If the label of an object is listed in `pin_labels`, then the corresponding object in the other mask is determined as the object with the same label value.
+    Objects with labels listed in `pin_labels` also cannot correspond to objects with different labels.
+    This is particularly useful when specific image regions must always be labeled with a designated label value (e.g., the image background is often labeled with 0 or -1).
+    """
     assert mask1.dtype == mask2.dtype
     assert mask1.ndim == mask2.ndim == 2
     assert mask1.shape == mask2.shape
-    if mask1.dtype == bool:
-        return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
+    for label in pin_labels or []:
+        count = sum(label in mask for mask in (mask1, mask2))
+        count_str = {1: "one", 2: "both"}
+        assert count == 2, f"Label {label} is pinned but missing in {count_str[2 - count]} of the images."
+    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
+
+
+def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
+    if label_list_str is None:
+        return []
     else:
-        return min(_multiobject_intersection_over_union(mask1, mask2))
+        return [int(label.strip()) for label in label_list_str.split(",") if len(label_list_str) > 0]
 
 
 def get_image_metric(
     attributes: Dict[str, Any]
 ) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
+    pin_labels = _parse_label_list(attributes.get("pin_labels", DEFAULT_PIN_LABELS))
     metrics = {
         "mae": lambda arr1, arr2: numpy.abs(arr1 - arr2).mean(),
         # Convert to float before squaring to prevent overflows
         "mse": lambda arr1, arr2: numpy.square((arr1 - arr2).astype(float)).mean(),
         "rms": lambda arr1, arr2: math.sqrt(numpy.square((arr1 - arr2).astype(float)).mean()),
         "fro": lambda arr1, arr2: numpy.linalg.norm((arr1 - arr2).reshape(1, -1), "fro"),
-        "iou": lambda arr1, arr2: 1 - intersection_over_union(arr1, arr2),
+        "iou": lambda arr1, arr2: 1 - intersection_over_union(arr1, arr2, pin_labels),
     }
     try:
         return metrics[metric_name]

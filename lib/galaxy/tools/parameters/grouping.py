@@ -618,8 +618,8 @@ class UploadDataset(Group):
         writable_files = d_type.writable_files
         writable_files_offset = 0
         groups_incoming = [None for _ in range(file_count)]
-        for group_incoming in context.get(self.name, []):
-            i = int(group_incoming["__index__"])
+        for i, group_incoming in enumerate(context.get(self.name, [])):
+            i = int(group_incoming.get("__index__", i))
             groups_incoming[i] = group_incoming
         if d_type.composite_type is not None or force_composite:
             # handle uploading of composite datatypes

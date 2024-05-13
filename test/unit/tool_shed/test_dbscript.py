@@ -16,10 +16,7 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import in_packages
 from galaxy.util.resources import resource_path
-
-pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
 
 DbUrl = NewType("DbUrl", str)
 

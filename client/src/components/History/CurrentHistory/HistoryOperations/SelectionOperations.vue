@@ -1,5 +1,5 @@
 <template>
-    <section v-if="hasSelection">
+    <section v-if="hasSelection && !isMultiViewItem">
         <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
             <template v-slot:button-content>
                 <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
@@ -178,6 +178,7 @@ export default {
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
+        isMultiViewItem: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
     },
     setup() {

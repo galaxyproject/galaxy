@@ -12,6 +12,7 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_hda_model_store_dict,
     TEST_SOURCE_URI,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_has_keys
 from galaxy_test.base.decorators import (
@@ -355,6 +356,15 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(get_content_as_text_response, 200)
         self._assert_has_key(get_content_as_text_response.json(), "item_data")
         assert get_content_as_text_response.json().get("item_data") == contents
+
+    def test_get_content_as_text_with_compressed_text_data(self, history_id):
+        test_data_resolver = TestDataResolver()
+        with open(test_data_resolver.get_filename("1.fasta.gz"), mode="rb") as fh:
+            hda1 = self.dataset_populator.new_dataset(history_id, content=fh, ftype="fasta.gz", wait=True)
+        get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+        self._assert_status_code_is(get_content_as_text_response, 200)
+        self._assert_has_key(get_content_as_text_response.json(), "item_data")
+        assert ">hg17" in get_content_as_text_response.json().get("item_data")
 
     def test_anon_get_content_as_text(self, history_id):
         contents = "accessible data"

@@ -610,7 +610,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def update(
         self,
         trans,
-        history_id: DecodedDatabaseIdField,
+        history_id: Optional[DecodedDatabaseIdField],
         id: DecodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
@@ -627,6 +627,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
+        if history_id is None:
+            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            history_id = hda.history.id
+
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if contents_type == HistoryContentType.dataset:
             return self.__update_dataset(trans, history, id, payload, serialization_params)
