@@ -135,15 +135,15 @@ class RDMFilesSource(BaseFilesSource):
     """
 
     plugin_kind = PluginKind.rdm
+    serialize_extra_props = ["url"]
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)
-        base_url = props.get("url")
-        if not base_url:
+        self.url = props.get("url")
+        if not self.url:
             raise Exception("URL for RDM repository must be provided in configuration")
-        self._repository_url = base_url
         self._props = props
-        self._repository_interactor = self.get_repository_interactor(base_url)
+        self._repository_interactor = self.get_repository_interactor(self.url)
 
     @property
     def repository(self) -> RDMRepositoryInteractor:
