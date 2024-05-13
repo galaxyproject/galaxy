@@ -162,7 +162,7 @@ defineExpose({
                     data-description="workflow run warning">
                     <span>
                         The <b>`{{ workflowName }}`</b> workflow may contain tools which have changed since it was last
-                        saved or some error have been detected. Please
+                        saved or some other problems have been detected. Please
                     </span>
                     <RouterLink v-if="isOwner" :to="editorLink">click here to edit and review the issues</RouterLink>
                     <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
