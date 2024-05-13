@@ -312,7 +312,7 @@ def test_import_library_require_permissions():
     app = _mock_app()
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
 
     library = model.Library(name="my library 1", description="my library description", synopsis="my synopsis")
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
@@ -340,7 +340,7 @@ def test_import_export_library():
     app = _mock_app()
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
 
     library = model.Library(name="my library 1", description="my library description", synopsis="my synopsis")
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
@@ -684,7 +684,7 @@ def test_import_export_edit_collection():
     app = _mock_app()
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     c1 = model.DatasetCollection(collection_type="list", populated=False)
@@ -761,7 +761,7 @@ def test_import_export_composite_datasets():
     app = _mock_app()
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
@@ -804,7 +804,7 @@ def test_edit_metadata_files():
     app = _mock_app(store_by="uuid")
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
@@ -910,7 +910,7 @@ def _assert_simple_cat_job_imported(imported_history, state="ok"):
 def _setup_simple_cat_job(app, state="ok"):
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     d1, d2 = _create_datasets(sa_session, h, 2)
@@ -966,7 +966,7 @@ def _setup_invocation(app):
 def _setup_simple_collection_job(app, state="ok"):
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     d1, d2, d3, d4 = _create_datasets(sa_session, h, 4)
@@ -1170,7 +1170,7 @@ def setup_fixture_context_with_user(
 ) -> StoreFixtureContextWithUser:
     app = _mock_app(store_by=store_by)
     sa_session = app.model.context
-    user = model.User(email=user_email, password="password")
+    user = model.User(email=user_email, password="password", username=user_email.split("@")[0])
     return StoreFixtureContextWithUser(app=app, sa_session=sa_session, user=user)
 
 

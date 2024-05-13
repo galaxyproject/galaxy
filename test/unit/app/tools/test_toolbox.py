@@ -356,9 +356,7 @@ class TestToolBox(BaseToolBoxTestCase):
         workflow = model.Workflow()
         workflow.stored_workflow = stored_workflow
         stored_workflow.latest_workflow = workflow
-        user = model.User()
-        user.email = "test@example.com"
-        user.password = "passw0rD1"
+        user = model.User(email="test@example.com", password="passw0rD1", username="test")
         stored_workflow.user = user
         self.app.model.context.add(workflow)
         self.app.model.context.add(stored_workflow)

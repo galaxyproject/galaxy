@@ -3,6 +3,8 @@ from sqlalchemy import union
 
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.model import (
+    DatasetCollection,
+    History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -25,11 +27,19 @@ def job_connections_manager(sa_session) -> JobConnectionsManager:
 
 # =============================================================================
 def setup_connected_dataset(sa_session: galaxy_scoped_session):
+    history = History()
+    sa_session.add(history)
     center_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_dc = DatasetCollection(collection_type="list")
     input_hdca = HistoryDatasetCollectionAssociation()
+    input_hdca.collection = input_dc
     output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    output_dc = DatasetCollection(collection_type="list")
     output_hdca = HistoryDatasetCollectionAssociation()
+    output_hdca.collection = output_dc
+    history.stage_addition([center_hda, input_hda, input_hdca, output_hda, output_hdca])
+    history.add_pending_items()
     input_job = Job()
     output_job = Job()
     input_job.add_output_dataset("output_hda", center_hda)
@@ -55,12 +65,22 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
 
 
 def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
+    history = History()
+    sa_session.add(history)
+    center_dc = DatasetCollection(collection_type="list")
     center_hdca = HistoryDatasetCollectionAssociation()
+    center_hdca.collection = center_dc
     input_hda1 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hda2 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_dc = DatasetCollection(collection_type="list")
     input_hdca = HistoryDatasetCollectionAssociation()
+    input_hdca.collection = input_dc
     output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    output_dc = DatasetCollection(collection_type="list")
     output_hdca = HistoryDatasetCollectionAssociation()
+    output_hdca.collection = output_dc
+    history.stage_addition([center_hdca, input_hda1, input_hda2, input_hdca, output_hda, output_hdca])
+    history.add_pending_items()
     input_job = Job()
     output_job = Job()
     input_job.add_output_dataset_collection("output_hdca", center_hdca)

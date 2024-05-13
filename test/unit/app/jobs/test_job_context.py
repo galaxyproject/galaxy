@@ -46,7 +46,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     sa_session = app.model.context
     # mocker is a pytest-mock fixture
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     h = model.History(name="Test History", user=u)
 
     tool = Tool(app)

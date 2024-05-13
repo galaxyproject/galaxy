@@ -64,9 +64,9 @@ def __setup_fixtures(app):
     # user1 has 3 jobs queued and 2 jobs running on cluster1 and one queued and
     # on running job on local. user2 has a queued and running job on the cluster.
     # user3 has no jobs.
-    user1 = model.User(email=USER_EMAIL_1, password="pass1")
-    user2 = model.User(email=USER_EMAIL_2, password="pass2")
-    user3 = model.User(email=USER_EMAIL_2, password="pass2")
+    user1 = model.User(email=USER_EMAIL_1, password="pass1", username="u1")
+    user2 = model.User(email=USER_EMAIL_2, password="pass2", username="u2")
+    user3 = model.User(email=USER_EMAIL_2, password="pass2", username="u3")
 
     app.add(user1, user2, user3)
 

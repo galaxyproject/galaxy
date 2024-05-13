@@ -225,7 +225,7 @@ def _import_library_target(target, work_directory):
     with store.DirectoryModelExportStore(temp_directory, app=app, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
 
-    u = model.User(email="library@example.com", password="password")
+    u = model.User(email="library@example.com", password="password", username="library")
 
     import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_library_creation=True)
     import_model_store = store.get_import_model_store_for_directory(
@@ -240,7 +240,7 @@ def _import_library_target(target, work_directory):
 def _import_directory_to_history(app, target, work_directory):
     sa_session = app.model.context
 
-    u = model.User(email="collection@example.com", password="password")
+    u = model.User(email="collection@example.com", password="password", username="collection")
     import_history = model.History(name="Test History for Import", user=u)
 
     sa_session = app.model.context

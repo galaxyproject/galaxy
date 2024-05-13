@@ -57,7 +57,7 @@ class TestErrorReporter(TestCase, UsesApp):
         permissions = {access_action: [private_role], manage_action: [private_role]}
         security_agent.set_all_dataset_permissions(hda.dataset, permissions)
 
-        other_user = model.User(email="otheruser@galaxyproject.org", password="mockpass2")
+        other_user = model.User(email="otheruser@galaxyproject.org", password="mockpass2", username="otheruser")
         self._commit_objects([other_user])
         security_agent = self.app.security_agent
         email_path = self.email_path
@@ -125,7 +125,7 @@ class TestErrorReporter(TestCase, UsesApp):
         )
 
     def _setup_model_objects(self):
-        user = model.User(email=TEST_USER_EMAIL, password="mockpass")
+        user = model.User(email=TEST_USER_EMAIL, password="mockpass", username=TEST_USER_EMAIL.split("@")[0])
         job = model.Job()
         job.tool_id = "cat1"
         job.history = model.History()

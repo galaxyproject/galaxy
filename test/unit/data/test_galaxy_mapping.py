@@ -40,6 +40,11 @@ skip_if_not_postgres_base = pytest.mark.skipif(
 PRIVATE_OBJECT_STORE_ID = "my_private_data"
 
 
+@pytest.fixture()
+def u():
+    return model.User(f"{uuid.uuid4()}@#user.com", str(uuid.uuid4()), str(uuid.uuid4()))
+
+
 class BaseModelTestCase(TestCase):
     model: mapping.GalaxyModelMapping
 
@@ -79,7 +84,7 @@ class BaseModelTestCase(TestCase):
 class TestMappings(BaseModelTestCase):
     def test_ratings(self):
         user_email = "rater@example.com"
-        u = model.User(email=user_email, password="password")
+        u = model.User(email=user_email, password="password", username=user_email.split("@")[0])
         self.persist(u)
 
         def persist_and_check_rating(rating_class, item):
@@ -119,6 +124,8 @@ class TestMappings(BaseModelTestCase):
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
+        self.session().add_all([h, history_dataset_collection])
+        h.add_dataset_collection(history_dataset_collection)
         self.persist(history_dataset_collection)
         persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection)
 
@@ -154,7 +161,7 @@ class TestMappings(BaseModelTestCase):
 
     def test_hda_to_library_dataset_dataset_association(self):
         model = self.model
-        u = self.model.User(email="mary@example.com", password="password")
+        u = self.model.User(email="mary@example.com", password="password", username="mary")
         h1 = model.History(name="History 1", user=u)
         hda = model.HistoryDatasetAssociation(
             name="hda_name", create_dataset=True, history=h1, sa_session=model.session
@@ -186,7 +193,7 @@ class TestMappings(BaseModelTestCase):
 
     def test_hda_to_library_dataset_dataset_association_fails_if_private(self):
         model = self.model
-        u = model.User(email="mary2@example.com", password="password")
+        u = model.User(email="mary2@example.com", password="password", username="mary2")
         h1 = model.History(name="History 1", user=u)
         hda = model.HistoryDatasetAssociation(
             name="hda_name", create_dataset=True, history=h1, sa_session=model.session
@@ -205,7 +212,7 @@ class TestMappings(BaseModelTestCase):
     def test_tags(self):
         TAG_NAME = "Test Tag"
         my_tag = model.Tag(name=TAG_NAME)
-        u = model.User(email="tagger@example.com", password="password")
+        u = model.User(email="tagger@example.com", password="password", username="tagger")
         self.persist(my_tag, u)
 
         def tag_and_test(taggable_object, tag_association_class):
@@ -239,13 +246,13 @@ class TestMappings(BaseModelTestCase):
 
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
+        h.add_dataset_collection(history_dataset_collection)
         tag_and_test(history_dataset_collection, model.HistoryDatasetCollectionTagAssociation)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation)
 
-    def test_collection_get_interface(self):
-        u = model.User(email="mary@example.com", password="password")
+    def test_collection_get_interface(self, u):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
@@ -261,8 +268,7 @@ class TestMappings(BaseModelTestCase):
         for i in range(elements):
             assert c1[i] == dces[i]
 
-    def test_dataset_instance_order(self) -> None:
-        u = model.User(email="mary@example.com", password="password")
+    def test_dataset_instance_order(self, u) -> None:
         h1 = model.History(name="History 1", user=u)
         elements = []
         list_pair = model.DatasetCollection(collection_type="list:paired")
@@ -308,8 +314,7 @@ class TestMappings(BaseModelTestCase):
         assert all(d.name == f"forward_{i}" for i, d in enumerate(forward_hdas))
         assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse_hdas))
 
-    def test_collections_in_histories(self):
-        u = model.User(email="mary@example.com", password="password")
+    def test_collections_in_histories(self, u):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
@@ -323,6 +328,8 @@ class TestMappings(BaseModelTestCase):
 
         dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="left")
         dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="right")
+        h1.stage_addition([d1, d2, hc1])
+        h1.add_pending_items()
 
         self.persist(u, h1, d1, d2, c1, hc1, dce1, dce2)
 
@@ -337,8 +344,7 @@ class TestMappings(BaseModelTestCase):
         assert loaded_dataset_collection["left"] == dce1
         assert loaded_dataset_collection["right"] == dce2
 
-    def test_collections_in_library_folders(self):
-        u = model.User(email="mary2@example.com", password="password")
+    def test_collections_in_library_folders(self, u):
         lf = model.LibraryFolder(name="RootFolder")
         library = model.Library(name="Library1", root_folder=lf)
         ld1 = model.LibraryDataset()
@@ -358,7 +364,7 @@ class TestMappings(BaseModelTestCase):
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_dataset_action_tuples(self):
-        u = model.User(email="foo", password="foo")
+        u = model.User(email="foo", password="foo", username="foo")
         h1 = model.History(user=u)
         hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
         hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
@@ -373,8 +379,7 @@ class TestMappings(BaseModelTestCase):
         self.model.session.flush()
         assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
 
-    def test_nested_collection_attributes(self):
-        u = model.User(email="mary2@example.com", password="password")
+    def test_nested_collection_attributes(self, u):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(
             extension="bam", history=h1, create_dataset=True, sa_session=self.model.session
@@ -461,8 +466,7 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_dataset_dbkeys_and_extensions_summary(self):
-        u = model.User(email="mary2@example.com", password="password")
+    def test_dataset_dbkeys_and_extensions_summary(self, u):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(
             extension="bam", dbkey="hg19", history=h1, create_dataset=True, sa_session=self.model.session
@@ -475,12 +479,13 @@ class TestMappings(BaseModelTestCase):
         dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
         hdca = model.HistoryDatasetCollectionAssociation(collection=c1, history=h1)
         self.model.session.add_all([d1, d2, c1, dce1, dce2, hdca])
+        h1.stage_addition([d1, d2, hdca])
+        h1.add_pending_items()
         self.model.session.flush()
         assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
         assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
 
-    def test_populated_optimized_ok(self):
-        u = model.User(email="mary2@example.com", password="password")
+    def test_populated_optimized_ok(self, u):
         h1 = model.History(name="History 1", user=u)
         d1 = model.HistoryDatasetAssociation(
             extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
@@ -492,6 +497,8 @@ class TestMappings(BaseModelTestCase):
         dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
         dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
         self.model.session.add_all([d1, d2, c1, dce1, dce2])
+        h1.stage_addition([d1, d2])
+        h1.add_pending_items()
         self.model.session.flush()
         assert c1.populated
         assert c1.populated_optimized
@@ -524,7 +531,7 @@ class TestMappings(BaseModelTestCase):
         assert not c2.populated_optimized
 
     def test_default_disk_usage(self):
-        u = model.User(email="disk_default@test.com", password="password")
+        u = model.User(email="disk_default@test.com", password="password", username="disk_default")
         self.persist(u)
         u.adjust_total_disk_usage(1, None)
         u_id = u.id
@@ -536,7 +543,7 @@ class TestMappings(BaseModelTestCase):
         original_user_count = len(self.model.session.scalars(select(model.User)).all())
 
         # Make some changes and commit them
-        u = model.User(email="james@foo.bar.baz", password="password")
+        u = model.User(email="james@foo.bar.baz", password="password", username="james")
         h1 = model.History(name="History 1", user=u)
         h2 = model.History(name=("H" * 1024))
         self.persist(u, h1, h2)
@@ -592,8 +599,7 @@ class TestMappings(BaseModelTestCase):
         ).scalar_one()
         assert loaded_dataset.job_id == job.id
 
-    def test_jobs(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
+    def test_jobs(self, u):
         job = model.Job()
         job.user = u
         job.tool_id = "cat1"
@@ -603,8 +609,7 @@ class TestMappings(BaseModelTestCase):
         loaded_job = self.model.session.scalars(select(model.Job).filter(model.Job.user == u).limit(1)).first()
         assert loaded_job.tool_id == "cat1"
 
-    def test_job_metrics(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
+    def test_job_metrics(self, u):
         job = model.Job()
         job.user = u
         job.tool_id = "cat1"
@@ -624,8 +629,7 @@ class TestMappings(BaseModelTestCase):
         # Ensure big values truncated
         assert len(task.text_metrics[1].metric_value) <= 1023
 
-    def test_tasks(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
+    def test_tasks(self, u):
         job = model.Job()
         task = model.Task(job=job, working_directory="/tmp", prepare_files_cmd="split.sh")
         job.user = u
@@ -634,8 +638,7 @@ class TestMappings(BaseModelTestCase):
         loaded_task = self.model.session.scalars(select(model.Task).filter(model.Task.job == job).limit(1)).first()
         assert loaded_task.prepare_input_files_cmd == "split.sh"
 
-    def test_history_contents(self):
-        u = model.User(email="contents@foo.bar.baz", password="password")
+    def test_history_contents(self, u):
         # gs = model.GalaxySession()
         h1 = model.History(name="HistoryContentsHistory1", user=u)
 
@@ -668,8 +671,7 @@ class TestMappings(BaseModelTestCase):
 
         assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
 
-    def test_history_audit(self):
-        u = model.User(email="contents@foo.bar.baz", password="password")
+    def test_history_audit(self, u):
         h1 = model.History(name="HistoryAuditHistory", user=u)
         h2 = model.History(name="HistoryAuditHistory", user=u)
 
@@ -723,8 +725,8 @@ class TestMappings(BaseModelTestCase):
         session.add(lf)
         session.flush()
 
-    def test_current_session(self):
-        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+    def test_current_session(self, u):
+        user = u
         galaxy_session = model.GalaxySession()
         galaxy_session.user = user
         self.persist(user, galaxy_session)
@@ -734,12 +736,12 @@ class TestMappings(BaseModelTestCase):
         self.persist(user, new_galaxy_session)
         assert user.current_galaxy_session == new_galaxy_session
 
-    def test_flush_refreshes(self):
+    def test_flush_refreshes(self, u):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute
         # states and flushing in SQL Alchemy is very subtle and it is good to have a executable
         # reference for how it behaves in the context of Galaxy objects.
         model = self.model
-        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        user = u
         galaxy_session = model.GalaxySession()
         galaxy_session_other = model.GalaxySession()
         galaxy_session.user = user
@@ -811,10 +813,8 @@ class TestMappings(BaseModelTestCase):
         session.flush(model.GalaxySession())
         assert "id" not in inspect(galaxy_model_object_new).unloaded
 
-    def test_workflows(self):
-        user = model.User(email="testworkflows@bx.psu.edu", password="password")
-
-        child_workflow = _workflow_from_steps(user, [])
+    def test_workflows(self, u):
+        child_workflow = _workflow_from_steps(u, [])
         self.persist(child_workflow)
 
         workflow_step_1 = model.WorkflowStep()
@@ -831,19 +831,19 @@ class TestMappings(BaseModelTestCase):
         workflow_step_2.get_or_add_input("moo")
         workflow_step_1.add_connection("foo", "cow", workflow_step_2)
 
-        workflow = _workflow_from_steps(user, [workflow_step_1, workflow_step_2])
+        workflow = _workflow_from_steps(u, [workflow_step_1, workflow_step_2])
         self.persist(workflow)
         workflow_id = workflow.id
 
         annotation = model.WorkflowStepAnnotationAssociation()
         annotation.annotation = "Test Step Annotation"
-        annotation.user = user
+        annotation.user = u
         add_object_to_object_session(annotation, workflow_step_1)
         annotation.workflow_step = workflow_step_1
         self.persist(annotation)
 
         assert workflow_step_1.id is not None
-        workflow_invocation = _invocation_for_workflow(user, workflow)
+        workflow_invocation = _invocation_for_workflow(u, workflow)
 
         invocation_uuid = uuid.uuid1()
 
@@ -931,7 +931,7 @@ class TestMappings(BaseModelTestCase):
             assert private_role.description == "Private Role for " + email
 
         email = "rule_user_1@example.com"
-        u = model.User(email=email, password="password")
+        u = model.User(email=email, password="password", username=email.split("@")[0])
         self.persist(u)
 
         role = security_agent.get_private_user_role(u)
@@ -941,7 +941,7 @@ class TestMappings(BaseModelTestCase):
         check_private_role(role, email)
 
         email = "rule_user_2@example.com"
-        u = model.User(email=email, password="password")
+        u = model.User(email=email, password="password", username=email.split("@")[0])
         self.persist(u)
         role = security_agent.get_private_user_role(u)
         assert role is None
@@ -1035,8 +1035,7 @@ class TestMappings(BaseModelTestCase):
         assert security_agent.can_manage_dataset(u_from.all_roles(), d1.dataset)
         assert not security_agent.can_manage_dataset(u_other.all_roles(), d1.dataset)
 
-    def test_history_hid_counter_is_expired_after_next_hid_call(self):
-        u = model.User(email="hid_abuser@example.com", password="password")
+    def test_history_hid_counter_is_expired_after_next_hid_call(self, u):
         h = model.History(name="History for hid testing", user=u)
         self.persist(u, h)
         state = inspect(h)
@@ -1050,8 +1049,7 @@ class TestMappings(BaseModelTestCase):
         assert "id" not in state.unloaded  # but other attributes have NOT been expired
         assert h.hid_counter == 2  # check this last: this causes thie hid_counter to be reloaded
 
-    def test_next_hid(self):
-        u = model.User(email="hid_abuser@example.com", password="password")
+    def test_next_hid(self, u):
         h = model.History(name="History for hid testing", user=u)
         self.persist(u, h)
         assert h.hid_counter == 1
@@ -1136,9 +1134,9 @@ class TestMappings(BaseModelTestCase):
         email_to = f"user_{suffix}e2@example.com"
         email_other = f"user_{suffix}e3@example.com"
 
-        u_from = model.User(email=email_from, password="password")
-        u_to = model.User(email=email_to, password="password")
-        u_other = model.User(email=email_other, password="password")
+        u_from = model.User(email=email_from, password="password", username=email_from.split("@")[0])
+        u_to = model.User(email=email_to, password="password", username=email_to.split("@")[0])
+        u_other = model.User(email=email_other, password="password", username=email_other.split("@")[0])
         self.persist(u_from, u_to, u_other)
         return u_from, u_to, u_other
 

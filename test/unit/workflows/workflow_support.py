@@ -28,7 +28,7 @@ class MockTrans:
     @property
     def user(self):
         if self._user is None:
-            self._user = model.User(email="testworkflows@bx.psu.edu", password="password")
+            self._user = model.User(email="testworkflows@bx.psu.edu", password="password", username="testworkflows")
         return self._user
 
 

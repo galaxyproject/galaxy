@@ -36,7 +36,7 @@ def t_data_path(name):
 def _run_jihaw_cleanup(archive_dir, app=None):
     app = app or _mock_app()
     job = model.Job()
-    job.user = model.User(email="test@test.org", password="test")
+    job.user = model.User(email="test@test.org", password="test", username="test")
     job.tool_stderr = ""
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
     app.model.context.current.add_all([job, jiha])
@@ -661,7 +661,7 @@ def _setup_history_for_export(history_name):
     sa_session = app.model.context
 
     email = history_name.replace(" ", "-") + "-user@example.org"
-    u = model.User(email=email, password="password")
+    u = model.User(email=email, password="password", username=email.split("@")[0])
     h = model.History(name=history_name, user=u)
 
     return app, sa_session, h

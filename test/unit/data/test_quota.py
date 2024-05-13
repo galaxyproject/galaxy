@@ -16,7 +16,7 @@ class TestPurgeUsage(BaseModelTestCase):
     def setUp(self):
         super().setUp()
         model = self.model
-        u = model.User(email="purge_usage@example.com", password="password")
+        u = model.User(email="purge_usage@example.com", password="password", username=str(uuid.uuid4()))
         u.disk_usage = 25
         self.persist(u)
 
@@ -67,7 +67,8 @@ class TestPurgeUsage(BaseModelTestCase):
 class TestCalculateUsage(BaseModelTestCase):
     def setUp(self):
         model = self.model
-        u = model.User(email=f"calc_usage{uuid.uuid1()}@example.com", password="password")
+        email = f"calc_usage{uuid.uuid1()}@example.com"
+        u = model.User(email, password="password", username=email.split("@")[0])
         self.persist(u)
         h = model.History(name="History for Calculated Usage", user=u)
         self.persist(h)
@@ -359,7 +360,7 @@ class TestQuota(BaseModelTestCase):
         self.quota_agent = DatabaseQuotaAgent(model)
 
     def test_quota(self):
-        u = model.User(email="quota@example.com", password="password")
+        u = model.User(email="quota@example.com", password="password", username="quota")
         self.persist(u)
 
         self._assert_user_quota_is(u, None)
@@ -405,7 +406,7 @@ class TestQuota(BaseModelTestCase):
 
     def test_labeled_quota(self):
         model = self.model
-        u = model.User(email="labeled_quota@example.com", password="password")
+        u = model.User(email="labeled_quota@example.com", password="password", username="labeled_quota")
         self.persist(u)
 
         label1 = "coollabel1"
@@ -456,7 +457,7 @@ class TestQuota(BaseModelTestCase):
 class TestUsage(BaseModelTestCase):
     def test_usage(self):
         model = self.model
-        u = model.User(email="usage@example.com", password="password")
+        u = model.User(email="usage@example.com", password="password", username="usage")
         self.persist(u)
 
         u.adjust_total_disk_usage(123, None)
@@ -466,7 +467,7 @@ class TestUsage(BaseModelTestCase):
 
     def test_labeled_usage(self):
         model = self.model
-        u = model.User(email="labeled.usage@example.com", password="password")
+        u = model.User(email="labeled.usage@example.com", password="password", username="labeled")
         self.persist(u)
         assert len(u.quota_source_usages) == 0
 

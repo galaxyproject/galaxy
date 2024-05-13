@@ -1,3 +1,5 @@
+import uuid
+
 from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.workflow.run_request import (
@@ -89,7 +91,7 @@ def __new_input():
 
 
 def __workflow_fixure(trans):
-    user = model.User(email="testworkflow_params@bx.psu.edu", password="pass")
+    user = model.User(email="testworkflow_params@bx.psu.edu", password="pass", username=str(uuid.uuid4()))
     stored_workflow = model.StoredWorkflow()
     stored_workflow.user = user
     workflow = model.Workflow()

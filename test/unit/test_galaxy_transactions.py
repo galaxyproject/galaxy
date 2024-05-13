@@ -62,7 +62,7 @@ def test_logging_actions_on(transaction):
 
 
 def test_expunge_all(transaction):
-    user = model.User("foo", "bar1")
+    user = model.User("foo", "bar1", username="foo")
     transaction.sa_session.add(user)
 
     user.password = "bar2"
