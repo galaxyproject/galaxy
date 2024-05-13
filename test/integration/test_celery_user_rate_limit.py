@@ -49,8 +49,10 @@ def setup_users(dburl: str, num_users: int = 2):
                 user_ids_to_add = set(expected_user_ids).difference(found_user_ids)
                 for user_id in user_ids_to_add:
                     conn.execute(
-                        text("insert into galaxy_user(id, active, email, password) values (:id, :active, :email, :pw)"),
-                        [{"id": user_id, "active": True, "email": "e", "pw": "p"}],
+                        text(
+                            "insert into galaxy_user(id, active, email, password, username) values (:id, :active, :email, :pw, :username)"
+                        ),
+                        [{"id": user_id, "active": True, "email": "e", "pw": "p", "username": f"u{user_id}"}],
                     )
 
 
