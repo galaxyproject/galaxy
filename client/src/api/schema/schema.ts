@@ -15576,6 +15576,7 @@ export interface operations {
                 limit?: number | null;
                 offset?: number | null;
                 query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -21898,6 +21899,7 @@ export interface operations {
                 limit?: number | null;
                 offset?: number | null;
                 query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

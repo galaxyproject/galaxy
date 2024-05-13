@@ -67,6 +67,7 @@ class RDMRepositoryInteractor:
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> List[RemoteDirectory]:
         """Returns the list of records in the repository.
 

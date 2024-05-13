@@ -53,6 +53,7 @@ class RemoteFilesManager:
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
@@ -99,6 +100,7 @@ class RemoteFilesManager:
                 limit=limit,
                 offset=offset,
                 query=query,
+                sort_by=sort_by,
             )
         except exceptions.MessageException:
             log.warning(self._get_error_message(file_source_path), exc_info=True)

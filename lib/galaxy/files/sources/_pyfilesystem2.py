@@ -58,6 +58,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         """Return dictionary of 'Directory's and 'File's."""
         try:

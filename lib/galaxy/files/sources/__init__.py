@@ -103,6 +103,7 @@ class FilesSourceProperties(TypedDict):
     url: NotRequired[Optional[str]]
     supports_pagination: NotRequired[bool]
     supports_search: NotRequired[bool]
+    supports_sorting: NotRequired[bool]
 
 
 @dataclass
@@ -315,6 +316,7 @@ class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
     supports_pagination: ClassVar[bool] = False
     supports_search: ClassVar[bool] = False
+    supports_sorting: ClassVar[bool] = False
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -395,6 +397,7 @@ class BaseFilesSource(FilesSource):
             "scheme": self.get_scheme(),
             "supports_pagination": self.supports_pagination,
             "supports_search": self.supports_search,
+            "supports_sorting": self.supports_sorting,
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
@@ -427,12 +430,15 @@ class BaseFilesSource(FilesSource):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ) -> List[AnyRemoteEntry]:
         self._check_user_access(user_context)
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
         if not self.supports_search and query:
             raise RequestParameterInvalidException("Server-side search is not supported by this file source.")
+        if not self.supports_sorting and sort_by:
+            raise RequestParameterInvalidException("Server-side sorting is not supported by this file source.")
 
         return self._list(path, recursive, user_context, opts, limit, offset, query)
 
@@ -445,6 +451,7 @@ class BaseFilesSource(FilesSource):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
         query: Optional[str] = None,
+        sort_by: Optional[str] = None,
     ):
         pass
 

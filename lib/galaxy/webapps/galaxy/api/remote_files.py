@@ -112,6 +112,12 @@ SearchQueryParam = Query(
     description="Search query to filter entries by. The syntax could be different depending on the target source.",
 )
 
+SortByQueryParam = Query(
+    default=None,
+    title="Sort by",
+    description="Sort the entries by the specified field.",
+)
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -138,9 +144,12 @@ class FastAPIRemoteFiles:
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         query: Optional[str] = SearchQueryParam,
+        sort_by: Optional[str] = None,
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
-        return self.manager.index(user_ctx, target, format, recursive, disable, writeable, limit, offset, query)
+        return self.manager.index(
+            user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
+        )
 
     @router.get(
         "/api/remote_files/plugins",
