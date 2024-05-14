@@ -13,8 +13,7 @@ Major or Long Term Support (LTS) Releases
 
 The first release of each year is Galaxy's annual LTS release. The LTS release
 is a major version update corresponding to the year, for example, 24.0.  This
-release receives significant and thorough testing by a dedicated team that does
-end-to-end testing of a variety of analysis protocols and will be supported and
+release receives significant and thorough end-to-end testing by a dedicated team and will be supported and
 receive bugfixes until the next LTS.  As such, this release is ideally targeted
 for production use by local Galaxy administrators.
 
