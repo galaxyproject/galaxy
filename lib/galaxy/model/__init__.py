@@ -152,6 +152,7 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -4600,6 +4601,17 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return self.dataset.quota_source_label
 
     quota_source_label = property(get_quota_source_label)
+
+    def set_skipped(self, object_store_populator: ObjectStorePopulator):
+        assert self.dataset
+        object_store_populator.set_object_store_id(self)
+        self.extension = "expression.json"
+        self.state = self.states.OK
+        self.blurb = "skipped"
+        self.visible = False
+        with open(self.dataset.get_file_name(), "w") as out:
+            out.write(json.dumps(None))
+        self.set_total_size()
 
     def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
