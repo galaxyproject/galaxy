@@ -1735,7 +1735,7 @@ class BaseWorkflowPopulator(BasePopulator):
             from_path=from_path,
             object_id=object_id,
         )
-        import_response = self._post("workflows", data=data)
+        import_response = self._post("workflows", data=data, json=True)
         return import_response
 
     def import_workflow_from_path(self, from_path: str, object_id: Optional[str] = None) -> str:
