@@ -8,6 +8,7 @@ import { computed } from "vue";
 import { ArchivedHistorySummary } from "@/api/histories.archived";
 import localize from "@/utils/localization";
 
+import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -45,7 +46,7 @@ async function onImportCopy() {
     <div class="archived-history-card">
         <div class="d-flex justify-content-between align-items-center">
             <Heading h3 inline bold size="sm">
-                {{ history.name }}
+                {{ history.name }} <ExportRecordDOILink :export-record-uri="history.export_record_data?.target_uri" />
             </Heading>
 
             <div class="d-flex align-items-center flex-gapx-1 badges">
