@@ -3,11 +3,7 @@ import os
 import pytest
 
 from galaxy.util.unittest_utils import skip_unless_environ
-from ._util import (
-    assert_realizes_contains,
-    configured_file_sources,
-    write_from,
-)
+from ._util import assert_can_write_and_read_to_conf
 
 pytest.importorskip("fs.azblob")
 
@@ -26,16 +22,4 @@ def test_azure():
         "namespace_type": os.environ.get("GALAXY_TEST_AZURE_NAMESPACE_TYPE", "flat"),
         "writable": True,
     }
-    file_sources = configured_file_sources([conf])
-    test_uri = "gxfiles://azure_test/moo"
-    test_contents = "Hello World from Files Testing!"
-    write_from(
-        file_sources,
-        test_uri,
-        test_contents,
-    )
-    assert_realizes_contains(
-        file_sources,
-        test_uri,
-        test_contents,
-    )
+    assert_can_write_and_read_to_conf(conf)

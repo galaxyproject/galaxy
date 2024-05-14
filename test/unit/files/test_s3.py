@@ -2,7 +2,9 @@ import os
 
 import pytest
 
+from galaxy.util.unittest_utils import skip_unless_environ
 from ._util import (
+    assert_can_write_and_read_to_conf,
     assert_realizes_contains,
     assert_simple_file_realize,
     configured_file_sources,
@@ -49,3 +51,19 @@ def test_file_source_specific():
     assert file_source_pair.file_source.id == "test1"
 
     assert_realizes_contains(file_sources, file_url, "DATA USE POLICIES", user_context=user_context)
+
+
+@skip_unless_environ("GALAXY_TEST_AWS_ACCESS_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_SECRET_KEY")
+@skip_unless_environ("GALAXY_TEST_AWS_BUCKET")
+def test_read_write_against_aws():
+    conf = {
+        "type": "s3fs",
+        "id": "playtest",
+        "doc": "Test against Play development server.",
+        "secret": os.environ["GALAXY_TEST_AWS_SECRET_KEY"],
+        "key": os.environ["GALAXY_TEST_AWS_ACCESS_KEY"],
+        "bucket": os.environ["GALAXY_TEST_AWS_BUCKET"],
+        "writable": True,
+    }
+    assert_can_write_and_read_to_conf(conf)

@@ -164,6 +164,25 @@ def configured_file_sources(conf_file):
     return conf
 
 
+def assert_can_write_and_read_to_conf(conf: dict):
+    test_filename = "moo.txt"
+    test_contents = "Hello World from Files Testing!"
+
+    file_source_id = conf["id"]
+    file_sources = configured_file_sources([conf])
+    test_uri = f"gxfiles://{file_source_id}/{test_filename}"
+    write_from(
+        file_sources,
+        test_uri,
+        test_contents,
+    )
+    assert_realizes_contains(
+        file_sources,
+        test_uri,
+        test_contents,
+    )
+
+
 def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):
     user_context = user_context_fixture()
     file_sources = configured_file_sources(conf_file)
