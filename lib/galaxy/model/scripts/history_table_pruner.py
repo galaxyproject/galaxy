@@ -1,5 +1,6 @@
 import datetime
 import logging
+import math
 
 from sqlalchemy import text
 
@@ -41,21 +42,33 @@ class HistoryTablePruner:
         self.batch_size = batch_size or DEFAULT_BATCH_SIZE
         self.max_create_time = max_create_time or self._get_default_max_create_time()
         self.min_id, self.max_id = self._get_min_max_ids()
+        self.batches = self._get_batch_count()
 
     def run(self):
         """
         Due to the very large size of some tables, we run operations in batches, using low/high history id as boundaries.
         """
+
+        def get_high(low):
+            return min(self.max_id + 1, low + self.batch_size)
+
         if self.min_id is None:
-            logging.info("No histories exist")
+            log.info("No histories exist")
             return
 
+        log.info(
+            f"Total batches to run: {self.batches}, minimum history id: {self.min_id}, maximum history id: {self.max_id}"
+        )
+
         low = self.min_id
-        high = min(self.max_id, low + self.batch_size)
+        high = get_high(low)
+        batch_counter = 1
         while low <= self.max_id:
+            log.info(f"Running batch {batch_counter} of {self.batches}: history id range {low}-{high-1}:")
             self._run_batch(low, high)
             low = high
-            high = high + self.batch_size
+            high = get_high(high)
+            batch_counter += 1
 
     def _get_default_max_create_time(self):
         """By default, do not delete histories created less than a month ago."""
@@ -63,11 +76,11 @@ class HistoryTablePruner:
         return today.replace(month=today.month - 1)
 
     def _run_batch(self, low, high):
-        empty_batch_msg = f"No histories to delete in the id range {low}-{high}"
+        empty_batch_msg = f" No histories to delete in id range {low}-{high-1}"
         self._mark_histories_as_deleted_and_purged(low, high)
         histories = self._get_histories(low, high)
         if not histories:
-            logging.info(empty_batch_msg)
+            log.info(empty_batch_msg)
             return
 
         exclude = self._get_histories_to_exclude(low, high)
@@ -75,7 +88,7 @@ class HistoryTablePruner:
         # Calculate set of histories to delete.
         to_delete = set(histories) - exclude
         if not to_delete:
-            logging.info(empty_batch_msg)
+            log.info(empty_batch_msg)
             return
 
         self._create_tmp_table()
@@ -96,11 +109,16 @@ class HistoryTablePruner:
         params = {"create_time": self.max_create_time}
         with self.engine.begin() as conn:
             minmax = conn.execute(stmt, params).all()
+        # breakpoint()
         return minmax[0][0], minmax[0][1]
+
+    def _get_batch_count(self):
+        """Calculate number of batches to run."""
+        return math.ceil((self.max_id - self.min_id) / self.batch_size)
 
     def _mark_histories_as_deleted_and_purged(self, low, high):
         """Mark target histories as deleted and purged to prevent their further usage."""
-        logging.info(f"Marking histories {low}-{high} as deleted and purged")
+        log.info(" Marking histories as deleted and purged")
         stmt = text(
             """
             UPDATE history
@@ -114,7 +132,7 @@ class HistoryTablePruner:
 
     def _get_histories(self, low, high):
         """Return ids of histories to delete."""
-        logging.info(f"Collecting history ids between {low}-{high}")
+        log.info(" Collecting history ids")
         stmt = text(
             "SELECT id FROM history WHERE user_id IS NULL AND hid_counter = 1 AND create_time < :create_time AND id >= :low AND id < :high"
         )
@@ -124,7 +142,7 @@ class HistoryTablePruner:
 
     def _get_histories_to_exclude(self, low, high):
         """Retrieve histories that should NOT be deleted due to existence of associated records that should be preserved."""
-        logging.info(f"Collecting ids of histories to exclude based on {len(EXCLUDED_ASSOC_TABLES)} associated tables:")
+        log.info(f" Collecting ids of histories to exclude based on {len(EXCLUDED_ASSOC_TABLES)} associated tables:")
         statements = []
         for table in EXCLUDED_ASSOC_TABLES:
             statements.append((table, text(f"SELECT history_id FROM {table} WHERE history_id >= :low AND id < :high")))
@@ -133,7 +151,7 @@ class HistoryTablePruner:
         ids = []
         for table, stmt in statements:
             with self.engine.begin() as conn:
-                logging.info(f"\tCollecting history_id from {table}")
+                log.info(f"  Collecting history_id from {table}")
                 ids += conn.scalars(stmt, params).all()
 
         excluded = set(ids)
@@ -156,7 +174,7 @@ class HistoryTablePruner:
     def _populate_tmp_table(self, to_delete):
         """Load ids of histories to delete into temporary table."""
         assert to_delete
-        logging.info("Populating temporary table")
+        log.info(" Populating temporary table")
         sql_values = ",".join([f"({id})" for id in to_delete])
         stmt = text(f"INSERT INTO {TMP_TABLE} VALUES {sql_values}")
         with self.engine.begin() as conn:
@@ -164,16 +182,16 @@ class HistoryTablePruner:
 
     def _delete_associations(self):
         """Delete records associated with histories to be deleted."""
-        logging.info("Deleting associated records from ...")
 
         for table in ASSOC_TABLES:
+            log.info(f" Deleting associated records from {table}")
             stmt = text(f"DELETE FROM {table} WHERE history_id IN (SELECT id FROM {TMP_TABLE})")
             with self.engine.begin() as conn:
                 conn.execute(stmt)
 
     def _set_references_to_null(self):
         """Set history_id to null in galaxy_session table for records referring to histories to be deleted."""
-        logging.info("Set history_id to null in galaxy_session")
+        log.info(" Set history_id to null in galaxy_session")
         stmt = text(
             f"UPDATE galaxy_session SET current_history_id = NULL WHERE current_history_id IN (SELECT id FROM {TMP_TABLE})"
         )
@@ -182,7 +200,7 @@ class HistoryTablePruner:
 
     def _delete_histories(self, low, high):
         """Last step: delete histories that are safe to delete."""
-        logging.info(f"Delete histories in the id range {low} - {high}")
+        log.info(f" Deleting histories in id range {low}-{high-1}")
         stmt = text(f"DELETE FROM history WHERE id IN (SELECT id FROM {TMP_TABLE})")
         with self.engine.begin() as conn:
             conn.execute(stmt)
