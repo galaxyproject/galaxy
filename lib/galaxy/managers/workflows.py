@@ -1046,6 +1046,7 @@ class WorkflowContentsManager(UsesAnnotations):
             "id": trans.app.security.encode_id(stored.id),
             "history_id": trans.app.security.encode_id(history.id) if history else None,
             "name": stored.name,
+            "owner": stored.user.username,
             "steps": step_models,
             "step_version_changes": step_version_changes,
             "has_upgrade_messages": has_upgrade_messages,

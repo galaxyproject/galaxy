@@ -662,7 +662,7 @@ trs_import:
 
 workflow_run:
   selectors:
-    warning: ".ui-form-composite-messages .alert-warning"
+    warning: '[data-description="workflow run warning"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
