@@ -26,6 +26,12 @@ watch(isLoadingFileSources, async (isLoading) => {
     }
 });
 
+/**
+ * Gets the DOI from an export record URI.
+ * The URI should be in the format: `<scheme>://<source-id>/<record-id>/<file-name>`.
+ * @param uri The target URI of the export record to get the DOI from.
+ * @returns The DOI or undefined if it could not be retrieved.
+ */
 async function getDOIFromExportRecordUri(uri?: string) {
     if (!uri) {
         return undefined;
@@ -50,6 +56,12 @@ async function getDOIFromExportRecordUri(uri?: string) {
     return getDOIFromInvenioRecordUrl(recordUrl);
 }
 
+/**
+ * Extracts the record ID from a URI.
+ * The URI should be in the format: `<scheme>://<source-id>/<record-id>/<file-name>`.
+ * @param targetUri The URI to extract the record ID from.
+ * @returns The record ID or undefined if it could not be extracted.
+ */
 function getRecordIdFromUri(targetUri?: string): string | undefined {
     if (!targetUri) {
         return undefined;
@@ -57,6 +69,11 @@ function getRecordIdFromUri(targetUri?: string): string | undefined {
     return targetUri.split("//")[1]?.split("/")[1];
 }
 
+/**
+ * Gets the DOI from an Invenio record URL.
+ * @param recordUrl The URL of the record to get the DOI from.
+ * @returns The DOI or undefined if it could not be retrieved.
+ */
 async function getDOIFromInvenioRecordUrl(recordUrl?: string): Promise<string | undefined> {
     if (!recordUrl) {
         return undefined;
