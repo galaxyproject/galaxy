@@ -157,7 +157,7 @@ function workflowName(workflowId: string) {
 <template>
     <div :class="props.inPanel ? 'unified-panel' : 'flex-column-overflow'">
         <div
-            class="grid-card-list-container"
+            class="scroll-list-container"
             :class="{
                 'in-panel': props.inPanel,
                 'scrolled-top': scrolledTop,
@@ -169,14 +169,13 @@ function workflowName(workflowId: string) {
             </BAlert>
             <div
                 ref="scrollableDiv"
-                class="grid-card-list"
+                class="scroll-list"
                 :class="{
                     'in-panel': props.inPanel,
                     toolMenuContainer: props.inPanel,
                 }"
                 role="list">
                 <BListGroup>
-                    <!-- d-flex justify-content-between align-items-center -->
                     <BListGroupItem
                         v-for="(invocation, cardIndex) in invocations"
                         :key="cardIndex"
@@ -189,11 +188,11 @@ function workflowName(workflowId: string) {
                         :active="invocation.id === currentItemId"
                         @click="() => cardClicked(invocation)">
                         <div class="overflow-auto w-100">
-                            <Heading bold size="sm" icon="fa-sitemap">
-                                <span class="truncate">{{ workflowName(invocation.workflow_id) }}</span>
+                            <Heading bold size="text" icon="fa-sitemap">
+                                <span class="truncate-3-lines">{{ workflowName(invocation.workflow_id) }}</span>
                             </Heading>
                             <Heading size="text" icon="fa-hdd">
-                                <span class="truncate">{{ historyName(invocation.history_id) }}</span>
+                                <small class="text-muted">{{ historyName(invocation.history_id) }}</small>
                             </Heading>
                             <div class="d-flex justify-content-between">
                                 <BBadge v-b-tooltip.noninteractive.hover pill>
@@ -245,10 +244,11 @@ function workflowName(workflowId: string) {
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
-.truncate {
-    white-space: nowrap;
+.truncate-3-lines {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 .flex-column-overflow {
@@ -257,7 +257,7 @@ function workflowName(workflowId: string) {
     overflow: auto;
 }
 
-.grid-card-list-container {
+.scroll-list-container {
     position: relative;
 
     &.in-panel {
@@ -305,7 +305,7 @@ function workflowName(workflowId: string) {
     }
 }
 
-.grid-card-list {
+.scroll-list {
     overflow-x: hidden;
     overflow-y: scroll;
     scroll-behavior: smooth;
