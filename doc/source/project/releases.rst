@@ -24,11 +24,10 @@ Minor Releases
 
 Throughout the year, we also ship several (usually 2-3) minor releases. These
 are version updates like 24.1, 24.2.  These can also include significant
-updates, new features, etc., but do not follow the full release-testing protocol
+updates, new features, etc. and follow the same release-testing protocol
 as with the LTS release.  These are targeted for administrators who want to stay
 up to date with the latest features and improvements.  Usegalaxy.org deploys new
-minor releases as a part of the release process, and other usegalaxy.* servers
-should strive to stay up to date with these.
+minor releases as a part of the release process.
 
 
 Point Releases
