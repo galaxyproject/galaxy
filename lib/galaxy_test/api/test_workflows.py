@@ -789,9 +789,11 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             data["import_tools"] = import_tools
         if use_deprecated_route:
             route = "workflows/upload"
+            upload_response = self._post(route, data=data)
         else:
             route = "workflows"
-        upload_response = self._post(route, data=data)
+            upload_response = self._post(route, data=data, json=True)
+        # upload_response = self._post(route, data=data)
         if assert_ok:
             self._assert_status_code_is(upload_response, 200)
             self._assert_user_has_workflow_with_name(name)
@@ -1149,7 +1151,7 @@ steps:
 
     def test_url_import(self):
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
-        workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
+        workflow_id = self._post("workflows", data={"archive_source": url}, json=True).json()["id"]
         workflow = self._download_workflow(workflow_id)
         assert "TestWorkflow1" in workflow["name"]
         assert (
@@ -1158,7 +1160,7 @@ steps:
 
     def test_base64_import(self):
         base64_url = "base64://" + base64.b64encode(workflow_str.encode("utf-8")).decode("utf-8")
-        response = self._post("workflows", data={"archive_source": base64_url})
+        response = self._post("workflows", data={"archive_source": base64_url}, json=True)
         response.raise_for_status()
         workflow_id = response.json()["id"]
         workflow = self._download_workflow(workflow_id)
@@ -1198,7 +1200,7 @@ steps:
             "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
             "versions/master",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        workflow_id = self._post("workflows", data=trs_payload, json=True).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
         assert (
@@ -1231,7 +1233,7 @@ steps:
             "archive_source": "trs_tool",
             "trs_url": "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        workflow_id = self._post("workflows", data=trs_payload, json=True).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "COVID-19: variation analysis reporting" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
@@ -5424,13 +5426,13 @@ outer_input:
         return step_map
 
     def test_empty_create(self):
-        response = self._post("workflows")
+        response = self._post("workflows", json=True)
         self._assert_status_code_is(response, 400)
         self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"])
 
     def test_invalid_create_multiple_types(self):
         data = {"shared_workflow_id": "1234567890abcdef", "from_history_id": "1234567890abcdef"}
-        response = self._post("workflows", data)
+        response = self._post("workflows", data=data, json=True)
         self._assert_status_code_is(response, 400)
         self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
@@ -7390,7 +7392,7 @@ outer_input:
 
             path_as_uri = f"file://{workflow_path}"
             import_data = dict(archive_source=path_as_uri)
-            import_response = self._post("workflows", data=import_data)
+            import_response = self._post("workflows", data=import_data, json=True)
             self._assert_status_code_is(import_response, 403)
             self._assert_error_code_is(import_response, error_codes.error_codes_by_name["ADMIN_REQUIRED"])
         finally:
