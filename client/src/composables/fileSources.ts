@@ -1,6 +1,7 @@
 import { onMounted, readonly, ref } from "vue";
 
-import { BrowsableFilesSourcePlugin, FilterFileSourcesOptions, getFileSources } from "@/api/remoteFiles";
+import { BrowsableFilesSourcePlugin, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import { useFileSourcesStore } from "@/stores/fileSourcesStore";
 
 /**
  * Composable for accessing and working with file sources.
@@ -8,12 +9,14 @@ import { BrowsableFilesSourcePlugin, FilterFileSourcesOptions, getFileSources } 
  * @param options - The options to filter the file sources.
  */
 export function useFileSources(options: FilterFileSourcesOptions = {}) {
+    const fileSourcesStore = useFileSourcesStore();
+
     const isLoading = ref(true);
     const hasWritable = ref(false);
     const fileSources = ref<BrowsableFilesSourcePlugin[]>([]);
 
     onMounted(async () => {
-        fileSources.value = await getFileSources(options);
+        fileSources.value = await fileSourcesStore.getFileSources(options);
         hasWritable.value = fileSources.value.some((fs) => fs.writable);
         isLoading.value = false;
     });

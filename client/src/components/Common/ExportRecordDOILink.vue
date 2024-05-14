@@ -7,7 +7,6 @@ import { useFileSources } from "@/composables/fileSources";
 
 import DOILink from "./DOILink.vue";
 
-// TODO: This should be using a store so we don't have to load file sources in every component
 const { getFileSourceByUri, isLoading: isLoadingFileSources } = useFileSources({ include: ["rdm"] });
 
 interface Props {
