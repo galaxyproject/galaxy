@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import os
 import sys
 
@@ -27,8 +28,10 @@ def main():
 
 def _get_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument("--batch", help="batch size")
-    parser.add_argument("--created", help="most recent create_time")
+    parser.add_argument("--batch", type=int, help="batch size")
+    parser.add_argument(
+        "--created", type=datetime.datetime.fromisoformat, help="most recent created date/time in ISO format"
+    )
     return parser
 
 
