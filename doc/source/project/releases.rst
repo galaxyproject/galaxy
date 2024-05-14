@@ -11,17 +11,18 @@ of the release process, which is covered elsewhere. (link)
 Major or Long Term Support (LTS) Releases
 -----------------------------------------
 
-The first release of each year is Galaxy's annual LTS release. The LTS release
-is a major version update corresponding to the year, for example, 24.0.  This
-release receives significant and thorough end-to-end testing by a dedicated team and will be supported and
-receive bugfixes until the next LTS.  As such, this release is ideally targeted
-for production use by local Galaxy administrators.
+As of 23.0, the first release of each year is Galaxy's annual LTS release. The
+LTS release is a major version update corresponding to the year, for example,
+24.0.  This release receives significant and thorough end-to-end testing by a
+dedicated team and will be supported and receive bugfixes until the next LTS.
+As such, this release is ideally targeted for production use by local Galaxy
+administrators.
 
 
 Minor Releases
 --------------
 
-Throughout the year, we also ship several (currently 2-3) minor releases. These
+Throughout the year, we also ship several (usually 2-3) minor releases. These
 are version updates like 24.1, 24.2.  These can also include significant
 updates, new features, etc., but do not follow the full release-testing protocol
 as with the LTS release.  These are targeted for administrators who want to stay
@@ -44,14 +45,14 @@ Release Schedule
 Our release schedule is as follows:
 
 - LTS Release: Annually, in the first quarter.
-- Minor Releases: 2-3 times a year, generally in the early summer and fall.
+- Minor Releases: usually 2-3 times a year, generally in the early summer and fall.
 - Point Releases: As needed.
 
 Please note that the release dates can vary based on the development process and
 testing results.
 
-The usegalaxy.* public servers will be updated to the latest release within a
-few weeks of the release date.
+The usegalaxy.* public servers will be updated to the latest release within 90
+business days of the release date.
 
 
 Release Notes
