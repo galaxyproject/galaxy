@@ -30,7 +30,9 @@ def _get_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("--batch", type=int, help="batch size")
     parser.add_argument(
-        "--created", type=datetime.datetime.fromisoformat, help="most recent created date/time in ISO format"
+        "--created",
+        type=datetime.datetime.fromisoformat,
+        help="most recent created date/time in ISO format  (for example, March 11, 1952 is represented as '1952-03-11')",
     )
     return parser
 

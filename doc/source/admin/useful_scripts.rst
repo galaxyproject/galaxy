@@ -35,4 +35,4 @@ To safely delete unused histories and their associated records, please use the `
     optional arguments:
       -h, --help         show this help message and exit
       --batch BATCH      batch size
-      --created CREATED  most recent created date/time in ISO format
+      --created CREATED  most recent created date/time in ISO format (for example, March 11, 1952 is represented as '1952-03-11')
