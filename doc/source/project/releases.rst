@@ -5,7 +5,7 @@ Galaxy Release Process
 This document outlines the Galaxy release cycle so administrators and users know
 when to expect updates and what each update includes, making it easier to plan
 for upgrades and maintain their systems.  It does not cover the actual execution
-of the release process, which is covered elsewhere. (link)
+of the release process, which is covered `elsewhere <https://docs.galaxyproject.org/en/master/dev/create_release.html>`__.
 
 
 Major or Long Term Support (LTS) Releases
