@@ -7348,8 +7348,9 @@ description. Note the quoting of the ``<`` and ``>`` characters in XML.
 
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See
-[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
+      <xs:documentation xml:lang="en"><![CDATA[
+Change the format of an output depending on the value of another input paramter.
+See [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
@@ -7363,8 +7364,7 @@ for the following ``<when>`` tag set.]]></xs:documentation>
   <xs:complexType name="ChangeFormatWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
-If the data type of the output dataset is the specified type, the data type is
+If the value of referenced parameter has the specified value, the data type is
 changed to the desired type.
 
 ### Examples
@@ -7399,13 +7399,16 @@ or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
+For parameters that are nested in sections, conditionals, or repeats are accessed with object access syntax,
+e.g. a parameter with name ``p`` that is in a conditional with name ``c``that is in a section with name ``s``
+is referenced by ``s.c.p``"].
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
     <xs:attribute name="input" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute should be the name of
-the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
+the desired input parameter (e.g. ``input="out_format"`` above). Parameters that are nested are accessed like an object.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
