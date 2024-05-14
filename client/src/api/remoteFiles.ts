@@ -28,15 +28,15 @@ export interface FilterFileSourcesOptions {
     exclude?: FileSourcePluginKind[];
 }
 
-const getRemoteFilesPlugins = fetcher.path("/api/remote_files/plugins").method("get").create();
+const remoteFilesPluginsFetcher = fetcher.path("/api/remote_files/plugins").method("get").create();
 
 /**
  * Get the list of available file sources from the server that can be browsed.
  * @param options The options to filter the file sources.
  * @returns The list of available (browsable) file sources from the server.
  */
-export async function getFileSources(options: FilterFileSourcesOptions = {}): Promise<BrowsableFilesSourcePlugin[]> {
-    const { data } = await getRemoteFilesPlugins({
+export async function fetchFileSources(options: FilterFileSourcesOptions = {}): Promise<BrowsableFilesSourcePlugin[]> {
+    const { data } = await remoteFilesPluginsFetcher({
         browsable_only: true,
         include_kind: options.include,
         exclude_kind: options.exclude,
