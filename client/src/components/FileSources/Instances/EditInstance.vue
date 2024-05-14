@@ -3,7 +3,7 @@ import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { UserFileSourceModel } from "@/api/fileSources";
-import { editFormDataToPayload, editTemplateForm } from "@/components/ConfigTemplates/formUtil";
+import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
@@ -19,13 +19,13 @@ interface Props {
 const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
-const inputs = computed(() => {
+const inputs = computed<Array<FormEntry> | undefined>(() => {
     template.value;
     instance.value;
     if (template.value && instance.value) {
         return editTemplateForm(template.value, "storage location", instance.value);
     }
-    return null;
+    return undefined;
 });
 
 const title = computed(() => `Edit File Source ${instance.value?.name} Settings`);

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 
-import { FormEntry } from "./formUtil";
+import { type FormEntry } from "./formUtil";
 
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -9,12 +9,15 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     title: string;
-    inputs: Array<FormEntry> | null; // not fully reactive so make sure to not mutate this array
+    inputs?: Array<FormEntry>; // not fully reactive so make sure to not mutate this array
     submitTitle: string;
     loadingMessage: string;
 }
 
-defineProps<Props>();
+withDefaults(defineProps<Props>(), {
+    inputs: undefined,
+});
+
 const emit = defineEmits<{
     (e: "onSubmit", formData: any): void;
 }>();
@@ -31,7 +34,7 @@ async function handleSubmit() {
 </script>
 <template>
     <div>
-        <LoadingSpan v-if="inputs == null" :message="loadingMessage" />
+        <LoadingSpan v-if="inputs == undefined" :message="loadingMessage" />
         <div v-else>
             <FormCard :title="title">
                 <template v-slot:body>

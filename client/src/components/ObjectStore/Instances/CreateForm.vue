@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { createFormDataToPayload, createTemplateForm } from "@/components/ConfigTemplates/formUtil";
+import { createFormDataToPayload, createTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
 import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -20,7 +20,7 @@ const title = "Create a new storage location for your data";
 const submitTitle = "Submit";
 const loadingMessage = "Loading storage location template and instance information";
 
-const inputs = computed(() => {
+const inputs = computed<Array<FormEntry>>(() => {
     return createTemplateForm(props.template, "storage location");
 });
 

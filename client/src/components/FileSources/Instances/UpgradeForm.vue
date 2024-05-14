@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
-import { upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
+import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
@@ -19,7 +19,7 @@ interface Props {
 const error = ref<string | null>(null);
 const props = defineProps<Props>();
 
-const inputs = computed<Array<any> | null>(() => {
+const inputs = computed<Array<FormEntry> | undefined>(() => {
     const realizedInstance: UserFileSourceModel = props.instance;
     const realizedLatestTemplate = props.latestTemplate;
     const form = upgradeForm(realizedLatestTemplate, realizedInstance);

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUp, faCaretDown, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
@@ -13,7 +13,7 @@ interface Props {
     isUpgradable: boolean;
 }
 
-library.add(faCaretDown);
+library.add(faArrowUp, faCaretDown, faEdit, faTrash);
 
 const title = "";
 
@@ -42,17 +42,22 @@ const emit = defineEmits<{
             <a
                 v-if="isUpgradable"
                 class="dropdown-item"
+                :href="routeUpgrade"
                 @keypress="router.push(routeUpgrade)"
                 @click.prevent="router.push(routeUpgrade)">
-                <span class="fa fa-edit fa-fw mr-1" />
+                <FontAwesomeIcon icon="arrowUp" />
                 <span v-localize>Upgrade</span>
             </a>
-            <a class="dropdown-item" @keypress="router.push(routeEdit)" @click.prevent="router.push(routeEdit)">
-                <span class="fa fa-edit fa-fw mr-1" />
+            <a
+                class="dropdown-item"
+                :href="routeEdit"
+                @keypress="router.push(routeEdit)"
+                @click.prevent="router.push(routeEdit)">
+                <FontAwesomeIcon icon="edit" />
                 <span v-localize>Edit configuration</span>
             </a>
             <a class="dropdown-item" @keypress="emit('remove')" @click.prevent="emit('remove')">
-                <span class="fa fa-edit fa-fw mr-1" />
+                <FontAwesomeIcon icon="trash" />
                 <span v-localize>Remove instance</span>
             </a>
         </div>

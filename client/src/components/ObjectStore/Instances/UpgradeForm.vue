@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
+import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ObjectStoreTemplateSummary } from "../Templates/types";
@@ -20,7 +20,7 @@ interface Props {
 const error = ref<string | null>(null);
 const props = defineProps<Props>();
 
-const inputs = computed<Array<any> | null>(() => {
+const inputs = computed<Array<FormEntry> | undefined>(() => {
     const realizedInstance: UserConcreteObjectStore = props.instance;
     const realizedLatestTemplate = props.latestTemplate;
     const form = upgradeForm(realizedLatestTemplate, realizedInstance);
