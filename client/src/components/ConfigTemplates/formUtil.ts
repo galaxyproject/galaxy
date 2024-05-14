@@ -9,7 +9,16 @@ import type {
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
-export function metadataFormEntryName(what: string) {
+export interface FormEntry {
+    name: string;
+    label?: string;
+    optional?: boolean;
+    help?: string | null;
+    type: string;
+    value?: any;
+}
+
+export function metadataFormEntryName(what: string): FormEntry {
     return {
         name: "_meta_name",
         label: "Name",
@@ -19,7 +28,7 @@ export function metadataFormEntryName(what: string) {
     };
 }
 
-export function metadataFormEntryDescription(what: string) {
+export function metadataFormEntryDescription(what: string): FormEntry {
     return {
         name: "_meta_description",
         label: "Description",
@@ -29,7 +38,7 @@ export function metadataFormEntryDescription(what: string) {
     };
 }
 
-export function templateVariableFormEntry(variable: TemplateVariable, variableValue: VariableValueType) {
+export function templateVariableFormEntry(variable: TemplateVariable, variableValue: VariableValueType): FormEntry {
     const common_fields = {
         name: variable.name,
         label: variable.label ?? variable.name,
@@ -69,7 +78,7 @@ export function templateVariableFormEntry(variable: TemplateVariable, variableVa
     }
 }
 
-export function templateSecretFormEntry(secret: TemplateSecret) {
+export function templateSecretFormEntry(secret: TemplateSecret): FormEntry {
     return {
         name: secret.name,
         label: secret.label ?? secret.name,
@@ -79,7 +88,7 @@ export function templateSecretFormEntry(secret: TemplateSecret) {
     };
 }
 
-export function editTemplateForm(template: TemplateSummary, what: string, instance: Instance) {
+export function editTemplateForm(template: TemplateSummary, what: string, instance: Instance): FormEntry[] {
     const form = [];
     const nameInput = metadataFormEntryName(what);
     form.push({ value: instance.name ?? "", ...nameInput });
@@ -114,7 +123,7 @@ export function editFormDataToPayload(template: TemplateSummary, formData: any) 
     return payload;
 }
 
-export function createTemplateForm(template: TemplateSummary, what: string) {
+export function createTemplateForm(template: TemplateSummary, what: string): FormEntry[] {
     const form = [];
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
@@ -196,7 +205,7 @@ export function formDataTypedGet(variableDefinition: TemplateVariable, formData:
     }
 }
 
-export function upgradeForm(template: TemplateSummary, instance: Instance): Array<any> {
+export function upgradeForm(template: TemplateSummary, instance: Instance): FormEntry[] {
     const form = [];
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];

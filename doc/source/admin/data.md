@@ -2,7 +2,7 @@
 
 Galaxy has countless ways for users to connect with things that might be considered their "data" - file sources (aka "remote files"), object stores (aka "storage locations"), data libraries, the upload API, visualizations, display applications, custom tools, etc...
 
-This document is going to discuss two of these (file sources and object stores) that are most important Galaxy administrators and how to build Galaxy configuration that allow administrators to let users tie into various pieces of infrastructure.
+This document is going to discuss two of these (file sources and object stores) that are most important Galaxy administrators and how to build Galaxy configurations that allow administrators to let users tie into various pieces of infrastructure (local and publicly available).
 
 ```{contents} Table of Contents
 :depth: 4
@@ -46,9 +46,8 @@ A minimal object store template might look something like:
 
 This is the most basic sort of object store template that just makes disk paths available to users
 for storing data. Paths can be built up from the user supplied variables, user details, supplied
-environment variables, etc.. The simple example used to demonstrate these concepts just uses
-a user supplied project name and the user's username to produce a unique path for each user
-defined object store.
+environment variables, etc.. The simple example just uses a user supplied project name and the
+user's username to produce a unique path for each user defined object store.
 
 ```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml
 :language: yaml
@@ -222,11 +221,11 @@ store configuration).
 
 ### Ready To Use Production Object Store Templates
 
-The templates have been tested by a Galaxy developer and are sufficiently generic that
-they may make sense for a variety of Galaxy instances, address a variety of potential use
-cases, and do not have need any additional tailoring, parameterization, or other
-customization. These assume your Galaxy instance has a Vault configured and you're
-comfortable with it storing your user's secrets.
+The templates are sufficiently generic that they may make sense for a variety of
+Galaxy instances, address a variety of potential use cases, and do not need any
+additional tailoring, parameterization, or other customization. These assume your
+Galaxy instance has [a Vault configured](https://docs.galaxyproject.org/en/master/admin/special_topics/vault.html)
+and you're comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Azure Blob Storage as Object Stores
 
@@ -345,11 +344,11 @@ configuration).
 
 ### Ready To Use Production File Source Templates
 
-The templates have been tested by a Galaxy developer and are sufficiently generic that
-they may make sense for a variety of Galaxy instances, address a variety of potential use
-cases, and do not have need any additional tailoring, parameterization, or other
-customization. These assume your Galaxy instance has a Vault configured and you're
-comfortable with it storing your user's secrets.
+The templates are sufficiently generic that they may make sense for a variety of
+Galaxy instances, address a variety of potential use cases, and do not need any
+additional tailoring, parameterization, or other customization. These (mostly) assume
+your Galaxy instance has [a Vault configured](https://docs.galaxyproject.org/en/master/admin/special_topics/vault.html)
+and you are comfortable with it storing your user's secrets.
 
 #### Allow Users to Define Generic FTP Servers as File Sources
 
@@ -407,7 +406,7 @@ by Ansible at deploy time, the file could start with:
 ```
 
 In this case, variables wrapped by ``[%`` and ``%]`` are expanded by Ansible and use the Ansible
-environment and ``{`` and ``}`` are reserved for Galaxy templating.
+environment and ``{{`` and ``}}`` are reserved for Galaxy templating.
 
 Alternatively, Galaxy can be configured to use a custom template on a per-configuration
 object basis by setting the ``template_start`` and/or ``template_end`` variables.
@@ -484,7 +483,7 @@ use the Galaxy user's username to generate unique paths.
 ### ``ensure_path_component``
 
 This [Jinja filter](https://jinja.palletsprojects.com/en/3.0.x/templates/#filters)
-will fail template evaluation if the value it is applies to is not
+will fail template evaluation if the value it is applied to is not
 a simple directory name. If it contain ``..`` or ``/`` or in some other way might
 be used to attempt path exploitation of cause odd path-related bugs. This is
 useful when producing paths for ``disk`` object stores or ``posix`` file sources.

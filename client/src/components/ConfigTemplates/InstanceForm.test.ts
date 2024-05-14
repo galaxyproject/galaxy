@@ -1,11 +1,13 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { FormEntry } from "./formUtil";
+
 import InstanceForm from "./InstanceForm.vue";
 
 const localVue = getLocalVue(true);
 
-const inputs: any[] = [];
+const inputs: FormEntry[] = [];
 const SUBMIT_TITLE = "Submit the form!";
 
 describe("InstanceForm", () => {
@@ -13,7 +15,6 @@ describe("InstanceForm", () => {
         const wrapper = shallowMount(InstanceForm, {
             propsData: {
                 title: "MY FORM",
-                loading: true,
                 inputs: null,
                 submitTitle: SUBMIT_TITLE,
             },
@@ -28,7 +29,6 @@ describe("InstanceForm", () => {
         const wrapper = shallowMount(InstanceForm, {
             propsData: {
                 title: "MY FORM",
-                loading: false,
                 inputs: inputs,
                 submitTitle: SUBMIT_TITLE,
             },

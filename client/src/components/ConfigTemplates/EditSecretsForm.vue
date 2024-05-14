@@ -23,16 +23,14 @@ async function update(secretName: string, secretValue: string) {
 <template>
     <FormCard :title="title">
         <template v-slot:body>
-            <div>
-                <div v-for="secret in template.secrets" :key="secret.name">
-                    <VaultSecret
-                        :label="secret.label || secret.name"
-                        :name="secret.name"
-                        :help="secret.help || ''"
-                        :is-set="true"
-                        @update="update">
-                    </VaultSecret>
-                </div>
+            <div v-for="secret in template.secrets" :key="secret.name">
+                <VaultSecret
+                    :label="secret.label || secret.name"
+                    :name="secret.name"
+                    :help="secret.help || ''"
+                    :is-set="true"
+                    @update="update">
+                </VaultSecret>
             </div>
         </template>
     </FormCard>

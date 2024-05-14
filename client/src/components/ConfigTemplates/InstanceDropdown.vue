@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import "./icons";
-
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
@@ -12,6 +12,8 @@ interface Props {
     routeUpgrade: string;
     isUpgradable: boolean;
 }
+
+library.add(faCaretDown);
 
 const title = "";
 

@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 
+import { FormEntry } from "./formUtil";
+
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     title: string;
-    inputs: any | null; // not fully reactive so make sure these are ready to go when loading is false
+    inputs: Array<FormEntry> | null; // not fully reactive so make sure to not mutate this array
     submitTitle: string;
     loadingMessage: string;
 }

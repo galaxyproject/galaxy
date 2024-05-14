@@ -64,5 +64,5 @@ async function onOk() {
 </template>
 
 <style lang="scss" scoped>
-@import "../Form/form-elements.scss";
+@import "../Form/_form-elements.scss";
 </style>

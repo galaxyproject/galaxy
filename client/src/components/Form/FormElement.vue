@@ -312,5 +312,5 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
 </template>
 
 <style lang="scss" scoped>
-@import "./form-elements.scss";
+@import "./_form-elements.scss";
 </style>

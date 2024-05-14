@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import "./icons";
-
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCol, BRow } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
-import _l from "@/utils/localization";
+import localize from "@/utils/localization";
+
+library.add(faPlus);
 
 interface Props {
     message: String | null | undefined;
@@ -27,7 +29,7 @@ const router = useRouter();
             <BCol>
                 <BButton :id="createButtonId" class="m-1 float-right" @click="router.push(createRoute)">
                     <FontAwesomeIcon icon="plus" />
-                    {{ _l("Create") }}
+                    {{ localize("Create") }}
                 </BButton>
             </BCol>
         </BRow>

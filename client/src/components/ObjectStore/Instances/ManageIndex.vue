@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import "@/components/ConfigTemplates/icons";
-
 import { BTable } from "bootstrap-vue";
 import { computed } from "vue";
 
