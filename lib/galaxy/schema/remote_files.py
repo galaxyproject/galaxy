@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     List,
     Optional,
     Union,
@@ -82,6 +83,11 @@ class FilesSourcePlugin(Model):
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
+    extra: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Extra",
+        description="Extra configuration options that the plugin may serialize. This is plugin specific.",
+    )
 
 
 class BrowsableFilesSourcePlugin(FilesSourcePlugin):
@@ -92,7 +98,6 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
         description="The URI root used by this type of plugin.",
         examples=["gximport://"],
     )
-    model_config = ConfigDict(extra="allow")
 
 
 class FilesSourcePluginList(RootModel):

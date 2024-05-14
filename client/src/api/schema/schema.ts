@@ -2638,6 +2638,11 @@ export interface components {
              */
             doc: string;
             /**
+             * Extra
+             * @description Extra configuration options that the plugin may serialize. This is plugin specific.
+             */
+            extra?: Record<string, never> | null;
+            /**
              * ID
              * @description The `FilesSource` plugin identifier
              */
@@ -2672,7 +2677,6 @@ export interface components {
              * @description Whether this files source plugin allows write access.
              */
             writable: boolean;
-            [key: string]: unknown | undefined;
         };
         /** BulkOperationItemError */
         BulkOperationItemError: {
@@ -5211,6 +5215,11 @@ export interface components {
              * @description Documentation or extended description for this plugin.
              */
             doc: string;
+            /**
+             * Extra
+             * @description Extra configuration options that the plugin may serialize. This is plugin specific.
+             */
+            extra?: Record<string, never> | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier

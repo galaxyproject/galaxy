@@ -26,27 +26,28 @@ watch(isLoadingFileSources, async (isLoading) => {
     }
 });
 
-async function getDOIFromExportRecordUri(targetUri?: string) {
-    if (!targetUri) {
+async function getDOIFromExportRecordUri(uri?: string) {
+    if (!uri) {
         return undefined;
     }
 
-    const fileSource = getFileSourceByUri(targetUri);
+    const fileSource = getFileSourceByUri(uri);
     if (!fileSource) {
-        console.debug("No file source found for URI: ", targetUri);
+        console.debug("No file source found for URI: ", uri);
         return undefined;
     }
-    if (!fileSource.url) {
-        console.debug("Invalid file source for URI: ", targetUri);
+    const repositoryUrl = fileSource.extra?.url;
+    if (!repositoryUrl) {
+        console.debug("Invalid repository URL for file source: ", fileSource);
         return undefined;
     }
-    const recordId = getRecordIdFromUri(targetUri);
+    const recordId = getRecordIdFromUri(uri);
     if (!recordId) {
-        console.debug("No record ID found for URI: ", targetUri);
+        console.debug("No record ID found for URI: ", uri);
         return undefined;
     }
-    const recordUrl = `${fileSource.url}/api/records/${recordId}`;
-    return getDOIFromRecordUrl(recordUrl);
+    const recordUrl = `${repositoryUrl}/api/records/${recordId}`;
+    return getDOIFromInvenioRecordUrl(recordUrl);
 }
 
 function getRecordIdFromUri(targetUri?: string): string | undefined {
@@ -56,7 +57,7 @@ function getRecordIdFromUri(targetUri?: string): string | undefined {
     return targetUri.split("//")[1]?.split("/")[1];
 }
 
-async function getDOIFromRecordUrl(recordUrl?: string): Promise<string | undefined> {
+async function getDOIFromInvenioRecordUrl(recordUrl?: string): Promise<string | undefined> {
     if (!recordUrl) {
         return undefined;
     }

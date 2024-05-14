@@ -9,6 +9,7 @@ from enum import Enum
 from typing import (
     Any,
     ClassVar,
+    Dict,
     List,
     Optional,
     Set,
@@ -96,6 +97,7 @@ class FilesSourceProperties(TypedDict):
     uri_root: NotRequired[str]
     type: NotRequired[str]
     browsable: NotRequired[bool]
+    extra: NotRequired[Dict[str, Any]]
 
 
 @dataclass
@@ -378,8 +380,10 @@ class BaseFilesSource(FilesSource):
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
         if self.serialize_extra_props:
+            extra_props = {}
             for prop in self.serialize_extra_props:
-                rval[prop] = getattr(self, prop, None)
+                extra_props[prop] = getattr(self, prop, None)
+            rval["extra"] = extra_props
         return rval
 
     def to_dict_time(self, ctime):
