@@ -32,7 +32,7 @@ export default {
             if (content) {
                 const vDom = document.createElement("div");
                 vDom.innerHTML = content;
-                const children = vDom.children;
+                const children = Object.values(vDom.children);
                 children.forEach((child) => {
                     if (child.classList.contains("embedded-item")) {
                         const splitId = child.id.split("-");
