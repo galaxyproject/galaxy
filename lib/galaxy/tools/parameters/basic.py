@@ -2675,7 +2675,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
 # Code from CWL branch to massage in order to be shared across tools and workflows,
 # and for CWL artifacts as well as Galaxy ones.
-def raw_to_galaxy(trans, as_dict_value):
+def raw_to_galaxy(trans, as_dict_value, commit=True):
     app = trans.app
     history = trans.history
 
@@ -2725,7 +2725,8 @@ def raw_to_galaxy(trans, as_dict_value):
         trans.sa_session.add(primary_data)
         history.stage_addition(primary_data)
         history.add_pending_items()
-        trans.sa_session.flush()
+        if commit:
+            app.model.session.commit()
         return primary_data
     else:
         name = as_dict_value.get("name")
@@ -2745,7 +2746,8 @@ def raw_to_galaxy(trans, as_dict_value):
                 element_class = element_dict["class"]
                 identifier = element_dict["identifier"]
                 if element_class == "File":
-                    hda = raw_to_galaxy(trans, element_dict)
+                    # Don't commit for inner elements
+                    hda = raw_to_galaxy(trans, element_dict, commit=False)
                     collection_builder.add_dataset(identifier, hda)
                 else:
                     subcollection_builder = collection_builder.get_level(identifier)
@@ -2756,7 +2758,8 @@ def raw_to_galaxy(trans, as_dict_value):
         collection_builder.populate()
         history.stage_addition(hdca)
         history.add_pending_items()
-        app.model.session.flush()
+        if commit:
+            app.model.session.commit()
         return hdca
 
 
