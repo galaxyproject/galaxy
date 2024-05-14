@@ -13,11 +13,11 @@ import { useUserStore } from "@/stores/userStore";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
 import WorkflowActionsExtend from "@/components/Workflow/WorkflowActionsExtend.vue";
 import WorkflowIndicators from "@/components/Workflow/WorkflowIndicators.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowQuickView from "@/components/Workflow/WorkflowQuickView.vue";
 import WorkflowRename from "@/components/Workflow/WorkflowRename.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
@@ -227,7 +227,7 @@ async function onTagClick(tag: string) {
                 hide-header
                 dialog-class="workflow-card-preview-modal w-auto"
                 centered>
-                <WorkflowQuickView :id="workflow.id" :show="showPreview" @ok="toggleShowPreview(false)" />
+                <WorkflowPublished v-if="showPreview" :id="workflow.id" quick-view />
             </BModal>
         </div>
     </div>
