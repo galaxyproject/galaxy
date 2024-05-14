@@ -22,6 +22,11 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
         return fileSources.value.find((fs) => fs.id === id);
     }
 
+    function getFileSourceByUri(uri: string) {
+        const sourceId = uri.split("://")[1]?.split("/")[0] ?? "";
+        return getFileSourceById(sourceId);
+    }
+
     return {
         /**
          * The list of available file sources from the server.
@@ -42,5 +47,12 @@ export function useFileSources(options: FilterFileSourcesOptions = {}) {
          * @returns The file source with the given ID, if found.
          */
         getFileSourceById,
+        /**
+         * Get the file source that matches the given URI.
+         *
+         * @param uri - The URI to match.
+         * @returns The file source that matches the given URI, if found.
+         */
+        getFileSourceByUri,
     };
 }
