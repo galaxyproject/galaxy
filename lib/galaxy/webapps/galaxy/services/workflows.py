@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 from typing import (
     Any,
     Dict,
@@ -10,12 +12,17 @@ from typing import (
 
 from fastapi.responses import PlainTextResponse
 from gxformat2._yaml import ordered_dump
+from markupsafe import escape
 
 from galaxy import (
     exceptions,
     model,
     util,
     web,
+)
+from galaxy.files.uris import (
+    stream_url_to_str,
+    validate_uri_access,
 )
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -26,6 +33,7 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorResponse,
     WorkflowContentsManager,
+    WorkflowCreateOptions,
     WorkflowSerializer,
     WorkflowsManager,
     WorkflowUpdateOptions,
@@ -51,11 +59,18 @@ from galaxy.schema.workflows import (
     WorkflowDictRunSummary,
     WorkflowUpdatePayload,
 )
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.tool_shed.tool_shed_registry import Registry
+from galaxy.webapps.base.controller import (
+    SharableMixin,
+    url_for,
+    UsesStoredWorkflowMixin,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 
@@ -76,6 +91,8 @@ class WorkflowsService(ServiceBase):
         notification_service: NotificationService,
         history_manager: HistoryManager,
         uses_annotations: UsesAnnotations,
+        uses_stored_workflow_mix_in: UsesStoredWorkflowMixin,
+        sharable_mixin: SharableMixin,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
@@ -84,6 +101,8 @@ class WorkflowsService(ServiceBase):
         self._tool_shed_registry = tool_shed_registry
         self._history_manager = history_manager
         self._uses_annotations = uses_annotations
+        self._uses_stored_workflow_mix_in = uses_stored_workflow_mix_in
+        self._sharable_mixin = sharable_mixin
 
     def download_workflow(self, trans, workflow_id, history_id, style, format, version, instance):
         stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
@@ -464,3 +483,303 @@ class WorkflowsService(ServiceBase):
         return StoredWorkflowDetailed(
             **self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
         )
+
+    def create(
+        self,
+        trans,
+        payload=None,
+    ):
+        payload = payload.model_dump(exclude_unset=True)
+        ways_to_create = {
+            "archive_file",
+            "archive_source",
+            "from_history_id",
+            "from_path",
+            "shared_workflow_id",
+            "workflow",
+        }
+
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create or run workflows.")
+
+        if payload is None or len(ways_to_create.intersection(payload)) == 0:
+            # Workflow is not propelry received
+            message = f"One parameter among - {', '.join(ways_to_create)} - must be specified"
+            raise exceptions.RequestParameterMissingException(message)
+
+        if len(ways_to_create.intersection(payload)) > 1:
+            message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
+            raise exceptions.RequestParameterInvalidException(message)
+
+        if "archive_source" in payload or "archive_file" in payload:
+            archive_source = payload.get("archive_source")
+            archive_file = payload.get("archive_file")
+            archive_data = None
+            if archive_source:
+                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
+                if archive_source.startswith("file://"):
+                    workflow_src = {"src": "from_path", "path": archive_source[len("file://") :]}
+                    payload["workflow"] = workflow_src
+                    return self._api_import_new_workflow(trans, payload)
+                elif archive_source == "trs_tool":
+                    server = None
+                    trs_tool_id = None
+                    trs_version_id = None
+                    import_source = None
+                    if "trs_url" in payload:
+                        # parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        parts = trans.app.trs_proxy.match_url(payload["trs_url"])
+                        if parts:
+                            # server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
+                            server = trans.app.trs_proxy.server_from_url(parts["trs_base_url"])
+                            trs_tool_id = parts["tool_id"]
+                            trs_version_id = parts["version_id"]
+                            payload["trs_tool_id"] = trs_tool_id
+                            payload["trs_version_id"] = trs_version_id
+                        else:
+                            raise exceptions.MessageException("Invalid TRS URL.")
+                    else:
+                        trs_server = payload.get("trs_server")
+                        # server = self.app.trs_proxy.get_server(trs_server)
+                        server = trans.app.trs_proxy.get_server(trs_server)
+                        trs_tool_id = payload.get("trs_tool_id")
+                        trs_version_id = payload.get("trs_version_id")
+
+                    archive_data = server.get_version_descriptor(trs_tool_id, trs_version_id)
+                else:
+                    try:
+                        archive_data = stream_url_to_str(
+                            archive_source, trans.app.file_sources, prefix="gx_workflow_download"
+                        )
+                        import_source = "URL"
+                    except Exception:
+                        raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
+            elif hasattr(archive_file, "file"):
+                uploaded_file = archive_file.file
+                uploaded_file_name = uploaded_file.name
+                if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
+                    archive_data = util.unicodify(uploaded_file.read())
+                    import_source = "uploaded file"
+                else:
+                    raise exceptions.MessageException("You attempted to upload an empty file.")
+            else:
+                raise exceptions.MessageException("Please provide a URL or file.")
+            return self.__api_import_from_archive(trans, archive_data, import_source, payload=payload)
+
+        if "from_history_id" in payload:
+            from_history_id = payload.get("from_history_id")
+            from_history_id = self.decode_id(from_history_id)
+            history = self._history_manager.get_accessible(from_history_id, trans.user, current_history=trans.history)
+
+            job_ids = [self.decode_id(_) for _ in payload.get("job_ids", [])]
+            dataset_ids = payload.get("dataset_ids", [])
+            dataset_collection_ids = payload.get("dataset_collection_ids", [])
+            workflow_name = payload["workflow_name"]
+            stored_workflow = extract_workflow(
+                trans=trans,
+                user=trans.user,
+                history=history,
+                job_ids=job_ids,
+                dataset_ids=dataset_ids,
+                dataset_collection_ids=dataset_collection_ids,
+                workflow_name=workflow_name,
+            )
+            item = stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
+            item["url"] = url_for("workflow", id=item["id"])
+            return item
+
+        if "from_path" in payload:
+            from_path = payload.get("from_path")
+            object_id = payload.get("object_id")
+            workflow_src = {"src": "from_path", "path": from_path}
+            if object_id is not None:
+                workflow_src["object_id"] = object_id
+            payload["workflow"] = workflow_src
+            return self._api_import_new_workflow(trans, payload)
+
+        if "shared_workflow_id" in payload:
+            workflow_id = payload["shared_workflow_id"]
+            return self._api_import_shared_workflow(trans, workflow_id, payload)
+
+        if "workflow" in payload:
+            a = self._api_import_new_workflow(trans, payload)
+            return a
+
+        # This was already raised above, but just in case...
+        raise exceptions.RequestParameterMissingException("No method for workflow creation supplied.")
+
+    def _api_import_new_workflow(
+        self,
+        trans,
+        payload,
+        **kwd,
+    ):
+        data = payload["workflow"]
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        workflow_create_options = WorkflowCreateOptions(**payload)
+        workflow, missing_tool_tups = self.__workflow_from_dict(
+            trans,
+            raw_workflow_description,
+            workflow_create_options,
+        )
+        # galaxy workflow newly created id
+        workflow_id = workflow.id
+        # api encoded, id
+        encoded_id = trans.security.encode_id(workflow_id)
+        item = workflow.to_dict(value_mapper={"id": trans.security.encode_id})
+        item["annotations"] = [x.annotation for x in workflow.annotations]
+        item["url"] = url_for("workflow", id=encoded_id)
+        item["owner"] = workflow.user.username
+        item["number_of_steps"] = len(workflow.latest_workflow.steps)
+        return item
+
+    def _api_import_shared_workflow(
+        self,
+        trans,
+        workflow_id,
+        payload,
+        **kwd,
+    ):
+        try:
+            stored_workflow = self._uses_stored_workflow_mix_in.get_stored_workflow(
+                trans, workflow_id, check_ownership=False
+            )
+        except Exception:
+            raise exceptions.ObjectNotFound("Malformed workflow id specified.")
+        if stored_workflow.importable is False:
+            raise exceptions.ItemAccessibilityException(
+                "The owner of this workflow has disabled imports via this link."
+            )
+        elif stored_workflow.deleted:
+            raise exceptions.ItemDeletionException("You can't import this workflow because it has been deleted.")
+        imported_workflow = self._uses_stored_workflow_mix_in._import_shared_workflow(trans, stored_workflow)
+        item = imported_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
+        encoded_id = trans.security.encode_id(imported_workflow.id)
+        item["url"] = url_for("workflow", id=encoded_id)
+        return item
+
+    def __api_import_from_archive(
+        self,
+        trans,
+        archive_data,
+        source=None,
+        payload=None,
+    ):
+        payload = payload or {}
+        try:
+            data = json.loads(archive_data)
+        except Exception:
+            if "GalaxyWorkflow" in archive_data:
+                data = {"yaml_content": archive_data}
+            else:
+                raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+        if not data:
+            raise exceptions.MessageException("The data content is missing.")
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        workflow_create_options = WorkflowCreateOptions(**payload)
+        workflow, missing_tool_tups = self.__workflow_from_dict(
+            trans, raw_workflow_description, workflow_create_options, source=source
+        )
+        workflow_id = workflow.id
+        workflow = workflow.latest_workflow
+
+        response = {
+            "message": f"Workflow '{escape(workflow.name)}' imported successfully.",
+            "status": "success",
+            "id": trans.security.encode_id(workflow_id),
+        }
+        if workflow.has_errors:
+            response["message"] = "Imported, but some steps in this workflow have validation errors."
+            response["status"] = "error"
+        elif len(workflow.steps) == 0:
+            response["message"] = "Imported, but this workflow has no steps."
+            response["status"] = "error"
+        elif workflow.has_cycles:
+            response["message"] = "Imported, but this workflow contains cycles."
+            response["status"] = "error"
+        return response
+
+    def __workflow_from_dict(
+        self,
+        trans,
+        data,
+        workflow_create_options,
+        source=None,
+    ):
+        """Creates a workflow from a dict.
+
+        Created workflow is stored in the database and returned.
+        """
+        publish = workflow_create_options.publish
+        importable = workflow_create_options.is_importable
+        if publish and not importable:
+            raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
+
+        # workflow_contents_manager = self.app.workflow_contents_manager
+        workflow_contents_manager = trans.app.workflow_contents_manager
+        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
+        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
+            trans,
+            raw_workflow_description,
+            workflow_create_options,
+            source=source,
+        )
+        if importable:
+            self._sharable_mixin._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+
+        self.__import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
+        return created_workflow.stored_workflow, created_workflow.missing_tools
+
+    def __import_tools_if_needed(
+        self,
+        trans,
+        workflow_create_options,
+        raw_workflow_description,
+    ):
+        if not workflow_create_options.import_tools:
+            return
+
+        if not trans.user_is_admin:
+            raise exceptions.AdminRequiredException()
+
+        data = raw_workflow_description.as_dict
+
+        tools = {}
+        for key in data["steps"]:
+            item = data["steps"][key]
+            if item is not None:
+                if "tool_shed_repository" in item:
+                    tool_shed_repository = item["tool_shed_repository"]
+                    if (
+                        "owner" in tool_shed_repository
+                        and "changeset_revision" in tool_shed_repository
+                        and "name" in tool_shed_repository
+                        and "tool_shed" in tool_shed_repository
+                    ):
+                        toolstr = (
+                            tool_shed_repository["owner"]
+                            + tool_shed_repository["changeset_revision"]
+                            + tool_shed_repository["name"]
+                            + tool_shed_repository["tool_shed"]
+                        )
+                        tools[toolstr] = tool_shed_repository
+
+        # irm = InstallRepositoryManager(self.app)
+        irm = InstallRepositoryManager(trans.app)
+        install_options = workflow_create_options.install_options
+        for k in tools:
+            item = tools[k]
+            tool_shed_url = f"https://{item['tool_shed']}/"
+            name = item["name"]
+            owner = item["owner"]
+            changeset_revision = item["changeset_revision"]
+            irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
+
+    def __normalize_workflow(
+        self,
+        trans,
+        as_dict,
+    ):
+        return self._workflow_contents_manager.normalize_workflow_format(trans, as_dict)
