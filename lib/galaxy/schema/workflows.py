@@ -1069,16 +1069,7 @@ class WorkflowUpdatePayload(Model):
 
 
 class WorkflowCreatePayload(Model):
-    archive_file: Optional[Any] = Field(
-        None,
-        title="Archive File",
-        description="A file containing a workflow archive to be imported.",
-    )
-    archive_source: Optional[str] = Field(
-        None,
-        title="Archive Source",
-        description="A URL or file path pointing to a workflow archive to be imported.",
-    )
+    # TODO - Description comes from previous endpoint
     from_history_id: Optional[str] = Field(
         None,
         title="From History ID",
@@ -1104,10 +1095,24 @@ class WorkflowCreatePayload(Model):
         title="Workflow Name",
         description="If from_history_id is set, this is the name of the workflow to create when extracting a workflow from history.",
     )
+    # TODO - New descriptions added by me
+    archive_file: Optional[Any] = Field(
+        None,
+        title="Archive File",
+        description="A file containing a workflow archive to be imported.",
+    )
+    archive_source: Optional[str] = Field(
+        None,
+        title="Archive Source",
+        description="A URL or file path pointing to a workflow archive to be imported.",
+    )
     from_path: Optional[str] = Field(
         None,
         title="From Path",
         description="A path from which to import a workflow.",
+    )
+    import_tools: Optional[bool] = Field(
+        None,
     )
     object_id: Optional[str] = Field(
         None,
@@ -1118,11 +1123,6 @@ class WorkflowCreatePayload(Model):
         None,
         title="Shared Workflow ID",
         description="The ID of a shared workflow to import.",
-    )
-    workflow: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Workflow",
-        description="A dictionary containing information about a new workflow to import.",
     )
     trs_url: Optional[str] = Field(
         None,
@@ -1144,3 +1144,15 @@ class WorkflowCreatePayload(Model):
         title="TRS Version ID",
         description="If archive_source is set to 'trs_tool', this is the version ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.",
     )
+    workflow: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Workflow",
+        description="A dictionary containing information about a new workflow to import.",
+    )
+
+    @field_validator("workflow", mode="before")
+    @classmethod
+    def decode_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
