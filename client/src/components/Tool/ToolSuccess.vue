@@ -31,7 +31,7 @@ onMounted(() => {
 
 <template>
     <section>
-        <div v-if="jobResponse.produces_entry_points">
+        <div v-if="jobResponse?.produces_entry_points">
             <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
         </div>
         <ToolSuccessMessage :job-response="jobResponse" :tool-name="toolName" />
