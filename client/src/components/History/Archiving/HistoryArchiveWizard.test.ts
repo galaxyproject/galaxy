@@ -39,7 +39,7 @@ const ARCHIVED_TEST_HISTORY = {
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
 
 async function mountComponentWithHistory(history?: HistorySummary) {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ stubActions: false });
     setActivePinia(pinia);
     const historyStore = useHistoryStore(pinia);
 
@@ -50,6 +50,7 @@ async function mountComponentWithHistory(history?: HistorySummary) {
     const wrapper = shallowMount(HistoryArchiveWizard, {
         propsData: { historyId: TEST_HISTORY_ID },
         localVue,
+        pinia,
     });
     await flushPromises();
     return wrapper;

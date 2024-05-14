@@ -46,7 +46,7 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
 ];
 
 async function mountHistoryExport() {
-    const pinia = createTestingPinia();
+    const pinia = createTestingPinia({ stubActions: false });
     setActivePinia(pinia);
     const historyStore = useHistoryStore(pinia);
 
