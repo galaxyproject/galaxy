@@ -8,7 +8,6 @@ from typing import (
 )
 
 from pydantic import (
-    ConfigDict,
     Field,
     RootModel,
 )
