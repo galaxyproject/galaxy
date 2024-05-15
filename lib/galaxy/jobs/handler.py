@@ -569,7 +569,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
-                    log.error("(%d) Error checking job readiness" % job.id)
+                    # A more informative message is shown wherever the job state is set to error
+                    pass
                 else:
                     log.error("(%d) Job in unknown state '%s'" % (job.id, job_state))
                     new_waiting_jobs.append(job.id)
