@@ -1907,7 +1907,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         job.set_state(final_job_state)
                         return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
-        job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
+        job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
