@@ -64,7 +64,7 @@ class HistoryTablePruner:
         high = get_high(low)
         batch_counter = 1
         while low <= self.max_id:
-            log.info(f"Running batch {batch_counter} of {self.batches}: history id range {low}-{high-1}:")
+            log.info(f"Running batch {batch_counter} of {self.batches}: history id range {low}-{high - 1}:")
             self._run_batch(low, high)
             low = high
             high = get_high(high)
@@ -76,7 +76,7 @@ class HistoryTablePruner:
         return today.replace(month=today.month - 1)
 
     def _run_batch(self, low, high):
-        empty_batch_msg = f" No histories to delete in id range {low}-{high-1}"
+        empty_batch_msg = f" No histories to delete in id range {low}-{high - 1}"
         self._mark_histories_as_deleted_and_purged(low, high)
         histories = self._get_histories(low, high)
         if not histories:
@@ -200,7 +200,7 @@ class HistoryTablePruner:
 
     def _delete_histories(self, low, high):
         """Last step: delete histories that are safe to delete."""
-        log.info(f" Deleting histories in id range {low}-{high-1}")
+        log.info(f" Deleting histories in id range {low}-{high - 1}")
         stmt = text(f"DELETE FROM history WHERE id IN (SELECT id FROM {TMP_TABLE})")
         with self.engine.begin() as conn:
             conn.execute(stmt)

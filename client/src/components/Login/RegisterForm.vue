@@ -14,7 +14,7 @@ import {
     BFormInput,
     BFormText,
 } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -46,7 +46,7 @@ const confirm = ref(null);
 const password = ref(null);
 const username = ref(null);
 const subscribe = ref(null);
-const messageText = ref(null);
+const messageText: Ref<string | null> = ref(null);
 const disableCreate = ref(false);
 const labelPassword = ref(localize("Password"));
 const labelPublicName = ref(localize("Public name"));
