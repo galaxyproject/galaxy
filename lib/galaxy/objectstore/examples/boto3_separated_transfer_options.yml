@@ -1,0 +1,35 @@
+type: boto3
+auth:
+  access_key: access_moo
+  secret_key: secret_cow
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+transfer:
+  upload_multipart_threshold: 13
+  upload_max_concurrency: 13
+  upload_multipart_chunksize: 13
+  upload_num_download_attempts: 13
+  upload_max_io_queue: 13
+  upload_io_chunksize: 13
+  upload_use_threads: false
+  upload_max_bandwidth: 13
+  download_multipart_threshold: 14
+  download_max_concurrency: 14
+  download_multipart_chunksize: 14
+  download_num_download_attempts: 14
+  download_max_io_queue: 14
+  download_io_chunksize: 14
+  download_use_threads: true
+  download_max_bandwidth: 14
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_s3
+- type: temp
+  path: database/tmp_s3

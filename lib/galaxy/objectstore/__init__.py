@@ -55,7 +55,10 @@ from .badges import (
 from .caching import CacheTarget
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        Dataset,
+        DatasetInstance,
+    )
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
@@ -372,16 +375,6 @@ class BaseObjectStore(ObjectStore):
     def shutdown(self):
         """Close any connections for this ObjectStore."""
         self.running = False
-
-    def file_ready(
-        self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
-    ):
-        """
-        Check if a file corresponding to a dataset is ready to be used.
-
-        Return True if so, False otherwise
-        """
-        return True
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -938,10 +931,6 @@ class NestedObjectStore(BaseObjectStore):
         """Determine if the `obj` exists in any of the backends."""
         return self._call_method("_exists", obj, False, False, **kwargs)
 
-    def file_ready(self, obj, **kwargs):
-        """Determine if the file for `obj` is ready to be used by any of the backends."""
-        return self._call_method("file_ready", obj, False, False, **kwargs)
-
     def _create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
         objectstore = random.choice(list(self.backends.values()))
@@ -1400,6 +1389,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
+    elif store == "boto3":
+        from .s3_boto3 import S3ObjectStore as Boto3ObjectStore
+
+        objectstore_class = Boto3ObjectStore
     elif store in ["s3", "aws_s3"]:
         from .s3 import S3ObjectStore
 
@@ -1672,18 +1665,27 @@ def persist_extra_files(
         if not extra_files_path_name:
             extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)
         assert extra_files_path_name
-        for root, _dirs, files in safe_walk(src_extra_files_path):
-            extra_dir = os.path.join(extra_files_path_name, os.path.relpath(root, src_extra_files_path))
-            extra_dir = os.path.normpath(extra_dir)
-            for f in files:
-                if not in_directory(f, src_extra_files_path):
-                    # Unclear if this can ever happen if we use safe_walk ... probably not ?
-                    raise MalformedContents(f"Invalid dataset path: {f}")
-                object_store.update_from_file(
-                    primary_data.dataset,
-                    extra_dir=extra_dir,
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
+        persist_extra_files_for_dataset(object_store, src_extra_files_path, primary_data.dataset, extra_files_path_name)
+
+
+def persist_extra_files_for_dataset(
+    object_store: ObjectStore,
+    src_extra_files_path: str,
+    dataset: "Dataset",
+    extra_files_path_name: str,
+):
+    for root, _dirs, files in safe_walk(src_extra_files_path):
+        extra_dir = os.path.join(extra_files_path_name, os.path.relpath(root, src_extra_files_path))
+        extra_dir = os.path.normpath(extra_dir)
+        for f in files:
+            if not in_directory(f, src_extra_files_path):
+                # Unclear if this can ever happen if we use safe_walk ... probably not ?
+                raise MalformedContents(f"Invalid dataset path: {f}")
+            object_store.update_from_file(
+                dataset,
+                extra_dir=extra_dir,
+                alt_name=f,
+                file_name=os.path.join(root, f),
+                create=True,
+                preserve_symlinks=True,
+            )
