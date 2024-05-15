@@ -167,7 +167,7 @@ class InvenioRDMFilesSource(RDMFilesSource):
         record = self.repository.create_draft_record(entry_data["name"], public_name, user_context=user_context)
         return {
             "uri": self.repository.to_plugin_uri(record["id"]),
-            "name": record["metadata"]["title"],
+            "name": record["title"],
             "external_link": record["links"]["self_html"],
         }
 
@@ -253,6 +253,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         response = requests.post(self.records_url, json=create_record_request, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
+        record["title"] = self._get_record_title(record)
         return record
 
     def upload_file_to_draft_record(
@@ -359,15 +360,22 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         for record in records:
             uri = self.to_plugin_uri(record_id=record["id"])
             path = self.plugin.to_relative_path(uri)
+            name = self._get_record_title(record)
             rval.append(
                 {
                     "class": "Directory",
-                    "name": record["metadata"]["title"],
+                    "name": name,
                     "uri": uri,
                     "path": path,
                 }
             )
         return rval
+
+    def _get_record_title(self, record: InvenioRecord) -> str:
+        title = record.get("title")
+        if not title and "metadata" in record:
+            title = record["metadata"].get("title")
+        return title or "No title"
 
     def _get_record_files_from_response(self, record_id: str, response: dict) -> List[RemoteFile]:
         files_enabled = response.get("enabled", False)

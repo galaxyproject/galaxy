@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { BAlert, BButton, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { errorMessageAsString } from "utils/simple-error";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -82,10 +83,8 @@ async function submitOIDCLogin(idp: string) {
             window.location = data.redirect_uri;
         }
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Login failed for an unknown reason.";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
     } finally {
         loading.value = false;
     }
@@ -113,10 +112,8 @@ async function submitCILogon(idp: string | null) {
             window.location = data.redirect_uri;
         }
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Login failed for an unknown reason.";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
     } finally {
         loading.value = false;
     }

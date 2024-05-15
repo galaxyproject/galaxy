@@ -19,6 +19,7 @@ import { computed, ref } from "vue";
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -81,8 +82,7 @@ async function submit() {
         window.location.href = props.redirect || withPrefix("/");
     } catch (error: any) {
         disableCreate.value = false;
-        const errMsg = error.response.data && error.response.data.err_msg;
-        messageText.value = errMsg || "Registration failed for an unknown reason.";
+        messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
     }
 }
 </script>
@@ -215,7 +215,6 @@ async function submit() {
         </div>
     </div>
 </template>
-
 <style scoped lang="scss">
 .embed-container {
     position: relative;

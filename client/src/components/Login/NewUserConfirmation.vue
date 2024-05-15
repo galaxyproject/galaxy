@@ -15,6 +15,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 interface Props {
     termsUrl?: string;
@@ -58,8 +59,7 @@ async function submit() {
             }
         } catch (error: any) {
             messageVariant.value = "danger";
-            const errMsg = error.response.data && error.response.data.err_msg;
-            messageText.value = errMsg || "Login failed for an unknown reason.";
+            messageText.value = errorMessageAsString(error, "Login failed for an unknown reason.");
         }
     }
 }

@@ -13,7 +13,7 @@ type WorkflowLabelKind = "input" | "output" | "step";
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
 
-export function splitMarkdown(markdown: string, preserveWhitespace: boolean = false) {
+export function splitMarkdown(markdown: string, preserveWhitespace = false) {
     const sections: Section[] = [];
     const markdownErrors = [];
     let digest = markdown;

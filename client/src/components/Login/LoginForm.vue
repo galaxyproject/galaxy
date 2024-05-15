@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axios, { type AxiosError } from "axios";
+import axios from "axios";
 import {
     BAlert,
     BButton,
@@ -18,6 +18,7 @@ import { useRouter } from "vue-router/composables";
 
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import NewUserConfirmation from "@/components/Login/NewUserConfirmation.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
@@ -106,14 +107,13 @@ async function submitLogin() {
         }
     } catch (e) {
         loading.value = false;
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response && error.response.data && error.response.data.err_msg;
+        const message = errorMessageAsString(e, "Login failed for an unknown reason.");
 
         if (connectExternalProvider.value && message && message.toLowerCase().includes("invalid")) {
             messageText.value = message + " Try logging in to the existing account through an external provider below.";
         } else {
-            messageText.value = message || "Login failed for an unknown reason.";
+            messageText.value = message;
         }
         if (message === "Invalid password.") {
             passwordState.value = false;
@@ -132,10 +132,8 @@ async function resetLogin() {
         messageVariant.value = "info";
         messageText.value = response.data.message;
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const errMsg = error.response?.data && error.response.data.err_msg;
-        messageText.value = errMsg || "Password reset failed for an unknown reason.";
+        messageText.value = errorMessageAsString(e, "Password reset failed for an unknown reason.");
     } finally {
         loading.value = false;
     }

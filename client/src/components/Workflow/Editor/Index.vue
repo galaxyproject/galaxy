@@ -392,17 +392,18 @@ export default {
             }
         });
 
-        function resetStores() {
+        async function resetStores() {
             hasChanges.value = false;
             connectionStore.$reset();
             stepStore.$reset();
             stateStore.$reset();
             commentStore.$reset();
             undoRedoStore.$reset();
+            await nextTick();
         }
 
-        onUnmounted(() => {
-            resetStores();
+        onUnmounted(async () => {
+            await resetStores();
             emit("update:confirmation", false);
         });
 
@@ -574,7 +575,7 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
-            this.resetStores();
+            await this.resetStores();
             await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
         },
@@ -887,7 +888,7 @@ export default {
         },
         async _loadCurrent(id, version) {
             if (!this.isNewTempWorkflow) {
-                this.resetStores();
+                await this.resetStores();
                 this.onWorkflowMessage("Loading workflow...", "progress");
 
                 try {
