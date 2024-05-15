@@ -9,7 +9,6 @@ from enum import Enum
 from typing import (
     Any,
     ClassVar,
-    Dict,
     List,
     Optional,
     Set,
@@ -97,7 +96,7 @@ class FilesSourceProperties(TypedDict):
     uri_root: NotRequired[str]
     type: NotRequired[str]
     browsable: NotRequired[bool]
-    extra: NotRequired[Dict[str, Any]]
+    url: NotRequired[Optional[str]]
 
 
 @dataclass
@@ -301,7 +300,6 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
-    serialize_extra_props: ClassVar[List[str]] = []  # Extra properties safe to serialize
 
     def get_browsable(self) -> bool:
         # Check whether the list method has been overridden
@@ -336,6 +334,10 @@ class BaseFilesSource(FilesSource):
         if prefix:
             root = uri_join(root, prefix)
         return root
+
+    def get_url(self) -> Optional[str]:
+        """Returns a URL that can be used to link to the remote source."""
+        return None
 
     def to_relative_path(self, url: str) -> str:
         return url.replace(self.get_uri_root(), "") or "/"
@@ -377,13 +379,10 @@ class BaseFilesSource(FilesSource):
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
+        if self.get_url() is not None:
+            rval["url"] = self.get_url()
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
-        if self.serialize_extra_props:
-            extra_props = {}
-            for prop in self.serialize_extra_props:
-                extra_props[prop] = getattr(self, prop, None)
-            rval["extra"] = extra_props
         return rval
 
     def to_dict_time(self, ctime):

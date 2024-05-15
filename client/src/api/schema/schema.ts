@@ -2638,11 +2638,6 @@ export interface components {
              */
             doc: string;
             /**
-             * Extra
-             * @description Extra configuration options that the plugin may serialize. This is plugin specific.
-             */
-            extra?: Record<string, never> | null;
-            /**
              * ID
              * @description The `FilesSource` plugin identifier
              */
@@ -2672,6 +2667,11 @@ export interface components {
              * @description The URI root used by this type of plugin.
              */
             uri_root: string;
+            /**
+             * URL
+             * @description Optional URL that might be provided by some plugins to link to the remote source.
+             */
+            url?: string | null;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
@@ -5216,11 +5216,6 @@ export interface components {
              */
             doc: string;
             /**
-             * Extra
-             * @description Extra configuration options that the plugin may serialize. This is plugin specific.
-             */
-            extra?: Record<string, never> | null;
-            /**
              * ID
              * @description The `FilesSource` plugin identifier
              */
@@ -5245,6 +5240,11 @@ export interface components {
              * @description The type of the plugin.
              */
             type: string;
+            /**
+             * URL
+             * @description Optional URL that might be provided by some plugins to link to the remote source.
+             */
+            url?: string | null;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.

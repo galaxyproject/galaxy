@@ -41,7 +41,7 @@ async function getDOIFromExportRecordUri(uri?: string) {
         console.debug("No file source found for URI: ", uri);
         return undefined;
     }
-    const repositoryUrl = fileSource.extra?.url;
+    const repositoryUrl = fileSource.url;
     if (!repositoryUrl) {
         console.debug("Invalid repository URL for file source: ", fileSource);
         return undefined;

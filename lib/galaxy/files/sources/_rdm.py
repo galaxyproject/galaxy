@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 
 class RDMFilesSourceProperties(FilesSourceProperties):
-    url: str
     token: str
     public_name: str
 
@@ -135,7 +134,6 @@ class RDMFilesSource(BaseFilesSource):
     """
 
     plugin_kind = PluginKind.rdm
-    serialize_extra_props = ["url"]
 
     def __init__(self, **kwd: Unpack[RDMFilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)
@@ -148,6 +146,9 @@ class RDMFilesSource(BaseFilesSource):
     @property
     def repository(self) -> RDMRepositoryInteractor:
         return self._repository_interactor
+
+    def get_url(self) -> Optional[str]:
+        return self.url
 
     def get_repository_interactor(self, repository_url: str) -> RDMRepositoryInteractor:
         """Returns an interactor compatible with the given repository URL.

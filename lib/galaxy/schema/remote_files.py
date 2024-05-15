@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import (
     Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -82,10 +81,10 @@ class FilesSourcePlugin(Model):
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
-    extra: Optional[Dict[str, Any]] = Field(
+    url: Optional[str] = Field(
         None,
-        title="Extra",
-        description="Extra configuration options that the plugin may serialize. This is plugin specific.",
+        title="URL",
+        description="Optional URL that might be provided by some plugins to link to the remote source.",
     )
 
 
