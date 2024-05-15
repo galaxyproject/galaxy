@@ -76,12 +76,9 @@ def make_data_manager_history_association(session):
 @pytest.fixture
 def make_default_history_permissions(session, make_history, make_role):
     def f(**kwd):
-        if "history" not in kwd:
-            kwd["history"] = make_history()
-        if "action" not in kwd:
-            kwd["action"] = random_str()
-        if "role" not in kwd:
-            kwd["role"] = make_role()
+        kwd["history"] = kwd.get("history") or make_history()
+        kwd["action"] = kwd.get("action") or random_str()
+        kwd["role"] = kwd.get("role") or make_role()
         model = m.DefaultHistoryPermissions(**kwd)
         write_to_db(session, model)
         return model
@@ -112,10 +109,8 @@ def make_galaxy_session(session):
 @pytest.fixture
 def make_galaxy_session_to_history_association(session, make_history, make_galaxy_session):
     def f(**kwd):
-        if "galaxy_session" not in kwd:
-            kwd["galaxy_session"] = make_galaxy_session()
-        if "history" not in kwd:
-            kwd["history"] = make_history()
+        kwd["galaxy_session"] = kwd.get("galaxy_session") or make_galaxy_session()
+        kwd["history"] = kwd.get("history") or make_history()
         model = m.GalaxySessionToHistoryAssociation(**kwd)
         write_to_db(session, model)
         return model
@@ -126,8 +121,7 @@ def make_galaxy_session_to_history_association(session, make_history, make_galax
 @pytest.fixture
 def make_history(session, make_user):
     def f(**kwd):
-        if "user" not in kwd:
-            kwd["user"] = make_user()
+        kwd["user"] = kwd.get("user") or make_user()
         model = m.History(**kwd)
         write_to_db(session, model)
         return model
@@ -168,10 +162,8 @@ def make_history_dataset_collection_association(session):
 @pytest.fixture
 def make_history_rating_association(session, make_user, make_history):
     def f(**kwd):
-        if "user" not in kwd:
-            kwd["user"] = make_user()
-        if "item" not in kwd:
-            kwd["item"] = make_history()
+        kwd["user"] = kwd.get("user") or make_user()
+        kwd["item"] = kwd.get("item") or make_history()
         model = m.HistoryRatingAssociation(**kwd)
         write_to_db(session, model)
         return model
@@ -240,6 +232,19 @@ def make_role(session):
 
 
 @pytest.fixture
+def make_user(session):
+    def f(**kwd):
+        kwd["username"] = kwd.get("username") or random_str()
+        kwd["email"] = kwd.get("email") or random_email()
+        kwd["password"] = kwd.get("password") or random_str()
+        model = m.User(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_workflow(session):
     def f(**kwd):
         model = m.Workflow(**kwd)
@@ -252,25 +257,8 @@ def make_workflow(session):
 @pytest.fixture
 def make_workflow_invocation(session, make_workflow):
     def f(**kwd):
-        if "workflow" not in kwd:
-            kwd["workflow"] = make_workflow()
+        kwd["workflow"] = kwd.get("workflow") or make_workflow()
         model = m.WorkflowInvocation(**kwd)
-        write_to_db(session, model)
-        return model
-
-    return f
-
-
-@pytest.fixture
-def make_user(session):
-    def f(**kwd):
-        if "username" not in kwd:
-            kwd["username"] = random_str()
-        if "email" not in kwd:
-            kwd["email"] = random_email()
-        if "password" not in kwd:
-            kwd["password"] = random_str()
-        model = m.User(**kwd)
         write_to_db(session, model)
         return model
 
