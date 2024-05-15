@@ -1,5 +1,5 @@
 <template>
-    <div v-if="currentUser && currentHistoryId">
+    <div v-if="currentUser && currentHistoryId && isConfigLoaded">
         <b-alert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
         </b-alert>
