@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { BAlert, BButton, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
-import { errorMessageAsString } from "utils/simple-error";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
