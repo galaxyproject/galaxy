@@ -35,6 +35,10 @@ const allItems = computed<UserConcreteObjectStore[]>(() => objectStoreInstancesS
 const { activeInstances } = useFiltering(allItems);
 const loading = computed(() => objectStoreInstancesStore.loading);
 objectStoreInstancesStore.fetchInstances();
+
+function reload() {
+    objectStoreInstancesStore.fetchInstances();
+}
 </script>
 
 <template>
@@ -64,7 +68,7 @@ objectStoreInstancesStore.fetchInstances();
                 <ObjectStoreBadges size="1x" :badges="row.item.badges" />
             </template>
             <template v-slot:cell(name)="row">
-                <InstanceDropdown :object-store="row.item" />
+                <InstanceDropdown :object-store="row.item" @entryRemoved="reload" />
             </template>
             <template v-slot:cell(type)="row">
                 <ObjectStoreTypeSpan :type="row.item.type" />

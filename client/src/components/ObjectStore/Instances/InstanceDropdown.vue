@@ -23,8 +23,12 @@ const isUpgradable = computed(() =>
 
 async function onRemove() {
     await hide(props.objectStore);
-    console.log("HIDING!!!");
+    emit("entryRemoved");
 }
+
+const emit = defineEmits<{
+    (e: "entryRemoved"): void;
+}>();
 </script>
 
 <template>

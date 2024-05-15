@@ -18,7 +18,7 @@ describe("InstanceDropdown", () => {
             localVue,
         });
         const menu = wrapper.find(".dropdown-menu");
-        const links = menu.findAll("a");
+        const links = menu.findAll("button.dropdown-item");
         expect(links.length).toBe(2);
     });
 
@@ -34,7 +34,7 @@ describe("InstanceDropdown", () => {
             localVue,
         });
         const menu = wrapper.find(".dropdown-menu");
-        const links = menu.findAll("a");
+        const links = menu.findAll("button.dropdown-item");
         expect(links.length).toBe(3);
     });
 });

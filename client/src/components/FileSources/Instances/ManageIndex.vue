@@ -24,6 +24,10 @@ const fields = [NAME_FIELD, DESCRIPTION_FIELD, TYPE_FIELD, TEMPLATE_FIELD];
 const items = computed(() => fileSourceInstancesStore.getInstances);
 const loading = computed(() => fileSourceInstancesStore.loading);
 fileSourceInstancesStore.fetchInstances();
+
+function reload() {
+    fileSourceInstancesStore.fetchInstances();
+}
 </script>
 
 <template>
@@ -52,7 +56,7 @@ fileSourceInstancesStore.fetchInstances();
                 </b-alert>
             </template>
             <template v-slot:cell(name)="row">
-                <InstanceDropdown :file-source="row.item" />
+                <InstanceDropdown :file-source="row.item" @entryRemoved="reload" />
             </template>
             <template v-slot:cell(type)="row">
                 <FileSourceTypeSpan :type="row.item.type" />

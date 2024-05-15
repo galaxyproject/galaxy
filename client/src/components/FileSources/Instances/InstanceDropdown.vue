@@ -4,6 +4,8 @@ import { computed } from "vue";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 
+import { hide } from "./services";
+
 import InstanceDropdown from "@/components/ConfigTemplates/InstanceDropdown.vue";
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
@@ -18,6 +20,15 @@ const routeUpgrade = computed(() => `/file_source_instances/${props.fileSource.i
 const isUpgradable = computed(() =>
     fileSourceTemplatesStore.canUpgrade(props.fileSource.template_id, props.fileSource.template_version)
 );
+
+async function onRemove() {
+    await hide(props.fileSource);
+    emit("entryRemoved");
+}
+
+const emit = defineEmits<{
+    (e: "entryRemoved"): void;
+}>();
 </script>
 
 <template>
@@ -26,5 +37,6 @@ const isUpgradable = computed(() =>
         :name="fileSource.name || ''"
         :is-upgradable="isUpgradable"
         :route-upgrade="routeUpgrade"
-        :route-edit="routeEdit" />
+        :route-edit="routeEdit"
+        @remove="onRemove" />
 </template>
