@@ -819,7 +819,7 @@ class SeleniumSessionWorkflowPopulator(
             "workflow": workflow_str,
         }
         data.update(**kwds)
-        upload_response = self._post("workflows", data=data)
+        upload_response = self._post("workflows", data=data, json=True)
         upload_response.raise_for_status()
         return upload_response.json()
 
