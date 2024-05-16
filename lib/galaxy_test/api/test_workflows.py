@@ -1173,7 +1173,7 @@ steps:
             "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
             "trs_version_id": "master",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        workflow_id = self._post("workflows", data=trs_payload, json=True).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
@@ -7533,12 +7533,13 @@ outer_input:
             import_data = dict(
                 workflow_id=workflow_id,
             )
+            return self._post(route, import_data)
         else:
             route = "workflows"
             import_data = dict(
                 shared_workflow_id=workflow_id,
             )
-        return self._post(route, import_data)
+            return self._post(route, import_data, json=True)
 
     def _show_workflow(self, workflow_id):
         show_response = self._get(f"workflows/{workflow_id}")

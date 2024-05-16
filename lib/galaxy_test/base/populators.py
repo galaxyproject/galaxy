@@ -2283,7 +2283,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
             "workflow": workflow_str,
         }
         data.update(**kwds)
-        upload_response = self._post("workflows", data=data)
+        upload_response = self._post("workflows", data=data, json=True)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 

@@ -140,7 +140,7 @@ class TestWorkflowTags(TagsApiTests):
         data = dict(
             workflow=json.dumps(workflow),
         )
-        upload_response = self._post("workflows", data=data)
+        upload_response = self._post("workflows", data=data, json=True)
 
         self._assert_status_code_is(upload_response, 200)
         return upload_response.json()["id"]
