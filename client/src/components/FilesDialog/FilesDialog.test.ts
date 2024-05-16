@@ -88,7 +88,8 @@ function getMockedBrowseResponse(param: RemoteFilesParams) {
         throw Error(someErrorText);
     }
     const result = mockedOkApiRoutesMap.get(responseKey);
-    return { data: result };
+    const headers = new Map([["total_matches", result?.length.toString() ?? "0"]]);
+    return { data: result, headers };
 }
 
 const initComponent = async (props: { multiple: boolean; mode?: string }) => {
