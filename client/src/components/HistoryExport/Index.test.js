@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -19,11 +20,13 @@ describe("Index.vue", () => {
 
     it("should render tabs", () => {
         // just make sure the component renders to catch obvious big errors
+        const pinia = createTestingPinia();
         const wrapper = shallowMount(Index, {
             propsData: {
                 historyId: "test_id",
             },
             localVue,
+            pinia,
         });
         expect(wrapper.exists("b-tabs-stub")).toBeTruthy();
     });

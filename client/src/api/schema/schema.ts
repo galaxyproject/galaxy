@@ -2668,11 +2668,15 @@ export interface components {
              */
             uri_root: string;
             /**
+             * URL
+             * @description Optional URL that might be provided by some plugins to link to the remote source.
+             */
+            url?: string | null;
+            /**
              * Writeable
              * @description Whether this files source plugin allows write access.
              */
             writable: boolean;
-            [key: string]: unknown | undefined;
         };
         /** BulkOperationItemError */
         BulkOperationItemError: {
@@ -5236,6 +5240,11 @@ export interface components {
              * @description The type of the plugin.
              */
             type: string;
+            /**
+             * URL
+             * @description Optional URL that might be provided by some plugins to link to the remote source.
+             */
+            url?: string | null;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.

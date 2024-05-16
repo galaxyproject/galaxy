@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { defineComponent } from "vue";
@@ -28,7 +29,8 @@ const TestComponent = defineComponent({
 });
 
 function setupWrapper(): any {
-    return shallowMount(TestComponent, {});
+    const pinia = createTestingPinia({ stubActions: false });
+    return shallowMount(TestComponent, { pinia });
 }
 
 describe("useFileSources", () => {

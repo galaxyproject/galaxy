@@ -7,7 +7,6 @@ from typing import (
 )
 
 from pydantic import (
-    ConfigDict,
     Field,
     RootModel,
 )
@@ -82,6 +81,11 @@ class FilesSourcePlugin(Model):
         title="Requires groups",
         description="Only users belonging to the groups specified here can access this files source.",
     )
+    url: Optional[str] = Field(
+        None,
+        title="URL",
+        description="Optional URL that might be provided by some plugins to link to the remote source.",
+    )
 
 
 class BrowsableFilesSourcePlugin(FilesSourcePlugin):
@@ -92,7 +96,6 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
         description="The URI root used by this type of plugin.",
         examples=["gximport://"],
     )
-    model_config = ConfigDict(extra="allow")
 
 
 class FilesSourcePluginList(RootModel):

@@ -88,7 +88,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
 
-import { getFileSources } from "@/api/remoteFiles";
+import { fetchFileSources } from "@/api/remoteFiles";
 
 import ExternalLink from "./ExternalLink";
 
@@ -163,7 +163,7 @@ export default {
     },
     methods: {
         async initialize() {
-            const fileSources = await getFileSources();
+            const fileSources = await fetchFileSources();
             this.hasFileSources = fileSources.length > 0;
             this.initializing = false;
         },

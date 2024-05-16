@@ -4,9 +4,9 @@ import Vue, { computed, onMounted, ref } from "vue";
 
 import {
     browseRemoteFiles,
+    fetchFileSources,
     FileSourceBrowsingMode,
     FilterFileSourcesOptions,
-    getFileSources,
     RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
@@ -231,7 +231,7 @@ function load(record?: SelectionItem) {
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
         errorMessage.value = undefined;
-        getFileSources(props.filterOptions)
+        fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
