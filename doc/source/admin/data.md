@@ -34,6 +34,18 @@ pointed to by the configuration option ``object_store_templates_config_file`` in
 Alternatively, the  configuration can be placed directly into ``galaxy.yml`` using the
 ``object_store_templates`` configuration option.
 
+:::{admonition} Warning
+:class: warning
+
+Object store selection within Galaxy is available only when the primary object store is a
+distributed object store. All the other object stores provide stronger guarantees about how
+datasets are stored. Object Store Templates will not currently work if the primary
+object store (usually defined by ``object_store_config_file``) is a simple disk object
+store, a hierarchal object store, or anything other than a ``distributed`` object store.
+
+Ongoing discussion on this topic can be found at [this Galaxy Discussions post (#18157)](https://github.com/galaxyproject/galaxy/discussions/18157).
+:::
+
 A minimal object store template might look something like:
 
 ```{literalinclude} ../../../lib/galaxy/objectstore/templates/examples/simple_example.yml

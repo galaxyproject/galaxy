@@ -50,6 +50,7 @@ myst_enable_extensions = [
     "attrs_block",
     "deflist",
     "substitution",
+    "colon_fence",
 ]
 myst_heading_anchors = 5
 myst_heading_slug_func = "docutils.nodes.make_id"
