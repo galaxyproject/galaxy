@@ -26,6 +26,7 @@ interface Props {
     isBusy?: boolean;
     isEncoded?: boolean;
     items?: Array<SelectionItem>;
+    totalItems?: number;
     leafIcon?: string;
     modalShow?: boolean;
     modalStatic?: boolean;
@@ -45,6 +46,7 @@ const props = withDefaults(defineProps<Props>(), {
     isBusy: false,
     isEncoded: false,
     items: () => [],
+    totalItems: 0,
     leafIcon: "fa fa-file-o",
     modalShow: true,
     modalStatic: false,
@@ -67,7 +69,6 @@ const emit = defineEmits<{
 
 const filter = ref("");
 const currentPage = ref(1);
-const nItems = ref(0);
 const perPage = ref(100);
 
 const fieldDetails = computed(() => {
@@ -97,7 +98,6 @@ function selectionIcon(variant: string) {
 
 /** Resets pagination when a filter/search word is entered **/
 function filtered(items: Array<SelectionItem>) {
-    nItems.value = items.length;
     currentPage.value = 1;
 }
 
@@ -200,7 +200,7 @@ watch(
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                 </div>
-                <div v-if="nItems === 0">
+                <div v-if="totalItems === 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ filter }}</b
                         >.
@@ -223,12 +223,12 @@ watch(
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <BPagination
-                    v-if="nItems > perPage"
+                    v-if="totalItems > perPage"
                     v-model="currentPage"
                     class="justify-content-md-center m-0"
                     size="sm"
                     :per-page="perPage"
-                    :total-rows="nItems" />
+                    :total-rows="totalItems" />
                 <div>
                     <BButton
                         data-description="selection dialog cancel"

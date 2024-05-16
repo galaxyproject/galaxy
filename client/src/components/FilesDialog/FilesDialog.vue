@@ -66,6 +66,7 @@ const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
 const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
+const totalItems = ref(0);
 
 const fields = computed(() => {
     const fields = [];
@@ -156,7 +157,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
         const recursive = true;
         isBusy.value = true;
         browseRemoteFiles(record.url, recursive).then((incoming) => {
-            incoming.forEach((item) => {
+            incoming.entries.forEach((item) => {
                 // construct record
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
@@ -167,6 +168,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
                     selectedDirectories.value.push(subRecord);
                 }
             });
+            totalItems.value = incoming.totalMatches;
             isBusy.value = false;
         });
     }
@@ -241,6 +243,7 @@ function load(record?: SelectionItem) {
                 optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
+                totalItems.value = convertedItems.length;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
@@ -258,8 +261,9 @@ function load(record?: SelectionItem) {
             return;
         }
         browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
-            .then((results) => {
-                items.value = filterByMode(results).map(entryToRecord);
+            .then((result) => {
+                items.value = filterByMode(result.entries).map(entryToRecord);
+                totalItems.value = result.totalMatches;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = true;
@@ -346,6 +350,7 @@ onMounted(() => {
         :fields="fields"
         :is-busy="isBusy"
         :items="items"
+        :total-items="totalItems"
         :modal-show="modalShow"
         :modal-static="modalStatic"
         :multiple="multiple"

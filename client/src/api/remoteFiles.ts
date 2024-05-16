@@ -46,6 +46,11 @@ export async function fetchFileSources(options: FilterFileSourcesOptions = {}): 
 
 export const remoteFilesFetcher = fetcher.path("/api/remote_files").method("get").create();
 
+export interface BrowseRemoteFilesResult {
+    entries: RemoteEntry[];
+    totalMatches: number;
+}
+
 /**
  * Get the list of files and directories from the server for the given file source URI.
  * @param uri The file source URI to browse.
@@ -65,8 +70,8 @@ export async function browseRemoteFiles(
     offset?: number,
     query?: string,
     sortBy?: string
-): Promise<RemoteEntry[]> {
-    const { data } = await remoteFilesFetcher({
+): Promise<BrowseRemoteFilesResult> {
+    const { data, headers } = await remoteFilesFetcher({
         target: uri,
         recursive: isRecursive,
         writeable,
@@ -75,7 +80,8 @@ export async function browseRemoteFiles(
         query,
         sort_by: sortBy,
     });
-    return data as RemoteEntry[];
+    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+    return { entries: data as RemoteEntry[], totalMatches };
 }
 
 const createEntry = fetcher.path("/api/remote_files").method("post").create();
