@@ -1805,6 +1805,8 @@ export interface paths {
          * @description Lists stored workflows viewable by the user.
          */
         get: operations["index_api_workflows_get"];
+        /** Create workflows in various ways */
+        post: operations["create_workflow_api_workflows_post"];
     };
     "/api/workflows/download/{workflow_id}": {
         /** Returns a selected workflow. */
@@ -13307,6 +13309,86 @@ export interface components {
             | components["schemas"]["MarkdownComment"]
             | components["schemas"]["FrameComment"]
             | components["schemas"]["FreehandComment"];
+        /** WorkflowCreatePayload */
+        WorkflowCreatePayload: {
+            /**
+             * Archive File
+             * @description A file containing a workflow archive to be imported.
+             */
+            archive_file?: Record<string, never> | null;
+            /**
+             * Archive Source
+             * @description A URL or file path pointing to a workflow archive to be imported.
+             */
+            archive_source?: string | null;
+            /**
+             * Dataset Collection IDs
+             * @description If from_history_id is set, this is an optional list of HDCA 'hid's corresponding to workflow inputs when extracting a workflow from history.
+             */
+            dataset_collection_ids?: string[] | null;
+            /**
+             * Dataset IDs
+             * @description If from_history_id is set, this is an optional list of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history.
+             */
+            dataset_ids?: string[] | null;
+            /**
+             * From History ID
+             * @description The ID of a history from which to extract a workflow.
+             */
+            from_history_id?: string | null;
+            /**
+             * From Path
+             * @description A path from which to import a workflow.
+             */
+            from_path?: string | null;
+            /** Import Tools */
+            import_tools?: boolean | null;
+            /**
+             * Job IDs
+             * @description If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.
+             */
+            job_ids?: string[] | null;
+            /**
+             * Object ID
+             * @description If from_path is set, this is an optional object ID to include when importing a workflow from a path.
+             */
+            object_id?: string | null;
+            /**
+             * Shared Workflow ID
+             * @description The ID of a shared workflow to import.
+             */
+            shared_workflow_id?: string | null;
+            /**
+             * TRS Server
+             * @description If archive_source is set to 'trs_tool', this is the server of the Tool Registry Service (TRS) from which to import a workflow.
+             */
+            trs_server?: string | null;
+            /**
+             * TRS Tool ID
+             * @description If archive_source is set to 'trs_tool', this is the ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.
+             */
+            trs_tool_id?: string | null;
+            /**
+             * TRS URL
+             * @description If archive_source is set to 'trs_tool', this is the URL of the Tool Registry Service (TRS) from which to import a workflow.
+             */
+            trs_url?: string | null;
+            /**
+             * TRS Version ID
+             * @description If archive_source is set to 'trs_tool', this is the version ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.
+             */
+            trs_version_id?: string | null;
+            /**
+             * Workflow
+             * @description A dictionary containing information about a new workflow to import.
+             */
+            workflow?: Record<string, never> | null;
+            /**
+             * Workflow Name
+             * @description If from_history_id is set, this is the name of the workflow to create when extracting a workflow from history.
+             */
+            workflow_name?: string | null;
+        };
         /** WorkflowDictEditorStep */
         WorkflowDictEditorStep: {
             /**
@@ -14572,7 +14654,7 @@ export interface components {
         WorkflowUpdatePayload: {
             /**
              * Annotation
-             * @description String annotation for the workflow, if not present in payload, annotation defaults to existing annotation
+             * @description Annotation for the workflow, if not present in payload, annotation defaults to existing annotation
              */
             annotation?: string | null;
             /**
@@ -14580,16 +14662,20 @@ export interface components {
              * @description True iff encoded state coming in is encoded for the tool form.
              */
             from_tool_form?: boolean | null;
+            /** Importable */
+            importable?: boolean | null;
             /**
              * Menu Entry
-             * @description Boolean marking if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified
+             * @description Flag indicating if the workflow should appear in the user's menu, if not present, workflow menu entries are not modified
              */
             menu_entry?: boolean | null;
             /**
              * Name
-             * @description String name for the workflow, if not present in payload, name defaults to existing name
+             * @description Name for the workflow, if not present in payload, name defaults to existing name
              */
             name?: string | null;
+            /** Published */
+            published?: boolean | null;
             /**
              * Tags
              * @description List containing list of tags to add to the workflow (overwriting existing tags), if not present, tags are not modified
@@ -14597,9 +14683,9 @@ export interface components {
             tags?: string[] | null;
             /**
              * Workflow
-             * @description The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`
+             * @description The json description of the workflow as would be produced by GET workflows/<id>/download or given to `POST workflows`. The workflow contents will be updated to target this.
              */
-            workflow: Record<string, never>;
+            workflow?: Record<string, never> | null;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -24685,7 +24771,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Validation Error */
@@ -25371,6 +25457,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_workflow_api_workflows_post: {
+        /** Create workflows in various ways */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
