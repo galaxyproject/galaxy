@@ -8,7 +8,10 @@ from typing import (
     Optional,
 )
 
-from fastapi import Body
+from fastapi import (
+    Body,
+    Response,
+)
 from fastapi.param_functions import Query
 from typing_extensions import Annotated
 
@@ -127,6 +130,7 @@ class FastAPIRemoteFiles:
     )
     async def index(
         self,
+        response: Response,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         target: Annotated[str, TargetQueryParam] = RemoteFilesTarget.ftpdir,
         format: Annotated[Optional[RemoteFilesFormat], FormatQueryParam] = RemoteFilesFormat.uri,
@@ -138,10 +142,15 @@ class FastAPIRemoteFiles:
         query: Annotated[Optional[str], SearchQueryParam] = None,
         sort_by: Annotated[Optional[str], SortByQueryParam] = None,
     ) -> AnyRemoteFilesListResponse:
-        """Lists all remote files available to the user from different sources."""
-        return self.manager.index(
+        """Lists all remote files available to the user from different sources.
+
+        The total count of files and directories is returned in the 'total_matches' header.
+        """
+        result, count = self.manager.index(
             user_ctx, target, format, recursive, disable, writeable, limit, offset, query, sort_by
         )
+        response.headers["total_matches"] = str(count)
+        return result
 
     @router.get(
         "/api/remote_files/plugins",

@@ -412,6 +412,8 @@ export interface paths {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_ftp_files_get"];
     };
@@ -1453,6 +1455,8 @@ export interface paths {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_remote_files_get"];
         /**
@@ -15596,6 +15600,8 @@ export interface operations {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
@@ -21920,6 +21926,8 @@ export interface operations {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */

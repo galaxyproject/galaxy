@@ -156,15 +156,17 @@ class InvenioRDMFilesSource(RDMFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[AnyRemoteEntry]:
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         writeable = opts and opts.writeable or False
         is_root_path = path == "/"
         if is_root_path:
-            records = self.repository.get_records(writeable, user_context, limit=limit, offset=offset, query=query)
-            return cast(List[AnyRemoteEntry], records)
+            records, total_hits = self.repository.get_records(
+                writeable, user_context, limit=limit, offset=offset, query=query
+            )
+            return cast(List[AnyRemoteEntry], records), total_hits
         record_id = self.get_record_id_from_path(path)
         files = self.repository.get_files_in_record(record_id, writeable, user_context)
-        return cast(List[AnyRemoteEntry], files)
+        return cast(List[AnyRemoteEntry], files), len(files)
 
     def _create_entry(
         self,
@@ -224,7 +226,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[RemoteDirectory]:
+    ) -> Tuple[List[RemoteDirectory], int]:
         params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
@@ -238,7 +240,8 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             params["q"] = query
             params["sort"] = "bestmatch"
         response_data = self._get_response(user_context, request_url, params=params)
-        return self._get_records_from_response(response_data)
+        total_hits = response_data["hits"]["total"]
+        return self._get_records_from_response(response_data), total_hits
 
     def _to_size_page(self, limit: Optional[int], offset: Optional[int]) -> Tuple[Optional[int], Optional[int]]:
         if limit is None and offset is None:

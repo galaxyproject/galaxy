@@ -46,7 +46,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None):
+    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None) -> FS:
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
     def _list(
@@ -59,29 +59,39 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[AnyRemoteEntry]:
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
             with self._open_fs(user_context=user_context, opts=opts) as h:
                 if recursive:
-                    res: List[AnyRemoteEntry] = []
+                    recursive_result: List[AnyRemoteEntry] = []
                     for p, dirs, files in h.walk(path, namespaces=["details"]):
                         to_dict = functools.partial(self._resource_info_to_dict, p)
-                        res.extend(map(to_dict, dirs))
-                        res.extend(map(to_dict, files))
-                    return res
+                        recursive_result.extend(map(to_dict, dirs))
+                        recursive_result.extend(map(to_dict, files))
+                    return recursive_result, len(recursive_result)
                 else:
                     page = self._to_page(limit, offset)
                     filter = self._query_to_filter(query)
-                    res = h.filterdir(path, namespaces=["details"], page=page, files=filter, dirs=filter)
+                    count = self._get_total_matches_count(h, path, filter)
+                    result = h.filterdir(path, namespaces=["details"], page=page, files=filter, dirs=filter)
                     to_dict = functools.partial(self._resource_info_to_dict, path)
-                    return list(map(to_dict, res))
+                    return list(map(to_dict, result)), count
         except fs.errors.PermissionDenied as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
             )
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
+
+    def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[List[str]] = None) -> int:
+        # For some reason, using "*" as glob does not return all files and directories, only files.
+        # So we need to count files and directories "*/" separately.
+        files_glob_pattern = f"{path}/{filter[0] if filter else '*'}"
+        files_count = fs.glob(files_glob_pattern).count()
+        directory_glob_pattern = f"{files_glob_pattern}/"
+        directories_count = fs.glob(directory_glob_pattern).count()
+        return files_count.files + directories_count.directories
 
     def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
         if limit is None and offset is None:

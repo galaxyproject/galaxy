@@ -58,27 +58,32 @@ def test_list_recursive(temp_file_source: TempFilesSource):
 def test_pagination(temp_file_source: TempFilesSource):
     # Pagination is only supported for non-recursive listings.
     recursive = False
-    root_lvl_entries = temp_file_source.list("/", recursive=recursive)
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
+    assert count == 4
     assert len(root_lvl_entries) == 4
 
     # Get first entry
-    result = temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
+    assert count == 4
     assert len(result) == 1
     assert result[0] == root_lvl_entries[0]
 
     # Get second entry
-    result = temp_file_source.list("/", recursive=recursive, limit=1, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=1, offset=1)
+    assert count == 4
     assert len(result) == 1
     assert result[0] == root_lvl_entries[1]
 
     # Get second and third entry
-    result = temp_file_source.list("/", recursive=recursive, limit=2, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=2, offset=1)
+    assert count == 4
     assert len(result) == 2
     assert result[0] == root_lvl_entries[1]
     assert result[1] == root_lvl_entries[2]
 
     # Get last three entries
-    result = temp_file_source.list("/", recursive=recursive, limit=3, offset=1)
+    result, count = temp_file_source.list("/", recursive=recursive, limit=3, offset=1)
+    assert count == 4
     assert len(result) == 3
     assert result[0] == root_lvl_entries[1]
     assert result[1] == root_lvl_entries[2]
@@ -88,32 +93,39 @@ def test_pagination(temp_file_source: TempFilesSource):
 def test_search(temp_file_source: TempFilesSource):
     # Search is only supported for non-recursive listings.
     recursive = False
-    root_lvl_entries = temp_file_source.list("/", recursive=recursive)
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
+    assert count == 4
     assert len(root_lvl_entries) == 4
 
-    result = temp_file_source.list("/", recursive=recursive, query="a")
+    result, count = temp_file_source.list("/", recursive=recursive, query="a")
+    assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "a"
 
-    result = temp_file_source.list("/", recursive=recursive, query="b")
+    result, count = temp_file_source.list("/", recursive=recursive, query="b")
+    assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "b"
 
-    result = temp_file_source.list("/", recursive=recursive, query="c")
+    result, count = temp_file_source.list("/", recursive=recursive, query="c")
+    assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "c"
 
     # Searching for 'd' at root level should return the directory 'dir1' but not the file 'd'
     # as it is not a direct child of the root.
-    result = temp_file_source.list("/", recursive=recursive, query="d")
+    result, count = temp_file_source.list("/", recursive=recursive, query="d")
+    assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "dir1"
 
     # Searching for 'e' at root level should not return anything.
-    result = temp_file_source.list("/", recursive=recursive, query="e")
+    result, count = temp_file_source.list("/", recursive=recursive, query="e")
+    assert count == 0
     assert len(result) == 0
 
-    result = temp_file_source.list("/dir1", recursive=recursive, query="e")
+    result, count = temp_file_source.list("/dir1", recursive=recursive, query="e")
+    assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "e"
 
@@ -138,7 +150,8 @@ def _upload_to(file_source: TempFilesSource, target_uri: str, content: str, user
 
 
 def assert_list_names(file_source: TempFilesSource, uri: str, recursive: bool, expected_names: List[str]):
-    result = file_source.list(uri, recursive=recursive)
+    result, count = file_source.list(uri, recursive=recursive)
+    assert count == len(expected_names)
     assert sorted([entry["name"] for entry in result]) == sorted(expected_names)
     return result
 

@@ -13,6 +13,7 @@ from typing import (
     Optional,
     Set,
     Type,
+    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -301,8 +302,8 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[AnyRemoteEntry]:
-        """Return dictionary of 'Directory's and 'File's."""
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
@@ -444,7 +445,7 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[AnyRemoteEntry]:
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
@@ -465,8 +466,8 @@ class BaseFilesSource(FilesSource):
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ):
-        pass
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        raise NotImplementedError()
 
     def create_entry(
         self,

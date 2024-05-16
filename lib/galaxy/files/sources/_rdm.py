@@ -3,6 +3,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -68,8 +69,8 @@ class RDMRepositoryInteractor:
         offset: Optional[int] = None,
         query: Optional[str] = None,
         sort_by: Optional[str] = None,
-    ) -> List[RemoteDirectory]:
-        """Returns the list of records in the repository.
+    ) -> Tuple[List[RemoteDirectory], int]:
+        """Returns the list of records in the repository and the total count of records.
 
         If writeable is True, only records that the user can write to will be returned.
         The user_context might be required to authenticate the user in the repository.
