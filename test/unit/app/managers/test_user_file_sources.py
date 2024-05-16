@@ -45,6 +45,35 @@ def home_directory_template(tmp_path):
     }
 
 
+def invalid_home_directory_template(tmp_path):
+    # create a jinja runtime problem - so the template loads but the expansion fails.
+    return {
+        "id": "invalid_home_directory",
+        "name": "Home Directory",
+        "description": "Your Home Directory on this System",
+        "configuration": {
+            "type": "posix",
+            "root": str(tmp_path / "{{ username }}"),  # should be user.username
+            "writable": True,
+        },
+    }
+
+
+def invalid_home_directory_template_type_error(tmp_path):
+    # create a runtime problem - so the template loads but the expansion fails
+    # because pydantic error related to typing
+    return {
+        "id": "invalid_home_directory",
+        "name": "Home Directory",
+        "description": "Your Home Directory on this System",
+        "configuration": {
+            "type": "posix",
+            "root": str(tmp_path / "{{ user.username }}"),
+            "writable": "{{ username }}",
+        },
+    }
+
+
 def secret_directory_template(tmp_path):
     return {
         "id": "admin_secret_directory",
@@ -328,6 +357,86 @@ class TestFileSourcesTestCase(BaseTestCase):
         update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value="newvalue")
         self.manager.modify_instance(self.trans, user_file_source.uuid, update)
         assert user_vault.read_secret(config_secret_key) == "newvalue"
+
+    def test_status_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path)
+        (tmp_path / self.trans.user.username).mkdir()
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
+    def test_status_invalid_connection(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path)
+        # We don't make the directory like above so it doesn't exist
+        # (tmp_path / self.trans.user.username).mkdir()
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        # Language is weird with the local disk stuff but the "connection"
+        # is invalid. Do we search for better language or loosen the framework
+        # structure in someway and push these specific checks into the plugins?
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_invalid_settings_undefined_variable(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, config_dict=invalid_home_directory_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="invalid_home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert (
+            "Problem with template definition causing invalid settings resolution" in status.template_settings.message
+        )
+        assert status.connection is None
+
+    def test_status_invalid_settings_configuration_validation(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, config_dict=invalid_home_directory_template_type_error(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="invalid_home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert "Input should be a valid boolean" in status.template_settings.message
+        assert status.connection is None
 
     def _init_and_create_simple(self, tmp_path) -> UserFileSourceModel:
         self._init_managers(tmp_path)

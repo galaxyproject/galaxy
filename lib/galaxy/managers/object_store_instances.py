@@ -13,6 +13,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -25,7 +26,9 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import UserObjectStore
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import (
+    BaseObjectStore,
     BaseUserObjectStoreResolver,
+    build_test_object_store_from_user_config,
     ConcreteObjectStoreModel,
     QuotaModel,
     UserObjectStoresAppConfig,
@@ -37,9 +40,15 @@ from galaxy.objectstore.templates import (
     ObjectStoreTemplate,
     ObjectStoreTemplateSummaries,
     ObjectStoreTemplateType,
+    template_to_configuration,
 )
 from galaxy.security.vault import Vault
 from galaxy.util.config_templates import (
+    connection_exception_to_status,
+    PluginAspectStatus,
+    PluginStatus,
+    settings_exception_to_status,
+    status_template_definition,
     TemplateVariableValueType,
     validate_no_extra_secrets_defined,
     validate_no_extra_variables_defined,
@@ -48,6 +57,7 @@ from ._config_templates import (
     CreateInstancePayload,
     ModifyInstancePayload,
     prepare_environment,
+    prepare_environment_from_root,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
@@ -208,6 +218,64 @@ class ObjectStoreInstancesManager:
         if user_object_store.user != trans.user:
             raise ItemOwnershipException()
         return user_object_store
+
+    def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
+        template = self._catalog.find_template(payload)
+        template_definition_status = status_template_definition(template)
+        status_kwds = {"template_definition": template_definition_status}
+        if template_definition_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert template
+        configuration, template_settings_status = self._template_settings_status(trans, payload, template)
+        status_kwds["template_settings"] = template_settings_status
+        if template_settings_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert configuration
+        object_store, connection_status = self._connection_status(trans, payload, configuration)
+        status_kwds["connection"] = connection_status
+        if connection_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert object_store
+        # Lets circle back to this - we need to add an entry point to the file source plugins
+        # to test if things are writable. We could ping remote APIs or do something like os.access('/path/to/folder', os.W_OK)
+        # locally.
+        return PluginStatus(**status_kwds)
+
+    def _template_settings_status(
+        self,
+        trans: ProvidesUserContext,
+        payload: CreateInstancePayload,
+        template: ObjectStoreTemplate,
+    ) -> Tuple[Optional[ObjectStoreConfiguration], PluginAspectStatus]:
+        secrets = payload.secrets
+        variables = payload.variables
+        environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+        user_details = trans.user.config_template_details()
+
+        configuration = None
+        exception = None
+        try:
+            configuration = template_to_configuration(
+                template,
+                variables=variables,
+                secrets=secrets,
+                user_details=user_details,
+                environment=environment,
+            )
+        except Exception as e:
+            exception = e
+        return configuration, settings_exception_to_status(exception)
+
+    def _connection_status(
+        self, trans: ProvidesUserContext, payload: CreateInstancePayload, configuration: ObjectStoreConfiguration
+    ) -> Tuple[Optional[BaseObjectStore], PluginAspectStatus]:
+        object_store = None
+        exception = None
+        try:
+            object_store = build_test_object_store_from_user_config(trans.app.config, configuration)
+        except Exception as e:
+            exception = e
+        return object_store, connection_exception_to_status("storage location", exception)
 
     def _index_filter(self, id: Union[str, int]):
         index_by = self._app_config.user_config_templates_index_by

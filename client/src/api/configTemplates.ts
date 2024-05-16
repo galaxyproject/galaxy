@@ -14,6 +14,9 @@ export type VariableValueType = (string | boolean | number) | undefined;
 export type VariableData = { [key: string]: VariableValueType };
 export type SecretData = { [key: string]: string };
 
+export type PluginAspectStatus = components["schemas"]["PluginAspectStatus"];
+export type PluginStatus = components["schemas"]["PluginStatus"];
+
 export interface TemplateSummary {
     description: string | null;
     hidden?: boolean;

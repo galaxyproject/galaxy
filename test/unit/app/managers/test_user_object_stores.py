@@ -55,6 +55,23 @@ def simple_vault_template(tmp_path):
     }
 
 
+def simple_vault_template_with_undefined_jinja_problem(tmp_path):
+    return {
+        "id": "simple_vault",
+        "name": "Simple Vault",
+        "description": "This is a simple description",
+        "configuration": {
+            "type": "disk",
+            "files_dir": str(tmp_path / "{{ username }}/{{ secrets.sec1 }}"),  # should be user.username
+        },
+        "secrets": {
+            "sec1": {
+                "help": "This is some simple help.",
+            },
+        },
+    }
+
+
 SIMPLE_VAULT_CREATE_PAYLOAD = CreateInstancePayload(
     name=SIMPLE_FILE_SOURCE_NAME,
     description=SIMPLE_FILE_SOURCE_DESCRIPTION,
@@ -293,6 +310,44 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         )
 
         self._assert_modify_throws_exception(user_object_store, upgrade_to_1, RequestParameterMissingException)
+
+    def test_status_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={"sec1": "foosec"},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
+    def test_status_invalid_settings_undefined_variable(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, config_dict=simple_vault_template_with_undefined_jinja_problem(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert (
+            "Problem with template definition causing invalid settings resolution" in status.template_settings.message
+        )
+        assert status.connection is None
 
     def _init_upgrade_test_case(self, tmp_path) -> UserConcreteObjectStoreModel:
         example_yaml_str = UPGRADE_EXAMPLE

@@ -20,6 +20,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     RootModel,
+    ValidationError,
 )
 from typing_extensions import (
     Literal,
@@ -27,9 +28,15 @@ from typing_extensions import (
 )
 
 try:
+    from jinja2 import (
+        StrictUndefined,
+        UndefinedError,
+    )
     from jinja2.nativetypes import NativeEnvironment
 except ImportError:
     NativeEnvironment = None  # type:ignore[assignment, misc, unused-ignore]
+    StrictUndefined = None  # type:ignore[assignment, misc, unused-ignore]
+    UndefinedError = None  # type:ignore[assignment, misc, unused-ignore]
 
 from galaxy.exceptions import (
     ObjectNotFound,
@@ -122,6 +129,7 @@ def _environment(template_start: str, template_end: str) -> NativeEnvironment:
     env = NativeEnvironment(
         variable_start_string=template_start,
         variable_end_string=template_end,
+        undefined=StrictUndefined,
     )
     env.filters["ensure_path_component"] = _ensure_path_component
     env.filters["asbool"] = asbool
@@ -415,3 +423,58 @@ def acts_as_simple_path_component(value: str):
     if should_be_value != value:
         return False
     return True
+
+
+class PluginAspectStatus(StrictModel):
+    state: Literal["ok", "not_ok", "unknown"]
+    message: str
+
+    @property
+    def is_not_ok(self):
+        return self.state == "not_ok"
+
+
+class PluginStatus(StrictModel):
+    template_definition: PluginAspectStatus
+    template_settings: Optional[PluginAspectStatus] = None
+    connection: Optional[PluginAspectStatus] = None
+    # I would love to disambiguate connection vs auth errors but would
+    # attempting to do that cause confusion. Maybe not if the user interface
+    # skipped presenting the one that couldn't be disambiguated for that
+    # particular plugin?
+
+    # TODO: Fill in writable checks.
+    # writable: Optional[PluginAspectStatus] = None
+
+
+def status_template_definition(template: Optional[Template]) -> PluginAspectStatus:
+    # if we found a template in the catalog, it was validated at load time. Reflect
+    # this as a PluginAspectStatus
+    if template:
+        return PluginAspectStatus(state="ok", message="Template definition found and validates against schema")
+    else:
+        return PluginAspectStatus(state="not_ok", message="Template not found or not loaded")
+
+
+def settings_exception_to_status(exception: Optional[Exception]) -> PluginAspectStatus:
+    if exception is None:
+        status = PluginAspectStatus(state="ok", message="Valid configuration resulted from supplied settings")
+    elif isinstance(exception, UndefinedError):
+        message = f"Problem with template definition causing invalid settings resolution, please contact admin to correct template: {exception}"
+        status = PluginAspectStatus(state="not_ok", message=message)
+    elif isinstance(exception, ValidationError):
+        message = f"Problem with template definition causing invalid configuration, template expanded without error but resulting configuration is invalid. please contact admin to correct template: {exception}"
+        status = PluginAspectStatus(state="not_ok", message=message)
+    else:
+        message = f"Unknown problem with resolving configuration from supplied settings: {exception}"
+        status = PluginAspectStatus(state="not_ok", message=message)
+    return status
+
+
+def connection_exception_to_status(what: str, exception: Optional[Exception]) -> PluginAspectStatus:
+    if exception is None:
+        connection_status = PluginAspectStatus(state="ok", message="Valid connection resulted from supplied settings")
+    else:
+        message = f"Failed to connect to a {what} with supplied settings: {exception}"
+        connection_status = PluginAspectStatus(state="not_ok", message=message)
+    return connection_status

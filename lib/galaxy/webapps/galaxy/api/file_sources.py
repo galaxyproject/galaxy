@@ -16,6 +16,7 @@ from galaxy.managers.file_source_instances import (
     ModifyInstancePayload,
     UserFileSourceModel,
 )
+from galaxy.util.config_templates import PluginStatus
 from . import (
     depends,
     DependsOnTrans,
@@ -59,6 +60,18 @@ class FastAPIFileSources:
         payload: CreateInstancePayload = Body(...),
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.create_instance(trans, payload)
+
+    @router.post(
+        "/api/file_source_instances/test",
+        summary="Test payload for creating user-bound file source.",
+        operation_id="file_sources__test_new_instance_configuration",
+    )
+    def test_instance_configuration(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateInstancePayload = Body(...),
+    ) -> PluginStatus:
+        return self.file_source_instances_manager.plugin_status(trans, payload)
 
     @router.get(
         "/api/file_source_instances",

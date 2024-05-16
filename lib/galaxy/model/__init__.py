@@ -1206,6 +1206,16 @@ ON CONFLICT
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
 
+    # above templating is for Cheetah in tools where we discouraged user details from being exposed.
+    # the following templating if user details in Jinja for object stores and file sources where user
+    # details are critical and documented.
+    def config_template_details(self) -> Dict[str, Any]:
+        return {
+            "username": self.username,
+            "email": self.email,
+            "id": self.id,
+        }
+
     def is_active(self):
         return self.active
 
@@ -11060,12 +11070,7 @@ class UserObjectStore(Base, HasConfigTemplate):
     ) -> ObjectStoreConfiguration:
         if templates is None:
             templates = [self.template]
-        user = self.user
-        user_details = {
-            "username": user.username,
-            "email": user.email,
-            "id": user.id,
-        }
+        user_details = self.user.config_template_details()
         variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
         first_exception = None
         for template in templates:
@@ -11133,12 +11138,7 @@ class UserFileSource(Base, HasConfigTemplate):
     ) -> FileSourceConfiguration:
         if templates is None:
             templates = [self.template]
-        user = self.user
-        user_details = {
-            "username": user.username,
-            "email": user.email,
-            "id": user.id,
-        }
+        user_details = self.user.config_template_details()
         variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
         first_exception = None
         for template in templates:

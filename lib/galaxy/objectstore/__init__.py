@@ -23,6 +23,7 @@ from typing import (
     Type,
     TYPE_CHECKING,
 )
+from uuid import uuid4
 
 import yaml
 from pydantic import BaseModel
@@ -1047,6 +1048,17 @@ class NestedObjectStore(BaseObjectStore):
             return default
 
 
+def user_object_store_configuration_to_config_dict(object_store_config: ObjectStoreConfiguration, id) -> Dict[str, Any]:
+    # convert a pydantic model describing a user object store into a config dict ready to be
+    # slotted into a distributed job runner or stand alone.
+    dynamic_object_store_as_dict = object_store_config.model_dump()
+    dynamic_object_store_as_dict["id"] = id
+    dynamic_object_store_as_dict["weight"] = 0
+    # these are all forward facing object stores...
+    dynamic_object_store_as_dict["store_by"] = "uuid"
+    return dynamic_object_store_as_dict
+
+
 class DistributedObjectStore(NestedObjectStore):
     """
     ObjectStore that defers to a list of backends.
@@ -1200,11 +1212,9 @@ class DistributedObjectStore(NestedObjectStore):
                 object_store_config = self.user_object_store_resolver.resolve_object_store_uri_config(
                     user_object_store_uri
                 )
-                dynamic_object_store_as_dict = object_store_config.model_dump()
-                dynamic_object_store_as_dict["id"] = user_object_store_uri
-                dynamic_object_store_as_dict["weight"] = 0
-                # these are all forward facing object stores...
-                dynamic_object_store_as_dict["store_by"] = "uuid"
+                dynamic_object_store_as_dict = user_object_store_configuration_to_config_dict(
+                    object_store_config, user_object_store_uri
+                )
                 backends.append(dynamic_object_store_as_dict)
 
         as_dict["backends"] = backends
@@ -1559,6 +1569,21 @@ def type_to_object_store_class(
     #    return PulsarObjectStore(config=config, config_xml=config_xml)
 
     return objectstore_class, objectstore_constructor_kwds
+
+
+def build_test_object_store_from_user_config(
+    config,
+    object_store_config: ObjectStoreConfiguration,
+):
+    # check an object store configuration by building a standalone object store
+    # from a supplied user object store configuration.
+    config_dict = user_object_store_configuration_to_config_dict(object_store_config, uuid4().hex)
+    object_store = build_object_store_from_config(
+        config,
+        config_dict=config_dict,
+        disable_process_management=True,
+    )
+    return object_store
 
 
 def build_object_store_from_config(

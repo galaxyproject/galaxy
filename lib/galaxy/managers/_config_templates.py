@@ -36,6 +36,7 @@ from galaxy.util.config_templates import (
     secrets_as_dict,
     SecretsDict,
     Template,
+    TemplateEnvironmentEntry,
     TemplateEnvironmentSecret,
     TemplateEnvironmentVariable,
     TemplateVariableValueType,
@@ -102,8 +103,14 @@ def recover_secrets(
 def prepare_environment(
     configuration_template: HasConfigEnvironment, vault: Vault, app_config: UsesTemplatesAppConfig
 ) -> EnvironmentDict:
+    return prepare_environment_from_root(configuration_template.template_environment.root, vault, app_config)
+
+
+def prepare_environment_from_root(
+    root: Optional[List[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
+):
     environment: EnvironmentDict = {}
-    for environment_entry in configuration_template.template_environment.root:
+    for environment_entry in root or []:
         e_type = environment_entry.type
         e_name = environment_entry.name
         if e_type == "secret":
