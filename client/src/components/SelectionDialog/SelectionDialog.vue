@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
@@ -22,10 +22,11 @@ interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
-    fields?: Array<FieldEntry>;
+    fields?: FieldEntry[];
     isBusy?: boolean;
     isEncoded?: boolean;
-    items?: Array<SelectionItem>;
+    items?: SelectionItem[];
+    itemsProvider?: ItemsProvider;
     totalItems?: number;
     leafIcon?: string;
     modalShow?: boolean;
@@ -46,6 +47,7 @@ const props = withDefaults(defineProps<Props>(), {
     isBusy: false,
     isEncoded: false,
     items: () => [],
+    itemsProvider: undefined,
     totalItems: 0,
     leafIcon: "fa fa-file-o",
     modalShow: true,
@@ -69,7 +71,7 @@ const emit = defineEmits<{
 
 const filter = ref("");
 const currentPage = ref(1);
-const perPage = ref(100);
+const perPage = ref(25);
 
 const fieldDetails = computed(() => {
     const fields = props.fields.slice().map((x) => {
@@ -98,7 +100,9 @@ function selectionIcon(variant: string) {
 
 /** Resets pagination when a filter/search word is entered **/
 function filtered(items: Array<SelectionItem>) {
-    currentPage.value = 1;
+    if (props.itemsProvider === undefined) {
+        currentPage.value = 1;
+    }
 }
 
 /** Format time stamp */
@@ -148,7 +152,7 @@ watch(
                     primary-key="id"
                     :busy="isBusy"
                     :current-page="currentPage"
-                    :items="items"
+                    :items="itemsProvider ?? items"
                     :fields="fieldDetails"
                     :filter="filter"
                     :per-page="perPage"
