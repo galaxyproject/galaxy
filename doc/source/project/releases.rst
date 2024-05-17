@@ -5,16 +5,16 @@ Galaxy Release Process
 This document outlines the Galaxy release cycle so administrators and users know
 when to expect updates and what each update includes, making it easier to plan
 for upgrades and maintain their systems.  It does not cover the actual execution
-of the release process, which is covered `elsewhere <https://docs.galaxyproject.org/en/master/dev/create_release.html>`__.
+of the release process, which is covered :doc:`elsewhere <../dev/create_release>`.
 
 
 Major or Long Term Support (LTS) Releases
 -----------------------------------------
 
-As of 23.0, the first release of each year is Galaxy's annual LTS release. The
-LTS release is a major version update corresponding to the year, for example,
-24.0.  This release receives significant and thorough end-to-end testing by a
-dedicated team and will be supported and receive bugfixes until the next LTS.
+Starting from 23.0, the first release of each year is Galaxy's annual LTS
+release, for example 24.0 is the LTS for the year 2024. A LTS release is a major
+version update that receives significant and thorough end-to-end testing by a
+dedicated team, and will be supported and receive bugfixes until the next LTS.
 As such, this release is ideally targeted for production use by local Galaxy
 administrators.
 
@@ -34,8 +34,9 @@ Point Releases
 --------------
 
 Point releases (e.g. 24.1.1) are issued to address bug fixes and security
-updates. These are not scheduled and are released as needed.  Following the
-release branch (i.e. release_24.0) is recommended to stay up to date with these. 
+updates. These are not scheduled and are released as needed. Following the Git
+release branch (i.e. ``release_24.1``) is recommended to stay up to date with
+these.
 
 
 Release Schedule
@@ -66,4 +67,5 @@ For every release, we provide release notes that detail:
 - Administration Notes including configuration changes and migration guides if
   applicable
 
-Please refer to the release notes for detailed information about each release.
+Please refer to the :doc:`release notes <../releases/index>` for detailed
+information about each release.
