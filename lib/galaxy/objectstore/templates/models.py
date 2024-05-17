@@ -212,7 +212,7 @@ class Boto3Transfer(StrictModel):
 
 
 class Boto3ObjectStoreConfiguration(StrictModel):
-    type: Literal["disk"]
+    type: Literal["boto3"]
     auth: S3Auth
     bucket: Boto3Bucket
     connection: Optional[Boto3Connection] = None
