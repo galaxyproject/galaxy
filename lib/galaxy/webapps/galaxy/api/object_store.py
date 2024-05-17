@@ -12,6 +12,8 @@ from fastapi import (
     Body,
     Path,
     Query,
+    Response,
+    status,
 )
 
 from galaxy.exceptions import (
@@ -147,13 +149,15 @@ class FastAPIObjectStore:
         "/api/object_store_instances/{user_object_store_id}",
         summary="Purge user object store instance.",
         operation_id="object_stores__instances_purge",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def purge_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_object_store_id: str = UserObjectStoreIdPathParam,
-    ) -> None:
+    ):
         self.object_store_instance_manager.purge_instance(trans, user_object_store_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
         "/api/object_store_templates",

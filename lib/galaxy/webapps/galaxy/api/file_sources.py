@@ -4,6 +4,8 @@ from typing import List
 from fastapi import (
     Body,
     Path,
+    Response,
+    status,
 )
 
 from galaxy.files.templates import FileSourceTemplateSummaries
@@ -48,7 +50,7 @@ class FastAPIFileSources:
 
     @router.post(
         "/api/file_source_instances",
-        summary="Create a user-bound object store.",
+        summary="Create a user-bound file source.",
         operation_id="file_sources__create_instance",
     )
     def create(
@@ -98,10 +100,12 @@ class FastAPIFileSources:
         "/api/file_source_instances/{user_file_source_id}",
         summary="Purge user file source instance.",
         operation_id="file_sources__instances_purge",
+        status_code=status.HTTP_204_NO_CONTENT,
     )
     def purge_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_file_source_id: str = UserFileSourceIdPathParam,
-    ) -> None:
+    ):
         self.file_source_instances_manager.purge_instance(trans, user_file_source_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)

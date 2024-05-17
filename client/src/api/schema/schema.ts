@@ -321,7 +321,7 @@ export interface paths {
     "/api/file_source_instances": {
         /** Get a list of persisted file source instances defined by the requesting user. */
         get: operations["file_sources__instances_index"];
-        /** Create a user-bound object store. */
+        /** Create a user-bound file source. */
         post: operations["file_sources__create_instance"];
     };
     "/api/file_source_instances/{user_file_source_id}": {
@@ -2672,7 +2672,7 @@ export interface components {
              * Documentation
              * @description Documentation or extended description for this plugin.
              */
-            doc: string;
+            doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
@@ -5306,7 +5306,7 @@ export interface components {
              * Documentation
              * @description Documentation or extended description for this plugin.
              */
-            doc: string;
+            doc?: string | null;
             /**
              * ID
              * @description The `FilesSource` plugin identifier
@@ -14976,7 +14976,7 @@ export interface operations {
         };
     };
     file_sources__create_instance: {
-        /** Create a user-bound object store. */
+        /** Create a user-bound file source. */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -15079,11 +15079,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
+            204: never;
             /** @description Validation Error */
             422: {
                 content: {
@@ -20960,11 +20956,7 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
+            204: never;
             /** @description Validation Error */
             422: {
                 content: {
