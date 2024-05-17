@@ -54,8 +54,8 @@ class FilesSourcePlugin(Model):
         description="The display label for this plugin.",
         examples=["Library Import Directory"],
     )
-    doc: str = Field(
-        ...,
+    doc: Optional[str] = Field(
+        None,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
         examples=["Galaxy's library import directory"],
