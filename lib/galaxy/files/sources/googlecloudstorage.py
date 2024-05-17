@@ -43,8 +43,6 @@ class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
         elif props.get("token"):
             args["client"] = Client(project=project, credentials=Credentials(**props))
         handle = GCSFS(bucket_name, root_path=root_path, retry=0, **{**args, **extra_props})
-        # https://fs-gcsfs.readthedocs.io/en/stable/#limitations
-        handle.fix_storage()
         return handle
 
 
