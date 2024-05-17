@@ -3,6 +3,7 @@ import { BTable } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { DESCRIPTION_FIELD, NAME_FIELD, TEMPLATE_FIELD, TYPE_FIELD } from "@/components/ConfigTemplates/fields";
+import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
 import { useFileSourceInstancesStore } from "@/stores/fileSourceInstancesStore";
 
 import InstanceDropdown from "./InstanceDropdown.vue";
@@ -21,7 +22,8 @@ defineProps<Props>();
 
 const fields = [NAME_FIELD, DESCRIPTION_FIELD, TYPE_FIELD, TEMPLATE_FIELD];
 
-const items = computed(() => fileSourceInstancesStore.getInstances);
+const allItems = computed(() => fileSourceInstancesStore.getInstances);
+const { activeInstances } = useFiltering(allItems);
 const loading = computed(() => fileSourceInstancesStore.loading);
 fileSourceInstancesStore.fetchInstances();
 
@@ -41,7 +43,7 @@ function reload() {
             id="user-file-sources-index"
             no-sort-reset
             :fields="fields"
-            :items="items"
+            :items="activeInstances"
             :hover="true"
             :striped="true"
             :caption-top="true"
