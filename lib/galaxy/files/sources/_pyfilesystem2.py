@@ -88,17 +88,17 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         # For some reason, using "*" as glob does not return all files and directories, only files.
         # So we need to count files and directories "*/" separately.
         # Also, some filesystems do not properly support directories count (like Google Cloud Storage),
-        # so we need to catch exceptions and fallback to 0.
+        # so we need to catch TypeError exceptions and fallback to 0.
         files_glob_pattern = f"{path}/{filter[0] if filter else '*'}"
         try:
             files_count = fs.glob(files_glob_pattern).count().files
-        except:
+        except TypeError:
             files_count = 0
 
         directory_glob_pattern = f"{files_glob_pattern}/"
         try:
             directories_count = fs.glob(directory_glob_pattern).count().directories
-        except:
+        except TypeError:
             directories_count = 0
         return files_count + directories_count
 
