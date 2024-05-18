@@ -4,7 +4,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy import config
+# from galaxy import config
 from galaxy.tool_util.lint import Linter
 from galaxy.util import (
     listify,
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser import ToolSource
 
-DATATYPES_CONF = os.path.join(os.path.dirname(config.__file__), "sample", "datatypes_conf.xml.sample")
+# DATATYPES_CONF = os.path.join(os.path.dirname(config.__file__), "sample", "datatypes_conf.xml.sample")
 
 
 def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
