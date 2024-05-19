@@ -254,11 +254,14 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
+    def _get_size_in_cache(self, rel_path):
+        return os.path.getsize(self._get_cache_path(rel_path))
+
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
             try:
-                return os.path.getsize(self._get_cache_path(rel_path))
+                return self._get_size_in_cache(rel_path)
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try Azure. Error: %s", rel_path, ex)
         elif self._exists_remotely(rel_path):
