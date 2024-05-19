@@ -1427,6 +1427,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
         from .rucio import RucioObjectStore
 
         objectstore_class = RucioObjectStore
+    elif store == "onedata":
+        from .onedata import OnedataObjectStore
+
+        objectstore_class = OnedataObjectStore
     else:
         raise Exception(f"Unrecognized object store definition: {store}")
     # Disable the Pulsar object store for now until it receives some attention

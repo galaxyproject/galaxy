@@ -212,6 +212,38 @@ extra_dirs:
     path: database/job_working_directory_s3
 
 #
+# Sample Onedata Object Store
+#
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
+#
+
+type: onedata
+auth:
+  # an access token suitable for data access (allowing calls to the Oneprovider REST API).
+  access_token: ...
+connection:
+  # the domain of the Onezone service (e.g. "demo.onedata.org"), or its IP address for
+  # devel instances (see above).
+  onezone_domain: demo.onedata.org
+  # Allows connection to Onedata servers that do not present trusted SSL certificates. 
+  # SHOULD NOT be used unless you really know what you are doing.
+  disable_tls_certificate_validation: false
+space:
+  # the name of the Onedata space where the Galaxy data will be stored.
+  name: demo-space
+  # the relative directory path in the space under which the Galaxy data will be stored.
+  # Optional, if not provided, the data will be stored in the root of space.
+  path: galaxy-data
+cache:
+  path: database/object_store_cache_s3
+  size: 1000
+  cache_updated_data: true
+extra_dirs:
+  - type: job_work
+    path: database/job_working_directory_s3
+
+#
 # Sample iRODS Object Store configuration
 #
 
