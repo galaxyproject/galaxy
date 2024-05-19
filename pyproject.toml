@@ -170,6 +170,7 @@ Werkzeug = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
+boto3-stubs = {version = "*", extras = ["s3"]}
 lxml-stubs = "*"
 pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
 types-bleach = "*"
@@ -184,7 +185,6 @@ types-python-dateutil = "*"
 types-PyYAML = "*"
 types-requests = "*"
 types-six = "*"
-"boto3-stubs[s3]" = "*"
 
 [tool.ruff]
 target-version = "py38"
