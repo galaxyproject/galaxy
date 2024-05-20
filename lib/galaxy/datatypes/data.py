@@ -1049,7 +1049,7 @@ class Text(Data):
             sample_lines = dataset_read.count("\n")
             return int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
-            log.error(f"Unable to estimate lines in file {dataset.get_file_name()}")
+            log.warning(f"Unable to estimate lines in file {dataset.get_file_name()}, likely not a text file.")
             return None
 
     def count_data_lines(self, dataset: HasFileName) -> Optional[int]:
@@ -1069,7 +1069,7 @@ class Text(Data):
                     if line and not line.startswith("#"):
                         data_lines += 1
             except UnicodeDecodeError:
-                log.error(f"Unable to count lines in file {dataset.get_file_name()}")
+                log.warning(f"Unable to count lines in file {dataset.get_file_name()}, likely not a text file.")
                 return None
         return data_lines
 
