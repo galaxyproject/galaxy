@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
 )
 from galaxy.files import (
     ConfiguredFileSources,
@@ -125,7 +126,11 @@ def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str
     # safe to log out, no credentials/request path, just an IP + port
     log.debug("parsed url %s, port:  %s", parsed_url, port)
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
-    addrinfo = socket.getaddrinfo(parsed_url, port)
+    try:
+        addrinfo = socket.getaddrinfo(parsed_url, port)
+    except socket.gaierror as e:
+        log.debug("Could not resolve url '%': %'", url, e)
+        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
     # Get the IP addresses that this entry resolves to (uniquely)
     # We drop:
     #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
