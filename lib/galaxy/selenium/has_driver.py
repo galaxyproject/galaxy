@@ -14,7 +14,6 @@ from typing import (
     Union,
 )
 
-import requests
 from axe_selenium_python import Axe
 from selenium.common.exceptions import (
     NoSuchElementException,
@@ -29,6 +28,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from galaxy.navigation.components import Target
+from galaxy.util import requests
 from .axe_results import (
     AxeResults,
     NullAxeResults,

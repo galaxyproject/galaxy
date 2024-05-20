@@ -56,7 +56,6 @@ from urllib.parse import (
     urlunsplit,
 )
 
-import requests
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -67,6 +66,8 @@ from typing_extensions import (
     Literal,
     Self,
 )
+
+from galaxy.util import requests
 
 try:
     import grp

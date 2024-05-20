@@ -6,7 +6,6 @@ import os
 import random
 import string
 
-import requests
 from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import CloudAuthzBaseException
 
@@ -19,6 +18,7 @@ from galaxy.util import (
     etree,
     listify,
     parse_xml,
+    requests,
     string_as_bool,
     unicodify,
 )

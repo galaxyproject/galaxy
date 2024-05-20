@@ -8,7 +8,7 @@ import os
 import sys
 
 try:
-    import requests
+    from galaxy.util import requests
 except ImportError:
     print(
         "Could not import the requests module. See http://docs.python-requests.org/en/latest/"

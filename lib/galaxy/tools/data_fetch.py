@@ -26,6 +26,7 @@ from galaxy.files.uris import (
     stream_to_file,
     stream_url_to_file,
 )
+from galaxy.util import user_agent  # noqa: F401
 from galaxy.util import (
     in_directory,
     safe_makedirs,

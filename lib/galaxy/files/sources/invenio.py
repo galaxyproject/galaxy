@@ -11,7 +11,6 @@ from typing import (
 )
 from urllib.parse import quote
 
-import requests
 from typing_extensions import (
     Literal,
     TypedDict,
@@ -37,6 +36,7 @@ from galaxy.files.sources._rdm import (
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
+    requests,
     stream_to_open_named_file,
 )
 

@@ -69,7 +69,6 @@ from typing import (
 from uuid import UUID
 
 import cwltest.compare
-import requests
 import yaml
 from bioblend.galaxyclient import GalaxyClient
 from gxformat2 import (
@@ -99,6 +98,7 @@ from galaxy.tool_util.verify.wait import (
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
+    requests,
     UNKNOWN,
 )
 from galaxy.util.resources import resource_string

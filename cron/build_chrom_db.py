@@ -18,7 +18,8 @@ import sys
 from urllib.parse import urlencode
 
 import parse_builds  # noqa: I100,I202
-import requests
+
+from galaxy.util import requests
 
 
 def getchrominfo(url, db):

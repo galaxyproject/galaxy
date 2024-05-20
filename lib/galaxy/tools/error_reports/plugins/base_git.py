@@ -8,11 +8,10 @@ from abc import (
 )
 from typing import Dict
 
-import requests
-
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
     unicodify,
 )
 from . import ErrorPlugin

@@ -8,9 +8,10 @@ from typing import (
     Optional,
 )
 
-import requests
-
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from .interface import BiotoolsEntry
 
 

@@ -3,7 +3,6 @@ import logging
 import time
 
 import jwt
-import requests
 from msal import ConfidentialClientApplication
 from social_core.actions import (
     do_auth,
@@ -27,7 +26,10 @@ from galaxy.model import (
     UserAuthnzToken,
 )
 from galaxy.model.base import transaction
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from . import IdentityProvider
 
 log = logging.getLogger(__name__)

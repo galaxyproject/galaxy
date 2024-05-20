@@ -1,12 +1,14 @@
 import functools
 import logging
 
-import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 
 log = logging.getLogger(__name__)
 
