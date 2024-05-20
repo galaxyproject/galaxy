@@ -567,7 +567,7 @@ tool_form:
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
-    drilldown_expand: '.fa-plus-square'
+    drilldown_expand: '.fa-caret-down'
 
   labels:
     generate_tour: 'Generate Tour'
