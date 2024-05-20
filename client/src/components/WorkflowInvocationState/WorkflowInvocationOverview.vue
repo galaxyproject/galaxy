@@ -234,7 +234,8 @@ function onCancel() {
                     :workflow="workflow"
                     :is-terminal="invocationAndJobTerminal"
                     :is-scheduled="invocationSchedulingTerminal"
-                    :is-full-page="isFullPage" />
+                    :is-full-page="isFullPage"
+                    :show-minimap="isFullPage" />
             </div>
             <BAlert v-else-if="isSubworkflow" variant="secondary" show>
                 This subworkflow is

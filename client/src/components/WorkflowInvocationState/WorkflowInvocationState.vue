@@ -20,6 +20,7 @@ import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import UtcDate from "../UtcDate.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
+import WorkflowRunButton from "../Workflow/WorkflowRunButton.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
@@ -208,20 +209,15 @@ function getWorkflowName() {
                         <FontAwesomeIcon :icon="faEdit" />
                         <span v-localize>Edit</span>
                     </BButton>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive.html
+                    <WorkflowRunButton
+                        :id="getWorkflowId() || ''"
                         :title="
                             !isDeletedWorkflow
                                 ? `<b>Rerun</b><br>${getWorkflowName()}`
                                 : 'This workflow has been deleted.'
                         "
-                        size="sm"
-                        variant="secondary"
                         :disabled="isDeletedWorkflow"
-                        :to="`/workflows/run?id=${getWorkflowId()}`">
-                        <FontAwesomeIcon :icon="faPlay" />
-                        <span v-localize>Run</span>
-                    </BButton>
+                        full />
                 </BButtonGroup>
             </div>
         </div>

@@ -38,7 +38,6 @@ import TrsImport from "components/Workflow/Import/TrsImport";
 import TrsSearch from "components/Workflow/Import/TrsSearch";
 import InvocationReport from "components/Workflow/InvocationReport";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
-import UserInvocations from "components/Workflow/UserInvocations";
 import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
@@ -63,6 +62,7 @@ import { parseBool } from "@/utils/utils";
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
@@ -543,8 +543,15 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/invocations",
-                        component: UserInvocations,
+                        component: GridInvocation,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "workflows/invocations/import",
+                        component: HistoryImport,
+                        props: {
+                            invocationImport: true,
+                        },
                     },
                     {
                         path: "workflows/invocations/report",
