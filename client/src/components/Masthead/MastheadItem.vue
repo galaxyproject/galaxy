@@ -32,13 +32,6 @@ const props = defineProps({
 const popoverNote = computed(
     () => `Please <a href="${withPrefix("/login")}">log in or register</a> to use this feature.`
 );
-const classes = computed(() => {
-    const isActiveTab = props.id == props.activeTab;
-    return Object.fromEntries([
-        ["active", isActiveTab],
-        [props.tab.cls, !!props.tab.cls],
-    ]);
-});
 const linkClasses = computed(() => ({
     "nav-icon": props.tab.icon,
     toggle: props.toggle,
@@ -75,7 +68,6 @@ function open(tab, event) {
         :id="id"
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: id, content: popoverNote, html: true }"
-        :class="classes"
         :href="withPrefix(tab.url)"
         :target="tab.target || '_parent'"
         :link-classes="linkClasses"
