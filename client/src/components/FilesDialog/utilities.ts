@@ -18,7 +18,7 @@ export function fileSourcePluginToItem(plugin: BrowsableFilesSourcePlugin): Sele
     const result = {
         id: plugin.id,
         label: plugin.label,
-        details: plugin.doc,
+        details: plugin.doc || "",
         isLeaf: false,
         url: plugin.uri_root,
     };

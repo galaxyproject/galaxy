@@ -11,6 +11,7 @@ import galaxy.model.mapping as mapping
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
+    setup_global_object_store_for_models,
     User,
 )
 from galaxy.model.base import transaction
@@ -142,10 +143,10 @@ def _setup_mapping_and_user():
             "/tmp",
             "sqlite:///:memory:",
             create_tables=True,
-            object_store=object_store,
             slow_query_log_threshold=SLOW_QUERY_LOG_THRESHOLD,
             thread_local_log=THREAD_LOCAL_LOG,
         )
+        setup_global_object_store_for_models(object_store)
 
         u = User(email="historycopy@example.com", password="password")
         h1 = History(name="HistoryCopyHistory1", user=u)

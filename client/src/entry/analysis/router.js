@@ -55,18 +55,28 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+import CreateFileSourceInstance from "@/components/FileSources/Instances/CreateInstance";
 import GridHistory from "@/components/Grid/GridHistory";
 import GridPage from "@/components/Grid/GridPage";
+import CreateObjectStoreInstance from "@/components/ObjectStore/Instances/CreateInstance";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import EditFileSourceInstance from "@/components/FileSources/Instances/EditInstance.vue";
+import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageIndex.vue";
+import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
+import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserFileSource.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
+import EditObjectStoreInstance from "@/components/ObjectStore/Instances/EditInstance.vue";
+import ManageObjectStoreIndex from "@/components/ObjectStore/Instances/ManageIndex.vue";
+import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/UpgradeInstance.vue";
+import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
@@ -343,6 +353,58 @@ export function getRouter(Galaxy) {
                     {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_instances/create",
+                        component: CreateUserObjectStore,
+                    },
+                    {
+                        path: "object_store_instances/index",
+                        component: ManageObjectStoreIndex,
+                        props: (route) => {
+                            return { message: route.query["message"] };
+                        },
+                    },
+                    {
+                        path: "object_store_instances/:instanceId/edit",
+                        component: EditObjectStoreInstance,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_instances/:instanceId/upgrade",
+                        component: UpgradeObjectStoreInstance,
+                        props: true,
+                    },
+                    {
+                        path: "object_store_templates/:templateId/new",
+                        component: CreateObjectStoreInstance,
+                        props: true,
+                    },
+                    {
+                        path: "file_source_instances/create",
+                        component: CreateUserFileSource,
+                    },
+                    {
+                        path: "file_source_instances/index",
+                        component: ManageFileSourceIndex,
+                        props: (route) => {
+                            return { message: route.query["message"] };
+                        },
+                    },
+                    {
+                        path: "file_source_instances/:instanceId/edit",
+                        component: EditFileSourceInstance,
+                        props: true,
+                    },
+                    {
+                        path: "file_source_instances/:instanceId/upgrade",
+                        component: UpgradeFileSourceInstance,
+                        props: true,
+                    },
+                    {
+                        path: "file_source_templates/:templateId/new",
+                        component: CreateFileSourceInstance,
                         props: true,
                     },
                     {

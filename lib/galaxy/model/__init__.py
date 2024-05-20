@@ -30,6 +30,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    Generic,
     Iterable,
     List,
     NamedTuple,
@@ -39,6 +40,7 @@ from typing import (
     Tuple,
     Type,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 from uuid import (
@@ -133,6 +135,11 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
+from galaxy.files.templates import (
+    FileSourceConfiguration,
+    FileSourceTemplate,
+    template_to_configuration as file_source_template_to_configuration,
+)
 from galaxy.model.base import (
     ensure_object_added_to_session,
     transaction,
@@ -153,6 +160,11 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore.templates import (
+    ObjectStoreConfiguration,
+    ObjectStoreTemplate,
+    template_to_configuration as object_store_template_to_configuration,
+)
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -177,6 +189,12 @@ from galaxy.util import (
     ready_name_for_url,
     unicodify,
     unique_id,
+)
+from galaxy.util.config_templates import (
+    EnvironmentDict,
+    SecretsDict,
+    Template as ConfigTemplate,
+    TemplateEnvironment,
 )
 from galaxy.util.dictifiable import (
     dict_for,
@@ -210,6 +228,28 @@ _datatypes_registry = None
 STR_TO_STR_DICT = Dict[str, str]
 
 
+class ConfigurationTemplateEnvironmentSecret(TypedDict):
+    name: str
+    type: Literal["secret"]
+    vault_key: str
+
+
+class ConfigurationTemplateEnvironmentVariable(TypedDict):
+    name: str
+    type: Literal["variable"]
+    variable: str
+
+
+CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY = Union[
+    ConfigurationTemplateEnvironmentSecret, ConfigurationTemplateEnvironmentVariable
+]
+CONFIGURATION_TEMPLATE_ENVIRONMENT = List[CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = Dict[str, CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE]
+CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = List[str]
+CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
+
+
 class TransformAction(TypedDict):
     action: str
 
@@ -220,6 +260,10 @@ mapper_registry = registry(
     type_annotation_map={
         Optional[STR_TO_STR_DICT]: JSONType,
         Optional[TRANSFORM_ACTIONS]: MutableJSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_ENVIRONMENT]: JSONType,
     },
 )
 
@@ -764,6 +808,8 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
         back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
     )
+    object_stores: Mapped[List["UserObjectStore"]] = relationship(back_populates="user")
+    file_sources: Mapped[List["UserFileSource"]] = relationship(back_populates="user")
     quotas: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="user")
     quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(back_populates="user")
     social_auth: Mapped[List["UserAuthnzToken"]] = relationship(back_populates="user")
@@ -3984,6 +4030,10 @@ class StorableObject:
         if sa_session := object_session(self):
             with transaction(sa_session):
                 sa_session.commit()
+
+
+def setup_global_object_store_for_models(object_store):
+    Dataset.object_store = object_store
 
 
 class Dataset(Base, StorableObject, Serializable):
@@ -10905,6 +10955,209 @@ class UserPreference(Base, RepresentById):
         # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
+
+
+class UsesTemplatesAppConfig(Protocol):
+    user_config_templates_index_by: Literal["uuid", "id"]
+
+
+class HasConfigSecrets(RepresentById):
+    secret_config_type: str
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]]
+    uuid: Mapped[Union[UUID, str]]
+    user: Mapped["User"]
+
+    def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
+        if app_config.user_config_templates_index_by == "id":
+            id_str = str(self.id)
+        else:
+            id_str = str(self.uuid)
+        user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
+        return user_vault_id_prefix
+
+    def vault_key(self, secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        user_vault_id_prefix = self.vault_id_prefix(app_config)
+        key = f"{user_vault_id_prefix}/{secret}"
+        return key
+
+
+class HasConfigEnvironment(RepresentById):
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]]
+
+    @property
+    def template_environment(self) -> TemplateEnvironment:
+        definition = self.template_definition
+        if not definition:
+            return TemplateEnvironment.model_validate([])
+        environment = definition.get("environment")
+        if not environment:
+            return TemplateEnvironment.model_validate([])
+        else:
+            return TemplateEnvironment.model_validate(environment)
+
+
+T = TypeVar("T", bound=ConfigTemplate, covariant=True)
+
+
+class HasConfigTemplate(HasConfigSecrets, HasConfigEnvironment, RepresentById, Generic[T]):
+    name: Mapped[str]
+    description: Mapped[Optional[str]]
+    template_id: Mapped[str]
+    template_version: Mapped[int]
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]]
+    hidden: Mapped[bool]
+    active: Mapped[bool]
+    purged: Mapped[bool]
+
+    @property
+    def template(self) -> T:
+        raise NotImplementedError()
+
+
+class UserObjectStore(Base, HasConfigTemplate):
+    __tablename__ = "user_object_store"
+    secret_config_type = "object_store_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(Integer, index=True)
+    # Full template from object_store_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="object_stores")
+
+    @property
+    def template(self) -> ObjectStoreTemplate:
+        return ObjectStoreTemplate(**self.template_definition or {})
+
+    def object_store_configuration(
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[ObjectStoreTemplate]] = None
+    ) -> ObjectStoreConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user = self.user
+        user_details = {
+            "username": user.username,
+            "email": user.email,
+            "id": user.id,
+        }
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return object_store_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to object_store_configuration")
+
+
+class UserFileSource(Base, HasConfigTemplate):
+    __tablename__ = "user_file_source"
+    secret_config_type = "file_source_config"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(index=True)
+    # Full template from file_sources_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="file_sources")
+
+    @property
+    def template(self) -> FileSourceTemplate:
+        return FileSourceTemplate(**self.template_definition or {})
+
+    def file_source_configuration(
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[FileSourceTemplate]] = None
+    ) -> FileSourceConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user = self.user
+        user_details = {
+            "username": user.username,
+            "email": user.email,
+            "id": user.id,
+        }
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return file_source_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to file_source_configuration")
 
 
 class UserAction(Base, RepresentById):

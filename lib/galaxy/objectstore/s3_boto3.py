@@ -163,9 +163,9 @@ class S3ObjectStore(CachingConcreteObjectStore):
 
         auth_dict = config_dict["auth"]
         bucket_dict = config_dict["bucket"]
-        connection_dict = config_dict.get("connection", {})
+        connection_dict = config_dict.get("connection") or {}
         cache_dict = config_dict.get("cache") or {}
-        transfer_dict = config_dict.get("transfer", {})
+        transfer_dict = config_dict.get("transfer") or {}
         typed_transfer_dict = {}
         for prefix in ["", "upload_", "download_"]:
             options: Dict[str, Callable[[Any], Any]] = {

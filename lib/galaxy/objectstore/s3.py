@@ -83,7 +83,7 @@ def parse_config_xml(config_xml):
             raise Exception(msg)
         extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
 
-        return {
+        config_dict = {
             "auth": {
                 "access_key": access_key,
                 "secret_key": secret_key,
@@ -105,6 +105,12 @@ def parse_config_xml(config_xml):
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
+        name = config_xml.attrib.get("name", None)
+        if name is not None:
+            config_dict["name"] = name
+        device = config_xml.attrib.get("device", None)
+        config_dict["device"] = device
+        return config_dict
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
         log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
@@ -146,6 +152,7 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
     """
 
     store_type = "aws_s3"
+    cloud = True
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
@@ -240,12 +247,14 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
     def _get_bucket(self, bucket_name):
         """Sometimes a handle to a bucket is not established right away so try
         it a few times. Raise error is connection is not established."""
+        last_error = None
         for i in range(5):
             try:
                 bucket = self.conn.get_bucket(bucket_name)
                 log.debug("Using cloud object store with bucket '%s'", bucket.name)
                 return bucket
-            except S3ResponseError:
+            except S3ResponseError as e:
+                last_error = e
                 try:
                     log.debug("Bucket not found, creating s3 bucket with handle '%s'", bucket_name)
                     self.conn.create_bucket(bucket_name)
@@ -254,7 +263,10 @@ class S3ObjectStore(CachingConcreteObjectStore, CloudConfigMixin, UsesAxel):
                     time.sleep(2)
         # All the attempts have been exhausted and connection was not established,
         # raise error
-        raise S3ResponseError
+        if last_error:
+            raise last_error
+        else:
+            raise Exception("Failed to connect to target object store.")
 
     def _get_transfer_progress(self):
         return self.transfer_progress

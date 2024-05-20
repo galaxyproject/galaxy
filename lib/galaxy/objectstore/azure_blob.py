@@ -78,7 +78,7 @@ def parse_config_xml(config_xml):
         if account_url:
             auth["account_url"] = account_url
 
-        return {
+        config_dict = {
             "auth": auth,
             "container": {
                 "name": container_name,
@@ -88,6 +88,12 @@ def parse_config_xml(config_xml):
             "extra_dirs": extra_dirs,
             "private": CachingConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
+        name = config_xml.attrib.get("name", None)
+        if name is not None:
+            config_dict["name"] = name
+        device = config_xml.attrib.get("device", None)
+        config_dict["device"] = device
+        return config_dict
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
         log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
@@ -102,6 +108,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
     """
 
     store_type = "azure_blob"
+    cloud = True
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)

@@ -69,7 +69,10 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
-from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore import (
+    ObjectStorePopulator,
+    serialize_static_object_store_config,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
@@ -2296,8 +2299,15 @@ class MinimalJobWrapper(HasResourceParameters):
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
         inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
+
+        required_user_object_store_uris = set()
+        for out_dataset_instance in out_data.values():
+            object_store_id = out_dataset_instance.dataset.object_store_id
+            if object_store_id and object_store_id.startswith("user_objects://"):
+                required_user_object_store_uris.add(object_store_id)
+
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        object_store_conf = self.object_store.to_dict()
+        object_store_conf = serialize_static_object_store_config(self.object_store, required_user_object_store_uris)
         command = self.external_output_metadata.setup_external_metadata(
             out_data,
             out_collections,

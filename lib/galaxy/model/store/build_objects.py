@@ -90,8 +90,8 @@ def main(argv=None):
     galaxy.model.set_datatypes_registry(example_datatype_registry_for_sample())
     from galaxy.model import mapping
 
-    mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store)
-
+    mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
+    galaxy.model.setup_global_object_store_for_models(object_store)
     with open(args.objects) as f:
         targets = yaml.safe_load(f)
         if not isinstance(targets, list):
