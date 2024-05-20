@@ -1,6 +1,7 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
+import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
 import { onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -13,7 +14,6 @@ import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
 
-import { userLogout } from "utils/logout";
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const route = useRoute();
@@ -112,26 +112,27 @@ onMounted(() => {
             <MastheadItem
                 id="analysis"
                 title="Tools and Current History"
-                icon="fa fa-home"
+                icon="fa-home"
                 @click="openUrl('/', '_top')" />
             <MastheadItem
                 id="help"
                 title="Support, contact, and community"
-                icon="fa fa-question"
-                @click="openUrl('/about', '_top')" />
+                icon="fa-question"
+                @click="openUrl('/about')" />
             <MastheadItem
                 id="user"
                 title="Logout"
-                icon="fa fa-sign-out-alt"
+                icon="fa-sign-out-alt"
                 @click="userLogout" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
-                :key="`extension-tab-${idx}`"
                 :id="tab.id"
-                :tab="tab"
+                :key="`extension-tab-${idx}`"
+                :title="tab.title"
+                :icon="tab.icon"
                 :active-tab="activeTab" />
-            <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
             <QuotaMeter />
         </BNavbarNav>
     </BNavbar>

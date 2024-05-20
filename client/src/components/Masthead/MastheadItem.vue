@@ -51,7 +51,7 @@ const props = defineProps({
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
-            <span :class="icon" />
+            <span :class="`fa ${icon}`" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>
