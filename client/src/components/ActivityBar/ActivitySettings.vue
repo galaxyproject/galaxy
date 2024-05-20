@@ -23,7 +23,7 @@ const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
 
 const filteredActivities = computed(() => {
-    if (props.query.length > 0) {
+    if (props.query?.length > 0) {
         const queryLower = props.query.toLowerCase();
         const results = activities.value.filter((a: Activity) => {
             const attributeValues = [a.title, a.description];
