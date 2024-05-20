@@ -3,7 +3,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 import { onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -16,6 +16,7 @@ import { getActiveTab } from "./utilities";
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const route = useRoute();
+const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
 const emit = defineEmits(["open-url"]);
@@ -60,6 +61,19 @@ function setActiveTab() {
     activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
 }
 
+function openUrl(url, target = null) {
+    if (!target) {
+        router.push(url);
+    } else {
+        url = withPrefix(url);
+        if (target == "_blank") {
+            window.open(url);
+        } else {
+            window.location = url;
+        }
+    }
+}
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
 }
@@ -95,21 +109,26 @@ onMounted(() => {
         </BNavbarNav>
         <BNavbarNav>
             <MastheadItem
+                id="analysis"
+                title="Tools and Current History"
+                icon="fa fa-home"
+                @click="openUrl('/', '_top')" />
+            <MastheadItem
                 v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :id="tab.id"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
+                :title="tab.title"
+                :icon="tab.icon"
+                :active-tab="activeTab" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
                 :key="`extension-tab-${idx}`"
                 :id="tab.id"
                 :tab="tab"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
+                :active-tab="activeTab" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
             <QuotaMeter />
         </BNavbarNav>

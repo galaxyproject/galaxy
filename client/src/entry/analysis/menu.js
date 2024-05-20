@@ -8,22 +8,11 @@ export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
     const menu = [];
     //
-    // Analyze data tab.
-    //
-    menu.push({
-        id: "analysis",
-        url: "/",
-        tooltip: _l("Tools and Current History"),
-        icon: "fa-home",
-        target: "_top",
-    });
-
-    //
     // Help tab.
     //
     const helpTab = {
         id: "help",
-        icon: "fa-question",
+        icon: "fa fa-question",
         url: "javascript:void(0)",
         tooltip: _l("Support, contact, and community"),
         menu: [
@@ -101,7 +90,7 @@ export function fetchMenu(options = {}) {
     } else {
         userTab = {
             id: "user",
-            icon: "fa-sign-out-alt",
+            icon: "fa fa-sign-out-alt",
             cls: "loggedin-only",
             onclick: userLogout,
             hidden: Galaxy.config.single_user,

@@ -11,8 +11,7 @@
                     :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
                     :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
                     :tabs="tabs"
-                    :window-tab="windowTab"
-                    @open-url="openUrl" />
+                    :window-tab="windowTab" />
                 <Alert
                     v-if="config.message_box_visible && config.message_box_content"
                     id="messagebox"
@@ -196,18 +195,6 @@ export default {
         startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
             notificationsStore.startWatchingNotifications();
-        },
-        openUrl(urlObj) {
-            if (!urlObj.target) {
-                this.$router.push(urlObj.url);
-            } else {
-                const url = withPrefix(urlObj.url);
-                if (urlObj.target == "_blank") {
-                    window.open(url);
-                } else {
-                    window.location = url;
-                }
-            }
         },
     },
 };
