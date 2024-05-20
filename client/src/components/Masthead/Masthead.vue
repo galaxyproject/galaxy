@@ -13,6 +13,7 @@ import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
 
+import { userLogout } from "utils/logout";
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const route = useRoute();
@@ -114,14 +115,15 @@ onMounted(() => {
                 icon="fa fa-home"
                 @click="openUrl('/', '_top')" />
             <MastheadItem
-                v-for="(tab, idx) in props.tabs"
-                v-show="tab.hidden !== true"
-                :key="`tab-${idx}`"
-                :tab="tab"
-                :id="tab.id"
-                :title="tab.title"
-                :icon="tab.icon"
-                :active-tab="activeTab" />
+                id="help"
+                title="Support, contact, and community"
+                icon="fa fa-question"
+                @click="openUrl('/about', '_top')" />
+            <MastheadItem
+                id="user"
+                title="Logout"
+                icon="fa fa-sign-out-alt"
+                @click="userLogout" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
