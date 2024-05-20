@@ -10,7 +10,6 @@
                     :logo-url="config.logo_url"
                     :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
                     :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
-                    :tabs="tabs"
                     :window-tab="windowTab" />
                 <Alert
                     v-if="config.message_box_visible && config.message_box_content"
@@ -54,7 +53,6 @@ import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { setToastComponentRef } from "composables/toast";
-import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
 import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
@@ -133,9 +131,6 @@ export default {
         };
     },
     computed: {
-        tabs() {
-            return fetchMenu(this.config);
-        },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
