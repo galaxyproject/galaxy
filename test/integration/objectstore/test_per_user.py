@@ -4,6 +4,7 @@ from typing import (
     Tuple,
 )
 
+from galaxy.objectstore.templates.examples import get_example
 from galaxy_test.base import api_asserts
 from galaxy_test.driver import integration_util
 from ._base import BaseObjectStoreIntegrationTestCase
@@ -78,49 +79,7 @@ MULTI_VERSION_LIBRARY = """
 """
 
 
-MULTI_VERSION_WITH_SECRETS_LIBRARY = """
-- id: secure_disk
-  version: 0
-  name: Secure Disk
-  description: Secure Disk Bound to You
-  secrets:
-    sec1:
-      help: This is my test secret.
-  configuration:
-    type: disk
-    files_dir: '/data/secure/{{ user.username }}/{{ secrets.sec1 }}/aftersec'
-    badges:
-    - type: more_secure
-    - type: slower
-- id: secure_disk
-  version: 1
-  name: Secure Disk
-  description: Secure Disk Bound to You
-  secrets:
-    sec1:
-      help: This is my test secret.
-    sec2:
-      help: This is my test secret 2.
-  configuration:
-    type: disk
-    files_dir: '/data/secure/{{ user.username }}/{{ secrets.sec1 }}/{{ secrets.sec2 }}'
-    badges:
-    - type: more_secure
-    - type: slower
-- id: secure_disk
-  version: 2
-  name: Secure Disk
-  description: Secure Disk Bound to You
-  secrets:
-    sec2:
-      help: This is my test secret 2.
-  configuration:
-    type: disk
-    files_dir: '/data/secure/{{ user.username }}/newbar/{{ secrets.sec2 }}'
-    badges:
-    - type: more_secure
-    - type: slower
-"""
+MULTI_VERSION_WITH_SECRETS_LIBRARY = get_example("testing_multi_version_with_secrets.yml")
 
 
 class BaseUserObjectStoreIntegration(BaseObjectStoreIntegrationTestCase):

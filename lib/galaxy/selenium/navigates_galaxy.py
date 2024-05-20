@@ -9,6 +9,10 @@ import random
 import string
 import time
 from abc import abstractmethod
+from dataclasses import (
+    dataclass,
+    field,
+)
 from functools import (
     partial,
     wraps,
@@ -18,6 +22,7 @@ from typing import (
     cast,
     Dict,
     List,
+    Literal,
     NamedTuple,
     Optional,
     Tuple,
@@ -178,6 +183,29 @@ def edit_details(f, scope=".history-index"):
         return result
 
     return func_wrapper
+
+
+@dataclass
+class ConfigTemplateParameter:
+    form_element_type: Literal["string", "boolean", "integer"]
+    name: str
+    value: Any
+
+
+@dataclass
+class FileSourceInstance:
+    template_id: str
+    name: str
+    description: Optional[str]
+    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
+
+
+@dataclass
+class ObjectStoreInstance:
+    template_id: str
+    name: str
+    description: Optional[str]
+    parameters: List[ConfigTemplateParameter] = field(default_factory=list)
 
 
 class NavigatesGalaxy(HasDriver):
@@ -986,6 +1014,26 @@ class NavigatesGalaxy(HasDriver):
 
         textarea = self.wait_for_selector(f"{tab_locator} .upload-row:last-of-type .upload-text-content")
         textarea.send_keys(pasted_content)
+
+    def upload_uri(self, uri, wait=False):
+        upload = self.components.upload
+        upload.start.wait_for_and_click()
+        upload.file_dialog.wait_for_and_click()
+        scheme, uri_rest = uri.split("://", 1)
+        parts = uri_rest.split("/")
+
+        root = f"{scheme}://{parts[0]}"
+        upload.file_source_selector(path=root).wait_for_and_click()
+        rest_parts = parts[1:]
+        path = root
+        for part in rest_parts:
+            path = f"{path}/{part}"
+            upload.file_source_selector(path=path).wait_for_and_click()
+        upload.file_dialog_ok.wait_for_and_click()
+        self.upload_start()
+        if wait:
+            self.sleep_for(self.wait_types.UX_RENDER)
+            self.wait_for_history()
 
     def upload_rule_start(self):
         self.upload_start_click()
@@ -2302,6 +2350,78 @@ class NavigatesGalaxy(HasDriver):
             xpath = f'//span[contains(text(), "{user_email}")]'
             self.wait_for_xpath_visible(xpath)
         self.screenshot_if(screenshot_after_submit)
+
+    def create_file_source_template(self, instance: FileSourceInstance) -> str:
+        self.navigate_to_user_preferences()
+        template_id = instance.template_id
+        preferences = self.components.preferences
+        preferences.manage_file_sources.wait_for_and_click()
+        file_source_instances = self.components.file_source_instances
+        file_source_instances.index.create_button.wait_for_and_click()
+
+        select_template = file_source_instances.create.select(template_id=template_id)
+        select_template.wait_for_present()
+        self.screenshot(f"user_file_source_select_{template_id}")
+        select_template.wait_for_and_click()
+
+        file_source_instances.create._.wait_for_present()
+        self.screenshot(f"user_file_source_form_empty_{template_id}")
+        self._fill_configuration_template(instance.name, instance.description, instance.parameters)
+        self.screenshot(f"user_file_source_form_full_{template_id}")
+        file_source_instances.create.submit.wait_for_and_click()
+
+        file_source_instances = self.components.file_source_instances
+        file_source_instances.index._.wait_for_present()
+        self.screenshot(f"user_file_source_created_{template_id}")
+        instances = self.api_get("file_source_instances")
+        newest_instance = instances[-1]
+        uri_root = newest_instance["uri_root"]
+        return uri_root
+
+    def create_object_store_template(self, instance: ObjectStoreInstance) -> str:
+        self.navigate_to_user_preferences()
+        template_id = instance.template_id
+        preferences = self.components.preferences
+        preferences.manage_object_stores.wait_for_and_click()
+        object_store_instances = self.components.object_store_instances
+        object_store_instances.index.create_button.wait_for_and_click()
+
+        select_template = object_store_instances.create.select(template_id=template_id)
+        select_template.wait_for_present()
+        self.screenshot(f"user_object_store_select_{template_id}")
+        select_template.wait_for_and_click()
+
+        object_store_instances.create._.wait_for_present()
+        self.screenshot(f"user_object_store_form_empty_{template_id}")
+        self._fill_configuration_template(instance.name, instance.description, instance.parameters)
+        self.screenshot(f"user_object_store_form_full_{template_id}")
+        object_store_instances.create.submit.wait_for_and_click()
+        object_store_instances.index._.wait_for_present()
+        self.screenshot(f"user_object_store_created_{template_id}")
+        instances = self.api_get("object_store_instances")
+        newest_instance = instances[-1]
+        object_store_id = newest_instance["object_store_id"]
+        return object_store_id
+
+    def _fill_configuration_template(
+        self, name: str, description: Optional[str], parameters: List[ConfigTemplateParameter]
+    ):
+        self.components.tool_form.parameter_input(parameter="_meta_name").wait_for_and_send_keys(
+            name,
+        )
+        if description:
+            self.components.tool_form.parameter_input(parameter="_meta_description").wait_for_and_send_keys(
+                description,
+            )
+
+        for parameter in parameters:
+            form_type = parameter.form_element_type
+            if form_type in ["integer", "string"]:
+                self.components.tool_form.parameter_input(parameter=parameter.name).wait_for_and_send_keys(
+                    str(parameter.value),
+                )
+            else:
+                raise NotImplementedError("Configuration templates of type {form_type} not yet implemented")
 
     def tutorial_mode_activate(self):
         search_selector = "#gtn a"

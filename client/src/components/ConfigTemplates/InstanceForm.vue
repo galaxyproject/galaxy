@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue";
+
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -7,6 +9,7 @@ interface Props {
     title: string;
     inputs: any | null; // not fully reactive so make sure these are ready to go when loading is false
     submitTitle: string;
+    loadingMessage: string;
 }
 
 defineProps<Props>();
@@ -26,7 +29,7 @@ async function handleSubmit() {
 </script>
 <template>
     <div>
-        <LoadingSpan v-if="inputs == null" message="Loading storage location template and instance information" />
+        <LoadingSpan v-if="inputs == null" :message="loadingMessage" />
         <div v-else>
             <FormCard :title="title">
                 <template v-slot:body>
@@ -34,9 +37,9 @@ async function handleSubmit() {
                 </template>
             </FormCard>
             <div class="mt-3">
-                <b-button id="submit" variant="primary" class="mr-1" @click="handleSubmit">
+                <BButton id="submit" variant="primary" class="mr-1" @click="handleSubmit">
                     {{ submitTitle }}
-                </b-button>
+                </BButton>
             </div>
         </div>
     </div>

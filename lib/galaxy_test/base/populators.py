@@ -507,6 +507,19 @@ class BaseDatasetPopulator(BasePopulator):
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details
 
+    def export_dataset_to_remote_file(self, history_id: str, content: str, name: str, target_uri: str):
+        dataset = self.new_dataset(history_id, content=content, wait=True, name=name)
+        infile = {"src": "hda", "id": dataset["id"]}
+        inputs = {
+            "d_uri": target_uri,
+            "export_type|export_type_selector": "datasets_named",
+            "export_type|datasets_0|infile": infile,
+            "export_type|datasets_0|name": name,
+        }
+        response = self.run_tool("export_remote", inputs, history_id)
+        self.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        return f"{target_uri}/{name}"
+
     def tag_dataset(self, history_id, hda_id, tags, raise_on_error=True):
         url = f"histories/{history_id}/contents/{hda_id}"
         response = self._put(url, {"tags": tags}, json=True)

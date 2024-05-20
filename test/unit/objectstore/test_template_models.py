@@ -1,14 +1,18 @@
+import os
+
 from yaml import safe_load
 
+from galaxy.objectstore.templates.examples import get_example
 from galaxy.objectstore.templates.manager import raw_config_to_catalog
 from galaxy.objectstore.templates.models import (
+    AwsS3ObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
     DiskObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
     ObjectStoreTemplateCatalog,
-    S3ObjectStoreConfiguration,
     template_to_configuration,
 )
+from galaxy.util.config_templates import VariablesDict
 
 LIBRARY_1 = """
 - id: amazon_bucket
@@ -26,7 +30,7 @@ LIBRARY_1 = """
     bucket_name:
       help: Name of bucket to use when connecting to AWS resources.
   configuration:
-    type: s3
+    type: aws_s3
     auth:
         access_key: '{{ secrets.access_key}}'
         secret_key: '{{ secrets.secret_key}}'
@@ -50,16 +54,17 @@ def test_parsing_simple_s3():
         {"use_reduced_redundancy": False},
         {"access_key": "sec1", "secret_key": "sec2", "bucket_name": "sec3"},
         user_details={},
+        environment={},
     )
     badges = s3_template.configuration.badges
     assert badges
     assert len(badges) == 3
 
     # expanded configuration should validate with template expansions...
-    assert isinstance(configuration_obj, S3ObjectStoreConfiguration)
+    assert isinstance(configuration_obj, AwsS3ObjectStoreConfiguration)
     configuration = configuration_obj.model_dump()
 
-    assert configuration["type"] == "s3"
+    assert configuration["type"] == "aws_s3"
     assert configuration["auth"]["access_key"] == "sec1"
     assert configuration["auth"]["secret_key"] == "sec2"
     assert configuration["bucket"]["name"] == "sec3"
@@ -110,6 +115,7 @@ def test_parsing_generic_s3():
         {"use_reduced_redundancy": False},
         {"access_key": "sec1", "secret_key": "sec2", "bucket_name": "sec3"},
         user_details={},
+        environment={},
     )
     badges = s3_template.configuration.badges
     assert badges
@@ -157,13 +163,89 @@ def test_parsing_multiple_posix():
     assert secure_template.version == 0
     assert secure_template.hidden is False
 
-    general_configuration = template_to_configuration(general_template, {}, {}, user_details={"username": "jane"})
+    general_configuration = template_to_configuration(
+        general_template, {}, {}, user_details={"username": "jane"}, environment={}
+    )
     assert isinstance(general_configuration, DiskObjectStoreConfiguration)
     assert general_configuration.files_dir == "/data/general/jane"
 
-    secure_configuration = template_to_configuration(secure_template, {}, {}, user_details={"username": "jane"})
+    secure_configuration = template_to_configuration(
+        secure_template, {}, {}, user_details={"username": "jane"}, environment={}
+    )
     assert isinstance(secure_configuration, DiskObjectStoreConfiguration)
     assert secure_configuration.files_dir == "/data/secure/jane"
+
+
+LIBRARY_WITH_PATH_PARAMETER = """
+- id: path_disk
+  name: General Disk
+  description: General Disk Bound to You
+  configuration:
+    type: disk
+    files_dir: '/data/general/{{ user.username | ensure_path_component }}//{{ variables.project_name | ensure_path_component }}'
+  variables:
+    project_name:
+      type: string  # dont do this in practice - use path_component for more eager validation
+      help: Project name used in path for this template library.
+"""
+
+
+def test_parsing_with_path_security():
+    template_library = _parse_template_library(LIBRARY_WITH_PATH_PARAMETER)
+    assert len(template_library.root) == 1
+    path_template = template_library.root[0]
+
+    assert path_template.version == 0
+
+    user_details = {"username": "jane"}
+    variables: VariablesDict = {"project_name": "moo"}
+
+    general_configuration = template_to_configuration(
+        path_template, variables, {}, user_details=user_details, environment={}
+    )
+    assert isinstance(general_configuration, DiskObjectStoreConfiguration)
+    assert os.path.abspath(general_configuration.files_dir) == "/data/general/jane/moo"
+
+    variables = {"project_name": "../moo"}
+    exc = None
+    try:
+        template_to_configuration(path_template, variables, {}, user_details=user_details, environment={})
+    except Exception as e:
+        exc = e
+    assert exc is not None
+
+
+LIBRARY_WITH_CUSTOM_TEMPLATE_START_END = """
+- id: path_disk
+  name: General Disk
+  description: General Disk Bound to You
+  configuration:
+    type: disk
+    files_dir: '/data/general/@= user.username | ensure_path_component =@/@= variables.project_name | ensure_path_component =@'
+    template_start: '@='
+    template_end: '=@'
+  variables:
+    project_name:
+      type: string  # dont do this in practice - use path_component for more eager validation
+      help: Project name used in path for this template library.
+"""
+
+
+def test_custom_template_start_and_ends():
+    template_library = _parse_template_library(LIBRARY_WITH_CUSTOM_TEMPLATE_START_END)
+    assert len(template_library.root) == 1
+    path_template = template_library.root[0]
+
+    assert path_template.version == 0
+
+    user_details = {"username": "jane"}
+    variables: VariablesDict = {"project_name": "moo"}
+
+    general_configuration = template_to_configuration(
+        path_template, variables, {}, user_details=user_details, environment={}
+    )
+    assert isinstance(general_configuration, DiskObjectStoreConfiguration)
+    assert os.path.abspath(general_configuration.files_dir) == "/data/general/jane/moo"
 
 
 LIBRARY_AZURE_CONTAINER = """
@@ -199,11 +281,58 @@ def test_parsing_azure():
         {"account_name": "galaxyproject"},
         {"account_key": "sec1", "container_name": "sec2"},
         user_details={},
+        environment={},
     )
     assert isinstance(configuration_obj, AzureObjectStoreConfiguration)
     assert configuration_obj.auth.account_name == "galaxyproject"
     assert configuration_obj.auth.account_key == "sec1"
     assert configuration_obj.container.name == "sec2"
+
+
+def test_minio_example_boolean():
+    template_library = _parse_template_library(get_example("minio_example.yml"))
+    assert len(template_library.root) == 1
+    minio_template = template_library.root[0]
+    configuration_obj = template_to_configuration(
+        minio_template,
+        {"access_key": "galaxyproject", "bucket": "galaxy"},
+        {"secret_key": "sec1"},
+        user_details={},
+        environment={"host": "localhost", "port": "9000", "secure": "1", "connection_path": "moo/cow"},
+    )
+    assert isinstance(configuration_obj, GenericS3ObjectStoreConfiguration)
+    assert configuration_obj.connection.is_secure
+
+    configuration_obj = template_to_configuration(
+        minio_template,
+        {"access_key": "galaxyproject", "bucket": "galaxy"},
+        {"secret_key": "sec1"},
+        user_details={},
+        environment={"host": "localhost", "port": "9000", "secure": "no", "connection_path": "moo/cow"},
+    )
+    assert isinstance(configuration_obj, GenericS3ObjectStoreConfiguration)
+    assert not configuration_obj.connection.is_secure
+
+
+def test_examples_parse():
+    assert_example_parses("simple_example.yml")
+    assert_example_parses("minio_example.yml")
+    assert_example_parses("production_generic_s3_legacy.yml")
+    assert_example_parses("production_generic_s3.yml")
+    assert_example_parses("production_aws_s3.yml")
+    assert_example_parses("production_aws_s3_legacy.yml")
+    assert_example_parses("production_azure_blob.yml")
+    assert_example_parses("cloudflare.yml")
+    assert_example_parses("cloudflare_legacy.yml")
+    assert_example_parses("minio_just_buckets.yml")
+    assert_example_parses("minio_just_buckets_legacy.yml")
+    assert_example_parses("azure_just_container.yml")
+    assert_example_parses("production_gcp_s3.yml")
+
+
+def assert_example_parses(filename: str):
+    as_str = get_example(filename)
+    _parse_template_library(as_str)
 
 
 def _parse_template_library(contents: str) -> ObjectStoreTemplateCatalog:

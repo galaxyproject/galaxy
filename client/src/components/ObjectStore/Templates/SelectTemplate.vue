@@ -2,6 +2,7 @@
 import type { ObjectStoreTemplateSummaries } from "./types";
 
 import TemplateSummaryPopover from "./TemplateSummaryPopover.vue";
+import SelectTemplate from "@/components/ConfigTemplates/SelectTemplate.vue";
 
 interface SelectTemplateProps {
     templates: ObjectStoreTemplateSummaries;
@@ -23,26 +24,12 @@ async function handleSubmit(templateId: string) {
 
 <template>
     <div>
-        <b-row>
-            <b-col cols="7">
-                <b-button-group vertical size="lg" style="width: 100%">
-                    <b-button
-                        v-for="template in templates"
-                        :id="`object-store-template-button-${template.id}`"
-                        :key="template.id"
-                        class="object-store-template-select-button"
-                        :data-template-id="template.id"
-                        @click="handleSubmit(template.id)"
-                        >{{ template.name }}
-                    </b-button>
-                </b-button-group>
-            </b-col>
-            <b-col cols="5">
-                <p v-localize style="float: right">
-                    {{ selectText }}
-                </p>
-            </b-col>
-        </b-row>
+        <SelectTemplate
+            :templates="templates"
+            :select-text="selectText"
+            id-prefix="object-store"
+            @onSubmit="handleSubmit">
+        </SelectTemplate>
         <TemplateSummaryPopover
             v-for="template in templates"
             :key="template.id"

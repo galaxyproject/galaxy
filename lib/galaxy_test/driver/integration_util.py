@@ -261,6 +261,32 @@ class ConfiguresObjectStores:
         config["object_store_templates_config_file"] = template_config_path
 
 
+class ConfiguresFileSourceTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_file_source_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "file_source_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["file_source_templates_config_file"] = template_config_path
+
+
+class ConfiguresObjectStoreTemplates:
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_Store_template_catalog(cls, catalog: str, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        template_config_path = os.path.join(temp_directory, "object_store_templates.yml")
+        with open(template_config_path, "w") as f:
+            f.write(catalog)
+
+        config["object_store_templates_config_file"] = template_config_path
+
+
 class ConfiguresDatabaseVault:
     @classmethod
     def _configure_database_vault(cls, config):

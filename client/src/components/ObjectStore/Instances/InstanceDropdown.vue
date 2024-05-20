@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import "./icons";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
+import { hide } from "./services";
 import type { UserConcreteObjectStore } from "./types";
 
-const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
-const router = useRouter();
+import InstanceDropdown from "@/components/ConfigTemplates/InstanceDropdown.vue";
 
-// TODO?
-const title = "";
+const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
 
 interface Props {
     objectStore: UserConcreteObjectStore;
@@ -25,33 +20,19 @@ const routeUpgrade = computed(() => `/object_store_instances/${props.objectStore
 const isUpgradable = computed(() =>
     objectStoreTemplatesStore.canUpgrade(props.objectStore.template_id, props.objectStore.template_version)
 );
+
+async function onRemove() {
+    await hide(props.objectStore);
+    console.log("HIDING!!!");
+}
 </script>
 
 <template>
-    <div>
-        <b-link
-            v-b-tooltip.hover
-            class="object-store-instance-dropdown font-weight-bold"
-            data-toggle="dropdown"
-            :title="title"
-            aria-haspopup="true"
-            aria-expanded="false">
-            <FontAwesomeIcon icon="caret-down" />
-            <span class="instance-dropdown-name">{{ props.objectStore.name }}</span>
-        </b-link>
-        <div class="dropdown-menu" aria-labelledby="object-store-instance-dropdown">
-            <a
-                v-if="isUpgradable"
-                class="dropdown-item"
-                @keypress="router.push(routeUpgrade)"
-                @click.prevent="router.push(routeUpgrade)">
-                <span class="fa fa-edit fa-fw mr-1" />
-                <span v-localize>Upgrade</span>
-            </a>
-            <a class="dropdown-item" @keypress="router.push(routeEdit)" @click.prevent="router.push(routeEdit)">
-                <span class="fa fa-edit fa-fw mr-1" />
-                <span v-localize>Edit configuration</span>
-            </a>
-        </div>
-    </div>
+    <InstanceDropdown
+        prefix="object-store"
+        :name="objectStore.name || ''"
+        :is-upgradable="isUpgradable"
+        :route-upgrade="routeUpgrade"
+        :route-edit="routeEdit"
+        @remove="onRemove" />
 </template>

@@ -22,7 +22,7 @@ const objectStoreType = computed(() => props.template.type);
 <template>
     <div>
         <ObjectStoreBadges :badges="badges" size="lg" />
-        <div>This template produces object stores of type <ObjectStoreTypeSpan :type="objectStoreType" />.</div>
+        <div>This template produces storage locations of type <ObjectStoreTypeSpan :type="objectStoreType" />.</div>
         <ConfigurationMarkdown :markdown="template.description || ''" :admin="true" />
     </div>
 </template>

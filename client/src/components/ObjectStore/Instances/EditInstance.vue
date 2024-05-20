@@ -1,19 +1,16 @@
 <script setup lang="ts">
+import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import {
-    metadataFormEntryDescription,
-    metadataFormEntryName,
-    templateVariableFormEntry,
-} from "@/components/ObjectStore/Instances/util";
+import { editFormDataToPayload, editTemplateForm } from "@/components/ConfigTemplates/formUtil";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
 import { update } from "./services";
-import type { UserConcreteObjectStore, VariableData } from "./types";
+import type { UserConcreteObjectStore } from "./types";
 
 import EditSecrets from "./EditSecrets.vue";
-import InstanceForm from "./InstanceForm.vue";
+import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
 interface Props {
     instanceId: number | string;
@@ -23,47 +20,26 @@ const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
 const inputs = computed(() => {
-    if (!template.value || !instance.value) {
-        return null;
-    }
-    const form = [];
-    const nameInput = metadataFormEntryName();
-    form.push({ value: instance?.value?.name ?? "", ...nameInput });
-
-    const descriptionInput = metadataFormEntryDescription();
-    form.push({ value: instance?.value?.description ?? "", ...descriptionInput });
-
+    template.value;
+    instance.value;
     if (template.value && instance.value) {
-        const realizedInstance: UserConcreteObjectStore = instance.value;
-        const variables = template.value?.variables ?? [];
-        const variableValues: VariableData = realizedInstance.variables || {};
-        for (const variable of variables) {
-            form.push(templateVariableFormEntry(variable, variableValues[variable.name]));
-        }
+        return editTemplateForm(template.value, "storage location", instance.value);
     }
-    return form;
+    return null;
 });
 
 const title = computed(() => `Edit Storage Location ${instance.value?.name} Settings`);
 const hasSecrets = computed(() => instance.value?.secrets && instance.value?.secrets.length > 0);
 const submitTitle = "Update Settings";
+const loadingMessage = "Loading storage location template and instance information";
 
 async function onSubmit(formData: any) {
-    const variables = template?.value?.variables ?? [];
-    const name = formData["_meta_name"];
-    const description = formData["_meta_description"];
-    const variableData: VariableData = {};
-    for (const variable of variables) {
-        variableData[variable.name] = formData[variable.name];
+    if (template.value) {
+        const payload = editFormDataToPayload(template.value, formData);
+        const args = { user_object_store_id: String(instance?.value?.id) };
+        const { data: objectStore } = await update({ ...args, ...payload });
+        await onUpdate(objectStore);
     }
-    const payload = {
-        name: name,
-        description: description,
-        variables: variableData,
-    };
-    const args = { user_object_store_id: String(instance?.value?.id) };
-    const { data: objectStore } = await update({ ...args, ...payload });
-    await onUpdate(objectStore);
 }
 
 const { goToIndex } = useInstanceRouting();
@@ -75,16 +51,27 @@ async function onUpdate(objectStore: UserConcreteObjectStore) {
 </script>
 <template>
     <div>
-        <b-tabs v-if="hasSecrets">
-            <b-tab title="Settings" active>
-                <InstanceForm :inputs="inputs" :title="title" :submit-title="submitTitle" @onSubmit="onSubmit" />
-            </b-tab>
-            <b-tab title="Secrets">
+        <BTabs v-if="hasSecrets">
+            <BTab title="Settings" active>
+                <InstanceForm
+                    :inputs="inputs"
+                    :title="title"
+                    :submit-title="submitTitle"
+                    :loading-message="loadingMessage"
+                    @onSubmit="onSubmit" />
+            </BTab>
+            <BTab title="Secrets">
                 <div v-if="instance && template">
                     <EditSecrets :object-store="instance" :template="template" />
                 </div>
-            </b-tab>
-        </b-tabs>
-        <InstanceForm v-else :inputs="inputs" :title="title" :submit-title="submitTitle" @onSubmit="onSubmit" />
+            </BTab>
+        </BTabs>
+        <InstanceForm
+            v-else
+            :inputs="inputs"
+            :title="title"
+            :submit-title="submitTitle"
+            :loading-message="loadingMessage"
+            @onSubmit="onSubmit" />
     </div>
 </template>

@@ -1,8 +1,6 @@
-from galaxy.objectstore import (
-    concrete_object_store,
-    UserObjectStoresAppConfig,
-)
+from galaxy.objectstore import concrete_object_store
 from galaxy.objectstore.templates.models import DiskObjectStoreConfiguration
+from galaxy.objectstore.unittest_utils import app_config
 from .test_objectstore import MockDataset
 
 
@@ -32,15 +30,3 @@ def test_disk(tmpdir):
     object_store.create(example_dataset)
     object_store.update_from_file(example_dataset, file_name=str(temp_file))
     assert object_store.size(example_dataset) == 7
-
-
-def app_config(tmpdir) -> UserObjectStoresAppConfig:
-    app_config = UserObjectStoresAppConfig(
-        jobs_directory=str(tmpdir / "jobs"),
-        new_file_path=str(tmpdir / "new_files"),
-        umask=0o077,
-        object_store_cache_path=str(tmpdir / "cache"),
-        object_store_cache_size=1,
-        user_object_store_index_by="uuid",
-    )
-    return app_config

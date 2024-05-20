@@ -94,7 +94,8 @@ preferences:
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '.preferred-storage'
-    manage_object_stores: '.manage-object-stores'
+    manage_object_stores: '#manage-object-stores'
+    manage_file_sources: '#manage-file-sources'
 
   object_store_selection:
     selectors:
@@ -104,8 +105,26 @@ preferences:
 object_store_instances:
   index:
     selectors:
-      create_button: object-store-create
+      create_button: '#object-store-create'
+      _: '#user-object-stores-index'
 
+  create: 
+    selectors:
+      select: '.object-store-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-object-store-landing'      
+      submit: '#submit'
+
+file_source_instances:
+  index:
+    selectors:
+      create_button: '#file-source-create'
+      _: '#user-file-sources-index'
+
+  create: 
+    selectors:
+      select: '.file-source-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-file-source-landing'      
+      submit: '#submit'
 
 toolbox_filters:
   selectors:

@@ -28,6 +28,17 @@ const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 const { isOnlyPreference } = useStorageLocationConfiguration();
 
+const selectableAndVisibleObjectStores = computed(() => {
+    const allSelectableObjectStores = selectableObjectStores.value;
+    if (allSelectableObjectStores != null) {
+        return allSelectableObjectStores.filter((item) => {
+            return "hidden" in item ? !item.hidden : true;
+        });
+    } else {
+        return [];
+    }
+});
+
 const loadingObjectStoreInfoMessage = ref("Loading storage location information");
 const whyIsSelectionPreferredText = ref(`
 Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
@@ -78,7 +89,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
                         <ObjectStoreSelectButton
-                            v-for="objectStore in selectableObjectStores"
+                            v-for="objectStore in selectableAndVisibleObjectStores"
                             :key="objectStore.object_store_id"
                             id-prefix="preferred"
                             :object-store="objectStore"
@@ -97,7 +108,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                 <span v-localize>{{ defaultOptionDescription }}</span>
             </ObjectStoreSelectButtonPopover>
             <ObjectStoreSelectButtonDescribePopover
-                v-for="objectStore in selectableObjectStores"
+                v-for="objectStore in selectableAndVisibleObjectStores"
                 :key="objectStore.object_store_id"
                 id-prefix="preferred"
                 :what="forWhat"

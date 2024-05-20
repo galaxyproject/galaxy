@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -92,6 +93,7 @@ class FilesSourceProperties(TypedDict):
     writable: NotRequired[bool]
     requires_roles: NotRequired[Optional[str]]
     requires_groups: NotRequired[Optional[str]]
+    disable_templating: NotRequired[Optional[bool]]
     # API helper values
     uri_root: NotRequired[str]
     type: NotRequired[str]
@@ -298,18 +300,22 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
+def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
+    # Check whether the list method has been overridden
+    return target_type.list != BaseFilesSource.list or target_type._list != BaseFilesSource._list
+
+
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
 
     def get_browsable(self) -> bool:
-        # Check whether the list method has been overridden
-        return type(self).list != BaseFilesSource.list or type(self)._list != BaseFilesSource._list
+        return file_source_type_is_browsable(type(self))
 
     def get_prefix(self) -> Optional[str]:
         return self.id
 
     def get_scheme(self) -> str:
-        return "gxfiles"
+        return self.scheme or "gxfiles"
 
     def get_writable(self) -> bool:
         return self.writable
@@ -359,6 +365,7 @@ class BaseFilesSource(FilesSource):
         self.writable = kwd.pop("writable", DEFAULT_WRITABLE)
         self.requires_roles = kwd.pop("requires_roles", None)
         self.requires_groups = kwd.pop("requires_groups", None)
+        self.disable_templating = kwd.pop("disable_templating", False)
         self._validate_security_rules()
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
@@ -376,6 +383,8 @@ class BaseFilesSource(FilesSource):
             "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
+            "disable_templating": self.disable_templating,
+            "scheme": self.get_scheme(),
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
@@ -497,6 +506,11 @@ class BaseFilesSource(FilesSource):
 
     def _evaluate_prop(self, prop_val: Any, user_context: "OptionalUserContext"):
         rval = prop_val
+
+        # just return if we've disabled templating for this plugin
+        if self.disable_templating:
+            return rval
+
         if isinstance(prop_val, str) and "$" in prop_val:
             template_context = dict(
                 user=user_context,

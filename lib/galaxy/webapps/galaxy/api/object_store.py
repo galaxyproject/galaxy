@@ -3,7 +3,10 @@ API operations on Galaxy's object store.
 """
 
 import logging
-from typing import List
+from typing import (
+    List,
+    Union,
+)
 
 from fastapi import (
     Body,
@@ -68,7 +71,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
-    ) -> List[ConcreteObjectStoreModel]:
+    ) -> List[Union[ConcreteObjectStoreModel, UserConcreteObjectStoreModel]]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"
@@ -139,6 +142,18 @@ class FastAPIObjectStore:
         payload: ModifyInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.modify_instance(trans, user_object_store_id, payload)
+
+    @router.delete(
+        "/api/object_store_instances/{user_object_store_id}",
+        summary="Purge user object store instance.",
+        operation_id="object_stores__instances_purge",
+    )
+    def purge_instance(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_object_store_id: str = UserObjectStoreIdPathParam,
+    ) -> None:
+        self.object_store_instance_manager.purge_instance(trans, user_object_store_id)
 
     @router.get(
         "/api/object_store_templates",

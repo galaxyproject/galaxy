@@ -2,13 +2,16 @@ import os
 import tempfile
 from typing import Tuple
 
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
+)
 from galaxy.files.plugins import FileSourcePluginsConfig
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
     def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: str):
-        super().__init__(file_sources_config, conf_dict=conf_dict)
+        super().__init__(file_sources_config, ConfiguredFileSourcesConf(conf_dict=conf_dict))
         self.test_root = test_root
 
 

@@ -7,29 +7,32 @@ from typing import (
     Union,
 )
 
-from boltons.iterutils import remap
-from jinja2.nativetypes import NativeEnvironment
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    RootModel,
-)
+from pydantic import RootModel
 from typing_extensions import Literal
 
 from galaxy.objectstore.badges import (
     BadgeDict,
     StoredBadgeDict,
 )
+from galaxy.util.config_templates import (
+    EnvironmentDict,
+    expand_raw_config,
+    MarkdownContent,
+    populate_default_variables,
+    SecretsDict,
+    StrictModel,
+    TemplateEnvironmentEntry,
+    TemplateExpansion,
+    TemplateSecret,
+    TemplateVariable,
+    TemplateVariableType,
+    TemplateVariableValueType,
+    UserDetailsDict,
+)
 
-
-class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-ObjectStoreTemplateVariableType = Literal["string", "boolean", "integer"]
-ObjectStoreTemplateVariableValueType = Union[str, bool, int]
-TemplateExpansion = str
-ObjectStoreTemplateType = Literal["s3", "azure_blob", "disk", "generic_s3"]
+ObjectStoreTemplateVariableType = TemplateVariableType
+ObjectStoreTemplateVariableValueType = TemplateVariableValueType
+ObjectStoreTemplateType = Literal["aws_s3", "azure_blob", "boto3", "disk", "generic_s3"]
 
 
 class S3AuthTemplate(StrictModel):
@@ -55,15 +58,17 @@ class S3Bucket(StrictModel):
 BadgeList = Optional[List[StoredBadgeDict]]
 
 
-class S3ObjectStoreTemplateConfiguration(StrictModel):
-    type: Literal["s3"]
+class AwsS3ObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["aws_s3"]
     auth: S3AuthTemplate
     bucket: S3BucketTemplate
     badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
 
 
-class S3ObjectStoreConfiguration(StrictModel):
-    type: Literal["s3"]
+class AwsS3ObjectStoreConfiguration(StrictModel):
+    type: Literal["aws_s3"]
     auth: S3Auth
     bucket: S3Bucket
     badges: BadgeList = None
@@ -87,17 +92,131 @@ class AzureContainer(StrictModel):
     name: str
 
 
+class AzureTransferTemplate(StrictModel):
+    max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    download_max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    upload_max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    max_single_put_size: Optional[Union[int, TemplateExpansion]] = None
+    max_single_get_size: Optional[Union[int, TemplateExpansion]] = None
+    max_block_size: Optional[Union[int, TemplateExpansion]] = None
+
+
 class AzureObjectStoreTemplateConfiguration(StrictModel):
     type: Literal["azure_blob"]
     auth: AzureAuthTemplate
     container: AzureContainerTemplate
+    transfer: Optional[AzureTransferTemplate] = None
     badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class AzureTransfer(StrictModel):
+    max_concurrency: Optional[int] = None
+    download_max_concurrency: Optional[int] = None
+    upload_max_concurrency: Optional[int] = None
+    max_single_put_size: Optional[int] = None
+    max_single_get_size: Optional[int] = None
+    max_block_size: Optional[int] = None
 
 
 class AzureObjectStoreConfiguration(StrictModel):
     type: Literal["azure_blob"]
     auth: AzureAuth
     container: AzureContainer
+    transfer: Optional[AzureTransfer] = None
+    badges: BadgeList = None
+
+
+class Boto3BucketTemplate(StrictModel):
+    name: Union[str, TemplateExpansion]
+
+
+class Boto3ConnectionTemplate(StrictModel):
+    endpoint_url: Union[str, TemplateExpansion]
+    region: Optional[Union[str, TemplateExpansion]] = None
+
+
+class Boto3TransferTemplate(StrictModel):
+    use_threads: Optional[Union[bool, TemplateExpansion]] = None
+    multipart_threshold: Optional[Union[int, TemplateExpansion]] = None
+    max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    multipart_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    num_download_attempts: Optional[Union[int, TemplateExpansion]] = None
+    max_io_queue: Optional[Union[int, TemplateExpansion]] = None
+    io_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    max_bandwidth: Optional[Union[int, TemplateExpansion]] = None
+    download_use_threads: Optional[Union[bool, TemplateExpansion]] = None
+    download_multipart_threshold: Optional[Union[int, TemplateExpansion]] = None
+    download_max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    download_multipart_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    download_num_download_attempts: Optional[Union[int, TemplateExpansion]] = None
+    download_max_io_queue: Optional[Union[int, TemplateExpansion]] = None
+    download_io_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    download_max_bandwidth: Optional[Union[int, TemplateExpansion]] = None
+    upload_use_threads: Optional[Union[bool, TemplateExpansion]] = None
+    upload_multipart_threshold: Optional[Union[int, TemplateExpansion]] = None
+    upload_max_concurrency: Optional[Union[int, TemplateExpansion]] = None
+    upload_multipart_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    upload_num_download_attempts: Optional[Union[int, TemplateExpansion]] = None
+    upload_max_io_queue: Optional[Union[int, TemplateExpansion]] = None
+    upload_io_chunksize: Optional[Union[int, TemplateExpansion]] = None
+    upload_max_bandwidth: Optional[Union[int, TemplateExpansion]] = None
+
+
+class Boto3ObjectStoreTemplateConfiguration(StrictModel):
+    type: Literal["boto3"]
+    auth: S3AuthTemplate
+    bucket: Boto3BucketTemplate
+    connection: Optional[Boto3ConnectionTemplate] = None
+    transfer: Optional[Boto3TransferTemplate] = None
+    badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class Boto3Bucket(StrictModel):
+    name: str
+
+
+class Boto3Connection(StrictModel):
+    endpoint_url: str
+    region: Optional[str] = None
+
+
+class Boto3Transfer(StrictModel):
+    use_threads: Optional[bool] = None
+    multipart_threshold: Optional[int] = None
+    max_concurrency: Optional[int] = None
+    multipart_chunksize: Optional[int] = None
+    num_download_attempts: Optional[int] = None
+    max_io_queue: Optional[int] = None
+    io_chunksize: Optional[int] = None
+    max_bandwidth: Optional[int] = None
+    download_use_threads: Optional[bool] = None
+    download_multipart_threshold: Optional[int] = None
+    download_max_concurrency: Optional[int] = None
+    download_multipart_chunksize: Optional[int] = None
+    download_num_download_attempts: Optional[int] = None
+    download_max_io_queue: Optional[int] = None
+    download_io_chunksize: Optional[int] = None
+    download_max_bandwidth: Optional[int] = None
+    upload_use_threads: Optional[bool] = None
+    upload_multipart_threshold: Optional[int] = None
+    upload_max_concurrency: Optional[int] = None
+    upload_multipart_chunksize: Optional[int] = None
+    upload_num_download_attempts: Optional[int] = None
+    upload_max_io_queue: Optional[int] = None
+    upload_io_chunksize: Optional[int] = None
+    upload_max_bandwidth: Optional[int] = None
+
+
+class Boto3ObjectStoreConfiguration(StrictModel):
+    type: Literal["disk"]
+    auth: S3Auth
+    bucket: Boto3Bucket
+    connection: Optional[Boto3Connection] = None
+    transfer: Optional[Boto3Transfer] = None
     badges: BadgeList = None
 
 
@@ -105,6 +224,8 @@ class DiskObjectStoreTemplateConfiguration(StrictModel):
     type: Literal["disk"]
     files_dir: Union[str, TemplateExpansion]
     badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
 
 
 class DiskObjectStoreConfiguration(StrictModel):
@@ -133,6 +254,8 @@ class GenericS3ObjectStoreTemplateConfiguration(StrictModel):
     bucket: S3BucketTemplate
     connection: S3ConnectionTemplate
     badges: BadgeList = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
 
 
 class GenericS3ObjectStoreConfiguration(StrictModel):
@@ -144,29 +267,23 @@ class GenericS3ObjectStoreConfiguration(StrictModel):
 
 
 ObjectStoreTemplateConfiguration = Union[
-    S3ObjectStoreTemplateConfiguration,
+    AwsS3ObjectStoreTemplateConfiguration,
+    Boto3ObjectStoreTemplateConfiguration,
     GenericS3ObjectStoreTemplateConfiguration,
     DiskObjectStoreTemplateConfiguration,
     AzureObjectStoreTemplateConfiguration,
 ]
 ObjectStoreConfiguration = Union[
-    S3ObjectStoreConfiguration,
+    AwsS3ObjectStoreConfiguration,
+    Boto3ObjectStoreConfiguration,
     DiskObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
 ]
-MarkdownContent = str
 
 
-class ObjectStoreTemplateVariable(StrictModel):
-    name: str
-    help: Optional[MarkdownContent]
-    type: ObjectStoreTemplateVariableType
-
-
-class ObjectStoreTemplateSecret(StrictModel):
-    name: str
-    help: Optional[MarkdownContent]
+ObjectStoreTemplateVariable = TemplateVariable
+ObjectStoreTemplateSecret = TemplateSecret
 
 
 class ObjectStoreTemplateBase(StrictModel):
@@ -188,8 +305,8 @@ class ObjectStoreTemplateBase(StrictModel):
     # template by hiding but keep it in the catalog for backward
     # compatibility for users with existing stores of that template.
     hidden: bool = False
-    variables: Optional[List[ObjectStoreTemplateVariable]] = None
-    secrets: Optional[List[ObjectStoreTemplateSecret]] = None
+    variables: Optional[List[TemplateVariable]] = None
+    secrets: Optional[List[TemplateSecret]] = None
 
 
 class ObjectStoreTemplateSummary(ObjectStoreTemplateBase):
@@ -199,6 +316,7 @@ class ObjectStoreTemplateSummary(ObjectStoreTemplateBase):
 
 class ObjectStoreTemplate(ObjectStoreTemplateBase):
     configuration: ObjectStoreTemplateConfiguration
+    environment: Optional[List[TemplateEnvironmentEntry]] = None
 
 
 ObjectStoreTemplateCatalog = RootModel[List[ObjectStoreTemplate]]
@@ -211,29 +329,19 @@ class ObjectStoreTemplateSummaries(RootModel):
 def template_to_configuration(
     template: ObjectStoreTemplate,
     variables: Dict[str, ObjectStoreTemplateVariableValueType],
-    secrets: Dict[str, str],
-    user_details: Dict[str, Any],
+    secrets: SecretsDict,
+    user_details: UserDetailsDict,
+    environment: EnvironmentDict,
 ) -> ObjectStoreConfiguration:
     configuration_template = template.configuration
-    template_variables = {
-        "variables": variables,
-        "secrets": secrets,
-        "user": user_details,
-    }
-
-    def expand_template(_, key, value):
-        if isinstance(value, str) and "{{" in value and "}}" in value:
-            # NativeEnvironment preserves Python types
-            template = NativeEnvironment().from_string(value)
-            return key, template.render(**template_variables)
-        return key, value
-
-    raw_config = remap(configuration_template.model_dump(), visit=expand_template)
+    populate_default_variables(template.variables, variables)
+    raw_config = expand_raw_config(configuration_template, variables, secrets, user_details, environment)
     return to_configuration_object(raw_config)
 
 
 TypesToConfigurationClasses: Dict[ObjectStoreTemplateType, Type[ObjectStoreConfiguration]] = {
-    "s3": S3ObjectStoreConfiguration,
+    "aws_s3": AwsS3ObjectStoreConfiguration,
+    "boto3": Boto3ObjectStoreConfiguration,
     "generic_s3": GenericS3ObjectStoreConfiguration,
     "azure_blob": AzureObjectStoreConfiguration,
     "disk": DiskObjectStoreConfiguration,

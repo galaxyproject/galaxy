@@ -93,13 +93,21 @@
             :user-id="userId">
         </UserPreferredObjectStore>
         <UserPreferencesElement
-            v-if="hasTemplates"
+            v-if="hasObjectStoreTemplates"
             id="manage-object-stores"
             class="manage-object-stores"
             icon="fa-hdd"
             title="Manage Your Storage Locations"
             description="Add, remove, or update your personally configured storage locations."
             to="/object_store_instances/index" />
+        <UserPreferencesElement
+            v-if="hasFileSourceTemplates"
+            id="manage-file-sources"
+            class="manage-file-sources"
+            icon="fa-file"
+            title="Manage Your Remote File Sources"
+            description="Add, remove, or update your personally configured location to find files from and write files to."
+            to="/file_source_instances/index" />
         <UserDeletion
             v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
             :email="email"
@@ -144,6 +152,7 @@ import { withPrefix } from "utils/redirect";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -192,7 +201,12 @@ export default {
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useObjectStoreTemplatesStore, ["hasTemplates"]),
+        ...mapState(useObjectStoreTemplatesStore, {
+            hasObjectStoreTemplates: "hasTemplates",
+        }),
+        ...mapState(useFileSourceTemplatesStore, {
+            hasFileSourceTemplates: "hasTemplates",
+        }),
         activePreferences() {
             const userPreferencesEntries = Object.entries(getUserPreferencesModel());
             // Object.entries returns an array of arrays, where the first element
@@ -232,10 +246,16 @@ export default {
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
         });
-        this.ensureTemplates();
+        this.ensureObjectStoreTemplates();
+        this.ensureFileSourceTemplates();
     },
     methods: {
-        ...mapActions(useObjectStoreTemplatesStore, ["ensureTemplates"]),
+        ...mapActions(useObjectStoreTemplatesStore, {
+            ensureObjectStoreTemplates: "ensureTemplates",
+        }),
+        ...mapActions(useFileSourceTemplatesStore, {
+            ensureFileSourceTemplates: "ensureTemplates",
+        }),
         toggleNotifications() {
             if (window.Notification) {
                 Notification.requestPermission().then(function (permission) {

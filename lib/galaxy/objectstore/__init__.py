@@ -1352,7 +1352,7 @@ class DistributedObjectStore(NestedObjectStore):
             if not user:
                 return "Supplied object store id is not accessible"
             rest_of_uri = object_store_id.split("://", 1)[1]
-            index_by = self.config.user_object_store_index_by
+            index_by = self.config.user_config_templates_index_by
             if index_by == "id":
                 user_object_store_id = int(rest_of_uri)
                 for user_object_store in user.object_stores:
@@ -1631,10 +1631,12 @@ def build_object_store_from_config(
 class UserObjectStoresAppConfig(BaseModel):
     object_store_cache_path: str
     object_store_cache_size: int
-    user_object_store_index_by: Literal["uuid", "id"]
+    user_config_templates_index_by: Literal["uuid", "id"]
+    user_config_templates_use_saved_configuration: Literal["fallback", "preferred", "never"]
     jobs_directory: str
     new_file_path: str
     umask: int
+    gid: int
 
 
 # TODO: this will need app details...
@@ -1656,6 +1658,7 @@ def concrete_object_store(
         jobs_directory = app_config.jobs_directory
         new_file_path = app_config.new_file_path
         umask = app_config.umask
+        gid = app_config.gid
         object_store_cache_size = app_config.object_store_cache_size
         object_store_cache_path = app_config.object_store_cache_path
 

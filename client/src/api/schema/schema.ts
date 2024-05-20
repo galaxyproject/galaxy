@@ -318,6 +318,24 @@ export interface paths {
         /** Download */
         get: operations["download_api_drs_download__object_id__get"];
     };
+    "/api/file_source_instances": {
+        /** Get a list of persisted file source instances defined by the requesting user. */
+        get: operations["file_sources__instances_index"];
+        /** Create a user-bound object store. */
+        post: operations["file_sources__create_instance"];
+    };
+    "/api/file_source_instances/{user_file_source_id}": {
+        /** Get a list of persisted file source instances defined by the requesting user. */
+        get: operations["file_sources__instances_get"];
+        /** Update or upgrade user file source instance. */
+        put: operations["file_sources__instances_update"];
+        /** Purge user file source instance. */
+        delete: operations["file_sources__instances_purge"];
+    };
+    "/api/file_source_templates": {
+        /** Get a list of file source templates available to build user defined file sources from */
+        get: operations["file_sources__templates_index"];
+    };
     "/api/folders/{folder_id}/contents": {
         /**
          * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
@@ -1256,6 +1274,8 @@ export interface paths {
         get: operations["object_stores__instances_get"];
         /** Update or upgrade user object store instance. */
         put: operations["object_stores__instances_update"];
+        /** Purge user object store instance. */
+        delete: operations["object_stores__instances_purge"];
     };
     "/api/object_store_templates": {
         /** Get a list of object store templates available to build user defined object stores from */
@@ -5237,6 +5257,43 @@ export interface components {
              * @description The last time and date this item was updated.
              */
             update_time: string;
+        };
+        /** FileSourceTemplateSummaries */
+        FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];
+        /** FileSourceTemplateSummary */
+        FileSourceTemplateSummary: {
+            /** Description */
+            description: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Secrets */
+            secrets?: components["schemas"]["TemplateSecret"][] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "ftp" | "posix" | "s3fs" | "azure";
+            /** Variables */
+            variables?:
+                | (
+                      | components["schemas"]["TemplateVariableString"]
+                      | components["schemas"]["TemplateVariableInteger"]
+                      | components["schemas"]["TemplateVariablePathComponent"]
+                      | components["schemas"]["TemplateVariableBoolean"]
+                  )[]
+                | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
         };
         /** FilesSourcePlugin */
         FilesSourcePlugin: {
@@ -9929,13 +9986,6 @@ export interface components {
              */
             up_to_date: boolean;
         };
-        /** ObjectStoreTemplateSecret */
-        ObjectStoreTemplateSecret: {
-            /** Help */
-            help: string | null;
-            /** Name */
-            name: string;
-        };
         /** ObjectStoreTemplateSummaries */
         ObjectStoreTemplateSummaries: components["schemas"]["ObjectStoreTemplateSummary"][];
         /** ObjectStoreTemplateSummary */
@@ -9954,31 +10004,26 @@ export interface components {
             /** Name */
             name: string | null;
             /** Secrets */
-            secrets?: components["schemas"]["ObjectStoreTemplateSecret"][] | null;
+            secrets?: components["schemas"]["TemplateSecret"][] | null;
             /**
              * Type
              * @enum {string}
              */
-            type: "s3" | "azure_blob" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
             /** Variables */
-            variables?: components["schemas"]["ObjectStoreTemplateVariable"][] | null;
+            variables?:
+                | (
+                      | components["schemas"]["TemplateVariableString"]
+                      | components["schemas"]["TemplateVariableInteger"]
+                      | components["schemas"]["TemplateVariablePathComponent"]
+                      | components["schemas"]["TemplateVariableBoolean"]
+                  )[]
+                | null;
             /**
              * Version
              * @default 0
              */
             version?: number;
-        };
-        /** ObjectStoreTemplateVariable */
-        ObjectStoreTemplateVariable: {
-            /** Help */
-            help: string | null;
-            /** Name */
-            name: string;
-            /**
-             * Type
-             * @enum {string}
-             */
-            type: "string" | "boolean" | "integer";
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
@@ -11856,6 +11901,92 @@ export interface components {
          * @enum {string}
          */
         TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
+        /** TemplateSecret */
+        TemplateSecret: {
+            /** Help */
+            help: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** TemplateVariableBoolean */
+        TemplateVariableBoolean: {
+            /**
+             * Default
+             * @default false
+             */
+            default?: boolean;
+            /** Help */
+            help: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "boolean";
+        };
+        /** TemplateVariableInteger */
+        TemplateVariableInteger: {
+            /**
+             * Default
+             * @default 0
+             */
+            default?: number;
+            /** Help */
+            help: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "integer";
+        };
+        /** TemplateVariablePathComponent */
+        TemplateVariablePathComponent: {
+            /** Default */
+            default?: string | null;
+            /** Help */
+            help: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "path_component";
+        };
+        /** TemplateVariableString */
+        TemplateVariableString: {
+            /**
+             * Default
+             * @default
+             */
+            default?: string;
+            /** Help */
+            help: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "string";
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -12200,8 +12331,12 @@ export interface components {
         };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
+            /** Active */
+            active?: boolean | null;
             /** Description */
             description?: string | null;
+            /** Hidden */
+            hidden?: boolean | null;
             /** Name */
             name?: string | null;
             /** Variables */
@@ -12513,12 +12648,16 @@ export interface components {
         };
         /** UserConcreteObjectStoreModel */
         UserConcreteObjectStoreModel: {
+            /** Active */
+            active: boolean;
             /** Badges */
             badges: components["schemas"]["BadgeDict"][];
             /** Description */
             description?: string | null;
             /** Device */
             device?: string | null;
+            /** Hidden */
+            hidden: boolean;
             /** Id */
             id: number | string;
             /** Name */
@@ -12527,6 +12666,8 @@ export interface components {
             object_store_id?: string | null;
             /** Private */
             private: boolean;
+            /** Purged */
+            purged: boolean;
             quota: components["schemas"]["QuotaModel"];
             /** Secrets */
             secrets: string[];
@@ -12538,7 +12679,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "s3" | "azure_blob" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
             /** Uuid */
             uuid: string;
             /** Variables */
@@ -12587,6 +12728,40 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+        };
+        /** UserFileSourceModel */
+        UserFileSourceModel: {
+            /** Active */
+            active: boolean;
+            /** Description */
+            description: string | null;
+            /** Hidden */
+            hidden: boolean;
+            /** Id */
+            id: string | number;
+            /** Name */
+            name: string;
+            /** Purged */
+            purged: boolean;
+            /** Secrets */
+            secrets: string[];
+            /** Template Id */
+            template_id: string;
+            /** Template Version */
+            template_version: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "ftp" | "posix" | "s3fs" | "azure";
+            /** Uri Root */
+            uri_root: string;
+            /** Uuid */
+            uuid: string;
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            } | null;
         };
         /**
          * UserModel
@@ -14769,6 +14944,169 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__instances_index: {
+        /** Get a list of persisted file source instances defined by the requesting user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserFileSourceModel"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__create_instance: {
+        /** Create a user-bound object store. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserFileSourceModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__instances_get: {
+        /** Get a list of persisted file source instances defined by the requesting user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserFileSourceModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__instances_update: {
+        /** Update or upgrade user file source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["UpdateInstanceSecretPayload"]
+                    | components["schemas"]["UpgradeInstancePayload"]
+                    | components["schemas"]["UpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserFileSourceModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__instances_purge: {
+        /** Purge user file source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__templates_index: {
+        /** Get a list of file source templates available to build user defined file sources from */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description A list of the configured file source templates. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20608,6 +20946,33 @@ export interface operations {
             };
         };
     };
+    object_stores__instances_purge: {
+        /** Purge user object store instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The identifier used to index a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     object_stores__templates_index: {
         /** Get a list of object store templates available to build user defined object stores from */
         parameters?: {
@@ -20647,7 +21012,10 @@ export interface operations {
             /** @description A list of the configured object stores. */
             200: {
                 content: {
-                    "application/json": components["schemas"]["ConcreteObjectStoreModel"][];
+                    "application/json": (
+                        | components["schemas"]["ConcreteObjectStoreModel"]
+                        | components["schemas"]["UserConcreteObjectStoreModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */

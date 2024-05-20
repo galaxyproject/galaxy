@@ -5,6 +5,7 @@ import tempfile
 
 from galaxy.files import (
     ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
     DictFileSourcesUserContext,
     OptionalUserContext,
 )
@@ -158,10 +159,10 @@ def write_from(
 def configured_file_sources(conf_file):
     file_sources_config = FileSourcePluginsConfig()
     if isinstance(conf_file, str):
-        conf = ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+        conf = ConfiguredFileSourcesConf(conf_file=conf_file)
     else:
-        conf = ConfiguredFileSources(file_sources_config, conf_dict=conf_file)
-    return conf
+        conf = ConfiguredFileSourcesConf(conf_dict=conf_file)
+    return ConfiguredFileSources(file_sources_config, conf)
 
 
 def assert_can_write_and_read_to_conf(conf: dict):

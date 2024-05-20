@@ -1,8 +1,9 @@
+import { type ObjectStoreTemplateType } from "@/api/objectStores";
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 
 import { setupTestPinia } from "./testUtils";
 
-const type = "s3" as "s3" | "azure_blob" | "disk" | "generic_s3";
+const type = "aws_s3" as ObjectStoreTemplateType;
 const TEST_INSTANCE = {
     type: type,
     name: "moo",
@@ -16,6 +17,9 @@ const TEST_INSTANCE = {
     private: false,
     id: 4,
     uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
+    active: true,
+    hidden: false,
+    purged: false,
 };
 
 describe("Object Store Instances Store", () => {

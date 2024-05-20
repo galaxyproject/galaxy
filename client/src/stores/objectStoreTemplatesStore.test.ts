@@ -1,8 +1,9 @@
+import { type ObjectStoreTemplateType } from "@/api/objectStores";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 
 import { setupTestPinia } from "./testUtils";
 
-const s3 = "s3" as "s3" | "azure_blob" | "disk" | "generic_s3";
+const s3 = "aws_s3" as ObjectStoreTemplateType;
 const TEMPLATES_BASIC = [
     {
         type: s3,

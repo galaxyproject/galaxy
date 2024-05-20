@@ -14,7 +14,7 @@ const FAKE_OBJECT_STORE = "A fake object store";
 const localVue = getLocalVue(true);
 
 const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
-    type: "s3",
+    type: "aws_s3",
     name: "moo",
     description: null,
     variables: [
@@ -36,7 +36,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
 };
 
 const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
-    type: "s3",
+    type: "aws_s3",
     name: "moo",
     description: null,
     variables: [

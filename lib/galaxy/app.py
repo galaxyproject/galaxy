@@ -35,13 +35,27 @@ from galaxy.celery.base_task import (
 )
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.datatypes.registry import Registry
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConf,
+    UserDefinedFileSources,
+)
+from galaxy.files.plugins import (
+    FileSourcePluginLoader,
+    FileSourcePluginsConfig,
+)
+from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.dbkeys import GenomeBuilds
+from galaxy.managers.file_source_instances import (
+    FileSourceInstancesManager,
+    UserDefinedFileSourcesConfig,
+    UserDefinedFileSourcesImpl,
+)
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -418,18 +432,19 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             jobs_directory=self.config.jobs_directory,
             new_file_path=self.config.new_file_path,
             umask=self.config.umask,
+            gid=self.config.gid,
             object_store_cache_size=self.config.object_store_cache_size,
             object_store_cache_path=self.config.object_store_cache_path,
-            user_object_store_index_by=self.config.user_object_store_index_by,
+            user_config_templates_index_by=self.config.user_config_templates_index_by,
+            user_config_templates_use_saved_configuration=self.config.user_config_templates_use_saved_configuration,
         )
         self._register_singleton(UserObjectStoresAppConfig, app_config)
-        user_object_store_resolver = self._register_abstract_singleton(
-            UserObjectStoreResolver, UserObjectStoreResolverImpl  # type: ignore[type-abstract]
-        )  # Ignored because of https://github.com/python/mypy/issues/4717
         vault_configured = is_vault_configured(self.vault)
         templates = ConfiguredObjectStoreTemplates.from_app_config(self.config, vault_configured=vault_configured)
         self.object_store_templates = self._register_singleton(ConfiguredObjectStoreTemplates, templates)
-        # kwds["object_store_templates"] = self.object_store_templates
+        user_object_store_resolver = self._register_abstract_singleton(
+            UserObjectStoreResolver, UserObjectStoreResolverImpl  # type: ignore[type-abstract]
+        )  # Ignored because of https://github.com/python/mypy/issues/4717
         kwds["user_object_store_resolver"] = user_object_store_resolver
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
@@ -587,9 +602,29 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         )
 
         # ConfiguredFileSources
-        self.file_sources = self._register_singleton(
-            ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
+        vault_configured = is_vault_configured(self.vault)
+        templates = ConfiguredFileSourceTemplates.from_app_config(self.config, vault_configured=vault_configured)
+        file_sources_config: FileSourcePluginsConfig = FileSourcePluginsConfig.from_app_config(self.config)
+        self._register_singleton(FileSourcePluginsConfig, file_sources_config)
+        file_source_plugin_loader = FileSourcePluginLoader()
+        self._register_singleton(FileSourcePluginLoader, file_source_plugin_loader)
+        self.file_source_templates = self._register_singleton(ConfiguredFileSourceTemplates, templates)
+        self._register_singleton(
+            UserDefinedFileSourcesConfig, UserDefinedFileSourcesConfig.from_app_config(self.config)
         )
+        user_defined_file_sources = self._register_abstract_singleton(
+            UserDefinedFileSources, UserDefinedFileSourcesImpl  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+        )
+        configured_file_source_conf: ConfiguredFileSourcesConf = ConfiguredFileSourcesConf.from_app_config(self.config)
+        file_sources = ConfiguredFileSources(
+            file_sources_config,
+            configured_file_source_conf,
+            load_stock_plugins=True,
+            plugin_loader=file_source_plugin_loader,
+            user_defined_file_sources=user_defined_file_sources,
+        )
+        self.file_sources = self._register_singleton(ConfiguredFileSources, file_sources)
+        self._register_singleton(FileSourceInstancesManager)
 
         # Load security policy.
         self.security_agent = self.model.security_agent

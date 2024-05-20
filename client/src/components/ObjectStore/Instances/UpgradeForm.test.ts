@@ -15,7 +15,7 @@ const localVue = getLocalVue(true);
 const router = injectTestRouter(localVue);
 
 const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
-    type: "s3",
+    type: "aws_s3",
     name: "moo",
     description: null,
     variables: [
@@ -46,7 +46,7 @@ const STANDARD_TEMPLATE: ObjectStoreTemplateSummary = {
 };
 
 const INSTANCE: UserConcreteObjectStore = {
-    type: "s3",
+    type: "aws_s3",
     name: "moo",
     description: undefined,
     template_id: "moo",
@@ -61,6 +61,9 @@ const INSTANCE: UserConcreteObjectStore = {
     private: false,
     id: 4,
     uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
+    active: true,
+    hidden: false,
+    purged: false,
 };
 
 describe("UpgradeForm", () => {

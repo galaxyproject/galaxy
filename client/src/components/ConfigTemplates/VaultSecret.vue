@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref } from "vue";
+
+import { markup } from "@/components/ObjectStore/configurationMarkdown";
 
 interface Props {
     name: string;
+    label: string;
     help: string;
     isSet: boolean;
 }
@@ -10,7 +14,8 @@ const props = defineProps<Props>();
 
 const showEdit = ref<boolean>(false);
 const secretValue = ref<string>("");
-const editTitle = computed(() => `Edit ${props.name}`);
+const editTitle = computed(() => `Edit ${props.label}`);
+const helpHtml = computed(() => markup(props.help, true));
 
 function onClick() {
     showEdit.value = true;
@@ -29,37 +34,35 @@ async function onOk() {
         <div class="ui-form-element section-row">
             <div class="ui-form-title">
                 <div class="ui-form-title-text">
-                    {{ name }}
+                    {{ label }}
                 </div>
             </div>
             <div class="ui-form-field">
                 <div>
-                    <b-input-group>
-                        <b-form-input type="password" value="*****************************" disabled @click="onClick" />
-                        <b-input-group-append>
-                            <b-button @click="onClick">
+                    <BInputGroup>
+                        <BFormInput type="password" value="*****************************" disabled @click="onClick" />
+                        <BInputGroupAppend>
+                            <BButton @click="onClick">
                                 <icon icon="edit" />
                                 Update
-                            </b-button>
-                        </b-input-group-append>
-                    </b-input-group>
+                            </BButton>
+                        </BInputGroupAppend>
+                    </BInputGroup>
                 </div>
             </div>
-            <span class="ui-form-info form-text text-muted">
-                {{ help }}
-            </span>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
         </div>
         <b-modal ref="edit-modal" v-model="showEdit" :title="editTitle" ok-title="Update" @ok="onOk">
             <div>
-                <b-form-input v-model="secretValue" type="password" />
-                <span class="ui-form-info form-text text-muted">
-                    {{ help }}
-                </span>
+                <BFormInput v-model="secretValue" type="password" />
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span class="ui-form-info form-text text-muted" v-html="helpHtml" />
             </div>
         </b-modal>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "../../Form/form-elements.scss";
+@import "../Form/form-elements.scss";
 </style>

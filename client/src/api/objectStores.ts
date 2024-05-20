@@ -1,4 +1,9 @@
 import { fetcher } from "@/api/schema";
+import type { components } from "@/api/schema/schema";
+
+export type UserConcreteObjectStore = components["schemas"]["UserConcreteObjectStoreModel"];
+
+export type ObjectStoreTemplateType = "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
 
 const getObjectStores = fetcher.path("/api/object_stores").method("get").create();
 

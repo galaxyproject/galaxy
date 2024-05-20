@@ -25,6 +25,7 @@ from pydantic.fields import FieldInfo
 class BootstrapAdminUser(BaseModel):
     id: int = 0
     email: Optional[str] = None
+    username: Optional[str] = None
     preferences: Dict[str, str] = {}
     bootstrap_admin_user: bool = True
 

@@ -32,6 +32,7 @@ class AzureFileSource(PyFilesystem2FilesSource):
         account_name = all_props["account_name"]
         account_key = all_props["account_key"]
         container = all_props["container_name"]
+        handle: Union[BlobFSV2, BlobFS]
         if namespace_type == "flat":
             handle = BlobFS(account_name, container, account_key)
         else:

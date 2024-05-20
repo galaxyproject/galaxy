@@ -100,7 +100,22 @@ class MockConfig:
         self.enable_quotas = True
 
 
+def app_config(tmpdir) -> objectstore.UserObjectStoresAppConfig:
+    app_config = objectstore.UserObjectStoresAppConfig(
+        jobs_directory=str(tmpdir / "jobs"),
+        new_file_path=str(tmpdir / "new_files"),
+        umask=0o077,
+        gid=0o077,
+        object_store_cache_path=str(tmpdir / "cache"),
+        object_store_cache_size=1,
+        user_config_templates_index_by="uuid",
+        user_config_templates_use_saved_configuration="fallback",
+    )
+    return app_config
+
+
 __all__ = [
+    "app_config",
     "Config",
     "MockConfig",
     "DISK_TEST_CONFIG",

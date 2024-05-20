@@ -1,6 +1,8 @@
 from typing import (
+    cast,
     List,
     Optional,
+    Type,
     TYPE_CHECKING,
 )
 
@@ -85,6 +87,9 @@ class FileSourcePluginLoader:
         import galaxy.files.sources
 
         return plugins_dict(galaxy.files.sources, "plugin_type")
+
+    def get_plugin_type_class(self, plugin_type: str) -> Type["BaseFilesSource"]:
+        return cast(Type["BaseFilesSource"], self._plugin_classes[plugin_type])
 
     def load_plugins(
         self, plugin_source: PluginConfigSource, file_source_plugin_config: FileSourcePluginsConfig

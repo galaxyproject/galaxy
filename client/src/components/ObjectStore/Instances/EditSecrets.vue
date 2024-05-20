@@ -6,8 +6,7 @@ import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templa
 import { update } from "./services";
 import type { UserConcreteObjectStore } from "./types";
 
-import VaultSecret from "./VaultSecret.vue";
-import FormCard from "@/components/Form/FormCard.vue";
+import EditSecretsForm from "@/components/ConfigTemplates/EditSecretsForm.vue";
 
 interface Props {
     objectStore: UserConcreteObjectStore;
@@ -26,14 +25,5 @@ async function onUpdate(secretName: string, secretValue: string) {
 }
 </script>
 <template>
-    <FormCard :title="title">
-        <template v-slot:body>
-            <div>
-                <div v-for="secret in template.secrets" :key="secret.name">
-                    <VaultSecret :name="secret.name" :help="secret.help || ''" :is-set="true" @update="onUpdate">
-                    </VaultSecret>
-                </div>
-            </div>
-        </template>
-    </FormCard>
+    <EditSecretsForm :title="title" :template="template" @update="onUpdate" />
 </template>

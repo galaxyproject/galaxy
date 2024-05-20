@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import "./icons";
+import "@/components/ConfigTemplates/icons";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BTable } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
+import type { UserConcreteObjectStore } from "@/api/objectStores";
+import { DESCRIPTION_FIELD, NAME_FIELD, TEMPLATE_FIELD, TYPE_FIELD } from "@/components/ConfigTemplates/fields";
+import { useFiltering } from "@/components/ConfigTemplates/useInstanceFiltering";
 import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore";
 import _l from "@/utils/localization";
 
 import InstanceDropdown from "./InstanceDropdown.vue";
+import ManageIndexHeader from "@/components/ConfigTemplates/ManageIndexHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ObjectStoreTypeSpan from "@/components/ObjectStore/ObjectStoreTypeSpan.vue";
 import TemplateSummarySpan from "@/components/ObjectStore/Templates/TemplateSummarySpan.vue";
 
-const router = useRouter();
 const objectStoreInstancesStore = useObjectStoreInstancesStore();
 
 interface Props {
@@ -23,59 +25,32 @@ interface Props {
 
 defineProps<Props>();
 
-const fields = [
-    {
-        key: "name",
-        label: _l("Name"),
-        sortable: true,
-    },
-    {
-        key: "description",
-        label: _l("Description"),
-        sortable: true,
-    },
-    {
-        key: "type",
-        label: _l("Type"),
-        sortable: true,
-    },
-    {
-        key: "template",
-        label: _l("From Template"),
-        sortable: true,
-    },
-    {
-        key: "badges",
-        label: _l(" "),
-        sortable: false,
-    },
-];
+const BADGE_FIELD = {
+    key: "badges",
+    label: _l(" "),
+    sortable: false,
+};
 
-const items = computed(() => objectStoreInstancesStore.getInstances);
+const fields = [NAME_FIELD, DESCRIPTION_FIELD, TYPE_FIELD, TEMPLATE_FIELD, BADGE_FIELD];
+
+const allItems = computed<UserConcreteObjectStore[]>(() => objectStoreInstancesStore.getInstances);
+const { activeInstances } = useFiltering(allItems);
 const loading = computed(() => objectStoreInstancesStore.loading);
 objectStoreInstancesStore.fetchInstances();
 </script>
 
 <template>
     <div>
-        <p>
-            {{ message || "" }}
-        </p>
-        <b-row class="mb-3">
-            <b-col>
-                <b-button
-                    id="object-store-create"
-                    class="m-1 float-right"
-                    @click="router.push('/object_store_instances/create')">
-                    <FontAwesomeIcon icon="plus" />
-                    {{ _l("Create") }}
-                </b-button>
-            </b-col>
-        </b-row>
-        <b-table
+        <ManageIndexHeader
+            :message="message"
+            create-button-id="object-store-create"
+            create-route="/object_store_instances/create">
+        </ManageIndexHeader>
+        <BTable
+            id="user-object-stores-index"
             no-sort-reset
             :fields="fields"
-            :items="items"
+            :items="activeInstances"
             :hover="true"
             :striped="true"
             :caption-top="true"
@@ -101,6 +76,6 @@ objectStoreInstancesStore.fetchInstances();
                     :template-version="row.item.template_version ?? 0"
                     :template-id="row.item.template_id" />
             </template>
-        </b-table>
+        </BTable>
     </div>
 </template>

@@ -8,8 +8,10 @@ from galaxy.objectstore.templates.models import (
     DiskObjectStoreConfiguration,
     ObjectStoreConfiguration,
 )
-from galaxy.objectstore.unittest_utils import Config
-from .test_from_configuration_object import app_config
+from galaxy.objectstore.unittest_utils import (
+    app_config,
+    Config,
+)
 from .test_objectstore import MockDataset
 
 DISTRIBUTED_TEST_CONFIG_YAML = """
