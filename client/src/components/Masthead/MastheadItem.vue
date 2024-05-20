@@ -27,7 +27,6 @@ const props = defineProps({
 });
 
 /* computed */
-const menu = computed(() => props.tab.menu);
 const popoverNote = computed(
     () => `Please <a href="${withPrefix("/login")}">log in or register</a> to use this feature.`
 );
@@ -71,7 +70,6 @@ function open(tab, event) {
 
 <template>
     <BNavItem
-        v-if="!menu"
         :id="tab.id"
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
@@ -91,35 +89,4 @@ function open(tab, event) {
             {{ tab.title }}
         </template>
     </BNavItem>
-    <BNavItemDropdown
-        v-else
-        :id="tab.id"
-        ref="dropdown"
-        v-b-tooltip.hover.bottom
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
-        :class="classes"
-        :text="tab.title"
-        href="#"
-        :title="tab.tooltip"
-        @show="open(tab, $event)">
-        <template v-if="tab.icon" v-slot:button-content>
-            <span class="sr-only">{{ tab.tooltip || tab.id }}</span>
-            <span :class="iconClasses" />
-        </template>
-        <template v-for="(item, idx) in tab.menu">
-            <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
-            <BDropdownItem
-                v-else-if="item.hidden !== true"
-                :key="`item-${idx}`"
-                :href="withPrefix(item.url)"
-                :target="item.target || '_parent'"
-                role="menuitem"
-                title=""
-                :active="item.disabled"
-                :disabled="item.disabled"
-                @click="open(item, $event)">
-                {{ item.title }}
-            </BDropdownItem>
-        </template>
-    </BNavItemDropdown>
 </template>
