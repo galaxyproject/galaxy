@@ -2,12 +2,17 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { createFormDataToPayload, createTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
+import {
+    createFormDataToPayload,
+    createTemplateForm,
+    type FormEntry,
+    pluginStatusToErrorMessage,
+} from "@/components/ConfigTemplates/formUtil";
 import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { create } from "./services";
+import { create, test } from "./services";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
@@ -26,6 +31,12 @@ const inputs = computed<Array<FormEntry>>(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
+    const { data: pluginStatus } = await test(payload);
+    const testError = pluginStatusToErrorMessage(pluginStatus);
+    if (testError) {
+        error.value = testError;
+        return;
+    }
     try {
         const { data: objectStore } = await create(payload);
         emit("created", objectStore);

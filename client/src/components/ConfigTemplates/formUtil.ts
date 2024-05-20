@@ -1,5 +1,6 @@
 import type {
     Instance,
+    PluginStatus,
     SecretData,
     TemplateSecret,
     TemplateSummary,
@@ -242,4 +243,15 @@ export function upgradeFormDataToPayload(template: TemplateSummary, formData: an
         secrets: secrets,
     };
     return payload;
+}
+
+export function pluginStatusToErrorMessage(pluginStatus: PluginStatus): string | null {
+    if (pluginStatus.template_definition.state == "not_ok") {
+        return pluginStatus.template_definition.message;
+    } else if (pluginStatus.template_settings?.state == "not_ok") {
+        return pluginStatus.template_settings.message;
+    } else if (pluginStatus.connection?.state == "not_ok") {
+        return pluginStatus.connection.message;
+    }
+    return null;
 }

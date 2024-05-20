@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -23,6 +24,7 @@ from galaxy.exceptions import (
 from galaxy.files import (
     FileSourceScore,
     FileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
     UserDefinedFileSources,
 )
 from galaxy.files.plugins import (
@@ -34,6 +36,7 @@ from galaxy.files.sources import (
     file_source_type_is_browsable,
     FilesSourceProperties,
     PluginKind,
+    SupportsBrowsing,
 )
 from galaxy.files.templates import (
     ConfiguredFileSourceTemplates,
@@ -41,6 +44,7 @@ from galaxy.files.templates import (
     FileSourceTemplate,
     FileSourceTemplateSummaries,
     FileSourceTemplateType,
+    template_to_configuration,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
@@ -50,6 +54,11 @@ from galaxy.model import (
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.vault import Vault
 from galaxy.util.config_templates import (
+    connection_exception_to_status,
+    PluginAspectStatus,
+    PluginStatus,
+    settings_exception_to_status,
+    status_template_definition,
     TemplateVariableValueType,
     validate_no_extra_secrets_defined,
     validate_no_extra_variables_defined,
@@ -59,6 +68,7 @@ from ._config_templates import (
     CreateInstancePayload,
     ModifyInstancePayload,
     prepare_environment,
+    prepare_environment_from_root,
     purge_template_instance,
     recover_secrets,
     save_template_instance,
@@ -114,6 +124,7 @@ class FileSourceInstancesManager:
     _sa_session: galaxy_scoped_session
     _app_vault: Vault
     _app_config: UserDefinedFileSourcesConfig
+    _resolver: "UserDefinedFileSourcesImpl"
 
     def __init__(
         self,
@@ -121,11 +132,13 @@ class FileSourceInstancesManager:
         sa_session: galaxy_scoped_session,
         vault: Vault,
         app_config: UserDefinedFileSourcesConfig,
+        resolver: "UserDefinedFileSourcesImpl",
     ):
         self._catalog = catalog
         self._sa_session = sa_session
         self._app_vault = vault
         self._app_config = app_config
+        self._resolver = resolver
 
     @property
     def summaries(self) -> FileSourceTemplateSummaries:
@@ -221,6 +234,77 @@ class FileSourceInstancesManager:
         persisted_file_source.template_secrets = recorded_secrets
         self._save(persisted_file_source)
         return self._to_model(trans, persisted_file_source)
+
+    def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
+        template = self._catalog.find_template(payload)
+        template_definition_status = status_template_definition(template)
+        status_kwds = {"template_definition": template_definition_status}
+        if template_definition_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert template
+        configuration, template_settings_status = self._template_settings_status(trans, payload, template)
+        status_kwds["template_settings"] = template_settings_status
+        if template_settings_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert configuration
+        file_source, connection_status = self._connection_status(trans, payload, configuration)
+        status_kwds["connection"] = connection_status
+        if connection_status.is_not_ok:
+            return PluginStatus(**status_kwds)
+        assert file_source
+        # Lets circle back to this - we need to add an entry point to the file source plugins
+        # to test if things are writable. We could ping remote APIs or do something like os.access('/path/to/folder', os.W_OK)
+        # locally.
+        return PluginStatus(**status_kwds)
+
+    def _template_settings_status(
+        self,
+        trans: ProvidesUserContext,
+        payload: CreateInstancePayload,
+        template: FileSourceTemplate,
+    ) -> Tuple[Optional[FileSourceConfiguration], PluginAspectStatus]:
+        secrets = payload.secrets
+        variables = payload.variables
+        environment = prepare_environment_from_root(template.environment, self._app_vault, self._app_config)
+        user_details = trans.user.config_template_details()
+
+        configuration = None
+        exception = None
+        try:
+            configuration = template_to_configuration(
+                template,
+                variables=variables,
+                secrets=secrets,
+                user_details=user_details,
+                environment=environment,
+            )
+        except Exception as e:
+            exception = e
+        return configuration, settings_exception_to_status(exception)
+
+    def _connection_status(
+        self, trans: ProvidesUserContext, payload: CreateInstancePayload, configuration: FileSourceConfiguration
+    ) -> Tuple[Optional[BaseFilesSource], PluginAspectStatus]:
+        file_source = None
+        exception = None
+        try:
+            file_source_properties = configuration_to_file_source_properties(
+                configuration,
+                label=payload.name,
+                doc=payload.description,
+                id=uuid4().hex,
+            )
+            file_source = self._resolver._file_source(file_source_properties)
+            if hasattr(file_source, "list"):
+                assert file_source
+                # if we can list the root, do that and assume there is
+                # a connection problem if we cannot
+                browsable_file_source = cast(SupportsBrowsing, file_source)
+                user_context = ProvidesFileSourcesUserContext(trans)
+                browsable_file_source.list("/", recursive=False, user_context=user_context)
+        except Exception as e:
+            exception = e
+        return file_source, connection_exception_to_status("file source", exception)
 
     def _index_filter(self, id: Union[str, int]):
         index_by = self._app_config.user_config_templates_index_by
@@ -344,21 +428,12 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         file_source_configuration: FileSourceConfiguration = user_file_source.file_source_configuration(
             secrets=secrets, environment=environment, templates=templates
         )
-        file_source_properties = cast(FilesSourceProperties, file_source_configuration.model_dump())
-        file_source_properties["label"] = user_file_source.name
-        file_source_properties["doc"] = user_file_source.description
-        file_source_properties["id"] = f"{user_file_source.uuid}"
-        file_source_properties["scheme"] = USER_FILE_SOURCES_SCHEME
-        # Moved this into templates - plugins should just define this and decide what
-        # that looks like. aws public buckets are clearly not writable, private buckets
-        # maybe should give users the option, etc..
-        # file_source_properties["writable"] = True
-
-        # We did templating with Jinja - disable Galaxy's Cheetah templating for
-        # these plugins. I can't imagine a use case for that and I would hate to templating
-        # languages having odd interactions.
-        file_source_properties["disable_templating"] = True
-        return file_source_properties
+        return configuration_to_file_source_properties(
+            file_source_configuration,
+            label=user_file_source.name,
+            doc=user_file_source.description,
+            id=f"{user_file_source.uuid}",
+        )
 
     def validate_uri_root(self, uri: str, user_context: FileSourcesUserContext) -> None:
         user_object_store = self._user_file_source(uri)
@@ -422,6 +497,31 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
             file_source = self._file_source(files_source_properties)
             as_dicts.append(file_source.to_dict(for_serialization=for_serialization, user_context=user_context))
         return as_dicts
+
+
+# Turn the validated Pydantic thing describe what is possible to configure to the
+# raw TypedDict consumed by the actual galaxy.files plugins.
+def configuration_to_file_source_properties(
+    file_source_configuration: FileSourceConfiguration,
+    label: str,
+    doc: Optional[str],
+    id: str,
+) -> FilesSourceProperties:
+    file_source_properties = cast(FilesSourceProperties, file_source_configuration.model_dump())
+    file_source_properties["label"] = label
+    file_source_properties["doc"] = doc
+    file_source_properties["id"] = id
+    file_source_properties["scheme"] = USER_FILE_SOURCES_SCHEME
+    # Moved this into templates - plugins should just define this and decide what
+    # that looks like. aws public buckets are clearly not writable, private buckets
+    # maybe should give users the option, etc..
+    # file_source_properties["writable"] = True
+
+    # We did templating with Jinja - disable Galaxy's Cheetah templating for
+    # these plugins. I can't imagine a use case for that and I would hate to templating
+    # languages having odd interactions.
+    file_source_properties["disable_templating"] = True
+    return file_source_properties
 
 
 __all__ = (

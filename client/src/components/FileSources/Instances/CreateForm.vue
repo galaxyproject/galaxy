@@ -3,10 +3,14 @@ import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
-import { createFormDataToPayload, createTemplateForm } from "@/components/ConfigTemplates/formUtil";
+import {
+    createFormDataToPayload,
+    createTemplateForm,
+    pluginStatusToErrorMessage,
+} from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { create } from "./services";
+import { create, test } from "./services";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
@@ -25,6 +29,12 @@ const inputs = computed(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
+    const { data: pluginStatus } = await test(payload);
+    const testError = pluginStatusToErrorMessage(pluginStatus);
+    if (testError) {
+        error.value = testError;
+        return;
+    }
     try {
         const { data: fileSource } = await create(payload);
         emit("created", fileSource);

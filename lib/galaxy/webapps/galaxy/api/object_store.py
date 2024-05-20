@@ -32,6 +32,7 @@ from galaxy.objectstore import (
     ConcreteObjectStoreModel,
 )
 from galaxy.objectstore.templates import ObjectStoreTemplateSummaries
+from galaxy.util.config_templates import PluginStatus
 from . import (
     depends,
     DependsOnTrans,
@@ -97,6 +98,18 @@ class FastAPIObjectStore:
         payload: CreateInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.create_instance(trans, payload)
+
+    @router.post(
+        "/api/object_store_instances/test",
+        summary="Test payload for creating user-bound object store.",
+        operation_id="object_stores__test_new_instance_configuration",
+    )
+    def test_instance_configuration(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateInstancePayload = Body(...),
+    ) -> PluginStatus:
+        return self.object_store_instance_manager.plugin_status(trans, payload)
 
     @router.get(
         "/api/object_store_instances",
