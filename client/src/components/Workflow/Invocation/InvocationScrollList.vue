@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import { BAlert, BBadge, BButton, BListGroup, BListGroupItem } from "bootstrap-vue";
@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<Props>(), {
     limit: 20,
 });
 
-library.add(faEye, faArrowDown);
+library.add(faEye, faArrowDown, faInfoCircle);
 
 const stateClasses: Record<string, string> = {
     ready: "waiting",
@@ -156,6 +156,22 @@ function workflowName(workflowId: string) {
 
 <template>
     <div :class="props.inPanel ? 'unified-panel' : 'flex-column-overflow'">
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <BAlert v-else-if="initDataLoading" variant="info" show>
+            <LoadingSpan message="Loading invocations" />
+        </BAlert>
+        <BAlert v-else-if="totalInvocationCount === 0" show>
+            <h4>
+                <FontAwesomeIcon :icon="faInfoCircle" />
+                <span v-localize>No invocations yet.</span>
+            </h4>
+
+            <p>
+                <span v-localize>Run </span>
+                <router-link to="/workflows/list">workflows</router-link>
+                <span v-localize> to see invocations here.</span>
+            </p>
+        </BAlert>
         <div
             class="scroll-list-container"
             :class="{
@@ -163,10 +179,6 @@ function workflowName(workflowId: string) {
                 'scrolled-top': scrolledTop,
                 'scrolled-bottom': scrolledBottom,
             }">
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <BAlert v-else-if="initDataLoading" variant="info" show>
-                <LoadingSpan message="Loading invocations" />
-            </BAlert>
             <div
                 ref="scrollableDiv"
                 class="scroll-list"
