@@ -23,17 +23,9 @@ const { config, isConfigLoaded } = useConfig();
 const emit = defineEmits(["open-url"]);
 
 const props = defineProps({
-    tabs: {
-        type: Array,
-        default: () => [],
-    },
     brand: {
         type: String,
         default: null,
-    },
-    initialActiveTab: {
-        type: String,
-        default: "analysis",
     },
     logoUrl: {
         type: String,
