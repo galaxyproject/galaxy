@@ -1,9 +1,8 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
 import { withPrefix } from "utils/redirect";
-import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
@@ -56,15 +55,6 @@ const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
-let entryPointStore;
-const itsMenu = reactive({
-    id: "interactive",
-    url: "/interactivetool_entry_points/list",
-    tooltip: "See Running Interactive Tools",
-    icon: "fa-cogs",
-    hidden: true,
-});
-
 function setActiveTab() {
     const currentRoute = route.path;
     activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
@@ -72,9 +62,6 @@ function setActiveTab() {
 
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
-}
-function updateVisibility(isActive) {
-    itsMenu.hidden = !isActive;
 }
 
 watch(
@@ -84,14 +71,6 @@ watch(
     }
 );
 
-/* lifecyle */
-onBeforeMount(() => {
-    entryPointStore = useEntryPointStore();
-    entryPointStore.startWatchingEntryPoints();
-    entryPointStore.$subscribe((mutation, state) => {
-        updateVisibility(state.entryPoints.length > 0);
-    });
-});
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
     setActiveTab();
@@ -121,13 +100,6 @@ onMounted(() => {
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :id="tab.id"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <MastheadItem
-                v-show="itsMenu.hidden !== true"
-                :key="`its-tab`"
-                :id="`extension-tab-${idx}`"
-                :tab="itsMenu.id"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem
