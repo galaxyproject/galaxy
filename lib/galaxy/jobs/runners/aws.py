@@ -37,9 +37,8 @@ BOTO3_IMPORT_MSG = (
 
 try:
     import boto3
-
 except ImportError as e:
-    boto3 = None
+    boto3 = None  # type: ignore[assignment]
     BOTO3_IMPORT_MSG.format(msg=unicodify(e))
 
 
