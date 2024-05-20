@@ -81,6 +81,7 @@ const element = computed(() => {
             props.bold ? 'font-weight-bold' : '',
             props.inline ? 'inline' : '',
             collapsible ? 'collapsible' : '',
+            props.truncate ? 'truncate' : '',
         ]"
         @click="$emit('click')">
         <b-button v-if="collapsible" variant="link" size="sm">

@@ -62,7 +62,7 @@ export const Activities = [
         optional: true,
         title: "Workflow Invocations",
         tooltip: "Show all workflow runs",
-        to: "/workflows/invocations",
+        to: null,
         visible: true,
     },
     {

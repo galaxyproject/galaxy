@@ -33,6 +33,7 @@ interface Props {
     index?: number;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
+    fromPanel?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -162,7 +163,7 @@ function getWorkflowName() {
                 Invoked Workflow: "{{ getWorkflowName() }}"
             </Heading>
 
-            <div>
+            <div v-if="!props.fromPanel">
                 <BButton
                     v-b-tooltip.hover.noninteractive
                     :title="localize('Return to Invocations List')"
