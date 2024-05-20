@@ -31,15 +31,15 @@ if (Object.keys(responseVal.value).length === 0) {
 <template>
     <section>
         <BAlert v-if="!jobResponse" variant="info" show>
-            <LoadingSpan message="Waiting on a job response" />
+            <LoadingSpan message="Waiting on data" />
         </BAlert>
         <div v-else>
             <div v-if="jobResponse?.produces_entry_points">
                 <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
             </div>
             <ToolSuccessMessage :job-response="jobResponse" :tool-name="toolName" />
+            <Webhook type="tool" :tool-id="jobDef.tool_id" />
+            <ToolRecommendation v-if="showRecommendation" :tool-id="jobDef.tool_id" />
         </div>
-        <Webhook type="tool" :tool-id="jobDef.tool_id" />
-        <ToolRecommendation v-if="showRecommendation" :tool-id="jobDef.tool_id" />
     </section>
 </template>
