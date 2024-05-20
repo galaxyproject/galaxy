@@ -18,6 +18,7 @@ from typing_extensions import (
     Unpack,
 )
 
+from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import OptionalUserContext
 from galaxy.files.sources import (
     AnyRemoteEntry,
@@ -434,6 +435,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return headers
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
+        if response.status_code == 403:
+            record_url = response.url.replace("/api", "").replace("/files", "")
+            raise AuthenticationRequired(f"Please make sure you have the necessary permissions to access: {record_url}")
         if response.status_code != expected_status_code:
             error_message = self._get_response_error_message(response)
             raise Exception(
