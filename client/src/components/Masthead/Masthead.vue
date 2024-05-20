@@ -69,6 +69,7 @@ function openUrl(url, target = null) {
 
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
+    props.windowTab.onclick();
 }
 
 watch(
@@ -123,7 +124,10 @@ onMounted(() => {
                 :key="`extension-tab-${idx}`"
                 :title="tab.title"
                 :icon="tab.icon"
-                :active-tab="activeTab" />
+                :url="tab.url"
+                :tooltip="tab.tooltip"
+                :target="tab.target"
+                @click="tab.onclick" />
             <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
             <QuotaMeter />
         </BNavbarNav>

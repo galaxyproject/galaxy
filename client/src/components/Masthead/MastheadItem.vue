@@ -42,7 +42,6 @@ const props = defineProps({
     <BNavItem
         :id="id"
         v-b-tooltip.hover.bottom
-        v-b-popover.manual.bottom="{ id: id, content: popoverNote, html: true }"
         :href="withPrefix(url)"
         :target="target || '_parent'"
         :link-classes="linkClasses"
