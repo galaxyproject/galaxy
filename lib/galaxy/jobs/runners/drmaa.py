@@ -385,7 +385,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.warning(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except drmaa.InternalException as e:
             if "already completing or completed" in str(e):
-                log.warning("({job.id}/{ext_id}) User killed running job, but job already terminal in DRM queue")
+                log.warning(f"({job.id}/{ext_id}) User killed running job, but job already terminal in DRM queue")
             else:
                 log.exception(
                     f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue"
