@@ -1,7 +1,7 @@
 Creating Galaxy Releases
 ========================
 
-The "main" release process is an interactive checklist with instructions (see `Publication of Galaxy Release v 23.2 https://github.com/galaxyproject/galaxy/issues/16742>`_ for an example).
+The "main" release process is an interactive checklist with instructions (see `Publication of Galaxy Release v 23.2 <https://github.com/galaxyproject/galaxy/issues/16742>`_ for an example).
 This issue is generated via `make release-issue`.
 The final result of the release process are
 
@@ -24,7 +24,7 @@ The command is shipped with the `galaxy-release-util <https://pypi.org/project/g
  - stage and commit all changes
  - create a new tag,
  - (intelligently) merge forward changes to newer release branches and dev
- - push changes to the repo identified by `--upstream` (defaults to https://github.com/galaxyporject/galaxy.git/)
+ - push changes to the repo identified by `--upstream` (defaults to https://github.com/galaxyproject/galaxy.git/)
 
 The script has 2 important arguments:
 
