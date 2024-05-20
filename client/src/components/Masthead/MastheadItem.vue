@@ -1,14 +1,13 @@
 <script setup>
-import { BDropdownItem, BNavItem, BNavItemDropdown, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
+import { BNavItem, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue, { computed, getCurrentInstance, ref } from "vue";
+import Vue, { computed, getCurrentInstance } from "vue";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
 
 const instance = getCurrentInstance().proxy;
 const emit = defineEmits(["click", "open-url"]);
-const dropdown = ref(null);
 
 /* props */
 const props = defineProps({
