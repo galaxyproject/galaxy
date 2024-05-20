@@ -15,6 +15,9 @@ const props = defineProps({
         type: Object,
         default: null,
     },
+    id: {
+        type: String,
+    },
     toggle: {
         type: Boolean,
         default: false,
@@ -30,7 +33,7 @@ const popoverNote = computed(
     () => `Please <a href="${withPrefix("/login")}">log in or register</a> to use this feature.`
 );
 const classes = computed(() => {
-    const isActiveTab = props.tab.id == props.activeTab;
+    const isActiveTab = props.id == props.activeTab;
     return Object.fromEntries([
         ["active", isActiveTab],
         [props.tab.cls, !!props.tab.cls],
@@ -56,9 +59,9 @@ function open(tab, event) {
     } else if (tab.disabled) {
         event.preventDefault();
         instance.$root.$emit("bv::hide::tooltip");
-        instance.$root.$emit("bv::show::popover", tab.id);
+        instance.$root.$emit("bv::show::popover", id);
         setTimeout(() => {
-            instance.$root.$emit("bv::hide::popover", tab.id);
+            instance.$root.$emit("bv::hide::popover", id);
         }, 3000);
     } else if (!tab.menu) {
         event.preventDefault();
@@ -69,9 +72,9 @@ function open(tab, event) {
 
 <template>
     <BNavItem
-        :id="tab.id"
+        :id="id"
         v-b-tooltip.hover.bottom
-        v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
+        v-b-popover.manual.bottom="{ id: id, content: popoverNote, html: true }"
         :class="classes"
         :href="withPrefix(tab.url)"
         :target="tab.target || '_parent'"
@@ -80,7 +83,7 @@ function open(tab, event) {
         @click="open(tab, $event)">
         <template v-if="tab.icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
-            <span class="sr-only">{{ tab.tooltip || tab.id }}</span>
+            <span class="sr-only">{{ tab.tooltip || id }}</span>
             <span :class="iconClasses" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>

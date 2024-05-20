@@ -120,18 +120,21 @@ onMounted(() => {
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
+                :id="tab.id"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem
                 v-show="itsMenu.hidden !== true"
                 :key="`its-tab`"
-                :tab="itsMenu"
+                :id="`extension-tab-${idx}`"
+                :tab="itsMenu.id"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
                 :key="`extension-tab-${idx}`"
+                :id="tab.id"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
