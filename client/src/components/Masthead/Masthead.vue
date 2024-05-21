@@ -84,13 +84,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <BNavbar
-        v-if="isConfigLoaded"
-        id="masthead"
-        type="dark"
-        role="navigation"
-        aria-label="Main"
-        class="justify-content-between">
+    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <BNavbarNav>
             <BNavbarBrand
                 v-b-tooltip.hover
@@ -105,7 +99,7 @@ onMounted(() => {
                 {{ brand }}
             </span>
         </BNavbarNav>
-        <BNavbarNav>
+        <BNavbarNav v-if="isConfigLoaded">
             <MastheadItem id="analysis" title="Tools and Current History" icon="fa-home" @click="openUrl('/')" />
             <MastheadItem
                 v-if="windowTab"
@@ -183,7 +177,6 @@ onMounted(() => {
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
-                margin-right: 0.25rem;
                 &:hover {
                     color: var(--masthead-text-hover);
                 }
