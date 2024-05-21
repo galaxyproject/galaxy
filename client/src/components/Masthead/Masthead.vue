@@ -99,7 +99,7 @@ onMounted(() => {
                 {{ brand }}
             </span>
         </BNavbarNav>
-        <BNavbarNav v-if="isConfigLoaded">
+        <BNavbarNav v-if="isConfigLoaded" class="mr-1">
             <MastheadItem id="analysis" title="Tools and Current History" icon="fa-home" @click="openUrl('/')" />
             <MastheadItem
                 v-if="windowTab"
@@ -177,6 +177,8 @@ onMounted(() => {
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
+                margin-right: 0.25rem;
+                margin-left: 0.25rem;
                 &:hover {
                     color: var(--masthead-text-hover);
                 }

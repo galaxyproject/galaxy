@@ -93,7 +93,6 @@ export default {
 .quote-container {
     position: relative;
     height: 100%;
-    margin-right: 0.5rem;
 }
 .quota-text {
     @extend .quote-container;
