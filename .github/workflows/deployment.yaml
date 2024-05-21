@@ -20,10 +20,6 @@ on:
         - all
         - api
         - selenium
-      branch:
-        description: 'Branch of code to run from'
-        default: 'dev'
-        type: string        
       debug:
         required: true
         description: 'Run deployment tests with debug mode on'
