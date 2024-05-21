@@ -125,7 +125,9 @@ const sections = computed(() => {
 
 <template>
     <ActivityPanel v-if="isConfigLoaded" title="Administration" go-to-all-title="Admin Home" href="/admin">
-        <h3>Galaxy Version {{ adminProperties.versionMajor }}</h3>
+        <template v-slot:header>
+            <h3>Galaxy Version {{ adminProperties.versionMajor }}</h3>
+        </template>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolSectionWrapper">

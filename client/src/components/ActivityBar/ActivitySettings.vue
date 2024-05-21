@@ -4,11 +4,9 @@ import { faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCheckSquare, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, type Ref, ref } from "vue";
+import { computed, type ComputedRef } from "vue";
 
 import { type Activity, useActivityStore } from "@/stores/activityStore";
-
-import DelayedInput from "@/components/Common/DelayedInput.vue";
 
 library.add({
     faCheckSquare,
@@ -17,13 +15,16 @@ library.add({
     faThumbtack,
 });
 
+const props = defineProps<{
+    query: string;
+}>();
+
 const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
-const query: Ref<string> = ref("");
 
 const filteredActivities = computed(() => {
-    if (query.value.length > 0) {
-        const queryLower = query.value.toLowerCase();
+    if (props.query?.length > 0) {
+        const queryLower = props.query.toLowerCase();
         const results = activities.value.filter((a: Activity) => {
             const attributeValues = [a.title, a.description];
             for (const value of attributeValues) {
@@ -52,16 +53,11 @@ function onClick(activity: Activity) {
 function onRemove(activity: Activity) {
     activityStore.remove(activity.id);
 }
-
-function onQuery(newQuery: string) {
-    query.value = newQuery;
-}
 </script>
 
 <template>
     <div class="activity-settings rounded no-highlight">
-        <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
-        <div v-if="foundActivities" class="activity-settings-content mt-2">
+        <div v-if="foundActivities" class="activity-settings-content">
             <div v-for="activity in filteredActivities" :key="activity.id">
                 <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">

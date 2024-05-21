@@ -29,10 +29,7 @@ function testActivity(id, newOptions = {}) {
 }
 
 async function testSearch(wrapper, query, result) {
-    const searchField = wrapper.find("input");
-    searchField.element.value = query;
-    searchField.trigger("change");
-    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ query });
     const filtered = wrapper.findAll(activityItemSelector);
     expect(filtered.length).toBe(result);
 }
@@ -48,6 +45,9 @@ describe("ActivitySettings", () => {
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
+            props: {
+                query: "",
+            },
             stubs: {
                 icon: { template: "<div></div>" },
             },
