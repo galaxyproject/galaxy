@@ -126,6 +126,12 @@ onMounted(() => {
                 @click="openUrl('/about')" />
             <QuotaMeter />
             <MastheadItem
+                v-if="isAnonymous"
+                id="user"
+                title="Log in or Register"
+                @click="openUrl('/login/start')" />
+            <MastheadItem
+                v-else
                 id="user"
                 title="Logout"
                 icon="fa-sign-out-alt"
@@ -166,15 +172,16 @@ onMounted(() => {
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
+                margin-right: 0.25rem;
                 &:hover {
                     color: var(--masthead-text-hover);
                 }
                 &.nav-icon {
-                    font-size: 1em;
+                    font-size: 1.2em;
                     .nav-note {
                         position: absolute;
-                        left: 1.4rem;
-                        top: 1.4rem;
+                        left: 1.6rem;
+                        top: 1.6rem;
                         font-size: 0.4rem;
                         font-weight: bold;
                     }

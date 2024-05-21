@@ -44,7 +44,7 @@ const props = defineProps({
         v-b-tooltip.hover.bottom
         :href="withPrefix(url)"
         :target="target || '_parent'"
-        link-classes="nav-icon"
+        :link-classes="{ 'nav-icon': !!icon, 'toggle': toggle }"
         :title="tooltip"
         @click="$emit('click')">
         <template v-if="icon">
