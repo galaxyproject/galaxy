@@ -5,7 +5,7 @@
             {{ messageText | l }}
         </b-alert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
-            <div v-if="!loading" class="mt-3">
+            <div v-if="!loading && !hasError" class="mt-3">
                 <b-tabs>
                     <b-tab v-if="!result['attribute_disable']">
                         <template v-slot:title>
@@ -120,6 +120,11 @@ export default {
             messageVariant: null,
             formData: {},
         };
+    },
+    computed: {
+        hasError() {
+            return this.messageVariant === "danger";
+        },
     },
     methods: {
         onAttribute(data) {
