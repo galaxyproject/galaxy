@@ -4,6 +4,7 @@ from operator import itemgetter
 from typing import (
     Optional,
     Set,
+    Tuple,
 )
 
 from galaxy import exceptions
@@ -50,8 +51,12 @@ class RemoteFilesManager:
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
         writeable: Optional[bool] = False,
-    ) -> AnyRemoteFilesListResponse:
-        """Returns a list of remote files available to the user."""
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[AnyRemoteFilesListResponse, int]:
+        """Returns a list of remote files and directories available to the user and the total count of them."""
 
         user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         default_recursive = False
@@ -88,11 +93,15 @@ class RemoteFilesManager:
         opts = FilesSourceOptions()
         opts.writeable = writeable or False
         try:
-            index = file_source.list(
+            index, count = file_source.list(
                 file_source_path.path,
                 recursive=recursive,
                 user_context=user_file_source_context,
                 opts=opts,
+                limit=limit,
+                offset=offset,
+                query=query,
+                sort_by=sort_by,
             )
         except exceptions.MessageException:
             log.warning(self._get_error_message(file_source_path), exc_info=True)
@@ -130,7 +139,7 @@ class RemoteFilesManager:
             userdir_jstree = jstree.JSTree(jstree_paths)
             index = userdir_jstree.jsonData()
 
-        return index
+        return index, count
 
     def _get_error_message(self, file_source_path: FileSourcePath) -> str:
         return f"Problem listing file source path {file_source_path.file_source.get_uri_root()}{file_source_path.path}"

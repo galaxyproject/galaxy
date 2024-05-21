@@ -46,16 +46,42 @@ export async function fetchFileSources(options: FilterFileSourcesOptions = {}): 
 
 export const remoteFilesFetcher = fetcher.path("/api/remote_files").method("get").create();
 
+export interface BrowseRemoteFilesResult {
+    entries: RemoteEntry[];
+    totalMatches: number;
+}
+
 /**
  * Get the list of files and directories from the server for the given file source URI.
  * @param uri The file source URI to browse.
  * @param isRecursive Whether to recursively retrieve all files inside subdirectories.
  * @param writeable Whether to return only entries that can be written to.
+ * @param limit The maximum number of entries to return.
+ * @param offset The number of entries to skip before returning the rest.
+ * @param query The query string to filter the entries.
+ * @param sortBy The field to sort the entries by.
  * @returns The list of files and directories from the server for the given URI.
  */
-export async function browseRemoteFiles(uri: string, isRecursive = false, writeable = false): Promise<RemoteEntry[]> {
-    const { data } = await remoteFilesFetcher({ target: uri, recursive: isRecursive, writeable });
-    return data as RemoteEntry[];
+export async function browseRemoteFiles(
+    uri: string,
+    isRecursive = false,
+    writeable = false,
+    limit?: number,
+    offset?: number,
+    query?: string,
+    sortBy?: string
+): Promise<BrowseRemoteFilesResult> {
+    const { data, headers } = await remoteFilesFetcher({
+        target: uri,
+        recursive: isRecursive,
+        writeable,
+        limit,
+        offset,
+        query,
+        sort_by: sortBy,
+    });
+    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+    return { entries: data as RemoteEntry[], totalMatches };
 }
 
 const createEntry = fetcher.path("/api/remote_files").method("post").create();

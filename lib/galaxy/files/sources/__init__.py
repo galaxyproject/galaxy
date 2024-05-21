@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Type,
     TYPE_CHECKING,
     Union,
@@ -26,6 +27,7 @@ from typing_extensions import (
 from galaxy.exceptions import (
     ConfigurationError,
     ItemAccessibilityException,
+    RequestParameterInvalidException,
 )
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.util.bool_expressions import (
@@ -36,6 +38,7 @@ from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
+DEFAULT_PAGE_LIMIT = 25
 
 if TYPE_CHECKING:
     from galaxy.files import (
@@ -78,6 +81,17 @@ class PluginKind(str, Enum):
     """
 
 
+class FileSourceSupports(TypedDict):
+    """Feature support flags for a file source plugin"""
+
+    # Indicates whether the file source supports pagination for listing files
+    pagination: NotRequired[bool]
+    # Indicates whether the file source supports server-side search for listing files
+    search: NotRequired[bool]
+    # Indicates whether the file source supports server-side sorting for listing files
+    sorting: NotRequired[bool]
+
+
 class FilesSourceProperties(TypedDict):
     """Initial set of properties used to initialize a filesource.
 
@@ -99,6 +113,7 @@ class FilesSourceProperties(TypedDict):
     type: NotRequired[str]
     browsable: NotRequired[bool]
     url: NotRequired[Optional[str]]
+    supports: NotRequired[FileSourceSupports]
 
 
 @dataclass
@@ -283,8 +298,12 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
-        """Return dictionary of 'Directory's and 'File's."""
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
@@ -307,6 +326,9 @@ def file_source_type_is_browsable(target_type: Type["BaseFilesSource"]) -> bool:
 
 class BaseFilesSource(FilesSource):
     plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
+    supports_pagination: ClassVar[bool] = False
+    supports_search: ClassVar[bool] = False
+    supports_sorting: ClassVar[bool] = False
 
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
@@ -385,6 +407,11 @@ class BaseFilesSource(FilesSource):
             "requires_groups": self.requires_groups,
             "disable_templating": self.disable_templating,
             "scheme": self.get_scheme(),
+            "supports": {
+                "pagination": self.supports_pagination,
+                "search": self.supports_search,
+                "sorting": self.supports_sorting,
+            },
         }
         if self.get_browsable():
             rval["uri_root"] = self.get_uri_root()
@@ -414,9 +441,25 @@ class BaseFilesSource(FilesSource):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context, opts)
+        if not self.supports_pagination and (limit is not None or offset is not None):
+            raise RequestParameterInvalidException("Pagination is not supported by this file source.")
+        if not self.supports_search and query:
+            raise RequestParameterInvalidException("Server-side search is not supported by this file source.")
+        if not self.supports_sorting and sort_by:
+            raise RequestParameterInvalidException("Server-side sorting is not supported by this file source.")
+        if self.supports_pagination:
+            if limit is not None and limit < 1:
+                raise RequestParameterInvalidException("Limit must be greater than 0.")
+            if offset is not None and offset < 0:
+                raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
+
+        return self._list(path, recursive, user_context, opts, limit, offset, query)
 
     def _list(
         self,
@@ -424,8 +467,12 @@ class BaseFilesSource(FilesSource):
         recursive=False,
         user_context: "OptionalUserContext" = None,
         opts: Optional[FilesSourceOptions] = None,
-    ):
-        pass
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
+        raise NotImplementedError()
 
     def create_entry(
         self,

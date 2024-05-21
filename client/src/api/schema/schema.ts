@@ -412,6 +412,8 @@ export interface paths {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_ftp_files_get"];
     };
@@ -1453,6 +1455,8 @@ export interface paths {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_remote_files_get"];
         /**
@@ -2701,6 +2705,15 @@ export interface components {
              * @description Only users with the roles specified here can access this files source.
              */
             requires_roles?: string | null;
+            /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
             /**
              * Type
              * @description The type of the plugin.
@@ -5336,6 +5349,15 @@ export interface components {
              */
             requires_roles?: string | null;
             /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
+            /**
              * Type
              * @description The type of the plugin.
              */
@@ -5359,6 +5381,27 @@ export interface components {
             | components["schemas"]["BrowsableFilesSourcePlugin"]
             | components["schemas"]["FilesSourcePlugin"]
         )[];
+        /** FilesSourceSupports */
+        FilesSourceSupports: {
+            /**
+             * Pagination
+             * @description Whether this file source supports server-side pagination.
+             * @default false
+             */
+            pagination?: boolean;
+            /**
+             * Search
+             * @description Whether this file source supports server-side search.
+             * @default false
+             */
+            search?: boolean;
+            /**
+             * Sorting
+             * @description Whether this file source supports server-side sorting.
+             * @default false
+             */
+            sorting?: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
@@ -15557,6 +15600,8 @@ export interface operations {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
@@ -15564,12 +15609,20 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -21873,6 +21926,8 @@ export interface operations {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
@@ -21880,12 +21935,20 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

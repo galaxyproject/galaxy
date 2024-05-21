@@ -5,6 +5,7 @@ from typing import (
     cast,
     List,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -61,7 +62,11 @@ class S3FsFilesSource(BaseFilesSource):
         recursive=True,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         _props = self._serialization_props(user_context)
         # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function
         _bucket_name = _props.pop("bucket", "")
@@ -73,12 +78,12 @@ class S3FsFilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, p)
                 res.extend(map(to_dict, dirs.values()))
                 res.extend(map(to_dict, files.values()))
-            return res
+            return res, len(res)
         else:
             bucket_path = self._bucket_path(_bucket_name, path)
             res = fs.ls(bucket_path, detail=True)
             to_dict = functools.partial(self._resource_info_to_dict, path)
-            return list(map(to_dict, res))
+            return list(map(to_dict, res)), len(res)
 
     def _realize_to(
         self,

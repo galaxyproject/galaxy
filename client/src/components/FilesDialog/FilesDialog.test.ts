@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
@@ -88,7 +89,8 @@ function getMockedBrowseResponse(param: RemoteFilesParams) {
         throw Error(someErrorText);
     }
     const result = mockedOkApiRoutesMap.get(responseKey);
-    return { data: result };
+    const headers = new Map([["total_matches", result?.length.toString() ?? "0"]]);
+    return { data: result, headers };
 }
 
 const initComponent = async (props: { multiple: boolean; mode?: string }) => {
@@ -97,9 +99,11 @@ const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
     mockFetcher.path("/api/remote_files").method("get").mock(getMockedBrowseResponse);
 
+    const testingPinia = createTestingPinia({ stubActions: false });
     const wrapper = mount(FilesDialog, {
         localVue,
         propsData: { ...props, modalStatic: true },
+        pinia: testingPinia,
     });
 
     await flushPromises();

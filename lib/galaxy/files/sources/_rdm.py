@@ -3,6 +3,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
@@ -60,8 +61,16 @@ class RDMRepositoryInteractor:
         If a filename is provided, the URI will reference the specific file in the record."""
         raise NotImplementedError()
 
-    def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
-        """Returns the list of records in the repository.
+    def get_records(
+        self,
+        writeable: bool,
+        user_context: OptionalUserContext = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[RemoteDirectory], int]:
+        """Returns the list of records in the repository and the total count of records.
 
         If writeable is True, only records that the user can write to will be returned.
         The user_context might be required to authenticate the user in the repository.
