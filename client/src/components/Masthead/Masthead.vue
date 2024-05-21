@@ -100,13 +100,13 @@ onMounted(() => {
             </span>
         </BNavbarNav>
         <BNavbarNav v-if="isConfigLoaded" class="mr-1">
-            <MastheadItem id="analysis" title="Tools and Current History" icon="fa-home" @click="openUrl('/')" />
+            <MastheadItem id="analysis" tooltip="Tools, Workflows and Histories" icon="fa-home" @click="openUrl('/')" />
             <MastheadItem
                 v-if="windowTab"
                 :id="windowTab.id"
-                :title="windowTab.title"
                 :icon="windowTab.icon"
                 :toggle="windowToggle"
+                :tooltip="windowTab.tooltip"
                 @click="onWindowToggle" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
@@ -121,14 +121,14 @@ onMounted(() => {
                 @click="tab.onclick" />
             <MastheadItem
                 id="help"
-                title="Support, contact, and community"
                 icon="fa-question"
+                tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
             <QuotaMeter />
             <MastheadItem
                 v-if="isAnonymous && config.allow_user_creation"
                 id="user"
-                title="Log in or Register"
+                title="Login or Register"
                 @click="openUrl('/login/start')" />
             <MastheadItem
                 v-if="isAnonymous && !config.allow_user_creation"
@@ -138,8 +138,8 @@ onMounted(() => {
             <MastheadItem
                 v-if="!isAnonymous && !config.single_user"
                 id="user"
-                title="Logout"
                 icon="fa-sign-out-alt"
+                tooltip="Logout"
                 @click="userLogout" />
         </BNavbarNav>
     </BNavbar>

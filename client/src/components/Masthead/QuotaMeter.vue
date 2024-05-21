@@ -2,7 +2,7 @@
     <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
             <b-link
-                v-b-tooltip.hover.left
+                v-b-tooltip.hover.bottom
                 to="/storage"
                 :disabled="isAnonymous"
                 class="ml-auto"
