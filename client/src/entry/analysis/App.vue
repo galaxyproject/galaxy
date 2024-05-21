@@ -57,7 +57,6 @@ import { WindowManager } from "layout/window-manager";
 import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
-import { withPrefix } from "utils/redirect";
 import { ref, watch } from "vue";
 
 import short from "@/components/plugins/short";

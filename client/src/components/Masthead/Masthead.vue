@@ -20,8 +20,6 @@ const route = useRoute();
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
-const emit = defineEmits(["open-url"]);
-
 const props = defineProps({
     brand: {
         type: String,
@@ -86,7 +84,13 @@ onMounted(() => {
 </script>
 
 <template>
-    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+    <BNavbar
+        v-if="isConfigLoaded"
+        id="masthead"
+        type="dark"
+        role="navigation"
+        aria-label="Main"
+        class="justify-content-between">
         <BNavbarNav>
             <BNavbarBrand
                 v-b-tooltip.hover
@@ -102,12 +106,14 @@ onMounted(() => {
             </span>
         </BNavbarNav>
         <BNavbarNav>
+            <MastheadItem id="analysis" title="Tools and Current History" icon="fa-home" @click="openUrl('/')" />
             <MastheadItem
-                id="analysis"
-                title="Tools and Current History"
-                icon="fa-home"
-                @click="openUrl('/')" />
-            <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
+                v-if="windowTab"
+                :id="windowTab.id"
+                :title="windowTab.title"
+                :icon="windowTab.icon"
+                :toggle="windowToggle"
+                @click="onWindowToggle" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
@@ -126,12 +132,17 @@ onMounted(() => {
                 @click="openUrl('/about')" />
             <QuotaMeter />
             <MastheadItem
-                v-if="isAnonymous"
+                v-if="isAnonymous && config.allow_user_creation"
                 id="user"
                 title="Log in or Register"
                 @click="openUrl('/login/start')" />
             <MastheadItem
-                v-else
+                v-if="isAnonymous && !config.allow_user_creation"
+                id="user"
+                title="Login"
+                @click="openUrl('/login/start')" />
+            <MastheadItem
+                v-if="!isAnonymous && !config.single_user"
                 id="user"
                 title="Logout"
                 icon="fa-sign-out-alt"

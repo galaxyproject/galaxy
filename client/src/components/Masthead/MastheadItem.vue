@@ -6,17 +6,15 @@ import Vue from "vue";
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
 
-const emit = defineEmits(["click", "open-url"]);
-
 /* props */
-const props = defineProps({
+defineProps({
     disabled: {
         type: Boolean,
     },
     id: {
         type: String,
     },
-    icon: { 
+    icon: {
         type: String,
     },
     target: {
@@ -44,7 +42,7 @@ const props = defineProps({
         v-b-tooltip.hover.bottom
         :href="withPrefix(url)"
         :target="target || '_parent'"
-        :link-classes="{ 'nav-icon': !!icon, 'toggle': toggle }"
+        :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
         :title="tooltip"
         @click="$emit('click')">
         <template v-if="icon">
