@@ -19,7 +19,9 @@ on:
     branches: [ dev ]
   schedule:
     - cron: '16 6 * * 0'
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   analyze:
     name: Analyze

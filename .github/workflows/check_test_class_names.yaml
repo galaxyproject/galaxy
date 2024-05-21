@@ -5,6 +5,9 @@ on:
       - '.ci/check_test_class_names.sh'
       - 'lib/galaxy_test/**'
       - 'test/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
