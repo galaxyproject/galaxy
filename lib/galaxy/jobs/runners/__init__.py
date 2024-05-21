@@ -678,13 +678,18 @@ class JobState:
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
         self.runner_state = None
-        self.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_wrapper.get_id_tag())
-
         self.redact_email_in_job_name = True
+        self._exit_code_file = None
         if self.job_wrapper:
             self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ["job_file", "output_file", "error_file", "exit_code_file"]
+
+    @property
+    def exit_code_file(self) -> str:
+        return self._exit_code_file or default_exit_code_file(
+            self.job_wrapper.working_directory, self.job_wrapper.get_id_tag()
+        )
 
     def set_defaults(self, files_dir):
         if self.job_wrapper is not None:
@@ -753,7 +758,7 @@ class AsynchronousJobState(JobState):
         self.output_file = output_file
         self.error_file = error_file
         if exit_code_file:
-            self.exit_code_file = exit_code_file
+            self._exit_code_file = exit_code_file
         self.job_name = job_name
 
         self.set_defaults(files_dir)
