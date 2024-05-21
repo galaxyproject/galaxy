@@ -107,16 +107,7 @@ onMounted(() => {
                 title="Tools and Current History"
                 icon="fa-home"
                 @click="openUrl('/', '_top')" />
-            <MastheadItem
-                id="help"
-                title="Support, contact, and community"
-                icon="fa-question"
-                @click="openUrl('/about')" />
-            <MastheadItem
-                id="user"
-                title="Logout"
-                icon="fa-sign-out-alt"
-                @click="userLogout" />
+            <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
@@ -128,8 +119,17 @@ onMounted(() => {
                 :tooltip="tab.tooltip"
                 :target="tab.target"
                 @click="tab.onclick" />
-            <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
+            <MastheadItem
+                id="help"
+                title="Support, contact, and community"
+                icon="fa-question"
+                @click="openUrl('/about')" />
             <QuotaMeter />
+            <MastheadItem
+                id="user"
+                title="Logout"
+                icon="fa-sign-out-alt"
+                @click="userLogout" />
         </BNavbarNav>
     </BNavbar>
 </template>
