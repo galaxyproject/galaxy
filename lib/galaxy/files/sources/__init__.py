@@ -12,8 +12,8 @@ from typing import (
     List,
     Optional,
     Set,
-    Type,
     Tuple,
+    Type,
     TYPE_CHECKING,
     Union,
 )
@@ -453,6 +453,11 @@ class BaseFilesSource(FilesSource):
             raise RequestParameterInvalidException("Server-side search is not supported by this file source.")
         if not self.supports_sorting and sort_by:
             raise RequestParameterInvalidException("Server-side sorting is not supported by this file source.")
+        if self.supports_pagination:
+            if limit is not None and limit < 1:
+                raise RequestParameterInvalidException("Limit must be greater than 0.")
+            if offset is not None and offset < 0:
+                raise RequestParameterInvalidException("Offset must be greater than or equal to 0.")
 
         return self._list(path, recursive, user_context, opts, limit, offset, query)
 
