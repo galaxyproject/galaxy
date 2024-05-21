@@ -43,7 +43,7 @@ def list_root(
 ):
     file_source_pair = file_sources.get_file_source_path(uri)
     file_source = file_source_pair.file_source
-    res, count = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     return res
 
 
@@ -57,7 +57,7 @@ def list_dir(
     file_source = file_source_pair.file_source
     print(file_source_pair.path)
     print(uri)
-    res, count = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
+    res, _ = file_source.list(file_source_pair.path, recursive=recursive, user_context=user_context)
     return res
 
 
@@ -191,7 +191,7 @@ def assert_simple_file_realize(conf_file, recursive=False, filename="a", content
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    res, count = file_source.list("/", recursive=recursive, user_context=user_context)
+    res, _ = file_source.list("/", recursive=recursive, user_context=user_context)
     a_file = find(res, class_="File", name=filename)
     assert a_file
 
