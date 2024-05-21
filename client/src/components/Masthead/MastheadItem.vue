@@ -44,13 +44,13 @@ const props = defineProps({
         v-b-tooltip.hover.bottom
         :href="withPrefix(url)"
         :target="target || '_parent'"
-        :link-classes="linkClasses"
+        link-classes="nav-icon"
         :title="tooltip"
         @click="$emit('click')">
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
-            <span :class="`fa ${icon}`" />
+            <span :class="`fa fa-fw ${icon}`" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
         <template v-else>

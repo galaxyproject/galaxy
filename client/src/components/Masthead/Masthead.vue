@@ -106,7 +106,7 @@ onMounted(() => {
                 id="analysis"
                 title="Tools and Current History"
                 icon="fa-home"
-                @click="openUrl('/', '_top')" />
+                @click="openUrl('/')" />
             <MastheadItem v-if="windowTab" :id="windowTab.id" :title="windowTab.title" :icon="windowTab.icon" :toggle="windowToggle" @click="onWindowToggle" />
             <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
