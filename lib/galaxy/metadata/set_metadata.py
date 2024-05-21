@@ -420,11 +420,12 @@ def set_metadata_portable(
                         )
                         dataset.dataset.created_from_basename = created_from_basename
                     elif os.path.exists(dataset_path_to_extra_path(external_filename)):
-                        # Only output extra files dir, but no primary output file, that's fine
-                        if dataset.datatype.composite_type == "auto_primary_file":
-                            with open(external_filename, "wb"):
-                                pass
-                        pass
+                        # Only output is extra files dir, but no primary output file, that's fine,
+                        # but make sure we create an empty primary output file. It's a little
+                        # weird to do this, but it does indicate that there's nothing wrong with the file,
+                        # as opposed to perhaps a storage issue.
+                        with open(external_filename, "wb"):
+                            pass
                     else:
                         raise Exception(f"Output file '{external_filename}' not found")
 
