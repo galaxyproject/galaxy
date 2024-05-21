@@ -3,6 +3,7 @@ from typing import List
 
 import pytest
 
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.sources.temp import TempFilesSource
 from galaxy.files.unittest_utils import (
@@ -128,6 +129,46 @@ def test_search(temp_file_source: TempFilesSource):
     assert count == 1
     assert len(result) == 1
     assert result[0]["name"] == "e"
+
+
+def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
+    TempFilesSource.supports_pagination = False
+    recursive = False
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, limit=1, offset=0)
+    assert "Pagination is not supported" in str(exc_info.value)
+    TempFilesSource.supports_pagination = True
+
+
+def test_pagination_parameters_non_negative(temp_file_source: TempFilesSource):
+    recursive = False
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, limit=-1, offset=0)
+    assert "Limit must be greater than 0" in str(exc_info.value)
+
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, limit=0, offset=0)
+    assert "Limit must be greater than 0" in str(exc_info.value)
+
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, limit=1, offset=-1)
+    assert "Offset must be greater than or equal to 0" in str(exc_info.value)
+
+
+def test_search_not_supported_raises(temp_file_source: TempFilesSource):
+    TempFilesSource.supports_search = False
+    recursive = False
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, query="a")
+    assert "Server-side search is not supported by this file source" in str(exc_info.value)
+    TempFilesSource.supports_search = True
+
+
+def test_sorting_not_supported_raises(temp_file_source: TempFilesSource):
+    recursive = False
+    with pytest.raises(RequestParameterInvalidException) as exc_info:
+        temp_file_source.list("/", recursive=recursive, sort_by="name")
+    assert "Server-side sorting is not supported by this file source" in str(exc_info.value)
 
 
 def _populate_test_scenario(file_source: TempFilesSource):
