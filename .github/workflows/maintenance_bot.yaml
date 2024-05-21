@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const response = await github.rest.issues.listLabelsOnIssue({
@@ -35,7 +35,7 @@ jobs:
           ! contains(github.event.pull_request.labels.*.name, 'status/WIP') &&
           ! contains(github.event.pull_request.title, 'WIP') &&
           ! github.event.pull_request.draft
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.update({
