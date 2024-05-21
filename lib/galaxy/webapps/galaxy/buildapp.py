@@ -365,27 +365,6 @@ def populate_api_routes(webapp, app):
         parent_resources=dict(member_name="page", collection_name="pages"),
     )
 
-    webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
-    webapp.mapper.connect(
-        "/api/cloud/authz/", action="create", controller="cloudauthz", conditions=dict(method=["POST"])
-    )
-
-    webapp.mapper.connect(
-        "delete_cloudauthz_item",
-        "/api/cloud/authz/{encoded_authz_id}",
-        action="delete",
-        controller="cloudauthz",
-        conditions=dict(method=["DELETE"]),
-    )
-
-    webapp.mapper.connect(
-        "upload_cloudauthz_item",
-        "/api/cloud/authz/{encoded_authz_id}",
-        action="update",
-        controller="cloudauthz",
-        conditions=dict(method=["PUT"]),
-    )
-
     # =======================
     # ====== TOOLS API ======
     # =======================
