@@ -123,7 +123,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             )
         )
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
         """
@@ -131,7 +131,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         """
         history_id = kwd.get("id")
         if not history_id:
-            return self.message_exception(trans, f"Invalid history id ({str(history_id)}) received")
+            raise exceptions.RequestParameterMissingException("No history id received")
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         if trans.request.method == "GET":
             inputs = []
@@ -166,7 +166,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.history_set_default_permissions(history, permissions)
             return {"message": "Default history '%s' dataset permissions have been changed." % history.name}
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("make datasets private")
     def make_private(self, trans, history_id=None, all_histories=False, **kwd):
         """
@@ -184,7 +184,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             if history:
                 histories.append(history)
         if not histories:
-            return self.message_exception(trans, "Invalid history or histories specified.")
+            raise exceptions.RequestParameterMissingException("No history or histories specified.")
         private_role = trans.app.security_agent.get_private_user_role(trans.user)
         user_roles = trans.user.all_roles()
         private_permissions = {
@@ -256,12 +256,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get("id")
         if not id:
-            return self.message_exception(trans, "No history id received for renaming.")
+            raise exceptions.RequestParameterMissingException("No history id received for renaming.")
         user = trans.get_user()
         id = listify(id)
         histories = []
