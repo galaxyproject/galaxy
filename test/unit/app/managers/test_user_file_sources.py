@@ -341,22 +341,17 @@ class TestFileSourcesTestCase(BaseTestCase):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
         assert "sec1" in user_file_source.secrets
-        user_vault = self.trans.user_vault
-        config_secret_key = f"file_source_config/{user_file_source.uuid}/sec1"
-        assert user_vault.read_secret(config_secret_key) == "foosec"
+        self._assert_secret_is(user_file_source, "sec1", "foosec")
         self.manager.purge_instance(self.trans, user_file_source.uuid)
-        # delete resets it to ''
-        assert user_vault.read_secret(config_secret_key) == ""
+        self._assert_secret_absent(user_file_source, "sec1")
 
     def test_update_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
-        user_vault = self.trans.user_vault
-        config_secret_key = f"file_source_config/{user_file_source.uuid}/sec1"
-        assert user_vault.read_secret(config_secret_key) == "foosec"
+        self._assert_secret_is(user_file_source, "sec1", "foosec")
         update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value="newvalue")
         self.manager.modify_instance(self.trans, user_file_source.uuid, update)
-        assert user_vault.read_secret(config_secret_key) == "newvalue"
+        self._assert_secret_is(user_file_source, "sec1", "newvalue")
 
     def test_status_valid(self, tmp_path):
         self.init_user_in_database()
@@ -453,6 +448,19 @@ class TestFileSourcesTestCase(BaseTestCase):
             secrets={},
         )
         return self._create_instance(create_payload)
+
+    def _read_secret(self, user_file_source: UserFileSourceModel, secret_name: str) -> str:
+        user_vault = self.trans.user_vault
+        config_secret_key = f"file_source_config/{user_file_source.uuid}/{secret_name}"
+        return user_vault.read_secret(config_secret_key)
+
+    def _assert_secret_is(self, user_file_source: UserFileSourceModel, secret_name: str, expected_value: str):
+        assert self._read_secret(user_file_source, secret_name) == expected_value
+
+    def _assert_secret_absent(self, user_file_source: UserFileSourceModel, secret_name: str):
+        sec_val = self._read_secret(user_file_source, secret_name)
+        # deleting vs never inserted...
+        assert sec_val in ["", None]
 
     def _create_instance(self, create_payload: CreateInstancePayload) -> UserFileSourceModel:
         user_file_source = self.manager.create_instance(self.trans, create_payload)
