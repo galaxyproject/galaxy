@@ -1,6 +1,7 @@
 """Basis for Selenium test framework."""
 
 import datetime
+import errno
 import json
 import os
 import traceback
@@ -17,7 +18,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-import requests
 import yaml
 from gxformat2 import (
     convert_and_import_workflow,
@@ -26,7 +26,9 @@ from gxformat2 import (
 from requests.models import Response
 
 from galaxy.selenium import driver_factory
+from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
+from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
 from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
@@ -36,20 +38,26 @@ from galaxy.util import (
     asbool,
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
 from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    using_requirement,
+)
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
 from galaxy_test.base.populators import (
     load_data_dict,
-    skip_if_github_down,
+    YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -89,7 +97,8 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
-GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
+GALAXY_TEST_AXE_SCRIPT_URL = os.environ.get("GALAXY_TEST_AXE_SCRIPT_URL", DEFAULT_AXE_SCRIPT_URL)
+GALAXY_TEST_SKIP_AXE = os.environ.get("GALAXY_TEST_SKIP_AXE", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -99,13 +108,6 @@ window.localStorage && window.localStorage.setItem("galaxy:debug", true);
 window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
 """
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
 
 def managed_history(f):
     """Ensure a Selenium test has a distinct, named history.
@@ -113,6 +115,7 @@ def managed_history(f):
     Cleanup the history after the job is complete as well unless
     GALAXY_TEST_NO_CLEANUP is set in the environment.
     """
+    f = requires_new_history(f)
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -149,6 +152,14 @@ def dump_test_information(self, name_prefix):
         for snapshot in getattr(self, "snapshots", []):
             snapshot.write_to_error_directory(write_file)
 
+        # Try to use the Selenium driver to write a final summary of the accessibility
+        # information for the test.
+        try:
+            self.axe_eval(write_to=os.path.join(target_directory, "last.a11y.json"))
+        except Exception as e:
+            print(e)
+            print("Failed to use test driver to print accessibility information")
+
         # Try to use the Selenium driver to recover more debug information, but don't
         # throw an exception if the connection is broken in some way.
         try:
@@ -169,8 +180,21 @@ def dump_test_information(self, name_prefix):
             except Exception:
                 continue
 
+        try_symlink(target_directory, os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, "latest"))
 
-@nottest
+
+def try_symlink(file1, file2):
+    try:
+        try:
+            os.symlink(file1, file2)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(file2)
+                os.symlink(file1, file2)
+    except Exception:
+        pass
+
+
 def selenium_test(f):
     test_name = f.__name__
 
@@ -181,7 +205,9 @@ def selenium_test(f):
             if retry_attempts > 0:
                 self.reset_driver_and_session()
             try:
-                return f(self, *args, **kwds)
+                rval = f(self, *args, **kwds)
+                self.assert_baseline_accessibility()
+                return rval
             except unittest.SkipTest:
                 dump_test_information(self, test_name)
                 # Don't retry if we have purposely decided to skip the test.
@@ -225,7 +251,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
 
     @property
-    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+    def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
         """A dataset populator connected to the Galaxy session described by Selenium context."""
         return SeleniumSessionDatasetPopulator(self)
 
@@ -241,7 +267,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
 
 
 class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
-    # If run one-off via nosetests, the next line ensures test
+    # If run one-off via pytest, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
 
@@ -251,13 +277,22 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # will be used to login.
     ensure_registered = False
 
-    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
-
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
-    requires_admin = False
+    run_as_admin = False
+
+    # where we pull axe from if enabled
+    axe_script_url = GALAXY_TEST_AXE_SCRIPT_URL
+
+    # boolean used to skip axe testing, might be useful to speed up
+    # tests or may be required if you have no external internet access
+    axe_skip = GALAXY_TEST_SKIP_AXE
+
+    def assert_baseline_accessibility(self):
+        axe_results = self.axe_eval()
+        assert_baseline_accessible(axe_results)
 
     def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
@@ -272,7 +307,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
         self._try_setup_with_driver()
@@ -292,8 +327,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """
         if self.ensure_registered:
             self.login()
-            if self.ensure_beta_history:
-                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -309,6 +342,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def get_download_path(self):
         """Returns default download path"""
         return DEFAULT_DOWNLOAD_PATH
+
+    @property
+    def anonymous_galaxy_interactor(self):
+        api_key = self.get_api_key(force=False)
+        interactor = self._get_interactor(api_key=api_key, allow_anonymous=True)
+        return interactor
 
     def api_interactor_for_logged_in_user(self):
         api_key = self.get_api_key(force=True)
@@ -403,6 +442,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.components.history_panel.empty_message.wait_for_visible()
 
     def admin_login(self):
+        using_requirement("admin")
         self.home()
         self.submit_login(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL, GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD)
         with self.main_panel():
@@ -510,7 +550,7 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         peek_text = item_body.peek.wait_for_text()
-        assert expected in peek_text
+        assert expected in peek_text, f"Expected peek [{expected}] not found in peek [{peek_text}]"
 
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -533,10 +573,10 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert name == expected_name, name
 
     def assert_item_hid_text(self, hid):
-        # Check the text HID matches HID returned from API.
+        # Check the text HID matches HID returned from API.  The hid span includes a colon.
         item_body = self.history_panel_item_component(hid=hid)
         hid_text = item_body.hid.wait_for_text()
-        assert hid_text == str(hid), hid_text
+        assert hid_text == f"{hid}:", hid_text
 
 
 EXAMPLE_WORKFLOW_URL_1 = (
@@ -547,8 +587,7 @@ EXAMPLE_WORKFLOW_URL_1 = (
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
-        actual_count = len(self.workflow_index_table_elements())
-        if actual_count != n:
+        if (actual_count := len(self.workflow_card_elements())) != n:
             message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
             raise AssertionError(message)
 
@@ -625,16 +664,11 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         return history_id
 
     def workflow_run_wait_for_ok(self, hid: int, expand=False):
-        if self.is_beta_history():
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            item = self.content_item_by_attributes(hid=hid, state="ok")
-            item.wait_for_present(timeout=timeout)
-            if expand:
-                item.title.wait_for_and_click()
-        else:
-            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
-            if expand:
-                self.history_panel_click_item_title(hid=hid, wait=True)
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        item = self.content_item_by_attributes(hid=hid, state="ok")
+        item.wait_for_present(timeout=timeout)
+        if expand:
+            item.title.wait_for_and_click()
 
 
 def default_web_host_for_selenium_tests():
@@ -745,16 +779,17 @@ class SeleniumSessionGetPostMixin:
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
-
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
 
+    def _summarize_history(self, history_id: str) -> None:
+        pass
+
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
-
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -770,7 +805,6 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
 class SeleniumSessionWorkflowPopulator(
     SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface
 ):
-
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -789,8 +823,8 @@ class SeleniumSessionWorkflowPopulator(
         upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         return workflow["id"]
 
 

@@ -1,4 +1,5 @@
 from pkg_resources import resource_string
+from sqlalchemy import select
 
 from galaxy.files.unittest_utils import TestPosixConfiguredFileSources
 from galaxy.model import (
@@ -9,6 +10,7 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     store,
 )
+from galaxy.model.base import transaction
 from galaxy.model.deferred import (
     materialize_collection_instance,
     materializer_factory,
@@ -32,7 +34,8 @@ def test_undeferred_hdas_untouched(tmpdir):
     hda_fh = tmpdir.join("file.txt")
     hda_fh.write("Moo Cow")
     hda = _create_hda(sa_session, app.object_store, history, hda_fh, include_metadata_file=False)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     materializer = materializer_factory(True, object_store=app.object_store)
     assert materializer.ensure_materialized(hda) == hda
@@ -131,7 +134,7 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
 
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
-        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session
+        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset
@@ -152,7 +155,7 @@ def test_deferred_ldda_basic_attached():
     fixture_context = setup_fixture_context_with_history()
     store_dict = one_ld_library_deferred_model_store_dict()
     perform_import_from_store_dict(fixture_context, store_dict, import_options=import_options)
-    deferred_ldda = fixture_context.sa_session.query(LibraryDatasetDatasetAssociation).all()[0]
+    deferred_ldda = fixture_context.sa_session.scalars(select(LibraryDatasetDatasetAssociation)).all()[0]
     assert deferred_ldda
     assert deferred_ldda.dataset.state == "deferred"
 
@@ -299,7 +302,8 @@ def _test_hdca(
     )
     sa_session.add(hdca)
     sa_session.add(collection)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return hdca
 
 
@@ -320,8 +324,8 @@ def _ensure_relations_attached_and_expunge(deferred_hda: HistoryDatasetAssociati
     # make sure everything needed is in session (sources, hashes, and metadata)...
     # point here is exercise deferred_hda.history throws a detached error.
     [s.hashes for s in deferred_hda.dataset.sources]
-    deferred_hda.dataset.hashes
-    deferred_hda._metadata
+    deferred_hda.dataset.hashes  # noqa: B018
+    deferred_hda._metadata  # noqa: B018
     sa_session = fixture_context.sa_session
     sa_session.expunge_all()
 

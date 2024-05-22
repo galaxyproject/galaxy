@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Datasets.
 """
+
 import glob
 import logging
 import os
@@ -12,6 +13,8 @@ from typing import (
     Type,
     TypeVar,
 )
+
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
@@ -25,7 +28,17 @@ from galaxy.managers import (
     secured,
     users,
 )
+from galaxy.model import (
+    Dataset,
+    DatasetHash,
+)
+from galaxy.model.base import transaction
+from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
+    PurgeDatasetsTaskRequest,
+)
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.hash_util import memory_bound_hexdigest
 
 log = logging.getLogger(__name__)
 
@@ -48,6 +61,8 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.permissions = DatasetRBACPermissions(app)
         # needed for admin test
         self.user_manager = users.UserManager(app)
+        self.quota_agent = app.quota_agent
+        self.security_agent = app.model.security_agent
 
     def create(self, manage_roles=None, access_roles=None, flush=True, **kwargs):
         """
@@ -61,7 +76,9 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.permissions.set(dataset, manage_roles, access_roles, flush=False)
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return dataset
 
     def copy(self, dataset, **kwargs):
@@ -80,8 +97,27 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         dataset.full_delete()
         self.session().add(dataset)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return dataset
+
+    def purge_datasets(self, request: PurgeDatasetsTaskRequest):
+        """
+        Caution: any additional security checks must be done before executing this action.
+
+        Completely removes a set of object_store/files associated with the datasets from storage and marks them as purged.
+        They might not be removed if there are still un-purged associations to the dataset.
+        """
+        self.error_unless_dataset_purge_allowed()
+        with self.session().begin():
+            for dataset_id in request.dataset_ids:
+                dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+                if dataset and dataset.user_can_purge:
+                    try:
+                        dataset.full_delete()
+                    except Exception:
+                        log.exception(f"Unable to purge dataset ({dataset.id})")
 
     # TODO: this may be more conv. somewhere else
     # TODO: how to allow admin bypass?
@@ -109,6 +145,70 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         """
         roles = user.all_roles_exploiting_cache() if user else []
         return self.app.security_agent.can_access_dataset(roles, dataset)
+
+    def update_object_store_id(self, trans, dataset, object_store_id: str):
+        device_source_map = self.app.object_store.get_device_source_map()
+        old_object_store_id = dataset.object_store_id
+        new_object_store_id = object_store_id
+        if old_object_store_id == new_object_store_id:
+            return None
+        old_device_id = device_source_map.get_device_id(old_object_store_id)
+        new_device_id = device_source_map.get_device_id(new_object_store_id)
+        if old_device_id != new_device_id:
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot swap object store IDs for object stores that don't share a device ID."
+            )
+
+        if not self.security_agent.can_change_object_store_id(trans.user, dataset):
+            # TODO: probably want separate exceptions for doesn't own the dataset and dataset
+            # has been shared.
+            raise exceptions.InsufficientPermissionsException("Cannot change dataset permissions...")
+
+        if quota_source_map := self.app.object_store.get_quota_source_map():
+            old_label = quota_source_map.get_quota_source_label(old_object_store_id)
+            new_label = quota_source_map.get_quota_source_label(new_object_store_id)
+            if old_label != new_label:
+                self.quota_agent.relabel_quota_for_dataset(dataset, old_label, new_label)
+        sa_session = self.app.model.context
+        with transaction(sa_session):
+            dataset.object_store_id = new_object_store_id
+            sa_session.add(dataset)
+            sa_session.commit()
+
+    def compute_hash(self, request: ComputeDatasetHashTaskRequest):
+        # For files in extra_files_path
+        dataset = self.by_id(request.dataset_id)
+        extra_files_path = request.extra_files_path
+        if extra_files_path:
+            extra_dir = dataset.extra_files_path_name
+            file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
+        else:
+            file_path = dataset.get_file_name()
+        hash_function = request.hash_function
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        extra_files_path = request.extra_files_path
+        dataset_hash = model.DatasetHash(
+            hash_function=hash_function,
+            hash_value=calculated_hash_value,
+            extra_files_path=extra_files_path,
+        )
+        dataset_hash.dataset = dataset
+        # TODO: replace/update if the combination of dataset_id/hash_function has already
+        # been stored.
+        sa_session = self.session()
+        hash = get_dataset_hash(sa_session, dataset.id, hash_function, extra_files_path)
+        if hash is None:
+            sa_session.add(dataset_hash)
+            with transaction(sa_session):
+                sa_session.commit()
+        else:
+            old_hash_value = hash.hash_value
+            if old_hash_value != calculated_hash_value:
+                log.warning(
+                    f"Re-calculated dataset hash for dataset [{dataset.id}] and new hash value [{calculated_hash_value}] does not equal previous hash value [{old_hash_value}]."
+                )
+            else:
+                log.debug("Duplicated dataset hash request, no update to the database.")
 
     # TODO: implement above for groups
     # TODO: datatypes?
@@ -205,7 +305,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
-                return dataset.file_name
+                return dataset.get_file_name(sync_cache=False)
         self.skip()
 
     def serialize_extra_files_path(self, item, key, user=None, **context):
@@ -251,7 +351,6 @@ class DatasetAssociationManager(
 
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class: Type[model.DatasetInstance]
     app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
@@ -336,7 +435,9 @@ class DatasetAssociationManager(
                     if not track_jobs_in_database:
                         self.app.job_manager.stop(job)
                     if flush:
-                        self.session().flush()
+                        session = self.session()
+                        with transaction(session):
+                            session.commit()
                     return True
         return False
 
@@ -406,18 +507,19 @@ class DatasetAssociationManager(
 
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
-        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        data = trans.sa_session.get(self.model_class, dataset_assoc.id)
         self.ensure_can_change_datatype(data)
         self.ensure_can_set_metadata(data)
-        path = data.dataset.file_name
+        path = data.dataset.get_file_name()
         datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
         trans.app.datatypes_registry.change_datatype(data, datatype)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
-        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        data = trans.sa_session.get(self.model_class, dataset_assoc.id)
         self.ensure_can_set_metadata(data)
         if overwrite:
             self.overwrite_metadata(data)
@@ -469,22 +571,15 @@ class DatasetAssociationManager(
                     trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         elif action == "set_permissions":
 
-            def to_role_id(encoded_role_id):
-                role_id = base.decode_id(self.app, encoded_role_id)
-                return role_id
-
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
-                if encoded_role_ids is not None:
-                    return list(map(to_role_id, encoded_role_ids))
-                else:
-                    return None
+                return kwd.get(role_type, kwd.get(f"{role_type}_ids[]"))
 
             access_roles = parameters_roles_or_none("access")
             manage_roles = parameters_roles_or_none("manage")
@@ -606,7 +701,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
                 # only when explicitly set: fetching filepaths can be expensive
                 if not self.app.config.expose_dataset_path:
                     continue
-                val = val.file_name
+                val = val.get_file_name()
             # TODO:? possibly split this off?
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(dataset_assoc.datatype, name):
@@ -758,7 +853,8 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             )
         item.change_datatype(val)
         sa_session = self.app.model.context
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         trans = context.get("trans")
         assert (
             trans
@@ -808,3 +904,13 @@ class DatasetAssociationFilterParser(base.ModelFilterParser, deletable.PurgableF
             if datatype_class:
                 comparison_classes.append(datatype_class)
         return comparison_classes and isinstance(dataset_assoc.datatype, tuple(comparison_classes))
+
+
+def get_dataset_hash(session, dataset_id, hash_function, extra_files_path):
+    stmt = (
+        select(DatasetHash)
+        .where(DatasetHash.dataset_id == dataset_id)
+        .where(DatasetHash.hash_function == hash_function)
+        .where(DatasetHash.extra_files_path == extra_files_path)
+    )
+    return session.scalars(stmt).one_or_none()

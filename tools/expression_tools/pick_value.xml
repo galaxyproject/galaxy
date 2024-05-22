@@ -166,7 +166,7 @@ are non-null.
 inputs are non-null.
 - "Pick first value (or fail)" will cause the tool execution to fail if none of the selections are
 non-null. This can be important because it provides a clearer indication that something went
-wrong and can prevent the further evaluation of a worklfow.
+wrong and can prevent the further evaluation of a workflow.
 - "Pick only value" is like "First value (or fail)" in that it will cause an error if none of the
 inputs are non-null but it will go further to ensure that exactly one value is non-null. When
 building conditonal paths through a workflow this can ensure that at most one path is

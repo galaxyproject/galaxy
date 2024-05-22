@@ -1,5 +1,5 @@
-import { visitInputs, validateInputs, matchCase, matchErrors } from "./utilities";
 import toolModel from "./test-data/tool";
+import { matchCase, matchInputs, validateInputs, visitInputs } from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -129,7 +129,7 @@ describe("form component utilities", () => {
             input_b: ["error_b"],
             input_c: { input_d: "error_d" },
         };
-        const result = matchErrors(index, values);
+        const result = matchInputs(index, values);
         expect(result["input_a"]).toEqual("error_a");
         expect(result["input_b_0"]).toEqual("error_b");
         expect(result["input_c|input_d"]).toEqual("error_d");

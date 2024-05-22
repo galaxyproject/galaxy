@@ -1,9 +1,10 @@
 """The class defines the default stock Galaxy workflow reporting plugin
 """
+
 import logging
 import string
 
-from ..generators import WorkflowMarkdownGeneratorPlugin
+from . import WorkflowMarkdownGeneratorPlugin
 
 log = logging.getLogger(__name__)
 

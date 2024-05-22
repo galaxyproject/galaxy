@@ -10,11 +10,11 @@ import os
 import re
 import shutil
 import struct
-import sys
 import tempfile
 import zipfile
 from functools import partial
 from typing import (
+    Callable,
     Dict,
     IO,
     NamedTuple,
@@ -24,7 +24,6 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from galaxy import util
 from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
@@ -36,6 +35,7 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
+from galaxy.util.path import StrPath
 
 import pylibmagic  # noqa: F401  # isort:skip
 import magic  # isort:skip
@@ -49,8 +49,9 @@ BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedoc
 
 def get_test_fname(fname):
     """Returns test data filename"""
-    path, name = os.path.split(__file__)
+    path = os.path.dirname(__file__)
     full_path = os.path.join(path, "test", fname)
+    assert os.path.isfile(full_path), f"{full_path} is not a file"
     return full_path
 
 
@@ -90,8 +91,7 @@ class ConvertResult(NamedTuple):
 class ConvertFunction(Protocol):
     def __call__(
         self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
-    ) -> ConvertResult:
-        ...
+    ) -> ConvertResult: ...
 
 
 def convert_newlines(
@@ -299,6 +299,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
+    >>> fname = get_test_fname('1.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
+    >>> fname = get_test_fname('2.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
@@ -392,6 +398,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.cif')
     >>> guess_ext(fname, sniff_order)
     'cif'
+    >>> fname = get_test_fname('LaMnO3.cif')
+    >>> guess_ext(fname, sniff_order)
+    'cif'
     >>> fname = get_test_fname('Si.xyz')
     >>> guess_ext(fname, sniff_order)
     'xyz'
@@ -401,6 +410,21 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.extxyz')
     >>> guess_ext(fname, sniff_order)
     'extxyz'
+    >>> fname = get_test_fname('Si.castep')
+    >>> guess_ext(fname, sniff_order)
+    'castep'
+    >>> fname = get_test_fname('test.fits')
+    >>> guess_ext(fname, sniff_order)
+    'fits'
+    >>> fname = get_test_fname('Si.param')
+    >>> guess_ext(fname, sniff_order)
+    'param'
+    >>> fname = get_test_fname('Si.den_fmt')
+    >>> guess_ext(fname, sniff_order)
+    'den_fmt'
+    >>> fname = get_test_fname('ethanol.magres')
+    >>> guess_ext(fname, sniff_order)
+    'magres'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
@@ -707,11 +731,12 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
     return file_ext
 
 
-def zip_single_fileobj(path):
+def zip_single_fileobj(path: StrPath) -> IO[bytes]:
     z = zipfile.ZipFile(path)
     for name in z.namelist():
         if not name.endswith("/"):
             return z.open(name)
+    raise ValueError("No file present in the zip file")
 
 
 def build_sniff_from_prefix(klass):
@@ -812,9 +837,7 @@ def handle_compressed_file(
                 except OSError as e:
                     os.remove(uncompressed.name)
                     raise OSError(
-                        "Problem uncompressing {} data, please try retrieving the data uncompressed: {}".format(
-                            compressed_type, util.unicodify(e)
-                        )
+                        f"Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {e}"
                     )
                 finally:
                     is_compressed = False
@@ -923,19 +946,8 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-class Decompress(Protocol):
-    def __call__(self, path: str) -> IO[bytes]:
-        ...
-
-
-DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

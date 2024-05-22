@@ -1,8 +1,8 @@
 import logging
 
 from sqlalchemy import (
-    and_,
     false,
+    select,
     true,
 )
 
@@ -63,13 +63,6 @@ def in_tool_dict(tool_dict, exact_matches_checked, tool_id=None, tool_name=None,
     return found
 
 
-def in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
-    workflow_dict_workflow_name = workflow_dict["name"].lower()
-    return (workflow_name == workflow_dict_workflow_name) or (
-        not exact_matches_checked and workflow_dict_workflow_name.find(workflow_name) >= 0
-    )
-
-
 def make_same_length(list1, list2):
     # If either list is 1 item, we'll append to it until its length is the same as the other.
     if len(list1) == 1:
@@ -107,23 +100,12 @@ def search_names_versions(
     return match_tuples
 
 
-def search_repository_metadata(
-    app, exact_matches_checked, tool_ids="", tool_names="", tool_versions="", workflow_names="", all_workflows=False
-):
+def search_repository_metadata(app, exact_matches_checked, tool_ids="", tool_names="", tool_versions=""):
     sa_session = app.model.session
     match_tuples = []
     ok = True
     if tool_ids or tool_names or tool_versions:
-        for repository_metadata in (
-            sa_session.query(app.model.RepositoryMetadata)
-            .filter(app.model.RepositoryMetadata.table.c.includes_tools == true())
-            .join(app.model.Repository)
-            .filter(
-                and_(
-                    app.model.Repository.table.c.deleted == false(), app.model.Repository.table.c.deprecated == false()
-                )
-            )
-        ):
+        for repository_metadata in get_metadata(sa_session, app.model.RepositoryMetadata, app.model.Repository):
             metadata = repository_metadata.metadata
             if metadata:
                 tools = metadata.get("tools", [])
@@ -229,30 +211,15 @@ def search_repository_metadata(
                                     )
                         else:
                             ok = False
-    elif workflow_names or all_workflows:
-        for repository_metadata in (
-            sa_session.query(app.model.RepositoryMetadata)
-            .filter(app.model.RepositoryMetadata.table.c.includes_workflows == true())
-            .join(app.model.Repository)
-            .filter(
-                and_(
-                    app.model.Repository.table.c.deleted == false(), app.model.Repository.table.c.deprecated == false()
-                )
-            )
-        ):
-            metadata = repository_metadata.metadata
-            if metadata:
-                # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
-                # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-                if workflow_names:
-                    workflow_tups = metadata.get("workflows", [])
-                    workflows = [workflow_tup[1] for workflow_tup in workflow_tups]
-                    for workflow_dict in workflows:
-                        for workflow_name in workflow_names:
-                            if in_workflow_dict(workflow_dict, exact_matches_checked, workflow_name):
-                                match_tuples.append(
-                                    (repository_metadata.repository_id, repository_metadata.changeset_revision)
-                                )
-                elif all_workflows:
-                    match_tuples.append((repository_metadata.repository_id, repository_metadata.changeset_revision))
     return ok, match_tuples
+
+
+def get_metadata(session, repository_metadata_model, repository_model):
+    stmt = (
+        select(repository_metadata_model)
+        .where(repository_metadata_model.includes_tools == true())
+        .join(repository_model)
+        .where(repository_model.deleted == false())
+        .where(repository_model.deprecated == false())
+    )
+    return session.scalars(stmt)

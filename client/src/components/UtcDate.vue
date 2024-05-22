@@ -1,3 +1,22 @@
+<script setup lang="ts">
+import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { computed } from "vue";
+
+interface UtcDateProps {
+    date: string;
+    mode?: "date" | "elapsed" | "pretty";
+}
+
+const props = withDefaults(defineProps<UtcDateProps>(), {
+    mode: "date",
+});
+
+const parsedDate = computed(() => parseISO(`${props.date}Z`));
+const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
+const fullISO = computed(() => parsedDate.value.toISOString());
+const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
+</script>
+
 <template>
     <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
         {{ fullISO }}
@@ -9,36 +28,3 @@
         {{ pretty }}
     </span>
 </template>
-
-<script>
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
-
-export default {
-    props: {
-        date: {
-            type: String,
-            required: true,
-        },
-        mode: {
-            type: String,
-            default: "date", // or elapsed
-        },
-    },
-    computed: {
-        elapsedTime: function () {
-            return formatDistanceToNow(this.parsedDate, { addSuffix: true });
-        },
-        fullISO: function () {
-            return this.parsedDate.toISOString();
-        },
-        parsedDate: function () {
-            // assume ISO format date, except in Galaxy this won't have TZinfo -- it will always be Zulu
-            return parseISO(`${this.date}Z`);
-        },
-        pretty: function () {
-            return `${formatInTimeZone(this.parsedDate, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
-        },
-    },
-};
-</script>

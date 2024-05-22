@@ -11,8 +11,9 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class ModelStoreScriptsIntegrationTestCase(IntegrationTestCase):
+class TestModelStoreScriptsIntegration(IntegrationTestCase):
     # TODO: test build_objects also...
+    dataset_populator: DatasetPopulator
 
     def setUp(self):
         super().setUp()

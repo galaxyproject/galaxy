@@ -6,11 +6,13 @@ from typing import (
     Union,
 )
 from unittest import SkipTest
+from uuid import uuid4
 
 from requests import delete
 from requests.models import Response
 
 from galaxy.exceptions import error_codes
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
@@ -18,17 +20,18 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     WorkflowPopulator,
 )
-from ._framework import ApiTestCase
 
 
-class BasePageApiTestCase(ApiTestCase):
+class BasePagesApiTestCase(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
-    def _create_valid_page_with_slug(self, slug):
-        return self.dataset_populator.new_page(slug=slug)
+    def _create_valid_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+        return self.dataset_populator.new_page(slug=slug, **kwd)
 
     def _create_valid_page_as(self, other_email, slug):
         run_as_user = self._setup_user(other_email)
@@ -41,8 +44,7 @@ class BasePageApiTestCase(ApiTestCase):
         return self.dataset_populator.new_page_payload(**kwds)
 
 
-class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
-
+class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
     api_name = "pages"
 
     def create(self, name: str) -> str:
@@ -98,9 +100,9 @@ steps:
             self._assert_status_code_is(show_response, 200)
             show_json = show_response.json()
             self._assert_has_keys(show_json, "slug", "title", "id")
-            self.assertEqual(show_json["slug"], "invocation-report")
-            self.assertEqual(show_json["title"], "Invocation Report")
-            self.assertEqual(show_json["content_format"], "markdown")
+            assert show_json["slug"] == "invocation-report"
+            assert show_json["title"] == "Invocation Report"
+            assert show_json["content_format"] == "markdown"
             markdown_content = show_json["content"]
             assert "## Workflow Outputs" in markdown_content
             assert "## Workflow Inputs" in markdown_content
@@ -109,6 +111,10 @@ steps:
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
         assert self._users_index_has_page_with_id(create_response_json)
+
+    def test_400_on_index_deleted_shared(self):
+        response = self._index_raw(params=dict(show_shared=True, deleted=True))
+        assert response.status_code == 400
 
     def test_index_deleted(self):
         response1 = self._create_valid_page_with_slug("indexdeletedpageundeleted")
@@ -119,7 +125,7 @@ steps:
         delete_response.raise_for_status()
         assert self._users_index_has_page_with_id(response1)
         assert not self._users_index_has_page_with_id(response2)
-        assert self._users_index_has_page_with_id(response2, dict(deleted=True))
+        assert self._users_index_has_page_with_id(response2, dict(deleted=True, show_published=False))
 
     def test_index_user_id_security(self):
         user_id = self.dataset_populator.user_id()
@@ -135,9 +141,7 @@ steps:
         user_id = self.dataset_populator.user_id()
         response1 = self._create_valid_page_with_slug("indexuseridpublish1")
         with self._different_user():
-            response2 = self._create_valid_page_with_slug("indexuseridpublish2")
-            self._make_public(response2["id"])
-
+            response2 = self._create_published_page_with_slug("indexuseridpublish2")
         assert self._users_index_has_page_with_id(response1)
         assert self._users_index_has_page_with_id(response2)
         assert self._users_index_has_page_with_id(response1, dict(user_id=user_id))
@@ -145,9 +149,7 @@ steps:
 
     def test_index_show_published(self):
         with self._different_user():
-            response = self._create_valid_page_with_slug("indexshowpublish2")
-            self._make_public(response["id"])
-
+            response = self._create_published_page_with_slug("indexshowpublish2")
         assert self._users_index_has_page_with_id(response)
         assert self._users_index_has_page_with_id(response, dict(show_published=True))
         assert not self._users_index_has_page_with_id(response, dict(show_published=False))
@@ -155,8 +157,7 @@ steps:
     def test_index_show_shared_with_me(self):
         user_id = self.dataset_populator.user_id()
         with self._different_user():
-            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
-            self._make_public(response_published["id"])
+            response_published = self._create_published_page_with_slug("indexshowsharedpublished")
             response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
             self._share_with_user(response_shared["id"], user_id)
 
@@ -169,54 +170,129 @@ steps:
     def test_index_show_shared_with_me_deleted(self):
         user_id = self.dataset_populator.user_id()
         with self._different_user():
-            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")
-            self._make_public(response_published["id"])
-            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")
+            response_published = self._create_published_page_with_slug("indexshowsharedpublisheddeleted")
+            response_shared = self._create_valid_page_with_slug("indexshowsharedshareddeleted")
             self._share_with_user(response_shared["id"], user_id)
             self._delete(f"pages/{response_published['id']}").raise_for_status()
             self._delete(f"pages/{response_shared['id']}").raise_for_status()
 
         assert not self._users_index_has_page_with_id(response_shared, dict(show_shared=True, show_published=True))
         assert not self._users_index_has_page_with_id(response_published, dict(show_shared=True, show_published=True))
-        assert not self._users_index_has_page_with_id(
-            response_shared, dict(show_shared=True, show_published=True, deleted=True)
-        )
-        assert not self._users_index_has_page_with_id(
-            response_published, dict(show_shared=True, show_published=True, deleted=True)
-        )
+        assert not self._users_index_has_page_with_id(response_shared, dict(show_published=True, deleted=True))
+        assert not self._users_index_has_page_with_id(response_published, dict(show_published=True, deleted=True))
+
+    def test_index_owner(self):
+        my_workflow_id_1 = self._create_valid_page_with_slug("ownertags-m-1")
+        email_1 = f"{uuid4()}@test.com"
+        with self._different_user(email=email_1):
+            published_page_id_1 = self._create_published_page_with_slug("ownertags-p-1")["id"]
+            owner_1 = self._get("users").json()[0]["username"]
+
+        email_2 = f"{uuid4()}@test.com"
+        with self._different_user(email=email_2):
+            published_page_id_2 = self._create_published_page_with_slug("ownertags-p-2")["id"]
+
+        index_ids = self._index_ids(dict(search="is:published", show_published=True))
+        assert published_page_id_1 in index_ids
+        assert published_page_id_2 in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self._index_ids(dict(search=f"is:published u:{owner_1}", show_published=True))
+        assert published_page_id_1 in index_ids
+        assert published_page_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self._index_ids(dict(search=f"is:published u:'{owner_1}'", show_published=True))
+        assert published_page_id_1 in index_ids
+        assert published_page_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
+
+        index_ids = self._index_ids(dict(search=f"is:published {owner_1}", show_published=True))
+        assert published_page_id_1 in index_ids
+        assert published_page_id_2 not in index_ids
+        assert my_workflow_id_1 not in index_ids
 
     def test_index_ordering(self):
-        older1 = self._create_valid_page_with_slug("indexorderingcreatedfirst")["id"]
-        newer1 = self._create_valid_page_with_slug("indexorderingcreatedsecond")["id"]
+        older1 = self._create_valid_page_with_slug(slug="indexorderingcreatedfirst", title="A PAGE")["id"]
+        newer1 = self._create_valid_page_with_slug(slug="indexorderingcreatedsecond", title="B PAGE")["id"]
+        index_ids = self._index_ids(dict(sort_desc=True))
+        assert index_ids.index(older1) > index_ids.index(newer1)
         index_ids = self._index_ids()
-        assert index_ids.index(older1) > index_ids.index(newer1)
-        index_ids = self._index_ids(dict(sort_desc=True))  # the default but verify it works when explicit
-        assert index_ids.index(older1) > index_ids.index(newer1)
-
-        index_ids = self._index_ids(dict(sort_desc=False))
+        assert index_ids.index(older1) < index_ids.index(newer1)
+        index_ids = self._index_ids(dict(sort_desc=False))  # the default but verify it works when explicit
         assert index_ids.index(older1) < index_ids.index(newer1)
 
         # update older1 so the update time is newer...
         revision_data = dict(content="<p>NewContent!</p>")
         self._post(f"pages/{older1}/revisions", data=revision_data).raise_for_status()
-        index_ids = self._index_ids()
+        index_ids = self._index_ids(dict(sort_desc=True))
         assert index_ids.index(older1) < index_ids.index(newer1)
 
-        # if we switch to create time instead of update time, older1 still appears later in
-        # in the list...
-        index_ids = self._index_ids(dict(sort_by="create_time"))
-        assert index_ids.index(older1) > index_ids.index(newer1)
+        index_ids = self._index_ids(dict(sort_by="title", sort_desc=False))
+        assert index_ids.index(older1) < index_ids.index(newer1)
 
-    def test_limit_offset(self):
+    def test_index_limit_offset(self):
         older1 = self._create_valid_page_with_slug("indexlimitoffsetcreatedfirst")["id"]
         newer1 = self._create_valid_page_with_slug("indexlimitoffsetcreatedsecond")["id"]
-        index_ids = self._index_ids(dict(limit=1))
+        index_ids = self._index_ids(dict(limit=1, sort_desc=True))
         assert newer1 in index_ids
         assert older1 not in index_ids
 
-        index_ids = self._index_ids(dict(limit=1, offset=1))
+        index_ids = self._index_ids(dict(limit=1, offset=1, sort_desc=True))
         assert newer1 not in index_ids
         assert older1 in index_ids
+
+    def test_index_search_slug(self):
+        response = self._create_valid_page_with_slug("indexsearchstringfoo")
+        older1 = response["id"]
+        newer1 = self._create_valid_page_with_slug("indexsearchstringbar")["id"]
+
+        index_ids = self._index_ids(dict(search="slug:indexsearchstringfoo"))
+        assert newer1 not in index_ids
+        assert older1 in index_ids
+
+        index_ids = self._index_ids(dict(search="slug:'indexsearchstringfoo'"))
+        assert newer1 not in index_ids
+        assert older1 in index_ids
+
+        index_ids = self._index_ids(dict(search="slug:foo"))
+        assert newer1 not in index_ids
+        assert older1 in index_ids
+
+        index_ids = self._index_ids(dict(search="foo"))
+        assert newer1 not in index_ids
+        assert older1 in index_ids
+
+    def test_index_search_title(self):
+        page_id = self._create_valid_page_with_slug("indexsearchbytitle", title="mycooltitle")["id"]
+        assert page_id in self._index_ids(dict(search="mycooltitle"))
+        assert page_id not in self._index_ids(dict(search="mycoolwrongtitle"))
+        assert page_id in self._index_ids(dict(search="title:mycoolti"))
+        assert page_id in self._index_ids(dict(search="title:'mycooltitle'"))
+        assert page_id not in self._index_ids(dict(search="title:'mycoolti'"))
+
+    def test_index_search_sharing_tags(self):
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublishedtags")["id"]
+            self._make_public(response_published)
+            response_shared = self._create_valid_page_with_slug("indexshowsharedsharedtags")["id"]
+            self._share_with_user(response_shared, user_id)
+
+        assert response_published in self._index_ids(dict(show_published=True, show_shared=True))
+        assert response_shared in self._index_ids(dict(show_published=True, show_shared=True))
+
+        assert response_published in self._index_ids(dict(show_published=True, show_shared=True, search="is:published"))
+        assert response_shared not in self._index_ids(
+            dict(show_published=True, show_shared=True, search="is:published")
+        )
+
+        assert response_published not in self._index_ids(
+            dict(show_published=True, show_shared=True, search="is:shared_with_me")
+        )
+        assert response_shared in self._index_ids(
+            dict(show_published=True, show_shared=True, search="is:shared_with_me")
+        )
 
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
@@ -307,10 +383,10 @@ steps:
         self._assert_status_code_is(show_response, 200)
         show_json = show_response.json()
         self._assert_has_keys(show_json, "slug", "title", "id")
-        self.assertEqual(show_json["slug"], "pagetoshow")
-        self.assertEqual(show_json["title"], "MY PAGE")
-        self.assertEqual(show_json["content"], "<p>Page!</p>")
-        self.assertEqual(show_json["content_format"], "html")
+        assert show_json["slug"] == "pagetoshow"
+        assert show_json["title"] == "MY PAGE"
+        assert show_json["content"] == "<p>Page!</p>"
+        assert show_json["content_format"] == "html"
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
@@ -355,10 +431,13 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
+    def _create_published_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+        response = self.dataset_populator.new_page(slug=slug, **kwd)
+        response = self._make_public(response["id"])
+        return response
+
     def _make_public(self, page_id: str) -> dict:
-        sharing_response = self._put(f"pages/{page_id}/publish")
-        assert sharing_response.status_code == 200
-        return sharing_response.json()
+        return self.dataset_populator.make_page_public(page_id)
 
     def _share_with_user(self, page_id: str, user_id_or_email: str):
         data = {"user_ids": [user_id_or_email]}

@@ -2,18 +2,29 @@ gravity:
   gx_it_proxy:
     enable: true
     port: 4002
+
+  #handlers:
+  #  handler:
+  #    processes: 3
+  #    pools:
+  #      - job-handlers
+  #      - workflow-schedulers
+
 galaxy:
   interactivetools_enable: true
+  interactivetools_map: database/interactivetools_map.sqlite
+
   # outputs_to_working_directory will provide you with a better level of isolation. It is highly recommended to set
   # this parameter with InteractiveTools.
   outputs_to_working_directory: true
-  interactivetools_map: database/interactivetools_map.sqlite
+
   # `galaxy_infrastructure_url` needs to be reachable from IT containers.
-  # For local development you can map arbitrary hostnames. See `job_conf.xml.interactivetools`
+  # For local development you can map arbitrary hostnames. See `job_conf.yml.interactivetools`
   # for an example.
   # In the local development case you should use the `http` protocol (e.g http://localhost:8080) to access
   # your Galaxy, so saving notebooks doesn't fail due to invalid certificates.
   galaxy_infrastructure_url: http://localhost:8080
+
   # Do not set the following 2 options if you are using an upstream proxy server like nginx
   interactivetools_upstream_proxy: false
   interactivetools_proxy_host: localhost:4002

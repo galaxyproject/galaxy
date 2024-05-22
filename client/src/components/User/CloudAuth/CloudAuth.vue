@@ -6,7 +6,7 @@
             </b-alert>
 
             <hgroup class="cloud-auth-title">
-                <h1 v-localize>Manage Cloud Authorization</h1>
+                <h1 v-localize class="h-lg">Manage Cloud Authorization</h1>
                 <nav class="operations">
                     <ul>
                         <li class="cloudKeyHelp">
@@ -64,7 +64,7 @@
         <div class="scroll-container">
             <b-list-group>
                 <transition-group name="fade">
-                    <cloud-auth-item
+                    <CloudAuthItem
                         v-for="credential in filteredItems"
                         :key="credential.counter"
                         :credential="credential"
@@ -90,8 +90,9 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";

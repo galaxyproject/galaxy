@@ -1,43 +1,34 @@
-<template>
-    <CurrentUser v-slot="{ user }">
-        <div v-if="user.is_admin">
-            <h3>Destination Parameters</h3>
-            <table id="destination_parameters" class="tabletip info_data_table">
-                <tbody>
-                    <tr v-for="(value, title) in jobDestinationParams" :key="title">
-                        <td>{{ title }}</td>
-                        <td>{{ value }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </CurrentUser>
-</template>
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 
-<script>
-import { mapCacheActions } from "vuex-cache";
-import CurrentUser from "components/providers/CurrentUser";
+import { useJobDestinationParametersStore } from "@/stores/jobDestinationParametersStore";
+import { useUserStore } from "@/stores/userStore";
 
-export default {
-    components: {
-        CurrentUser,
-    },
-    props: {
-        jobId: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        jobDestinationParams: function () {
-            return this.$store.getters.jobDestinationParams(this.jobId);
-        },
-    },
-    created: function () {
-        this.fetchJobDestinationParams(this.jobId);
-    },
-    methods: {
-        ...mapCacheActions(["fetchJobDestinationParams"]),
-    },
-};
+const { currentUser } = storeToRefs(useUserStore());
+const jobDestinationParametersStore = useJobDestinationParametersStore();
+
+interface Props {
+    jobId: string;
+}
+
+const props = defineProps<Props>();
+
+const jobDestinationParams = computed(() => {
+    return jobDestinationParametersStore.getJobDestinationParams(props.jobId);
+});
 </script>
+
+<template>
+    <div v-if="currentUser?.is_admin">
+        <h2 class="h-md">Destination Parameters</h2>
+        <table id="destination_parameters" class="tabletip info_data_table">
+            <tbody>
+                <tr v-for="(value, title) in jobDestinationParams" :key="title">
+                    <td>{{ title }}</td>
+                    <td>{{ value }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</template>

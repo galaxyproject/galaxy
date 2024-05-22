@@ -2,13 +2,12 @@ from typing import (
     Any,
     Dict,
 )
-from unittest import TestCase
 
-from galaxy.tools.parameters.meta import process_key
+from galaxy.tools.parameters.wrapped import process_key
 from .util import BaseParameterTestCase
 
 
-class ProcessKeyTestCase(TestCase):
+class TestProcessKey:
     def test_process_key(self):
         nested_dict: Dict[str, Any] = {}
         d = {
@@ -25,7 +24,7 @@ class ProcessKeyTestCase(TestCase):
                 {"inner_repeat": [{"data_table_column_value": "bla3"}, {"data_table_column_value": "bla4"}]},
             ]
         }
-        self.assertEqual(nested_dict, expected_dict)
+        assert nested_dict == expected_dict
 
     def test_process_key_2(self):
         nested_dict: Dict[str, Any] = {}
@@ -40,10 +39,10 @@ class ProcessKeyTestCase(TestCase):
             "data_tables": [{"columns": [{"data_table_column_value": "Amel_HAv3.1"}]}],
             "directory_content": [],
         }
-        self.assertEqual(nested_dict, expected_dict)
+        assert nested_dict == expected_dict
 
 
-class ParameterParsingTestCase(BaseParameterTestCase):
+class TestParameterParsing(BaseParameterTestCase):
     """Test the parsing of XML for most parameter types - in many
     ways these are not very good tests since they break the abstraction
     established by the tools. The docs tests in basic.py are better but
@@ -51,7 +50,7 @@ class ParameterParsingTestCase(BaseParameterTestCase):
     those tests may need to be updated anyway.
 
     It occurs to me that rewriting this stuff to test to_dict would
-    be much better - since that is a public API of the the tools.
+    be much better - since that is a public API of the tools.
     """
 
     def test_parse_help_and_label(self):
@@ -92,7 +91,9 @@ class ParameterParsingTestCase(BaseParameterTestCase):
     def test_parse_optional(self):
         param = self._parameter_for(
             xml="""
-            <param type="text" name="texti" value="mydefault" />
+            <param type="text" name="texti" value="mydefault">
+                <validator type="empty_field" />
+            </param>
         """
         )
         assert param.optional is False
@@ -144,7 +145,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "integer"
         param.validate(8)
-        self.assertRaises(Exception, lambda: param.validate(10))
+        with self.assertRaises(ValueError):
+            param.validate(10)
 
     def test_float_params(self):
         param = self._parameter_for(
@@ -156,7 +158,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "float"
         param.validate(8.1)
-        self.assertRaises(Exception, lambda: param.validate(10.0))
+        with self.assertRaises(ValueError):
+            param.validate(10.0)
 
     def test_boolean_params(self):
         param = self._parameter_for(
@@ -431,13 +434,3 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         )
         assert param.type == "data_collection"
         assert param.collection_types == ["list", "list:paired"]
-
-    def test_library(self):
-        param = self._parameter_for(
-            xml="""
-            <param name="libraryp" type="library_data">
-            </param>
-        """
-        )
-        assert param.type == "library_data"
-        assert param.name == "libraryp"

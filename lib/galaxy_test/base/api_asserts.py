@@ -1,9 +1,11 @@
 """Utility methods for making assertions about Galaxy API responses, etc...
 """
+
 from typing import (
     Any,
     cast,
     Dict,
+    Optional,
     Union,
 )
 
@@ -11,37 +13,40 @@ from requests import Response
 
 from galaxy.exceptions.error_codes import ErrorCode
 
-ASSERT_FAIL_ERROR_CODE = "Expected Galaxy error code %d, obtained %d"
-ASSERT_FAIL_STATUS_CODE = "Request status code (%d) was not expected value %s. Body was %s"
 
-
-def assert_status_code_is(response: Response, expected_status_code: int):
+def assert_status_code_is(response: Response, expected_status_code: int, failure_message: Optional[str] = None):
     """Assert that the supplied response has the expect status code."""
     response_status_code = response.status_code
     if expected_status_code != response_status_code:
-        _report_status_code_error(response, expected_status_code)
+        _report_status_code_error(response, expected_status_code, failure_message)
 
 
-def assert_status_code_is_ok(response: Response):
+def assert_status_code_is_ok(response: Response, failure_message: Optional[str] = None):
     """Assert that the supplied response is okay.
 
     The easier alternative ``response.raise_for_status()`` might be
-    perferable generally.
+    preferable generally.
 
     .. seealso:: :py:meth:`requests.Response.raise_for_status()`
     """
     response_status_code = response.status_code
     is_two_hundred_status_code = response_status_code >= 200 and response_status_code <= 300
     if not is_two_hundred_status_code:
-        _report_status_code_error(response, "2XX")
+        _report_status_code_error(response, "2XX", failure_message)
 
 
-def _report_status_code_error(response: Response, expected_status_code: Union[str, int]):
+def _report_status_code_error(
+    response: Response, expected_status_code: Union[str, int], failure_message: Optional[str]
+):
     try:
         body = response.json()
     except Exception:
         body = f"INVALID JSON RESPONSE <{response.text}>"
-    assertion_message = ASSERT_FAIL_STATUS_CODE % (response.status_code, expected_status_code, body)
+    assertion_message = (
+        f"Request status code ({response.status_code}) was not expected value {expected_status_code}. Body was {body}"
+    )
+    if failure_message:
+        assertion_message = f"{failure_message}. {assertion_message}"
     raise AssertionError(assertion_message)
 
 
@@ -66,7 +71,7 @@ def assert_error_code_is(response: Union[Response, dict], error_code: Union[int,
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_code")
     err_code = as_dict["err_code"]
-    assert err_code == int(error_code), ASSERT_FAIL_ERROR_CODE % (error_code, err_code)
+    assert err_code == int(error_code), f"Expected Galaxy error code {error_code}, obtained {err_code}"
 
 
 def assert_object_id_error(response: Response):
@@ -85,7 +90,7 @@ def assert_error_message_contains(response: Union[Response, dict], expected_cont
     as_dict = _as_dict(response)
     assert_has_keys(as_dict, "err_msg")
     err_msg = as_dict["err_msg"]
-    assert expected_contains in err_msg
+    assert expected_contains in err_msg, f"Expected error message [{err_msg}] to contain [{expected_contains}]."
 
 
 def _as_dict(response: Union[Response, dict]) -> Dict[str, Any]:

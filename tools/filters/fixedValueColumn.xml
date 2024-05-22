@@ -1,8 +1,11 @@
-<tool id="addValue" name="Add column" version="1.0.0">
+<tool id="addValue" name="Add column" version="1.0.0" profile="16.04">
   <description>to an existing dataset</description>
   <edam_operations>
     <edam_operation>operation_3096</edam_operation>
   </edam_operations>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <command>
 perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $iterate
   </command>
@@ -15,14 +18,14 @@ perl '$__tool_directory__/fixedValueColumn.pl' '$input' '$out_file1' '$exp' $ite
     </param>
   </inputs>
   <outputs>
-    <data name="out_file1" format="input" metadata_source="input"/>
+    <data name="out_file1" format_source="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
       <param name="exp" value="1"/>
-      <param name="input" value="1.bed"/>
+      <param name="input" value="1.bed" ftype="bed"/>
       <param name="iterate" value="no"/>
-      <output name="out_file1" file="eq-addvalue.dat"/>
+      <output name="out_file1" file="eq-addvalue.dat" ftype="bed"/>
     </test>
   </tests>
   <help>

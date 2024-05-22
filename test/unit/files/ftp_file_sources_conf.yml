@@ -1,0 +1,8 @@
+- type: ftp
+  id: test1
+  doc: A specific ftp url handler
+  host: "ftp.gnu.org"
+
+- type: ftp
+  id: test2
+  doc: A default ftp handler, built-in and not needed other than for tests

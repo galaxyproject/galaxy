@@ -14,11 +14,6 @@ import datetime
 import os
 import sys
 
-import sphinx_rtd_theme
-
-# Library to make .md to slideshow
-from recommonmark.transform import AutoStructify
-
 # Set GALAXY_DOCS_SKIP_VIEW_CODE=1 to skip embedding highlighted source
 # code into docs.
 SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
@@ -45,12 +40,20 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["recommonmark", "sphinx.ext.intersphinx", "sphinx_markdown_tables"]
+extensions = ["myst_parser", "sphinx.ext.intersphinx"]
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
     extensions += ["sphinx.ext.doctest", "sphinx.ext.todo", "sphinx.ext.coverage", "sphinx.ext.autodoc"]
     if not SKIP_VIEW_CODE:
         extensions.append("sphinx.ext.viewcode")
+myst_enable_extensions = [
+    "attrs_block",
+    "deflist",
+    "substitution",
+    "colon_fence",
+]
+myst_heading_anchors = 5
+myst_heading_slug_func = "docutils.nodes.make_id"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -71,16 +74,6 @@ def dont_skip_init(app, what, name, obj, skip, options):
 def setup(app):
     if not SKIP_SOURCE:
         app.connect("autodoc-skip-member", dont_skip_init)
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "enable_auto_doc_ref": False,
-            "enable_auto_toc_tree": False,
-            "enable_inline_math": False,  # https://github.com/rtfd/recommonmark/pull/124
-        },
-        True,
-    )
-    app.add_transform(AutoStructify)
 
 
 # The suffix of source filenames.
@@ -101,7 +94,10 @@ copyright = str(datetime.datetime.now().year) + ", Galaxy Committers"
 # built documents.
 #
 # The short X.Y version.
-from galaxy.version import VERSION, VERSION_MAJOR
+from galaxy.version import (
+    VERSION,
+    VERSION_MAJOR,
+)
 
 version = VERSION_MAJOR
 # The full version, including alpha/beta/rc tags.
@@ -119,7 +115,7 @@ release = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["**/_*.rst"]
+exclude_patterns = ["**/_*.*"]
 if SKIP_SOURCE:
     exclude_patterns.extend(["lib"])
 if SKIP_RELEASES:
@@ -164,11 +160,10 @@ html_theme_options = {
     "collapse_navigation": False,
     "display_version": True,
     "navigation_depth": 2,
-    "canonical_url": "https://docs.galaxyproject.org/en/master/",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -176,6 +171,8 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
+
+html_baseurl = "https://docs.galaxyproject.org/en/master/"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
@@ -240,11 +237,11 @@ htmlhelp_basename = "Galaxydoc"
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
-    #'papersize': 'letterpaper',
+    # 'papersize': 'letterpaper',
     # The font size ('10pt', '11pt' or '12pt').
-    #'pointsize': '10pt',
+    # 'pointsize': '10pt',
     # Additional stuff for the LaTeX preamble.
-    #'preamble': '',
+    # 'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples

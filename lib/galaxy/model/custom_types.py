@@ -63,7 +63,6 @@ def _sniffnfix_pg9_hex(value):
 
 
 class GalaxyLargeBinary(LargeBinary):
-
     # This hack is necessary because the LargeBinary result processor
     # does not specify an encoding in the `bytes` call ,
     # likely because `result` should be binary.
@@ -115,6 +114,19 @@ class JSONType(TypeDecorator):
 
     def compare_values(self, x, y):
         return x == y
+
+
+class DoubleEncodedJsonType(JSONType):
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        value = super().process_result_value(value, dialect)
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value
+        return value
 
 
 class MutableJSONType(JSONType):
@@ -331,11 +343,12 @@ class MetadataType(JSONType):
     def process_bind_param(self, value, dialect):
         if value is not None:
             if MAX_METADATA_VALUE_SIZE is not None:
-                for k, v in list(value.items()):
-                    sz = total_size(v)
-                    if sz > MAX_METADATA_VALUE_SIZE:
-                        del value[k]
-                        log.warning(f"Refusing to bind metadata key {k} due to size ({sz})")
+                if hasattr(value, "items"):
+                    for k, v in list(value.items()):
+                        sz = total_size(v)
+                        if sz > MAX_METADATA_VALUE_SIZE:
+                            del value[k]
+                            log.warning(f"Refusing to bind metadata key {k} due to size ({sz})")
             value = json_encoder.encode(value).encode()
         return value
 

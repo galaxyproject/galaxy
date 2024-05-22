@@ -24,6 +24,7 @@ Filters - various filters are available for processing content as the index is
     stemming -> stem; opened -> open; philosophy -> philosoph.
 
 """
+
 import logging
 import os
 import re
@@ -57,8 +58,10 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import ExecutionTimer
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.util import (
+    ExecutionTimer,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -137,9 +140,10 @@ class ToolPanelViewSearch:
             # The stored ID field is not searchable
             "id": ID(stored=True, unique=True),
             # This exact field is searchable by exact matches only
-            "id_exact": TEXT(
+            "id_exact": NGRAMWORDS(
+                minsize=config.tool_ngram_minsize,
+                maxsize=config.tool_ngram_maxsize,
                 field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
-                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             # The primary name field is searchable by exact match only, and is
             # eligible for massive score boosting. A secondary ngram or text
@@ -152,6 +156,14 @@ class ToolPanelViewSearch:
             "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
             # The section where the tool is listed in the tool panel
             "section": TEXT(field_boost=float(config.tool_section_boost)),
+            # The edam operations section where the tool is listed in the tool panel
+            "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
+            # The edam topics section where the tool is listed in the tool panel
+            "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
+            # The name of the repository the tool belongs to
+            "repository": TEXT(field_boost=float(config.tool_section_boost)),
+            # The owner id of the repository the tool belongs to
+            "owner": TEXT(field_boost=float(config.tool_section_boost)),
             # Short description defined in the tool XML
             "description": TEXT(
                 field_boost=config.tool_description_boost,
@@ -221,7 +233,7 @@ class ToolPanelViewSearch:
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
 
-        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
     def _get_tools_to_remove(self, tool_cache) -> list:
         """Return list of tool IDs to be removed from index."""
@@ -270,7 +282,7 @@ class ToolPanelViewSearch:
         def clean(string):
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in string:
-                return (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
+                return (" ").join(token.text for token in self.rex(unicodify(tool.name)))
             else:
                 return string
 
@@ -278,12 +290,16 @@ class ToolPanelViewSearch:
             #  Do not add data managers to the public index
             return {}
         add_doc_kwds = {
-            "id": to_unicode(tool.id),
-            "id_exact": to_unicode(tool.id),
+            "id": unicodify(tool.id),
+            "id_exact": unicodify(tool.id),
             "name": clean(tool.name),
-            "description": to_unicode(tool.description),
-            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
-            "help": to_unicode(""),
+            "description": unicodify(tool.description),
+            "section": unicodify(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
+            "edam_operations": clean(tool.edam_operations),
+            "edam_topics": clean(tool.edam_topics),
+            "repository": unicodify(tool.repository_name),
+            "owner": unicodify(tool.repository_owner),
+            "help": unicodify(""),
         }
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
@@ -291,14 +307,14 @@ class ToolPanelViewSearch:
             id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
             add_doc_kwds["stub"] = clean(id_stub)
         else:
-            add_doc_kwds["stub"] = to_unicode(id)
+            add_doc_kwds["stub"] = unicodify(id)
         if tool.labels:
-            add_doc_kwds["labels"] = to_unicode(" ".join(tool.labels))
+            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
         if index_help:
             raw_help = tool.raw_help
             if raw_help:
                 try:
-                    add_doc_kwds["help"] = to_unicode(raw_help)
+                    add_doc_kwds["help"] = unicodify(raw_help)
                 except Exception:
                     # Don't fail to build index when help fails to parse
                     pass
@@ -327,6 +343,10 @@ class ToolPanelViewSearch:
             "name_exact",
             "description",
             "section",
+            "edam_operations",
+            "edam_topics",
+            "repository",
+            "owner",
             "help",
             "labels",
             "stub",
@@ -334,15 +354,14 @@ class ToolPanelViewSearch:
         self.parser = MultifieldParser(
             fields,
             schema=self.schema,
-            group=OrGroup,  # We need OR grouping to match StopList phrases
+            group=OrGroup,
         )
-        cleaned_query = " ".join(token.text for token in self.rex(q.lower()))
-        parsed_query = self.parser.parse(cleaned_query)
+        parsed_query = self.parser.parse(q)
         hits = self.searcher.search(
             parsed_query,
-            limit=float(config.tool_search_limit),
+            limit=None,
             sortedby="",
             terms=True,
         )
 
-        return [hit["id"] for hit in hits[: config.tool_search_limit]]
+        return [hit["id"] for hit in hits]

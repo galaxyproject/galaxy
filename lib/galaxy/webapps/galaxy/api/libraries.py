@@ -1,6 +1,7 @@
 """
 API operations on a data library.
 """
+
 import logging
 from typing import (
     List,
@@ -10,12 +11,10 @@ from typing import (
 
 from fastapi import (
     Body,
-    Path,
     Query,
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibrariesFromStore,
     CreateLibraryPayload,
@@ -31,12 +30,13 @@ from galaxy.schema.schema import (
     LibrarySummaryList,
     UpdateLibraryPayload,
 )
-from galaxy.webapps.galaxy.services.libraries import LibrariesService
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import LibraryIdPathParam
+from galaxy.webapps.galaxy.services.libraries import LibrariesService
 
 log = logging.getLogger(__name__)
 
@@ -44,10 +44,6 @@ router = Router(tags=["libraries"])
 
 DeletedQueryParam: Optional[bool] = Query(
     default=None, title="Display deleted", description="Whether to include deleted libraries in the result."
-)
-
-LibraryIdPathParam: EncodedDatabaseIdField = Path(
-    ..., title="Library ID", description="The encoded identifier of the Library."
 )
 
 UndeleteQueryParam: Optional[bool] = Query(
@@ -88,8 +84,8 @@ class FastAPILibraries:
     )
     def show(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
     ) -> LibrarySummary:
         """Returns summary information about a particular library."""
         return self.service.show(trans, id)
@@ -125,8 +121,8 @@ class FastAPILibraries:
     )
     def update(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
         payload: UpdateLibraryPayload = Body(...),
     ) -> LibrarySummary:
         """
@@ -141,8 +137,8 @@ class FastAPILibraries:
     )
     def delete(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
         undelete: Optional[bool] = UndeleteQueryParam,
         payload: Optional[DeleteLibraryPayload] = Body(default=None),
     ) -> LibrarySummary:
@@ -158,8 +154,8 @@ class FastAPILibraries:
     )
     def get_permissions(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
             None,
             title="Scope",
@@ -170,10 +166,10 @@ class FastAPILibraries:
             title="Is Library Access",
             description="Indicates whether the roles available for the library access are requested.",
         ),
-        page: Optional[int] = Query(
+        page: int = Query(
             default=1, title="Page", description="The page number to retrieve when paginating the available roles."
         ),
-        page_limit: Optional[int] = Query(
+        page_limit: int = Query(
             default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
         q: Optional[str] = Query(
@@ -198,8 +194,8 @@ class FastAPILibraries:
     )
     def set_permissions(
         self,
+        id: LibraryIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
         action: Optional[LibraryPermissionAction] = Query(
             default=None,
             title="Action",
@@ -211,7 +207,7 @@ class FastAPILibraries:
         ] = Body(...),
     ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
         """Sets the permissions to access and manipulate a library."""
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         if isinstance(payload, LibraryPermissionsPayload) and action is not None:
             payload_dict["action"] = action
         return self.service.set_permissions(trans, id, payload_dict)

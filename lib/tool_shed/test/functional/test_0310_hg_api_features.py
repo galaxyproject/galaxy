@@ -1,10 +1,8 @@
 import logging
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -27,21 +25,8 @@ class TestHgWebFeatures(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_filtering_repository(self):
         """Create and populate the filtering_0310 repository.
@@ -56,30 +41,13 @@ class TestHgWebFeatures(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=True,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_test_data.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded filtering test data.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_clone(self):
@@ -100,7 +68,7 @@ class TestHgWebFeatures(ShedTwillTestCase):
         test-data/filter1_test3.sam
         test-data/filter1_test4.bed
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         clone_path = self.generate_temp_path("test_0310", additional_paths=["filtering_0310", "user2"])
         self.clone_repository(repository, clone_path)
         files_in_repository = os.listdir(clone_path)

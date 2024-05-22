@@ -84,20 +84,16 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
-        return self.template(
-            trans,
-            "login",
-            redirect=redirect,
-            # an installation may have it's own welcome_url - show it here if they've set that
-            welcome_url=web.url_for(controller="root", action="welcome"),
-            show_welcome_with_login=trans.app.config.show_welcome_with_login,
-        )
+        return trans.response.send_redirect(web.url_for(controller="login", action="start", redirect=redirect))
 
     # ---- Tool related -----------------------------------------------------
 
     @web.expose
     def display_as(self, trans: GalaxyWebTransaction, id=None, display_app=None, **kwd):
-        """Returns a file in a format that can successfully be displayed in display_app."""
+        """
+        Returns a file in a format that can successfully be displayed in display_app;
+        if the file could not be returned, returns a message as a string.
+        """
         # TODO: unencoded id
         data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         authz_method = "rbac"
@@ -121,6 +117,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return "No data with id=%d" % id
 
     @web.expose
-    def welcome(self, trans: GalaxyWebTransaction):
+    def welcome(self, trans: GalaxyWebTransaction, **kwargs):
         welcome_url = trans.app.config.config_value_for_host("welcome_url", trans.host)
         return trans.response.send_redirect(web.url_for(welcome_url))

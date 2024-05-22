@@ -1,5 +1,6 @@
 """ Module for reasoning about structure of and matching hierarchical collections of data.
 """
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -63,9 +64,10 @@ class UninitializedTree(BaseTree):
 class Tree(BaseTree):
     children_known = True
 
-    def __init__(self, children, collection_type_description):
+    def __init__(self, children, collection_type_description, when_values=None):
         super().__init__(collection_type_description)
         self.children = children
+        self.when_values = when_values
 
     @staticmethod
     def for_dataset_collection(dataset_collection, collection_type_description):
@@ -93,12 +95,19 @@ class Tree(BaseTree):
             def get_element(collection):
                 return collection[index]  # noqa: B023
 
+            when_value = None
+            if self.when_values:
+                if len(self.when_values) == 1:
+                    when_value = self.when_values[0]
+                else:
+                    when_value = self.when_values[index]
+
             if substructure.is_leaf:
-                yield dict_map(get_element, collection_dict)
+                yield dict_map(get_element, collection_dict), when_value
             else:
                 sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
-                for element in substructure._walk_collections(sub_collections):
-                    yield element
+                for element, _when_value in substructure._walk_collections(sub_collections):
+                    yield element, when_value
 
     @property
     def is_leaf(self):
@@ -130,7 +139,7 @@ class Tree(BaseTree):
 
         new_collection_type = self.collection_type_description.multiply(other_structure.collection_type_description)
         new_children = []
-        for (identifier, structure) in self.children:
+        for identifier, structure in self.children:
             new_children.append((identifier, structure.multiply(other_structure)))
 
         return Tree(new_children, new_collection_type)
@@ -140,7 +149,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return f"Tree[collection_type={self.collection_type_description},children={','.join(map(lambda identifier_and_element: '{}={}'.format(identifier_and_element[0], identifier_and_element[1]), self.children))}]"
+        return f"Tree[collection_type={self.collection_type_description},children={','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)}]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):

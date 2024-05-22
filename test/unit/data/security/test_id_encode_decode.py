@@ -62,6 +62,17 @@ def test_maximum_length_handling_nonascii():
     assert e11 != e12
 
 
+def test_unicode_null_decoding():
+    encoded_id = test_helper_1.encode_id(1)
+    threw_exception = False
+    try:
+        test_helper_1.decode_guid(f"{encoded_id[:-1]}\0")
+    except Exception:
+        threw_exception = True
+
+    assert threw_exception
+
+
 def test_encode_decode():
     # Different ids are encoded differently
     assert test_helper_1.encode_id(1) != test_helper_1.encode_id(2)

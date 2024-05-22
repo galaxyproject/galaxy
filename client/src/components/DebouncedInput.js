@@ -2,7 +2,7 @@
  * Renderless component, used to debounce various types of form inputs
  */
 
-import { filter, debounceTime, distinctUntilChanged, finalize } from "rxjs/operators";
+import { debounceTime, distinctUntilChanged, filter, finalize } from "rxjs/operators";
 
 export default {
     props: {

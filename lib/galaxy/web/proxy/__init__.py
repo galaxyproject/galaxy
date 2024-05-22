@@ -4,9 +4,8 @@ import os
 import time
 from collections import namedtuple
 
-import requests
-
 from galaxy.util import (
+    requests,
     sockets,
     sqlite,
     unique_id,
@@ -27,7 +26,6 @@ SECURE_COOKIE = "galaxysession"
 
 
 class ProxyManager:
-
     valid_update_keys = (
         "host",
         "port",
@@ -49,7 +47,6 @@ class ProxyManager:
             "dynamic_proxy_golang_docker_address",
             "dynamic_proxy_golang_api_key",
         ]:
-
             setattr(self, option, getattr(config, option))
 
         if self.manage_dynamic_proxy:

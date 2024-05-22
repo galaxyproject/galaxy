@@ -3,18 +3,27 @@ Once state information has been calculated, handle actually executing tools
 from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
+
 import collections
 import logging
 import typing
 from abc import abstractmethod
 from typing import (
+    Any,
+    Callable,
     Dict,
     List,
+    NamedTuple,
+    Optional,
 )
 
 from boltons.iterutils import remap
+from packaging.version import Version
 
 from galaxy import model
+from galaxy.exceptions import ToolInputsNotOKException
+from galaxy.model.base import transaction
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
@@ -25,7 +34,7 @@ from galaxy.tools.actions import (
     on_text_for_names,
     ToolExecutionCache,
 )
-from galaxy.tools.parameters.basic import is_runtime_value
+from galaxy.tools.parameters.workflow_utils import is_runtime_value
 
 if typing.TYPE_CHECKING:
     from galaxy.tools import Tool
@@ -33,7 +42,7 @@ if typing.TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
-BATCH_EXECUTION_MESSAGE = "Executed ${job_count} job(s) for tool ${tool_id} request"
+BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} request"
 
 
 class PartialJobExecution(Exception):
@@ -41,28 +50,32 @@ class PartialJobExecution(Exception):
         self.execution_tracker = execution_tracker
 
 
-MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
+class MappingParameters(NamedTuple):
+    param_template: Dict[str, Any]
+    param_combinations: List[Dict[str, Any]]
 
 
 def execute(
     trans,
     tool: "Tool",
-    mapping_params,
+    mapping_params: MappingParameters,
     history: model.History,
-    rerun_remap_job_id=None,
-    collection_info=None,
-    workflow_invocation_uuid=None,
-    invocation_step=None,
-    max_num_jobs=None,
-    job_callback=None,
-    completed_jobs=None,
-    workflow_resource_parameters=None,
-    validate_outputs=False,
+    rerun_remap_job_id: Optional[int] = None,
+    preferred_object_store_id: Optional[str] = None,
+    collection_info: Optional[MatchingCollections] = None,
+    workflow_invocation_uuid: Optional[str] = None,
+    invocation_step: Optional[model.WorkflowInvocationStep] = None,
+    max_num_jobs: Optional[int] = None,
+    job_callback: Optional[Callable] = None,
+    completed_jobs: Optional[Dict[int, Optional[model.Job]]] = None,
+    workflow_resource_parameters: Optional[Dict[str, Any]] = None,
+    validate_outputs: bool = False,
 ):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
+    completed_jobs = completed_jobs or {}
     if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:
@@ -82,11 +95,13 @@ def execute(
         )
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice, completed_job):
+    def execute_single_job(execution_slice, completed_job, skip=False):
         job_timer = tool.app.execution_timer_factory.get_timer(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
         params = execution_slice.param_combination
+        if "__data_manager_mode" in mapping_params.param_template:
+            params["__data_manager_mode"] = mapping_params.param_template["__data_manager_mode"]
         if workflow_invocation_uuid:
             params["__workflow_invocation_uuid__"] = workflow_invocation_uuid
         elif "__workflow_invocation_uuid__" in params:
@@ -110,7 +125,9 @@ def execute(
             completed_job,
             collection_info,
             job_callback=job_callback,
+            preferred_object_store_id=preferred_object_store_id,
             flush_job=False,
+            skip=skip,
         )
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
@@ -125,18 +142,20 @@ def execute(
             execution_tracker.record_error(result)
 
     tool_action = tool.tool_action
-    check_inputs_ready = getattr(tool_action, "check_inputs_ready", None)
-    if check_inputs_ready:
+    if check_inputs_ready := getattr(tool_action, "check_inputs_ready", None):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
-            check_inputs_ready(
-                tool,
-                trans,
-                params,
-                history,
-                execution_cache=execution_cache,
-                collection_info=collection_info,
-            )
+            try:
+                check_inputs_ready(
+                    tool,
+                    trans,
+                    params,
+                    history,
+                    execution_cache=execution_cache,
+                    collection_info=collection_info,
+                )
+            except ToolInputsNotOKException as e:
+                execution_tracker.record_error(e)
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
     job_count = len(execution_tracker.param_combinations)
@@ -151,24 +170,21 @@ def execute(
             has_remaining_jobs = True
             break
         else:
-            execute_single_job(execution_slice, completed_jobs[i])
+            skip = execution_slice.param_combination.pop("__when_value__", None) is False
+            execute_single_job(execution_slice, completed_jobs[i], skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1
-
-    if job_datasets:
-        for job, datasets in job_datasets.items():
-            for dataset_instance in datasets:
-                dataset_instance.dataset.job = job
 
     if execution_slice:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        if tool_id == "__DATA_FETCH__" and tool.app.config.enable_celery_tasks:
+        if tool_id == "__DATA_FETCH__" and tool.app.config.is_fetch_with_celery_enabled():
             job_id = job2.id
             from galaxy.celery.tasks import (
                 fetch_data,
@@ -178,28 +194,26 @@ def execute(
             )
 
             raw_tool_source = tool.tool_source.to_string()
+            #  task_user_id parameter is used to do task user rate limiting. It is only passed
+            #  to first task in chain because it is only necessary to rate limit the first
+            #  task in a chain.
             async_result = (
-                setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
-                # Should we route tasks to queues more dynamically ?
-                # That could be one way to route tasks to the resources
-                # that they require.
-                # Unfortunately it looks like discovering new queues or
-                # joining queues by a wildcard is not considered in scope
-                # for standard celery workers.
-                # We could implement that for ourselves though.
-                # For now we just hardcode galaxy.internal (default, with access to db etc) and galaxy.external (cancelable).
-                | fetch_data.s(job_id=job_id).set(queue="galaxy.external")
+                setup_fetch_data.s(
+                    job_id, raw_tool_source=raw_tool_source, task_user_id=getattr(trans.user, "id", None)
+                )
+                | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
                     job_id=job_id,
-                ).set(queue="galaxy.external", link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
+                ).set(link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()
             job2.set_runner_external_id(async_result.task_id)
             continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -292,7 +306,7 @@ class ExecutionTracker:
         return output_collection_name
 
     def sliced_input_collection_structure(self, input_name):
-        unqualified_recurse = self.tool.profile < 18.09 and "|" not in input_name
+        unqualified_recurse = Version(str(self.tool.profile)) < Version("18.09") and "|" not in input_name
 
         def find_collection(input_dict, input_name):
             for key, value in input_dict.items():
@@ -394,7 +408,6 @@ class ExecutionTracker:
         # walk through and optional replace runtime values with None, assume they
         # would have been replaced by now if they were going to be set.
         def replace_optional_runtime_values(path, key, value):
-
             if is_runtime_value(value):
                 return key, None
             return key, value
@@ -420,7 +433,8 @@ class ExecutionTracker:
             trans.sa_session.add(collection_instance)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         self.implicit_collections = collection_instances
 
     @property
@@ -448,6 +462,24 @@ class ExecutionTracker:
                 )
                 trans.sa_session.add(implicit_collection.collection)
         else:
+            completed_collections = {}
+            if (
+                self.completed_jobs
+                and self.implicit_collection_jobs
+                and len(self.completed_jobs) == len(self.successful_jobs)
+            ):
+                # If the same number of implicit collection jobs went into
+                # creating the collection and those jobs are all cached
+                # the HDCA has effectively been copied.
+                # We mark this here so that the job cache query in subsequent
+                # jobs considers this to be a valid cached input.
+                completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
+                if all(job.copied_from_job_id in completed_job_ids for job in self.implicit_collection_jobs.job_list):
+                    completed_collections = {
+                        jtodca.name: jtodca.dataset_collection_instance
+                        for jtodca in self.completed_jobs[0].output_dataset_collection_instances
+                    }
+            implicit_collection = None
             for i, implicit_collection in enumerate(self.implicit_collections.values()):
                 if i == 0:
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
@@ -456,8 +488,20 @@ class ExecutionTracker:
                 implicit_collection.collection.finalize(
                     collection_type_description=self.collection_info.structure.collection_type_description
                 )
+
+                # Mark implicit HDCA as copied
+                completed_implicit_collection = implicit_collection and completed_collections.get(
+                    implicit_collection.implicit_output_name
+                )
+                if completed_implicit_collection:
+                    implicit_collection.copied_from_history_dataset_collection_association_id = (
+                        completed_implicit_collection.id
+                    )
+
                 trans.sa_session.add(implicit_collection.collection)
-        trans.sa_session.flush()
+
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     @property
     def implicit_inputs(self):
@@ -524,7 +568,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(
+        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
@@ -548,7 +592,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(
+        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]

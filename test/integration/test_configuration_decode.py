@@ -2,7 +2,7 @@ from galaxy_test.base.populators import LibraryPopulator
 from galaxy_test.driver import integration_util
 
 
-class ConfigurationDecodeIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestConfigurationDecodeIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.library_populator = LibraryPopulator(self.galaxy_interactor)

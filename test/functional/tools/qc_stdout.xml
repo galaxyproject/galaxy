@@ -1,6 +1,7 @@
 <tool id="qc_stdout" name="qc_stdout" version="1.0.0">
     <stdio>
-       <regex match="Quality of sample is .*%\." source="stdout" level="qc" />
+       <regex match="Quality of sample is .*%\." source="stdout" level="qc"/>
+       <regex match="Quality of sample is (?P&lt;QUALITY&gt;.*)%\." source="stdout" level="qc" description="Sample quality &#92;g&lt;QUALITY&gt;" />
     </stdio>
     <command detect_errors="exit_code"><![CDATA[
 cp '$input' '$output' &&

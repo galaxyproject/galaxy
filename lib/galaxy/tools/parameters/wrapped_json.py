@@ -1,12 +1,20 @@
+import json
 import logging
 from typing import (
     Any,
     Dict,
     List,
     Sequence,
+    TYPE_CHECKING,
 )
 
-import packaging.version
+from packaging.version import Version
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.wrappers import (
+        DatasetCollectionWrapper,
+        DatasetFilenameWrapper,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -39,28 +47,41 @@ def data_collection_input_to_path(v):
 
 
 def data_collection_input_to_staging_path_and_source_path(
-    v, invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
+    v: "DatasetCollectionWrapper", invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
 ) -> List[Dict[str, Any]]:
     staging_paths = v.get_all_staging_paths(
         invalid_chars=invalid_chars, include_collection_name=include_collection_name
     )
-    source_paths = v.all_paths
-    metadata_files = v.all_metadata_files
+    if v.element_identifiers_extensions_paths_and_metadata_files:
+        element_identifiers, extensions, source_paths, metadata_files = zip(
+            *v.element_identifiers_extensions_paths_and_metadata_files
+        )
+    else:
+        element_identifiers, extensions, source_paths, metadata_files = (), (), (), ()
     return [
         {
+            "element_identifier": element_identifier,
+            "ext": extension,
             "staging_path": staging_path,
             "source_path": source_path,
             "metadata_files": [
                 {"staging_path": f"{staging_path}.{mf[0]}", "source_path": mf[1]} for mf in metadata_files
             ],
         }
-        for staging_path, source_path, metadata_files in zip(staging_paths, source_paths, metadata_files)
+        for element_identifier, extension, staging_path, source_path, metadata_files in zip(
+            element_identifiers, extensions, staging_paths, source_paths, metadata_files
+        )
     ]
 
 
-def data_input_to_staging_path_and_source_path(v, invalid_chars: Sequence[str] = ("/",)) -> Dict[str, Any]:
+def data_input_to_staging_path_and_source_path(
+    v: "DatasetFilenameWrapper", invalid_chars: Sequence[str] = ("/",)
+) -> Dict[str, Any]:
     staging_path = v.get_staging_path(invalid_chars=invalid_chars)
+    # note that the element identifier should be always a list
     return {
+        "element_identifier": [v.element_identifier],
+        "ext": v.file_ext,
         "staging_path": staging_path,
         "source_path": data_input_to_path(v),
         "metadata_files": [
@@ -146,7 +167,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
-        if packaging.version.parse(str(profile)) < packaging.version.parse("20.05"):
+        if Version(str(profile)) < Version("20.05"):
             json_value = _cast_if_not_none(value_wrapper, str)
         else:
             if input.multiple:
@@ -168,6 +189,15 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
 
 
 def _hda_to_object(hda):
+    if hda.extension == "expression.json":
+        # We may have a null data value
+        with open(str(hda)) as inp:
+            try:
+                rval = json.loads(inp.read(5))
+                if rval is None:
+                    return rval
+            except Exception:
+                pass
     hda_dict = hda.to_dict()
     metadata_dict = {}
 

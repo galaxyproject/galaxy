@@ -3,18 +3,28 @@ import functools
 import logging
 import os
 from typing import (
-    Any,
     ClassVar,
-    Dict,
     List,
     Optional,
     Type,
 )
 
 import fs
+import fs.errors
 from fs.base import FS
+from typing_extensions import Unpack
 
-from ..sources import BaseFilesSource
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
+from galaxy.files import OptionalUserContext
+from . import (
+    AnyRemoteEntry,
+    BaseFilesSource,
+    FilesSourceOptions,
+    FilesSourceProperties,
+)
 
 log = logging.getLogger(__name__)
 
@@ -25,45 +35,69 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     required_module: ClassVar[Optional[Type[FS]]]
     required_package: ClassVar[str]
 
-    def __init__(self, **kwd):
+    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
             raise Exception(PACKAGE_MESSAGE % self.required_package)
         props = self._parse_common_config_opts(kwd)
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context=None):
+    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None):
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def _list(self, path="/", recursive=False, user_context=None):
+    def _list(
+        self,
+        path="/",
+        recursive=False,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ) -> List[AnyRemoteEntry]:
         """Return dictionary of 'Directory's and 'File's."""
+        try:
+            with self._open_fs(user_context=user_context, opts=opts) as h:
+                if recursive:
+                    res: List[AnyRemoteEntry] = []
+                    for p, dirs, files in h.walk(path):
+                        to_dict = functools.partial(self._resource_info_to_dict, p)
+                        res.extend(map(to_dict, dirs))
+                        res.extend(map(to_dict, files))
+                    return res
+                else:
+                    res = h.scandir(path, namespaces=["details"])
+                    to_dict = functools.partial(self._resource_info_to_dict, path)
+                    return list(map(to_dict, res))
+        except fs.errors.PermissionDenied as e:
+            raise AuthenticationRequired(
+                f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
+            )
+        except fs.errors.FSError as e:
+            raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
-        with self._open_fs(user_context=user_context) as h:
-            if recursive:
-                res: List[Dict[str, Any]] = []
-                for p, dirs, files in h.walk(path):
-                    to_dict = functools.partial(self._resource_info_to_dict, p)
-                    res.extend(map(to_dict, dirs))
-                    res.extend(map(to_dict, files))
-                return res
-            else:
-                res = h.scandir(path, namespaces=["details"])
-                to_dict = functools.partial(self._resource_info_to_dict, path)
-                return list(map(to_dict, res))
-
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         with open(native_path, "wb") as write_file:
-            self._open_fs(user_context=user_context).download(source_path, write_file)
+            self._open_fs(user_context=user_context, opts=opts).download(source_path, write_file)
 
-    def _write_from(self, target_path, native_path, user_context=None):
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(user_context=user_context)
+            openfs = self._open_fs(user_context=user_context, opts=opts)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)
             openfs.upload(target_path, read_file)
 
-    def _resource_info_to_dict(self, dir_path, resource_info):
+    def _resource_info_to_dict(self, dir_path, resource_info) -> AnyRemoteEntry:
         name = resource_info.name
         path = os.path.join(dir_path, name)
         uri = self.uri_from_path(path)
@@ -80,7 +114,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 "path": path,
             }
 
-    def _serialization_props(self, user_context=None):
+    def _serialization_props(self, user_context: OptionalUserContext = None):
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)

@@ -44,7 +44,6 @@ def get_timestamp_install_sql(variant):
         # is not necessarily reusable with a function
 
         for operation in ["INSERT", "UPDATE", "DELETE"]:
-
             # change hda -> update history
             sql.append(
                 build_timestamp_trigger(operation, "history_dataset_association", "history", source_key="history_id")

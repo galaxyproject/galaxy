@@ -31,7 +31,7 @@
                     class="btn btn-secondary toolbtn_save_permissions primary-button"
                     type="button"
                     @click="postPermissions">
-                    <font-awesome-icon :icon="['far', 'save']" />
+                    <FontAwesomeIcon :icon="['far', 'save']" />
                     &nbsp;Save
                 </button>
             </div>
@@ -40,17 +40,16 @@
 </template>
 
 <script>
-import Vue from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import BootstrapVue from "bootstrap-vue";
-import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
-import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
-import { extractRoles } from "components/Libraries/library-utils";
-
+import BootstrapVue from "bootstrap-vue";
 import { initPermissionsIcons } from "components/Libraries/icons";
+import { extractRoles } from "components/Libraries/library-utils";
+import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
+import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
+import { Services } from "components/Libraries/LibraryPermissions/services";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 initPermissionsIcons();

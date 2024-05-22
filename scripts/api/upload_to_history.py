@@ -8,11 +8,11 @@ import os
 import sys
 
 try:
-    import requests
+    from galaxy.util import requests
 except ImportError:
     print(
         "Could not import the requests module. See http://docs.python-requests.org/en/latest/"
-        + " or install with 'pip install requests'"
+        " or install with 'pip install requests'"
     )
     raise
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 5:
         print(
             "history_upload.py <api key> <galaxy base url> <history id> <filepath to upload>\n"
-            + "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')"
+            "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')"
         )
         sys.exit(1)
 

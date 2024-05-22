@@ -1,5 +1,6 @@
 import _l from "utils/localization";
 import Vue from "vue";
+
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function listCollectionCreatorModal(elements, options) {
@@ -26,9 +27,8 @@ function listCollectionCreatorModal(elements, options) {
 /** Use a modal to create a list collection, then add it to the given history contents.
  *  @returns {Promise} resolved when the collection is added to the history.
  */
-function createListCollection(contents, defaultHideSourceItems) {
+function createListCollection(contents, defaultHideSourceItems = true) {
     const elements = contents.toJSON();
-    let copyElements;
     const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function (elements, name, hideSourceItems) {
@@ -36,10 +36,9 @@ function createListCollection(contents, defaultHideSourceItems) {
                 id: element.id,
                 name: element.name,
                 //TODO: this allows for list:list even if the filter above does not - reconcile
-                src: element.history_content_type === "dataset" ? "hda" : "hdca",
+                src: element.src || (element.history_content_type == "dataset" ? "hda" : "hdca"),
             }));
-            copyElements = !hideSourceItems;
-            return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
+            return contents.createHDCA(elements, "list", name, hideSourceItems);
         },
     });
     return promise;

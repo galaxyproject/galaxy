@@ -42,6 +42,7 @@ Members
 -------
 
 - Enis Afgan (@afgane)
+- Ahmed Awan (@ahmedhamidawan)
 - Dannon Baker (@dannon)
 - Matthias Bernt (@bernt-matthias)
 - Daniel Blankenberg (@blankenberg)
@@ -56,10 +57,10 @@ Members
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
+- Laila Los (@ElectronicBlueberry)
 - Anton Nekrutenko (@nekrut)
 - Helena Rasche (@hexylena)
 - Nicola Soranzo (@nsoranzo)
-- James Taylor (@jxtx)
 - Marius van den Beek (@mvdbeek)
 
 Membership
@@ -166,11 +167,11 @@ Pull requests modifying frozen and tagged release branches should be restricted
 to bug fixes. As an exception, pull requests which only add new datatypes can
 target a frozen branch or the latest tagged release branch.
 
-Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
-author(s), or tagged WIP via GitHub tags, may *not* be merged without
-coordinating the removal of that tag with the pull request author(s), and
-completing the removal of that tag from wherever it is present in the open pull
-request.
+A pull request marked *[WIP]* (i.e. work in progress) in the title by its
+author(s) may *not* be merged without coordinating the removal of that mark with
+the pull request author(s). Nevertheless, pull request authors should normally
+use the `draft <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`__
+state to indicate a work-in-progress pull request.
 
 Timelines
 ---------
@@ -220,19 +221,17 @@ invokes a mandatory, minimum 72 hour, review period.
 Labeling and Milestones
 -----------------------
 
-Pull request handling, labeling, and milestone usage follows the procedures
-described in ISSUES_.
+Pull request labeling and milestone usage follows the procedures described in
+:doc:`Galaxy Issue Management <issues>`.
 
 
 Issue Reporting
 ===============
 
-Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
-handling of issues follows the procedures described in ISSUES_.
+Issues (bugs, feature requests, etc.) should be reported and handled as
+described in :doc:`Galaxy Issue Management <issues>`.
 
 
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
-.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
+.. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY.md
 .. _Apache Software Foundation voting rules: https://www.apache.org/foundation/voting.html
-.. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
-.. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

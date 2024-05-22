@@ -1,16 +1,16 @@
 <template>
     <b-card>
-        <job-information :job_id="id" :include-times="true">
+        <JobInformation :job_id="id" :include-times="true">
             <tr v-if="hasTraceback">
                 <td>Traceback</td>
                 <td>
-                    <code-row :code-label="'Traceback'" :code-item="job.traceback" />
+                    <CodeRow :code-label="'Traceback'" :code-item="job.traceback" />
                 </td>
             </tr>
             <tr v-if="hasInfo">
                 <td>Info</td>
                 <td>
-                    <code-row :code-label="'Info'" :code-item="job.info" />
+                    <CodeRow :code-label="'Info'" :code-item="job.info" />
                 </td>
             </tr>
             <tr v-if="hasRemoteHost">
@@ -19,21 +19,23 @@
                     {{ job.remote_host }}
                 </td>
             </tr>
-        </job-information>
+        </JobInformation>
         <br />
-        <h3>Job Parameters</h3>
-        <job-parameters :job-id="id" :include-title="false" />
+        <h2 class="h-md">Job Parameters</h2>
+        <JobParameters :job-id="id" :include-title="false" />
         <br />
-        <h3>Job Metrics</h3>
-        <job-metrics :job-id="id" :include-title="false" />
+        <h2 class="h-md">Job Metrics</h2>
+        <JobMetrics :job-id="id" :include-title="false" />
     </b-card>
 </template>
 
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
-import JobParameters from "components/JobParameters/JobParameters.vue";
+
 import JobInformation from "./JobInformation";
+
 import CodeRow from "./CodeRow.vue";
+import JobParameters from "components/JobParameters/JobParameters.vue";
 
 export default {
     components: {

@@ -1,15 +1,17 @@
 """ API for asynchronous job running mechanisms can use to fetch or put files
 related to running and queued jobs.
 """
+
 import logging
 import os
+import re
 import shutil
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
+from galaxy.model import Job
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
@@ -97,8 +99,20 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             )
             assert file_path.startswith(
                 upload_store
-            ), "Filename provided by nginx (%s) is not in correct" " directory (%s)" % (file_path, upload_store)
+            ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
             input_file = open(file_path)
+        elif "session_id" in payload:
+            # code stolen from basic.py
+            session_id = payload["session_id"]
+            upload_store = (
+                trans.app.config.tus_upload_store_job_files
+                or trans.app.config.tus_upload_store
+                or trans.app.config.new_file_path
+            )
+            if re.match(r"^[\w-]+$", session_id) is None:
+                raise ValueError("Invalid session id format.")
+            local_filename = os.path.abspath(os.path.join(upload_store, session_id))
+            input_file = open(local_filename)
         else:
             input_file = payload.get("file", payload.get("__file", None)).file
         target_dir = os.path.dirname(path)
@@ -114,6 +128,47 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 pass
         return {"message": "ok"}
 
+    @expose_api_anonymous_and_sessionless
+    def tus_patch(self, trans, **kwds):
+        """
+        Exposed as PATCH /api/job_files/resumable_upload.
+
+        I think based on the docs, a separate tusd server is needed for job files if
+        also hosting one for use facing uploads.
+
+        Setting up tusd for job files should just look like (I think):
+
+        tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp
+
+        See more discussion of checking upload access, but we shouldn't need the
+        API key and session stuff the user upload tusd server should be configured with.
+
+        Also shouldn't need a hooks endpoint for this reason but if you want to add one
+        the target CLI entry would be -hooks-http=<galaxy_url>/api/job_files/tus_hooks
+        and the action is featured below.
+
+        I would love to check the job state with __authorize_job_access on the first
+        POST but it seems like TusMiddleware doesn't default to coming in here for that
+        initial POST the way it does for the subsequent PATCHes. Ultimately, the upload
+        is still authorized before the write done with POST /api/jobs/<job_id>/files
+        so I think there is no route here to mess with user data - the worst of the security
+        issues that can be caused is filling up the sever with needless files that aren't
+        acted on. Since this endpoint is not meant for public consumption - all the job
+        files stuff and the TUS server should be blocked to public IPs anyway and restricted
+        to your Pulsar servers and similar targeting could be accomplished with a user account
+        and the user facing upload endpoints.
+        """
+        return None
+
+    @expose_api_anonymous_and_sessionless
+    def tus_hooks(self, trans, **kwds):
+        """No-op but if hook specified the way we do for user upload it would hit this action.
+
+        Exposed as PATCH /api/job_files/tus_hooks and documented in the docstring for
+        tus_patch.
+        """
+        pass
+
     def __authorize_job_access(self, trans, encoded_job_id, **kwargs):
         for key in ["path", "job_key"]:
             if key not in kwargs:
@@ -122,11 +177,11 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         job_id = trans.security.decode_id(encoded_job_id)
         job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(kwargs["job_key"], job_key):
+        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
-        job = trans.sa_session.query(model.Job).get(job_id)
+        job = trans.sa_session.get(Job, job_id)
         if job.finished:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
@@ -142,15 +197,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         https://gist.github.com/jmchilton/9103619.)
         """
         in_work_dir = self.__in_working_directory(job, path, trans.app)
-        allow_temp_dir_file = self.__is_allowed_temp_dir_file(trans.app, job, path)
-        if not in_work_dir and not allow_temp_dir_file and not self.__is_output_dataset_path(job, path):
+        if not in_work_dir and not self.__is_output_dataset_path(job, path):
             raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
-
-    def __is_allowed_temp_dir_file(self, app, job, path):
-        # grrr.. need to get away from new_file_path - these should be written
-        # to job working directory like metadata files.
-        in_temp_dir = util.in_directory(path, app.config.new_file_path)
-        return in_temp_dir and os.path.split(path)[-1].startswith("GALAXY_VERSION_")
 
     def __is_output_dataset_path(self, job, path):
         """Check if is an output path for this job or a file in the an
@@ -162,7 +210,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 dataset = job_dataset_association.dataset
                 if not dataset:
                     continue
-                if os.path.abspath(dataset.file_name) == os.path.abspath(path):
+                if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
                     return True
                 elif util.in_directory(path, dataset.extra_files_path):
                     return True

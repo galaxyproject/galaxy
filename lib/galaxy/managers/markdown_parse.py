@@ -5,6 +5,7 @@ This file is meant to be relatively self contained and just used to "parse" and 
 Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in other
 projects (e.g. gxformat2).
 """
+
 import re
 from typing import (
     cast,
@@ -24,11 +25,22 @@ class DynamicArguments:
 
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
+SHARED_ARGUMENTS: List[str] = ["collapse"]
 VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
+    "history_dataset_as_table": [
+        "input",
+        "output",
+        "history_dataset_id",
+        "path",
+        "title",
+        "footer",
+        "show_column_headers",
+        "compact",
+    ],
     "history_dataset_peek": ["input", "output", "history_dataset_id"],
     "history_dataset_info": ["input", "output", "history_dataset_id"],
     "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
@@ -36,13 +48,22 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_dataset_name": ["input", "output", "history_dataset_id"],
     "history_dataset_type": ["input", "output", "history_dataset_id"],
     "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
-    "workflow_display": ["workflow_id"],
-    "job_metrics": ["step", "job_id"],
-    "job_parameters": ["step", "job_id"],
-    "tool_stderr": ["step", "job_id"],
-    "tool_stdout": ["step", "job_id"],
+    "workflow_display": ["workflow_id", "workflow_checkpoint"],
+    "workflow_license": ["workflow_id"],
+    "workflow_image": ["workflow_id", "size", "workflow_checkpoint"],
+    "job_metrics": ["step", "job_id", "implicit_collection_jobs_id"],
+    "job_parameters": ["step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stderr": ["step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stdout": ["step", "job_id", "implicit_collection_jobs_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
+    "instance_access_link": [],
+    "instance_resources_link": [],
+    "instance_help_link": [],
+    "instance_support_link": [],
+    "instance_citation_link": [],
+    "instance_terms_link": [],
+    "instance_organization_link": [],
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
     "invocation_time": ["invocation_id"],
@@ -50,10 +71,10 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "invocation_inputs": [],
 }
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>%s)" % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>{})".format("|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS))
 
 ARG_VAL_REGEX = r"""[\w_\-]+|\"[^\"]+\"|\'[^\']+\'"""
-FUNCTION_ARG = r"\s*[\w\|]+\s*=\s*(?:%s)\s*" % ARG_VAL_REGEX
+FUNCTION_ARG = rf"\s*[\w\|]+\s*=\s*(?:{ARG_VAL_REGEX})\s*"
 # embed commas between arguments
 FUNCTION_MULTIPLE_ARGS = rf"(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)"
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
@@ -73,13 +94,13 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
     def _validate_arg(arg_str, valid_args, line_no):
         if arg_str is not None:
             arg_name = arg_str.split("=", 1)[0].strip()
-            if arg_name not in valid_args:
+            if arg_name not in valid_args and arg_name not in SHARED_ARGUMENTS:
                 invalid_line("Invalid argument to Galaxy directive [{argument}]", line_no, argument=arg_name)
 
     expecting_container_close_for = None
     last_line_no = 0
     function_calls = 0
-    for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
+    for line, fenced, open_fence, line_no in _split_markdown_lines(galaxy_markdown):
         last_line_no = line_no
 
         expecting_container_close = expecting_container_close_for is not None

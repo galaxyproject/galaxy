@@ -1,14 +1,14 @@
 import shutil
 import tempfile
-import unittest
 
 from galaxy.util.compression_utils import (
     CompressedFile,
     get_fileobj_raw,
 )
+from galaxy.util.unittest import TestCase
 
 
-class CompressionUtilTestCase(unittest.TestCase):
+class TestCompressionUtil(TestCase):
     def test_compression_safety(self):
         self.assert_safety("test-data/unsafe.tar", False)
         self.assert_safety("test-data/unsafe_relative_symlink.tar", False)

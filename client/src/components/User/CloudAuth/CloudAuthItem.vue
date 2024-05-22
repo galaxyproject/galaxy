@@ -2,7 +2,7 @@
     <b-list-group-item class="cloud-auth-key" :class="statusClasses" :variant="variant" :button="!expanded">
         <header>
             <hgroup>
-                <h4 @click.prevent="expand()">{{ credential.title }}</h4>
+                <h2 class="h-sm" @click.prevent="expand()">{{ credential.title }}</h2>
                 <nav class="operations">
                     <ul>
                         <transition name="fade">
@@ -40,7 +40,7 @@
         </header>
         <!-- TODO: Restructure credential handling so we're not mutating the prop -->
         <!-- eslint-disable vue/no-mutating-props-->
-        <credential-form
+        <CredentialForm
             v-if="expanded"
             v-model="credential"
             class="border-top"
@@ -52,8 +52,8 @@
 </template>
 
 <script>
-import { Credential } from "./model";
 import CredentialForm from "./CredentialForm";
+import { Credential } from "./model";
 
 export default {
     components: {

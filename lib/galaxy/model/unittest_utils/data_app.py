@@ -5,6 +5,7 @@ and it has dependencies from across the app. This mock application and config is
 more appropriate for testing galaxy-data functionality and will be included with
 galaxy-data.
 """
+
 import os
 import shutil
 import tempfile
@@ -56,6 +57,7 @@ class GalaxyDataTestConfig(Bunch):
 
         # objectstore config values...
         self.object_store_config_file = ""
+        self.object_store_config = None
         self.object_store = "disk"
         self.object_store_check_old_style = False
         self.object_store_cache_path = "/tmp/cache"
@@ -68,6 +70,13 @@ class GalaxyDataTestConfig(Bunch):
         self.new_file_path = os.path.join(self.data_dir, "tmp")
         self.file_path = os.path.join(self.data_dir, "files")
         self.server_name = "main"
+        self.enable_quotas = False
+        self.user_library_import_symlink_allowlist = []
+        self.fetch_url_allowlist_ips = []
+        self.library_import_dir = None
+        self.user_library_import_dir = None
+        self.ftp_upload_dir = None
+        self.ftp_upload_purge = False
 
     def __del__(self):
         if self._remove_root:
@@ -87,9 +96,10 @@ class GalaxyDataTestApp:
         self.config = config
         self.security = config.security
         self.object_store = objectstore.build_object_store_from_config(self.config)
-        self.model = init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
+        self.model = init("/tmp", self.config.database_connection, create_tables=True)
+        model.setup_global_object_store_for_models(self.object_store)
         self.security_agent = self.model.security_agent
-        self.tag_handler = GalaxyTagHandler(self.model.context)
+        self.tag_handler = GalaxyTagHandler(self.model.session)
         self.init_datatypes()
 
     def init_datatypes(self):

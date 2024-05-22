@@ -37,11 +37,15 @@
     <tool file="${model_tools_path}/relabel_from_file.xml" />
     <tool file="${model_tools_path}/filter_from_file.xml" />
     <tool file="${model_tools_path}/sort_collection_list.xml" />
+    <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
+    <tool file="${model_tools_path}/cross_product_flat.xml" />
+    <tool file="${model_tools_path}/cross_product_nested.xml" />
     <tool file="${model_tools_path}/tag_collection_from_file.xml" />
     <tool file="${model_tools_path}/apply_rules.xml" />
     <tool file="${model_tools_path}/build_list.xml" />
     <tool file="${model_tools_path}/build_list_1.2.0.xml" />
     <tool file="${model_tools_path}/extract_dataset.xml" />
+    <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
   </section>
   <section id="expression_tools" name="Expression Tools">
     <tool file="expression_tools/parse_values_from_file.xml"/>
@@ -78,6 +82,7 @@
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section id="filter" name="Filter and Sort">
+    <tool file="stats/filtering_1_1_0.xml" />
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
@@ -95,7 +100,6 @@
   </section>
   <section id="fetchAlignSeq" name="Fetch Alignments/Sequences">
     <tool file="maf/interval2maf_pairwise.xml" />
-    <tool file="maf/interval2maf.xml" />
     <tool file="maf/maf_split_by_species.xml" />
     <tool file="maf/interval_maf_to_merged_fasta.xml" />
     <tool file="maf/genebed_maf_to_fasta.xml" />
@@ -120,8 +124,6 @@
     <tool file="maf/vcf_to_maf_customtrack.xml" />
   </section>
   <section id="hgv" name="Phenotype Association">
-    <tool file="evolution/codingSnps.xml" />
-    <tool file="evolution/add_scores.xml" />
     <tool file="phenotype_association/sift.xml" />
     <tool file="phenotype_association/linkToGProfile.xml" />
     <tool file="phenotype_association/linkToDavid.xml" />
@@ -130,16 +132,19 @@
   </section>
   <!--
   <section id="interactivetools" name="Interactive tools">
-    <tool file="interactive/codingSnps.xml" />
     <tool file="interactive/interactivetool_askomics.xml" />
     <tool file="interactive/interactivetool_bam_iobio.xml" />
-    <tool file="interactive/interactivetool_cellxgene.xml" />
+    <tool file="interactive/interactivetool_cellxgene_0.16.2.xml" />
+    <tool file="interactive/interactivetool_cellxgene_1.1.1.xml" />
     <tool file="interactive/interactivetool_ethercalc.xml" />
+    <tool file="interactive/interactivetool_guacamole_desktop.xml" />
     <tool file="interactive/interactivetool_hicbrowser.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook.xml" />
     <tool file="interactive/interactivetool_neo4j.xml" />
+    <tool file="interactive/interactivetool_openrefine.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />
+    <tool file="interactive/interactivetool_rstudio.xml" />
   </section>
   -->
 </toolbox>

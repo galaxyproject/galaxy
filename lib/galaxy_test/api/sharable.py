@@ -4,6 +4,7 @@ from typing import (
     List,
 )
 from unittest import SkipTest
+from uuid import uuid4
 
 from galaxy_test.base.api import UsesApiTestCaseMixin
 
@@ -140,11 +141,12 @@ class SharingApiTests(UsesApiTestCaseMixin):
         resource_id = self.create("resource-to-set-slug")
         other_resource_id = self.create("other-resource-to-set-slug")
 
-        response = self._set_slug(resource_id, "new-slug")
+        new_slug = f"new-slug-{uuid4()}"
+        response = self._set_slug(resource_id, new_slug)
         self._assert_status_code_is_ok(response)
 
         # Slugs must be unique for the same user/resource
-        response = self._set_slug(other_resource_id, "new-slug")
+        response = self._set_slug(other_resource_id, new_slug)
         self._assert_status_code_is(response, 409)
 
         # Other users cannot change the slug if they don't own the resource

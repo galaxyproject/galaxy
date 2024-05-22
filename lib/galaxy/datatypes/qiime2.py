@@ -3,12 +3,24 @@ import html
 import io
 import uuid as _uuid
 import zipfile
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
 
 import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasMetadata,
+)
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.tabular import Tabular
 
 
@@ -21,15 +33,15 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        metadata = _get_metadata_from_archive(dataset.file_name)
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        metadata = _get_metadata_from_archive(dataset.get_file_name())
         for key, value in metadata.items():
             if value:
                 setattr(dataset.metadata, key, value)
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
@@ -37,17 +49,21 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset):
-        def make_row(item):
-            return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        if dataset.metadata.semantic_type is None:
+            # Proxy for metadata elements not (yet) set
+            return "Peek unavailable"
+
+        def make_row(pair):
+            return f"<tr><th>{pair[0]}</th><td>{html.escape(pair[1])}</td></tr>"
 
         table = ['<table cellspacing="0" cellpadding="2">']
-        table += list(map(make_row, self._peek(dataset, simple=True)))
+        table += [make_row(pair) for pair in self._peek(dataset, simple=True)]
         table += ["</table>"]
 
         return "".join(table)
 
-    def _peek(self, dataset, simple=False):
+    def _peek(self, dataset: HasMetadata, simple: bool = False) -> List:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":
@@ -55,30 +71,30 @@ class _QIIME2ResultBase(CompressedZipArchive):
             peek.append(("Version", dataset.metadata.version))
         return peek
 
-    def _sniff(self, filename):
+    def _sniff(self, filename: str) -> Optional[Dict]:
         """Helper method for use in inherited datatypes"""
         try:
             if not zipfile.is_zipfile(filename):
                 raise Exception()
             return _get_metadata_from_archive(filename)
         except Exception:
-            return False
+            return None
 
 
 class QIIME2Artifact(_QIIME2ResultBase):
     file_ext = "qza"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] != "Visualization"
+        return bool(metadata) and metadata["semantic_type"] != "Visualization"  # type: ignore[index]
 
 
 class QIIME2Visualization(_QIIME2ResultBase):
     file_ext = "qzv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] == "Visualization"
+        return bool(metadata) and metadata["semantic_type"] == "Visualization"  # type: ignore[index]
 
 
 @build_sniff_from_prefix
@@ -100,20 +116,18 @@ class QIIME2Metadata(Tabular):
     _TYPES_DIRECTIVE = "#q2:types"
     _search_lines = 2
 
-    def get_column_names(self, first_line=None):
-        if first_line is None:
-            return None
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset, **kwargs):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.
         """
-        super().set_meta(dataset, **kwargs)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 line = None
                 for line, _ in zip(dataset_fh, range(self._search_lines)):
                     if line.startswith(self._TYPES_DIRECTIVE):
@@ -139,7 +153,7 @@ class QIIME2Metadata(Tabular):
                     if q2_type == "categorical" and col_type in ("float", "int", "list"):
                         dataset.metadata.column_types[idx] = "str"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         for _, line in zip(range(self._search_lines), file_prefix.line_iterator()):
             if line.startswith(self._TYPES_DIRECTIVE):
                 return True
@@ -244,10 +258,10 @@ def _get_uuid(path):
     if len(roots) == 0:
         raise ValueError("Archive does not have a visible root directory.")
     if len(roots) > 1:
-        raise ValueError("Archive has multiple root directories: %r" % roots)
+        raise ValueError(f"Archive has multiple root directories: {roots!r}")
     uuid = roots.pop()
     if not _is_uuid4(uuid):
-        raise ValueError("Archive root directory name %r is not a valid version 4 " "UUID." % uuid)
+        raise ValueError(f"Archive root directory name {uuid!r} is not a valid version 4 UUID.")
     return uuid
 
 
@@ -261,7 +275,7 @@ def _get_versions(path, uuid):
         framework_version = framework_version_line.split(":")[1].strip()
         return version, framework_version
     except Exception:
-        raise ValueError("Archive does not contain a correctly formatted" " VERSION file.")
+        raise ValueError("Archive does not contain a correctly formatted VERSION file.")
 
 
 def _open_file_in_archive(zip_path, path, uuid):

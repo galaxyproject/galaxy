@@ -2,11 +2,11 @@
     <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
-                <font-awesome-icon icon="magic" class="mr-1" />
+                <FontAwesomeIcon icon="magic" class="mr-1" />
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
-                <a href="#" @click="onRefactor"> Try to automatically fix issues. </a>
+                <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
         <b-card-body>
@@ -67,7 +67,7 @@
                 @onMouseLeave="onUnhighlight"
                 @onClick="onFixUnlabeledOutputs" />
             <div v-if="!hasActiveOutputs">
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
         </b-card-body>
@@ -75,23 +75,28 @@
 </template>
 
 <script>
-import Vue from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
+import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
+import { storeToRefs } from "pinia";
+import Vue from "vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStores } from "@/composables/workflowStores";
+
 import {
-    getDisconnectedInputs,
-    getUntypedParameters,
-    getMissingMetadata,
-    getUnlabeledOutputs,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
+    getDisconnectedInputs,
+    getMissingMetadata,
+    getUnlabeledOutputs,
+    getUntypedParameters,
 } from "./modules/linting";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 
 Vue.use(BootstrapVue);
 
@@ -106,9 +111,10 @@ export default {
     props: {
         untypedParameters: {
             type: UntypedParameters,
+            required: true,
         },
-        getManager: {
-            type: Function,
+        steps: {
+            type: Object,
             required: true,
         },
         annotation: {
@@ -120,27 +126,21 @@ export default {
             default: null,
         },
         creator: {
+            type: Array,
             default: null,
         },
+        datatypesMapper: {
+            type: DatatypesMapperModel,
+            required: true,
+        },
     },
-    data() {
-        return {
-            forceRefresh: 0,
-        };
+    setup() {
+        const stores = useWorkflowStores();
+        const { connectionStore, stepStore } = stores;
+        const { hasActiveOutputs } = storeToRefs(stepStore);
+        return { stores, connectionStore, stepStore, hasActiveOutputs };
     },
     computed: {
-        nodes() {
-            return this.getManager().nodes;
-        },
-        hasActiveOutputs() {
-            this.forceRefresh;
-            for (const node of Object.values(this.nodes)) {
-                if (node.activeOutputs.getAll().length > 0) {
-                    return true;
-                }
-            }
-            return false;
-        },
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
             // some of these extractions may not be possible.
@@ -172,25 +172,16 @@ export default {
             return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
-            this.forceRefresh;
-            return getDisconnectedInputs(this.nodes);
+            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.stores);
         },
         warningMissingMetadata() {
-            this.forceRefresh;
-            return getMissingMetadata(this.nodes);
+            return getMissingMetadata(this.steps);
         },
         warningUnlabeledOutputs() {
-            this.forceRefresh;
-            return getUnlabeledOutputs(this.nodes);
+            return getUnlabeledOutputs(this.steps);
         },
     },
     methods: {
-        refresh() {
-            // I tried to make these purely reactive but I guess it is not surprising that the
-            // entirity of the nodes object and children aren't all purely reactive.
-            // https://logaretm.com/blog/2019-10-11-forcing-recomputation-of-computed-properties/
-            this.forceRefresh += 1;
-        },
         onAttributes() {
             this.$emit("onAttributes");
         },
@@ -237,7 +228,7 @@ export default {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
-            const actions = fixAllIssues(this.nodes, this.untypedParameters);
+            const actions = fixAllIssues(this.steps, this.untypedParameters, this.datatypesMapper, this.stores);
             this.$emit("onRefactor", actions);
         },
     },

@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class ChangePasswordTestCase(SeleniumTestCase):
+class TestChangePassword(SeleniumTestCase):
     @selenium_test
     def test_change_password(self):
         self.home()
@@ -52,6 +52,7 @@ class ChangePasswordTestCase(SeleniumTestCase):
         self.register_and_change_password()
         password = self.default_password
         self.fill_input_fields(password, password, password)
+        self.assert_success_message(contains="Password has been changed")
 
     def register_and_change_password(self):
         self.home()

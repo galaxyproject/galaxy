@@ -104,7 +104,7 @@ class SelectField(BaseField):
         self.multiple = multiple or False
         self.refresh_on_change = refresh_on_change
         self.selectlist = selectlist or []
-        self.options = list()
+        self.options = []
         if display == "checkboxes":
             assert multiple, "Checkbox display only supported for multiple select"
         elif display == "radio":
@@ -113,8 +113,8 @@ class SelectField(BaseField):
             raise Exception(f"Unknown display type: {display}")
         self.display = display
 
-    def add_option(self, text, value, selected=False):
-        self.options.append((text, value, selected))
+    def add_option(self, label, value, selected=False):
+        self.options.append((str(label), value, selected))
 
     def to_dict(self):
         d = super().to_dict()
@@ -199,11 +199,3 @@ class HistoryField(BaseField):
                 if not a.deleted:
                     d["data"].append({"label": a.name, "value": self.security.encode_id(a.id)})
         return d
-
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import doctest
-    import sys
-
-    return doctest.DocTestSuite(sys.modules[__name__])

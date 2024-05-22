@@ -10,7 +10,6 @@ import json
 import re
 import sys
 from ast import (
-    Module,
     parse,
     walk,
 )
@@ -139,8 +138,6 @@ def check_expression(text):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False
@@ -288,7 +285,7 @@ first_invalid_line = 0
 invalid_line = None
 lines_kept = 0
 total_lines = 0
-out = open(out_fname, "wt")
+out = open(out_fname, "w")
 
 # Read and filter input file, skipping invalid lines
 code = """

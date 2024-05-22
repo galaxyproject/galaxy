@@ -1,12 +1,17 @@
 """ This module contains functionality to aid in extracting workflows from
 histories.
 """
+
 import logging
 from typing import Optional
 
 from galaxy import (
     exceptions,
     model,
+)
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
@@ -52,8 +57,9 @@ def extract_workflow(
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
+    workflow.steps = steps
     # Order the steps if possible
-    attach_ordered_steps(workflow, steps)
+    attach_ordered_steps(workflow)
     # And let's try to set up some reasonable locations on the canvas
     # (these are pretty arbitrary values)
     levorder = order_workflow_steps_with_levels(steps)
@@ -69,7 +75,9 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
-    trans.sa_session.flush()
+    ensure_object_added_to_session(workflow, session=trans.sa_session)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     return stored
 
 
@@ -108,7 +116,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name)
+        step.tool_inputs = dict(name=name)  # type:ignore[assignment]
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     for i, hid in enumerate(dataset_collection_ids):
@@ -124,7 +132,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name, collection_type=collection_type)
+        step.tool_inputs = dict(name=name, collection_type=collection_type)  # type:ignore[assignment]
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     # Tool steps
@@ -293,8 +301,7 @@ class WorkflowSummary:
 
         hid = dataset_collection.hid
         self.collection_types[hid] = dataset_collection.collection.collection_type
-        cja = dataset_collection.creating_job_associations
-        if cja:
+        if cja := dataset_collection.creating_job_associations:
             # Use the "first" job to represent all mapped jobs.
             representative_assoc = cja[0]
             representative_job = representative_assoc.job

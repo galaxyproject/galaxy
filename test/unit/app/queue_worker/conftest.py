@@ -5,18 +5,22 @@ from typing import Optional
 import pytest
 
 try:
+    import psycopg
+except ImportError:
+    psycopg = None  # type: ignore[assignment, unused-ignore]
+
+try:
     import psycopg2
 except ImportError:
     psycopg2 = None
 
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.util import which
 
 
 def create_base_test(connection, amqp_type: str, amqp_connection: Optional[str] = None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
-    app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection
+    app.config.amqp_internal_connection = amqp_connection or f"sqlalchemy+{app.config.database_connection}"
     app.amqp_type = amqp_type
     return app
 
@@ -46,7 +50,7 @@ def sqlite_app(sqlite_connection):
 
 @pytest.fixture()
 def postgres_app(postgresql_proc):
-    connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
+    connection = f"postgresql://{postgresql_proc.user}@{postgresql_proc.host}:{postgresql_proc.port}/"
 
     def create_app():
         return create_base_test(connection, amqp_type="postgres")
@@ -57,10 +61,10 @@ def postgres_app(postgresql_proc):
 @pytest.fixture(params=["postgres_app", "sqlite_app", "sqlite_rabbitmq_app"])
 def database_app(request):
     if request.param == "postgres_app":
-        if not which("initdb"):
-            pytest.skip("initdb must be on PATH for postgresql fixture")
+        if not psycopg:
+            pytest.skip("psycopg must be installed for postgresql_proc fixture")
         if not psycopg2:
-            pytest.skip("psycopg2 must be installed for postgresql fixture")
+            pytest.skip("psycopg2 must be installed for database_app fixture")
     if request.param == "sqlite_rabbitmq_app":
         if not os.environ.get("GALAXY_TEST_AMQP_INTERNAL_CONNECTION"):
             pytest.skip("rabbitmq tests will be skipped if GALAXY_TEST_AMQP_INTERNAL_CONNECTION env var is unset")

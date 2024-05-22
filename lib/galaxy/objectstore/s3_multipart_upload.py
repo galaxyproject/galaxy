@@ -69,7 +69,7 @@ def multipart_upload(s3server, bucket, s3_key_name, tarball, mb_size):
 
     mp = bucket.initiate_multipart_upload(s3_key_name, reduced_redundancy=s3server["use_rr"])
 
-    for (i, part) in enumerate(split_file(tarball, mb_size)):
+    for i, part in enumerate(split_file(tarball, mb_size)):
         t = threading.Thread(target=transfer_part, args=(s3server, mp.id, mp.key_name, mp.bucket_name, i, part))
         t.start()
         t.join()

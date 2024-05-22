@@ -13,6 +13,7 @@ where location is formatted as:
 
 and symbols are sorted in lexigraphical order.
 """
+
 import optparse
 
 from bx.tabular.io import (

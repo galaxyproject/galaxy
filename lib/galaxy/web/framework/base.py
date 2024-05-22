@@ -1,6 +1,7 @@
 """
 A simple WSGI application/framework.
 """
+
 import io
 import json
 import logging
@@ -15,6 +16,7 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
+from urllib.parse import urljoin
 
 import routes
 import webob.compat
@@ -92,8 +94,8 @@ class WebApplication:
         `finalize_config` when all controllers and routes have been added
         and `__call__` to handle a request (WSGI style).
         """
-        self.controllers = dict()
-        self.api_controllers = dict()
+        self.controllers = {}
+        self.api_controllers = {}
         self.mapper = routes.Mapper()
         self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be
@@ -157,14 +159,21 @@ class WebApplication:
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
-        # Immediately create request_id which we will use for logging
-        request_id = environ.get("request_id", "unknown")
+        # Get request_id (set by RequestIDMiddleware):
+        # Used for logging + ensuring request-scoped SQLAlchemy sessions.
+        request_id = environ["request_id"]
+
         if self.trace_logger:
             self.trace_logger.context_set("request_id", request_id)
         self.trace(message="Starting request")
+
+        path_info = environ.get("PATH_INFO", "")
+
         try:
-            return self.handle_request(environ, start_response)
+            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            return self.handle_request(request_id, path_info, environ, start_response)
         finally:
+            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -197,11 +206,8 @@ class WebApplication:
             raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
-    def handle_request(self, environ, start_response, body_renderer=None):
-        # Grab the request_id (should have been set by middleware)
-        request_id = environ.get("request_id", "unknown")
+    def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
-        path_info = environ.get("PATH_INFO", "")
         client_match = self.clientside_routes.match(path_info, environ)
         map_match = self.mapper.match(path_info, environ) or client_match
         if path_info.startswith("/api"):
@@ -217,6 +223,12 @@ class WebApplication:
         rc = routes.request_config()
         rc.mapper = self.mapper
         rc.mapper_dict = map_match
+        server_port = environ["SERVER_PORT"]
+        if isinstance(server_port, int):
+            # Workaround bug in the routes package, which would concatenate this
+            # without casting to str in
+            # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
+            environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory(environ)
@@ -239,9 +251,9 @@ class WebApplication:
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ[
-            "controller_action_key"
-        ] = f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+        environ["controller_action_key"] = (
+            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+        )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -250,7 +262,7 @@ class WebApplication:
         try:
             body = method(trans, **kwargs)
         except Exception as e:
-            body = self.handle_controller_exception(e, trans, **kwargs)
+            body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
                 raise
         body_renderer = body_renderer or self._render_body
@@ -285,7 +297,7 @@ class WebApplication:
             # Worst case scenario
             return [smart_str(body)]
 
-    def handle_controller_exception(self, e, trans, **kwargs):
+    def handle_controller_exception(self, e, trans, method, **kwargs):
         """
         Allow handling of exceptions raised in controller methods.
         """
@@ -415,8 +427,7 @@ class Request(webob.Request):
     @lazy_property
     def cookies(self):
         cookies = SimpleCookie()
-        cookie_header = self.environ.get("HTTP_COOKIE")
-        if cookie_header:
+        if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
             galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
             if galaxy_cookies:
@@ -429,6 +440,10 @@ class Request(webob.Request):
     @lazy_property
     def base(self):
         return f"{self.scheme}://{self.host}"
+
+    @lazy_property
+    def url_path(self):
+        return urljoin(self.base, self.environ.get("SCRIPT_NAME", ""))
 
     # @lazy_property
     # def params( self ):
@@ -530,20 +545,45 @@ def send_file(start_response, trans, body):
         body = [b""]
     # Fall back on sending the file in chunks
     else:
-        body = iterate_file(body)
+        trans.response.headers["accept-ranges"] = "bytes"
+        start = None
+        end = None
+        if trans.request.method == "HEAD":
+            trans.response.headers["content-length"] = os.path.getsize(body.name)
+            body = b""
+        if trans.request.range:
+            start = int(trans.request.range.start)
+            file_size = int(trans.response.headers["content-length"])
+            end = int(file_size if end is None else trans.request.range.end)
+            trans.response.headers["content-length"] = str(end - start)
+            trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
+            trans.response.status = 206
+        if body:
+            body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 
 
-def iterate_file(fh):
+def iterate_file(fh, start=None, stop=None):
     """
     Progressively return chunks from `file`.
     """
+    length = None
+    if start:
+        fh.seek(start)
+    if stop:
+        length = stop - start
     while 1:
-        chunk = fh.read(CHUNK_SIZE)
+        read_size = CHUNK_SIZE
+        if length:
+            read_size = min(CHUNK_SIZE, length)
+            length -= read_size
+        chunk = fh.read(read_size)
         if not chunk:
             break
         yield chunk
+        if length is not None and length == 0:
+            break
 
 
 def flatten(seq):

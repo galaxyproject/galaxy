@@ -1,8 +1,6 @@
 from galaxy.tool_shed.util.basic_util import (
     CHUNK_SIZE,
     DOCKER_IMAGE_TEMPLATE,
-    evaluate_template,
-    get_env_var_values,
     get_file_type_str,
     INSTALLATION_LOG,
     MAX_DISPLAY_SIZE,
@@ -20,8 +18,6 @@ from galaxy.tool_shed.util.basic_util import (
 __all__ = (
     "CHUNK_SIZE",
     "DOCKER_IMAGE_TEMPLATE",
-    "evaluate_template",
-    "get_env_var_values",
     "get_file_type_str",
     "INSTALLATION_LOG",
     "MAX_DISPLAY_SIZE",

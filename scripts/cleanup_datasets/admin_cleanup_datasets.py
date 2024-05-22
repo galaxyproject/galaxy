@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Mark datasets as deleted that are older than specified cutoff
-and (optionaly) with a tool_id that matches the specified search
+and (optionally) with a tool_id that matches the specified search
 string.
 
 This script is useful for administrators to cleanup after users who
@@ -64,6 +64,7 @@ from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
+from galaxy.model.base import transaction
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -92,7 +93,7 @@ def main():
         help="config file (legacy, use --config instead)",
     )
     parser.add_argument("-d", "--days", dest="days", action="store", type=int, help="number of days (60)", default=60)
-    parser.add_argument("--tool_id", default=None, help="Text to match against tool_id" "Default: match all")
+    parser.add_argument("--tool_id", default=None, help="Text to match against tool_id. Default: match all")
     parser.add_argument(
         "--template",
         default=None,
@@ -120,10 +121,10 @@ def main():
         default=False,
     )
     parser.add_argument(
-        "--smtp", default=None, help="SMTP Server to use to send email. " "Default: [read from galaxy ini file]"
+        "--smtp", default=None, help="SMTP Server to use to send email. Default: [read from galaxy config file]"
     )
     parser.add_argument(
-        "--fromaddr", default=None, help="From address to use to send email. " "Default: [read from galaxy ini file]"
+        "--fromaddr", default=None, help="From address to use to send email. Default: [read from galaxy config file]"
     )
     populate_config_args(parser)
 
@@ -137,20 +138,18 @@ def main():
     if args.smtp is not None:
         app_properties["smtp_server"] = args.smtp
     if app_properties.get("smtp_server") is None:
-        parser.error("SMTP Server must be specified as an option (--smtp) " "or in the config file (smtp_server)")
+        parser.error("SMTP Server must be specified as an option (--smtp) or in the config file (smtp_server)")
 
     if args.fromaddr is not None:
         app_properties["email_from"] = args.fromaddr
     if app_properties.get("email_from") is None:
-        parser.error(
-            "From address must be specified as an option " "(--fromaddr) or in the config file " "(email_from)"
-        )
+        parser.error("From address must be specified as an option (--fromaddr) or in the config file (email_from)")
 
     scriptdir = os.path.dirname(os.path.abspath(__file__))
     template_file = args.template
     if template_file is None:
         default_template = os.path.join(scriptdir, "admin_cleanup_deletion_template.txt")
-        sample_template_file = "%s.sample" % default_template
+        sample_template_file = f"{default_template}.sample"
         if os.path.exists(default_template):
             template_file = default_template
         elif os.path.exists(sample_template_file):
@@ -159,13 +158,11 @@ def main():
             template_file = default_template
         else:
             parser.error(
-                "Default template (%s) or sample template (%s) not "
-                "found, please specify template as an option "
-                "(--template)." % default_template,
-                sample_template_file,
+                "Default template ({default_template}) or sample template ({sample_template_file}) not "
+                "found, please specify template as an option (--template)."
             )
     elif not os.path.exists(template_file):
-        parser.error("Specified template file (%s) not found." % template_file)
+        parser.error(f"Specified template file ({template_file}) not found.")
 
     config = galaxy.config.Configuration(**app_properties)
 
@@ -203,14 +200,18 @@ def administrative_delete_datasets(
     # Get HDAs older than cutoff time (ignore tool_id at this point)
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
-    hda_ids_query = sa.select(
-        (app.model.HistoryDatasetAssociation.table.c.id, app.model.HistoryDatasetAssociation.table.c.deleted),
-        whereclause=and_(
-            app.model.Dataset.table.c.deleted == false(),
-            app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-            app.model.HistoryDatasetAssociation.table.c.deleted == false(),
-        ),
-        from_obj=[sa.outerjoin(app.model.Dataset.table, app.model.HistoryDatasetAssociation.table)],
+    hda_ids_query = (
+        sa.select(
+            app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted
+        )
+        .where(
+            and_(
+                app.model.Dataset.__table__.c.deleted == false(),
+                app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+            )
+        )
+        .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
     )
 
     # Add all datasets associated with Histories to our list
@@ -231,17 +232,25 @@ def administrative_delete_datasets(
 
     # Process each of the Dataset objects
     for hda_id in hda_ids:
-        user_query = sa.select(
-            [app.model.HistoryDatasetAssociation.table, app.model.History.table, app.model.User.table],
-            whereclause=and_(app.model.HistoryDatasetAssociation.table.c.id == hda_id),
-            from_obj=[
-                sa.join(app.model.User.table, app.model.History.table).join(app.model.HistoryDatasetAssociation.table)
-            ],
-            use_labels=True,
+        user_query = (
+            sa.select(
+                app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__
+            )
+            .where(and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id))
+            .select_from(
+                sa.join(app.model.User.__table__, app.model.History.__table__).join(
+                    app.model.HistoryDatasetAssociation.__table__
+                )
+            )
+            .set_label_style()
         )
+
         for result in app.sa_session.execute(user_query):
-            user_notifications[result[app.model.User.table.c.email]].append(
-                (result[app.model.HistoryDatasetAssociation.table.c.name], result[app.model.History.table.c.name])
+            user_notifications[result[app.model.User.__table__.c.email]].append(
+                (
+                    result[app.model.HistoryDatasetAssociation.__table__.c.name],
+                    result[app.model.History.__table__.c.name],
+                )
             )
             deleted_instance_count += 1
             if not info_only and not email_only:
@@ -251,18 +260,20 @@ def administrative_delete_datasets(
                     # Mark the HistoryDatasetAssociation as deleted
                     hda.deleted = True
                     app.sa_session.add(hda)
-                    print("Marked HistoryDatasetAssociation id %d as " "deleted" % hda.id)
-                app.sa_session.flush()
+                    print("Marked HistoryDatasetAssociation id %d as deleted" % hda.id)
+                session = app.sa_session()
+                with transaction(session):
+                    session.commit()
 
     emailtemplate = Template(filename=template_file)
-    for (email, dataset_list) in user_notifications.items():
+    for email, dataset_list in user_notifications.items():
         msgtext = emailtemplate.render(email=email, datasets=dataset_list, cutoff=cutoff_days)
-        subject = "Galaxy Server Cleanup " "- %d datasets DELETED" % len(dataset_list)
+        subject = "Galaxy Server Cleanup - %d datasets DELETED" % len(dataset_list)
         fromaddr = config.email_from
         print()
-        print("From: %s" % fromaddr)
-        print("To: %s" % email)
-        print("Subject: %s" % subject)
+        print(f"From: {fromaddr}")
+        print(f"To: {email}")
+        print(f"Subject: {subject}")
         print("----------")
         print(msgtext)
         if not info_only:
@@ -282,7 +293,7 @@ def _get_tool_id_for_hda(app, hda_id):
     job = (
         app.sa_session.query(app.model.Job)
         .join(app.model.JobToOutputDatasetAssociation)
-        .filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id == hda_id)
+        .filter(app.model.JobToOutputDatasetAssociation.__table__.c.dataset_id == hda_id)
         .first()
     )
     if job is not None:

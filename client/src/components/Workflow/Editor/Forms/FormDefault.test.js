@@ -1,49 +1,50 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
 import FormDefault from "./FormDefault";
-import { ActiveOutputs } from "components/Workflow/Editor/modules/outputs";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 describe("FormDefault", () => {
     let wrapper;
-    const activeOutputs = new ActiveOutputs();
     const outputs = [
         { name: "output-name", label: "output-label" },
         { name: "other-name", label: "other-label" },
     ];
 
     beforeEach(() => {
-        activeOutputs.initialize(outputs);
         wrapper = mount(FormDefault, {
             propsData: {
                 datatypes: [],
-                getManager: () => {
-                    return {
-                        nodes: [],
-                    };
-                },
-                getNode: () => {
-                    return {
-                        name: "node-title",
-                        type: "subworkflow",
-                        outputs: outputs,
-                        activeOutputs: activeOutputs,
-                        config_form: {
-                            inputs: [],
-                        },
-                    };
+                step: {
+                    id: 0,
+                    contentId: "id",
+                    annotation: "annotation",
+                    label: "label",
+                    type: "subworkflow",
+                    configForm: {
+                        inputs: [],
+                    },
+                    inputs: [],
+                    outputs,
                 },
             },
             localVue,
+            pinia: createTestingPinia(),
+            provide: {
+                workflowId: "mock-workflow",
+            },
         });
     });
 
     it("check initial value and value change", async () => {
         const title = wrapper.find(".portlet-title-text").text();
-        expect(title).toBe("node-title");
+        expect(title).toBe("label");
         const inputCount = wrapper.findAll("input").length;
-        expect(inputCount).toBe(3);
+        expect(inputCount).toBe(4);
         const outputLabelCount = wrapper.findAll("#__label__output-name").length;
         expect(outputLabelCount).toBe(1);
         const otherLabelCount = wrapper.findAll("#__label__other-name").length;

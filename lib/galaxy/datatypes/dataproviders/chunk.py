@@ -4,6 +4,7 @@ Chunk (N number of bytes at M offset to a source's beginning) provider.
 Primarily for file sources but usable by any iterator that has both
 seek and read( N ).
 """
+
 import base64
 import logging
 import os

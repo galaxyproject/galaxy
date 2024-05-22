@@ -5,12 +5,14 @@
                 <span class="fa fa-check text-success"></span>{{ status.dependency_type }}
                 <span v-if="mergedMultiple">(merged)</span>
             </b>
-            <span v-if="!compact">{{ description }} <display-raw :object="status" /></span>
+            <span v-if="!compact">{{ description }} <DisplayRaw :object="status" /></span>
         </span>
         <b v-else> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
     </span>
 </template>
 <script>
+import DisplayRaw from "./DisplayRaw";
+
 const DESCRIPTIONS = {
     conda: "The Conda package manager will be used for resolution. ",
     galaxy_package: "A manually configured Galaxy package directory will be used for resolution. ",
@@ -33,8 +35,6 @@ function describeRequirement(status) {
     }
     return `${prefix}${requirement}. `;
 }
-
-import DisplayRaw from "./DisplayRaw";
 
 export default {
     components: { DisplayRaw },

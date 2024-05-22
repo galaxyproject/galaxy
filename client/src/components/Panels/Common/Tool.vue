@@ -1,11 +1,18 @@
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" class="title-link name text-muted">
+        <a v-if="tool.disabled" :data-tool-id="tool.id" class="title-link name text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
-        <a v-else :class="targetClass" :href="tool.link" :target="tool.target" @click="onClick">
-            <img v-if="tool.logo" class="logo" :src="tool.logo" />
+        <a
+            v-else
+            :class="targetClass"
+            :data-tool-id="tool.id"
+            :href="tool.link"
+            :target="tool.target"
+            :title="tool.help"
+            @click="onClick">
+            <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
@@ -26,9 +33,9 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import ariaAlert from "utils/ariaAlert";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 
@@ -59,9 +66,9 @@ export default {
     computed: {
         targetClass() {
             if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]} title-link`;
+                return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;
             } else {
-                return `title-link`;
+                return `title-link cursor-pointer`;
             }
         },
     },
@@ -79,6 +86,9 @@ export default {
 </script>
 
 <style scoped>
+.toolTitle {
+    overflow-wrap: anywhere;
+}
 .logo {
     width: 2.5rem;
 }

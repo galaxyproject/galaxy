@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div class="alert alert-secondary" role="alert">
-            <div class="float-left">Convert all datasets to new format</div>
+        <div>
+            <span class="float-left h-sm">Convert all datasets to new format</span>
             <div class="text-right">
                 <button
                     class="run-tool-collection-edit btn btn-primary"
@@ -12,7 +12,7 @@
             </div>
         </div>
         <b>{{ l("Converter Tool: ") }}</b>
-        <multiselect
+        <Multiselect
             v-model="selectedConverter"
             deselect-label="Can't remove this value"
             track-by="name"
@@ -20,12 +20,13 @@
             :options="suitableConverters"
             :searchable="true"
             :allow-empty="true">
-        </multiselect>
+        </Multiselect>
     </div>
 </template>
 
 <script>
 import Multiselect from "vue-multiselect";
+
 export default {
     components: { Multiselect },
     props: {

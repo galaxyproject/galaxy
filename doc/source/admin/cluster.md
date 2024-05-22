@@ -8,17 +8,17 @@ A [general reference for the job configuration file](./jobs.md) is also availabl
 
 Galaxy is known to work with:
 
-* [TORQUE Resource Manager](http://www.adaptivecomputing.com/products/torque/)
-* [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities)
-* [Open Grid Engine](http://gridscheduler.sourceforge.net/)
-* [Univa Grid Engine](http://www.univa.com/products/grid-engine.php) (previously known as Sun Grid Engine and Oracle Grid Engine)
-* [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
-* [HTCondor](http://research.cs.wisc.edu/htcondor/)
+* [TORQUE Resource Manager](https://adaptivecomputing.com/cherry-services/torque-resource-manager/)
+* [Altair PBS Professional](https://altair.com/pbs-professional)
+* [Open Grid Engine](https://gridscheduler.sourceforge.net/)
+* [Altair Grid Engine](https://www.altair.com/grid-engine/) (previously known as Sun Grid Engine, Oracle Grid Engine and Univa Grid Engine)
+* [IBM Spectrum LSF](https://www.ibm.com/products/hpc-workload-management)
+* [HTCondor](https://research.cs.wisc.edu/htcondor/)
 * [Slurm](https://slurm.schedmd.com/)
 * [Galaxy Pulsar](#pulsar) (formerly LWR)
-* [AWS Batch](https://aws.amazon.com/batch)
+* [AWS Batch](https://aws.amazon.com/batch/)
 
-It should also work with [any other DRM](http://www.drmaa.org/implementations.php) which implements a [DRMAA](http://www.drmaa.org) interface. If you successfully run Galaxy with a DRM not listed here, please let us know via an email to the [galaxy-dev mailing list](https://galaxyproject.org/mailing-lists/).
+It should also work with [any other DRM](https://www.drmaa.org/implementations.php) which implements a [DRMAA](https://www.drmaa.org) interface. If you successfully run Galaxy with a DRM not listed here, please let us know via an email to the [galaxy-dev mailing list](https://galaxyproject.org/mailing-lists/).
 
 If you do not already have a DRM, [Pulsar](#pulsar) is available which does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts.
 
@@ -95,11 +95,11 @@ For each destination using the local runner, it is possible to specify the numbe
 ```
 
 
-The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy-slots/).
 
 ### DRMAA
 
-Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
+Runs jobs via any DRM which supports the [Distributed Resource Management Application API](https://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://altair.com/pbs-professional), [Open Grid Scheduler](https://gridscheduler.sourceforge.net/), [Altair Grid Engine](https://www.altair.com/grid-engine/), [IBM Spectrum LSF](https://www.ibm.com/products/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
 
 #### Dependencies
 
@@ -115,13 +115,13 @@ galaxy_server% export DRMAA_LIBRARY_PATH=/galaxy/sge/lib/lx24-amd64/libdrmaa.so
 
 **Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are abvailable that are not affected by these limitations, e.g. univa and slurm runners.
 
-**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](http://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
+**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](https://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
 
 **Slurm**: You will need to install [slurm-drmaa](https://github.com/natefoo/slurm-drmaa/). In production on [usegalaxy.org](https://usegalaxy.org) we observed pthread deadlocks in slurm-drmaa that would cause Galaxy job handlers to eventually stop processing jobs until the handler was restarted. Compiling slurm-drmaa using the compiler flags `-g -O0` (keep debugging symbols, disable optimization) caused the deadlock to disappear.
 
 #### Parameters and Configuration
 
-Most [options defined in the DRMAA interface](http://www.ogf.org/documents/GFD.143.pdf) are supported.  Exceptions include `remoteCommand`, `jobName`, `outputPath`, and `errorPath` since these attributes are set by Galaxy.  To pass parameters to your underlying DRM, use the `nativeSpecification` parameter.  The format of this parameter is dependent upon the underlying DRM.  However, for Grid Engine, it is the list of command line parameters that would be passed to `qsub(1)`.
+Most [options defined in the DRMAA interface](https://ogf.org/documents/GFD.143.pdf) are supported.  Exceptions include `remoteCommand`, `jobName`, `outputPath`, and `errorPath` since these attributes are set by Galaxy.  To pass parameters to your underlying DRM, use the `nativeSpecification` parameter.  The format of this parameter is dependent upon the underlying DRM.  However, for Grid Engine, it is the list of command line parameters that would be passed to `qsub(1)`.
 
 ```xml
 <plugins>
@@ -151,7 +151,7 @@ All as in the DRMAA runner, in `job_conf.xml` use `galaxy.jobs.runners.univa:Uni
 
 ### PBS
 
-Runs jobs via the [TORQUE Resource Manager](http://www.adaptivecomputing.com/products/torque/). For PBS Pro, use [DRMAA](#drmaa).
+Runs jobs via the [TORQUE Resource Manager](https://adaptivecomputing.com/cherry-services/torque-resource-manager/). For PBS Pro, use [DRMAA](#drmaa).
 
 #### Dependencies
 
@@ -187,12 +187,12 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 </destinations>
 ```
 
-The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy-slots/).
 
 
 ### Condor
 
-Runs jobs via the [HTCondor](http://research.cs.wisc.edu/htcondor/) DRM.  There are no configurable parameters.  Galaxy's interface is via calls to HTCondor's command line tools, rather than via an API.
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM.  There are no configurable parameters.  Galaxy's interface is via calls to HTCondor's command line tools, rather than via an API.
 
 ```xml
 <plugins>
@@ -235,13 +235,11 @@ If you are interested in developing additional plugins, see `lib/galaxy/jobs/run
 
 The cli runner requires, at a minimum, two parameters:
 
-```eval_rst
 ``shell_plugin``
-    This required parameter should be `a cli_shell class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell>`_ currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
+: This required parameter should be [a cli_shell class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell) currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
 
 ``job_plugin``
-    This required parameter should be `a cli_job class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job>`_ currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
-```
+: This required parameter should be [a cli_job class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job) currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
 
 All other parameters are specific to the chosen plugins. Parameters to pass to the shell plugin begin with the id `shell_` and parameters to pass to the job plugin begin with the id `job_`.
 
@@ -249,16 +247,14 @@ All other parameters are specific to the chosen plugins. Parameters to pass to t
 
 The `RemoteShell` plugin uses `rsh(1)` to connect to a remote system and execute shell commands.
 
-```eval_rst
 ``shell_username``
-    Optional user to log in to the remote system as. If unset uses ``rsh``'s default behavior (attempt to log in with the current user's username).
+: Optional user to log in to the remote system as. If unset uses ``rsh``'s default behavior (attempt to log in with the current user's username).
 
 ``shell_hostname``
-    Remote system hostname to log in to.
+: Remote system hostname to log in to.
 
 ``shell_rsh``
-    ``rsh``-like command to excute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
-```
+: ``rsh``-like command to excute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
 
 The `RemoteShell` parameters translate to a command line of `% <shell_rsh> [-l <shell_username>] <shell_hostname> "<remote_command_with_args>"`, where the inclusion of `-l` is dependent on whether `shell_username` is set. Alternate values for `shell_rsh` must be compatible with this syntax.
 
@@ -277,13 +273,11 @@ The ``ParamikoShell`` option was added in 17.09 with this pull request https://g
 
 The `Torque` plugin uses `qsub(1)` and `qstat(1)` to interface with a Torque server on the command line.
 
-```eval_rst
 ``job_<PBS_JOB_ATTR>``
-    ``<PBS_JOB_ATTR>`` refers to a ``qsub(1B)`` or ``pbs_submit(3B)`` argument/attribute
-    (e.g. ``<param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>``).
-```
+: ``<PBS_JOB_ATTR>`` refers to a ``qsub(1B)`` or ``pbs_submit(3B)`` argument/attribute
+  (e.g. ``<param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>``).
 
-Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://cf.ccmr.cornell.edu/cgi-bin/w3mman2html.cgi?qsub(1B)) argument as used on the command line or in a script as `#PBS -<ARG>`) or long (e.g. [pbs_submit(3B)](http://cf.ccmr.cornell.edu/cgi-bin/w3mman2html.cgi?pbs_submit(3B)) attribute as used in the C library) oforms. Some additional examples follow:
+Torque attributes can be defined in either their short (e.g. [qsub(1B)](https://www.linuxcertif.com/man/1/qsub.1B/) argument as used on the command line or in a script as `#PBS -<ARG>`) or long (e.g. [pbs_submit(3B)](https://www.linuxcertif.com/man/3/pbs_submit.3B/) attribute as used in the C library) forms. Some additional examples follow:
 
 * `<param id="job_-q">queue</param>`: set the PBS destination (in this example, a queue), equivalent to `<param id="job_destination">queue</param>`
 * `<param id="job_Priority">128</param>`: set the job priority, equivalent to `<param id="job_-p">128</param>`
@@ -308,14 +302,14 @@ Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://c
 
 Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Exceptions include `-o/Output_Path`, `-e/Error_Path`, and `-N/Job_Name` since these PBS job attributes are set by Galaxy.
 
-## AWS Batch
+### AWS Batch
 
 Runs jobs via [AWS Batch](https://aws.amazon.com/batch/). Built on top of AWS Elastic Container Service (ECS), AWS Batch enables users to run hundreds of thousands of jobs with little configuration.
 
 #### Dependencies
 
 The AWS Batch job runner requires AWS Elastic File System (EFS) to be mounted as a shared file system that enables both Galaxy and job containers to read and write files. In a typical use case, Galaxy is installed on an AWS EC2 instance where an EFS drive is mounted, and all job-related paths, such as objects, jobs_directory, tool_directory and so on, are placed on the EFS drive. Galaxy admins configure Batch compute environments, Batch job queues and proper AWS IAM roles, and specify them as destination parameters.
-AWS Batch job runner requires [boto3](https://pypi.org/project/boto3/) to be installed in Galaxy's environment.
+AWS Batch job runner requires [boto3](https://github.com/boto/boto3) to be installed in Galaxy's environment.
 
 #### Parameters and Configuration
 

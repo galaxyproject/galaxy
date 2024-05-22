@@ -1,6 +1,7 @@
 """
 API operations on the contents of a library folder.
 """
+
 import logging
 from typing import Optional
 
@@ -9,34 +10,37 @@ from fastapi import (
     Path,
     Query,
 )
+from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
     LibraryFolderContentsIndexResult,
     LibraryFolderContentsIndexSortByEnum,
 )
-from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Folder ID", description="The encoded identifier of the library folder."
-)
+FolderIdPathParam = Annotated[
+    LibraryFolderDatabaseIdField,
+    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
+]
 
-LimitQueryParam: int = Query(default=10, title="Limit", description="Maximum number of contents to return.")
+LimitQueryParam: int = Query(default=10, ge=1, title="Limit", description="Maximum number of contents to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return contents from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, contents between position 200-299 will be returned.",
 )
@@ -54,7 +58,7 @@ IncludeDeletedQueryParam: Optional[bool] = Query(
 )
 
 SortByQueryParam: LibraryFolderContentsIndexSortByEnum = Query(
-    default=LibraryFolderContentsIndexSortByEnum.name,
+    default="name",
     title="Sort By",
     description="Sort results by specified field.",
 )
@@ -82,8 +86,8 @@ class FastAPILibraryFoldersContents:
     )
     def index(
         self,
+        folder_id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
         search_text: Optional[str] = SearchQueryParam,
@@ -120,8 +124,8 @@ class FastAPILibraryFoldersContents:
     )
     def create(
         self,
+        folder_id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFilePayload = Body(...),
     ):
         return self.service.create(trans, folder_id, payload)

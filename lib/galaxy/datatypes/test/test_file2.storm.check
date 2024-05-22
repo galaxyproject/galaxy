@@ -1,0 +1,24 @@
+Storm 1.5.2 (dev)
+
+Date: Tue Aug 31 11:52:43 2021
+Command line arguments: --explicit /tmp/exp_transitions.tra /tmp/exp_labels.lab --prop 'P <= 0.2 [F "property_0"]'
+Current working directory: /home/biodivine
+
+ WARN (DeterministicSparseTransitionParser.cpp:114): Warning while parsing /tmp/exp_transitions.tra: state 0 has no outgoing transitions. A self-loop was inserted.
+Time for model construction: 0.003s.
+
+-------------------------------------------------------------- 
+Model type: 	DTMC (sparse)
+States: 	36
+Transitions: 	73
+Reward Models:  none
+State Labels: 	2 labels
+   * property_0 -> 7 item(s)
+   * init -> 1 item(s)
+Choice Labels: 	none
+-------------------------------------------------------------- 
+
+Model checking property "1": P<=1/5 [F "property_0"] ...
+Result (for initial states): true
+
+Time for model checking: 0.004s.

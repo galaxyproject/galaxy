@@ -105,7 +105,7 @@ Configuration Basics
 
 .. _Gravity: https://github.com/galaxyproject/gravity
 
-----------------------------
+
 Configuration Options
 ----------------------------
 

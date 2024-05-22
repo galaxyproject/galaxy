@@ -15,6 +15,9 @@ Returns
     }
 
 """
+
+from fastapi import Request
+
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.authenticate import (
@@ -24,7 +27,10 @@ from galaxy.webapps.galaxy.services.authenticate import (
 from . import (
     BaseGalaxyAPIController,
     depends,
+    Router,
 )
+
+router = Router(tags=["authenticate"])
 
 
 class AuthenticationController(BaseGalaxyAPIController):
@@ -44,15 +50,17 @@ class AuthenticationController(BaseGalaxyAPIController):
         # When this is actually granular, endpoints should *probably* respond appropriately.
         # trans.response.headers['Access-Control-Allow-Methods'] = 'POST, PUT, GET, OPTIONS, DELETE'
 
-    @expose_api_anonymous_and_sessionless
-    def get_api_key(self, trans: GalaxyWebTransaction, **kwd) -> APIKeyResponse:
-        """
-        GET /api/authenticate/baseauth
-          returns an API key for authenticated user based on BaseAuth headers
 
-        :returns: api_key in json format
-        :rtype:   dict
+@router.cbv
+class FastAPIAuthenticate:
+    authentication_service: AuthenticationService = depends(AuthenticationService)
 
-        :raises: ObjectNotFound, HTTPBadRequest
-        """
-        return self.authentication_service.get_api_key(trans.environ)
+    @router.get(
+        "/api/authenticate/baseauth",
+        summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
+    )
+    def get_api_key(self, request: Request) -> APIKeyResponse:
+        # TODO: use fastapi.security mechanism
+        authorization = request.headers.get("Authorization")
+        auth = {"HTTP_AUTHORIZATION": authorization}
+        return self.authentication_service.get_api_key(auth, request)

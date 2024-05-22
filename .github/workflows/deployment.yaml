@@ -1,0 +1,71 @@
+name: Deployment Tests
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Galaxy Deployment to target'
+        required: true
+        default: 'usegalaxymain'
+        type: choice
+        options:
+        - usegalaxytest
+        - usegalaxymain
+        - usegalaxyeu
+      type:
+        description: 'Test type'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - api
+        - selenium
+      branch:
+        description: 'Branch of code to run from'
+        default: 'dev'
+        type: string        
+      debug:
+        required: true
+        description: 'Run deployment tests with debug mode on'
+        type: boolean
+jobs:
+  testdeployment:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+      - uses: nanasess/setup-chromedriver@v1
+      - name: Run tests
+        run: bash ./test/deployment/usegalaxystar.bash
+        env:
+          GALAXY_TEST_DEPLOYMENT_TARGET: ${{ inputs.target }}
+          GALAXY_TEST_DEPLOYMENT_DEBUG: ${{ inputs.debug }}
+          GALAXY_TEST_DEPLOYMENT_TEST_TYPE: ${{ inputs.type }}
+          GALAXY_TEST_USEGALAXYMAIN_USER_EMAIL: "jmchilton+test@gmail.com"
+          GALAXY_TEST_USEGALAXYMAIN_USER_PASSWORD: ${{ secrets.USEGALAXYMAIN_USER_PASSWORD }}
+          GALAXY_TEST_USEGALAXYMAIN_USER_KEY: ${{ secrets.USEGALAXYMAIN_USER_KEY }}
+          GALAXY_TEST_USEGALAXYTEST_USER_EMAIL: "jmchilton+test@gmail.com"
+          GALAXY_TEST_USEGALAXYTEST_USER_PASSWORD: ${{ secrets.USEGALAXYTEST_USER_PASSWORD }}
+          GALAXY_TEST_USEGALAXYTEST_USER_KEY: ${{ secrets.USEGALAXYTEST_USER_KEY }}
+          GALAXY_TEST_USEGALAXYEU_USER_EMAIL: "jmchilton+test@gmail.com"
+          GALAXY_TEST_USEGALAXYEU_USER_PASSWORD: ${{ secrets.USEGALAXYEU_USER_PASSWORD }}
+          GALAXY_TEST_USEGALAXYEU_USER_KEY: ${{ secrets.USEGALAXYEU_USER_KEY }}
+          GALAXY_TEST_TIMEOUT_MULTIPLIER: 10
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: Deployment test results (${{ inputs.target }}, ${{ inputs.type }})
+          path: 'deployment_tests.html'

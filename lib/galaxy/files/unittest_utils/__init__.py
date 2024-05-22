@@ -4,13 +4,14 @@ from typing import Tuple
 
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
+    ConfiguredFileSourcesConf,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 
 
 class TestConfiguredFileSources(ConfiguredFileSources):
-    def __init__(self, file_sources_config: ConfiguredFileSourcesConfig, conf_dict: dict, test_root: str):
-        super().__init__(file_sources_config, conf_dict=conf_dict)
+    def __init__(self, file_sources_config: FileSourcePluginsConfig, conf_dict: dict, test_root: str):
+        super().__init__(file_sources_config, ConfiguredFileSourcesConf(conf_dict=conf_dict))
         self.test_root = test_root
 
 
@@ -22,7 +23,7 @@ class TestPosixConfiguredFileSources(TestConfiguredFileSources):
             "type": "posix",
             "root": root,
         }
-        file_sources_config = ConfiguredFileSourcesConfig({})
+        file_sources_config = FileSourcePluginsConfig({})
         super().__init__(file_sources_config, {"test1": plugin}, root)
 
 

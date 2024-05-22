@@ -31,14 +31,21 @@ export class Services {
     }
 
     async getFilteredFolderContents(id, excluded, searchText) {
-        const contents = await axios.get(`${this.root}api/folders/${id}/contents?${this.getSearchQuery(searchText)}`);
+        // The intent of this method is to get folder contents applying
+        // seachText filters only; we explicitly set limit to 0
+        const config = {
+            params: {
+                limit: 0,
+            },
+        };
+        searchText = searchText?.trim();
+        if (searchText) {
+            config.params.search_text = searchText;
+        }
+        const contents = await axios.get(`${this.root}api/folders/${id}/contents`, config);
         return contents.data.folder_contents.filter((item) => {
             return !excluded.some((exc) => exc.id === item.id);
         });
-    }
-
-    getSearchQuery(searchText) {
-        return searchText ? `&search_text=${encodeURI(searchText.trim())}` : "";
     }
 
     updateFolder(item, onSucess, onError) {

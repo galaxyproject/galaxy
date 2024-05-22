@@ -1,11 +1,13 @@
 """Integration tests for max_discoverd_files setting."""
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class MaxDiscoveredFilesTestCase(integration_util.IntegrationTestCase):
+class TestMaxDiscoveredFiles(integration_util.IntegrationTestCase):
     """Describe a Galaxy test instance with embedded pulsar configured."""
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     max_discovered_files = 9
 
@@ -29,11 +31,11 @@ class MaxDiscoveredFilesTestCase(integration_util.IntegrationTestCase):
             assert job_details["state"] == "error"
             assert (
                 f"Job generated more than maximum number ({self.max_discovered_files}) of output datasets"
-                in job_details["job_messages"]
+                in job_details["job_messages"][0]["desc"]
             )
 
 
-class ExtendedMetadataMaxDiscoveredFilesTestCase(MaxDiscoveredFilesTestCase):
+class TestExtendedMetadataMaxDiscoveredFiles(TestMaxDiscoveredFiles):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["max_discovered_files"] = cls.max_discovered_files

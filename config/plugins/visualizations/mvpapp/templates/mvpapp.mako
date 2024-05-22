@@ -29,7 +29,7 @@
                     <button id="clear_scans" class="btn btn-primary navbar-btn" disabled="disabled" data-container="body" data-toggle="tooltip" data-placement="bottom" title="Clears all scans">Clear all Scans</button>
                     <button id="mvp_full_window" class="btn btn-primary navbar-btn" data-container="body" data-toggle="tooltip" data-placement="bottom" title="Open MVP in a new window."><span class="tip-help">Window</button>
                 </div>
-                
+
             </div>
         </div>
         <!--/.nav-collapse -->
@@ -73,7 +73,7 @@ ${h.javascript_link(app_root +  "dist/script.js")}
     $(document).ready(function (){
         var config = {
             dbkey: '${hda.get_metadata().dbkey}',
-            href: document.location.origin,
+            href: document.location.origin + '${h.url_for( "/" )}'.replace(/\/$/, ''),
             dataName: '${hda.name}',
             historyID: '${trans.security.encode_id( hda.history_id )}',
             datasetID: '${trans.security.encode_id( hda.id )}',

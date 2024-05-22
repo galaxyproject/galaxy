@@ -20,18 +20,9 @@ reports:
   # directory is used for the cache
   #template_cache_path: database/compiled_templates/reports
 
-  # Configuration for debugging middleware
-  #debug: false
-
-  # Check for WSGI compliance.
-  #use_lint: false
-
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk space rapidly!)
   #use_heartbeat: true
-
-  # Profiling middleware (cProfile based)
-  #use_profile: true
 
   # Mail
   #smtp_server: yourserver@yourfacility.edu

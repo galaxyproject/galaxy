@@ -2,12 +2,14 @@ import logging
 import socket
 
 from markupsafe import escape
-from sqlalchemy import func
 
 from galaxy import (
     util,
     web,
 )
+from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.users import get_user_by_email
+from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -83,8 +85,9 @@ class User(BaseUser):
         if not success and not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = (
-                    "  If you don't already have an account, <a href='%s'>you may create one</a>."
-                    % web.url_for(controller="user", action="create", cntrller="user")
+                    "  If you don't already have an account, <a href='{}'>you may create one</a>.".format(
+                        web.url_for(controller="user", action="create", cntrller="user")
+                    )
                 )
                 header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
             else:
@@ -137,7 +140,9 @@ class User(BaseUser):
             status = "error"
         else:
             # check user is allowed to register
-            message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+            message, status = trans.app.auth_manager.check_registration_allowed(
+                email, username, password, trans.request
+            )
             if not message:
                 # Create the user, save all the user info and login to Galaxy
                 if params.get("create_user_button", False):
@@ -239,26 +244,19 @@ class User(BaseUser):
             if not message:
                 # Default to a non-userinfo-leaking response message
                 message = (
-                    "Your reset request for %s has been received.  "
+                    f"Your reset request for {escape(email)} has been received.  "
                     "Please check your email account for more instructions.  "
-                    "If you do not receive an email shortly, please contact an administrator." % (escape(email))
+                    "If you do not receive an email shortly, please contact an administrator."
                 )
-                reset_user = (
-                    trans.sa_session.query(trans.app.model.User)
-                    .filter(trans.app.model.User.table.c.email == email)
-                    .first()
-                )
+                reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User)
                 if not reset_user:
                     # Perform a case-insensitive check only if the user wasn't found
-                    reset_user = (
-                        trans.sa_session.query(trans.app.model.User)
-                        .filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email))
-                        .first()
-                    )
+                    reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User, False)
                 if reset_user:
                     prt = trans.app.model.PasswordResetToken(reset_user)
                     trans.sa_session.add(prt)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     host = trans.request.host.split(":")[0]
                     if host in ["localhost", "127.0.0.1", "0.0.0.0"]:
                         host = socket.getfqdn()
@@ -273,7 +271,8 @@ class User(BaseUser):
                     try:
                         util.send_mail(frm, email, subject, body, trans.app.config)
                         trans.sa_session.add(reset_user)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         trans.log_event(f"User reset password: {email}")
                     except Exception:
                         log.exception("Unable to reset password.")
@@ -285,7 +284,7 @@ class User(BaseUser):
         params = util.Params(kwd)
         user_id = params.get("id", None)
         if user_id:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if not user:
@@ -313,7 +312,7 @@ class User(BaseUser):
         message = escape(util.restore_text(params.get("message", "")))
         status = params.get("status", "done")
         if params.get("new_api_key_button", False):
-            self.create_api_key(trans, trans.user)
+            ApiKeyManager(trans.app).create_api_key(trans.user)
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template(
@@ -330,7 +329,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if user and params.get("change_username_button", False):
@@ -342,7 +341,8 @@ class User(BaseUser):
             else:
                 user.username = username
                 trans.sa_session.add(user)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 message = "The username has been updated with the changes."
         return trans.fill_template(
             "/webapps/tool_shed/user/username.mako",
@@ -364,7 +364,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
             message = "Invalid user id"
             status = "error"
@@ -391,11 +391,13 @@ class User(BaseUser):
                     # Change the email itself
                     user.email = email
                     trans.sa_session.add_all((user, private_role))
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     if trans.webapp.name == "galaxy" and trans.app.config.user_activation_on:
                         user.active = False
                         trans.sa_session.add(user)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         is_activation_sent = self.user_manager.send_activation_email(trans, user.email, user.username)
                         if is_activation_sent:
                             message = "The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message."
@@ -406,14 +408,15 @@ class User(BaseUser):
                 if user.username != username:
                     user.username = username
                     trans.sa_session.add(user)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 message = "The login information has been updated with the changes."
         elif user and params.get("edit_user_info_button", False):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get("user_type_fd_id", "none")
             if user_type_fd_id not in ["none"]:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(
-                    trans.security.decode_id(user_type_fd_id)
+                user_type_form_definition = trans.sa_session.get(
+                    trans.app.model.FormDefinition, trans.security.decode_id(user_type_fd_id)
                 )
             elif user.values:
                 user_type_form_definition = user.values.form_definition
@@ -437,7 +440,8 @@ class User(BaseUser):
                 flush_needed = True
             if flush_needed:
                 trans.sa_session.add(user)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             message = "The user information has been updated with the changes."
         if user and trans.webapp.name == "galaxy" and is_admin:
             kwd["user_id"] = trans.security.encode_id(user.id)
@@ -473,9 +477,7 @@ class User(BaseUser):
     @web.expose
     def logout(self, trans, logout_all=False, **kwd):
         trans.handle_user_logout(logout_all=logout_all)
-        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % (
-            url_for("/")
-        )
+        message = f'You have been logged out.<br>To log in again <a target="_top" href="{url_for("/")}">go to the home page</a>.'
         if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
             trans.response.send_redirect(trans.app.config.remote_user_logout_href)
         else:

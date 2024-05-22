@@ -7,24 +7,23 @@ from typing import (
 )
 
 from pydantic import (
-    BaseModel,
-    Extra,
+    ConfigDict,
     Field,
+    field_validator,
     Json,
-    validator,
 )
 from typing_extensions import (
     Annotated,
     Literal,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
-from .schema import HistoryIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import Model
+from galaxy.schema.types import CoercedStringType
 
 
-class FetchBaseModel(BaseModel):
-    class Config:
-        allow_population_by_field_name = True
+class FetchBaseModel(Model):
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ElementsFromType(str, Enum):
@@ -76,14 +75,14 @@ class HdcaDestination(FetchBaseModel):
 
 class LibraryFolderDestination(FetchBaseModel):
     type: Literal["library_folder"]
-    library_folder_id: EncodedDatabaseIdField
+    library_folder_id: DecodedDatabaseIdField  # For some reason this folder ID must NOT have the 'F' prefix
 
 
 class BaseCollectionTarget(BaseFetchDataTarget):
     destination: HdcaDestination
-    collection_type: Optional[str]
-    tags: Optional[List[str]]
-    name: Optional[str]
+    collection_type: Optional[str] = None
+    tags: Optional[List[str]] = None
+    name: Optional[str] = None
 
 
 class LibraryDestination(FetchBaseModel):
@@ -94,7 +93,7 @@ class LibraryDestination(FetchBaseModel):
 
 
 class ExtraFiles(FetchBaseModel):
-    items_from: Optional[str]
+    items_from: Optional[str] = None
     src: Src
     fuzzy_root: Optional[bool] = Field(
         True,
@@ -103,24 +102,22 @@ class ExtraFiles(FetchBaseModel):
 
 
 class BaseDataElement(FetchBaseModel):
-    name: Optional[str]
+    name: Optional[CoercedStringType] = None
     dbkey: str = Field("?")
-    info: Optional[str]
+    info: Optional[str] = None
     ext: str = Field("auto")
     space_to_tab: bool = False
     to_posix_lines: bool = False
     deferred: bool = False
-    tags: Optional[List[str]]
-    created_from_basename: Optional[str]
-    extra_files: Optional[ExtraFiles]
+    tags: Optional[List[str]] = None
+    created_from_basename: Optional[str] = None
+    extra_files: Optional[ExtraFiles] = None
     auto_decompress: bool = AutoDecompressField
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    collection_type: Optional[str]
-    MD5: Optional[str]
-
-    class Config:
-        # reject unknown extra attributes
-        extra = Extra.forbid
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    collection_type: Optional[str] = None
+    MD5: Optional[str] = None
+    description: Optional[str] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class FileDataElement(BaseDataElement):
@@ -129,7 +126,7 @@ class FileDataElement(BaseDataElement):
 
 class PastedDataElement(BaseDataElement):
     src: Literal["pasted"]
-    paste_content: str = Field(..., description="Content to upload")
+    paste_content: CoercedStringType = Field(..., description="Content to upload")
 
 
 class UrlDataElement(BaseDataElement):
@@ -140,36 +137,34 @@ class UrlDataElement(BaseDataElement):
 class ServerDirElement(BaseDataElement):
     src: Literal["server_dir"]
     server_dir: str
-    link_data_only: Optional[bool]
+    link_data_only: Optional[bool] = None
 
 
 class FtpImportElement(BaseDataElement):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    name: Optional[str]
-    collection_type: Optional[str]
+    collection_type: Optional[str] = None
 
 
-class ItemsFromModel(BaseModel):
+class ItemsFromModel(Model):
     src: ItemsFromSrc
-    path: Optional[str]
-    ftp_path: Optional[str]
-    server_dir: Optional[str]
-    url: Optional[str]
+    path: Optional[str] = None
+    ftp_path: Optional[str] = None
+    server_dir: Optional[str] = None
+    url: Optional[str] = None
 
 
 class FtpImportTarget(BaseCollectionTarget):
     src: Literal["ftp_import"]
     ftp_path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
 
 
 class PathDataElement(BaseDataElement):
     src: Literal["path"]
     path: str
-    items_from: Optional[ElementsFromType] = Field(alias="elements_from")
-    link_data_only: Optional[bool]
+    items_from: Optional[ElementsFromType] = Field(None, alias="elements_from")
+    link_data_only: Optional[bool] = None
 
 
 class CompositeDataElement(BaseDataElement):
@@ -183,7 +178,7 @@ class CompositeItems(FetchBaseModel):
     ] = Field(..., alias="elements")
 
 
-CompositeDataElement.update_forward_refs()
+CompositeDataElement.model_rebuild()
 
 
 class NestedElement(BaseDataElement):
@@ -218,7 +213,7 @@ AnyElement2 = Annotated[
     Field(default_factory=None, discriminator="src"),
 ]
 
-NestedElement.update_forward_refs()
+NestedElement.model_rebuild()
 
 
 class BaseDataTarget(BaseFetchDataTarget):
@@ -241,19 +236,17 @@ class HdcaDataItemsFromTarget(BaseCollectionTarget, ItemsFromModel):
     items_from: ElementsFromType = Field(..., alias="elements_from")
 
 
-class FilesPayload(BaseModel):
+class FilesPayload(Model):
     filename: str
     local_filename: str
 
 
 class BaseDataPayload(FetchBaseModel):
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: DecodedDatabaseIdField
+    model_config = ConfigDict(extra="allow")
 
-    class Config:
-        # file payloads are just tacked on, so we need to allow everything
-        extra = Extra.allow
-
-    @validator("targets", pre=True, check_fields=False)
+    @field_validator("targets", mode="before", check_fields=False)
+    @classmethod
     def targets_string_to_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
@@ -272,10 +265,8 @@ Targets = List[
 
 
 class FetchDataPayload(BaseDataPayload):
-
     targets: Targets
 
 
 class FetchDataFormPayload(BaseDataPayload):
-
-    targets: Union[Json[Targets], Targets]  # type: ignore[type-arg]  # https://github.com/samuelcolvin/pydantic/issues/2990
+    targets: Union[Json[Targets], Targets]

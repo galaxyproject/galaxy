@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
     steps:
       - name: Get target branch name (push)
         if: github.event_name == 'push'
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Cache pip dir
@@ -62,7 +62,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           case "$TARGET_BRANCH" in
-              release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)
+              release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]] | release_[[:digit:]][[:digit:]].[[:digit:]] | master)
                   UPLOAD_DIR=$TARGET_BRANCH
                   ;;
               dev)

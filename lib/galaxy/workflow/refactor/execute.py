@@ -6,9 +6,9 @@ from typing import (
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import (
+from galaxy.tools.parameters.basic import contains_workflow_parameter
+from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
-    contains_workflow_parameter,
     runtime_to_json,
 )
 from .schema import (
@@ -56,6 +56,7 @@ class WorkflowRefactorExecutor:
         self.raw_workflow_description = raw_workflow_description
         self.workflow = workflow
         self.module_injector = module_injector
+        self.module_injector.inject_all(workflow, ignore_tool_missing_exception=True)
 
     def refactor(self, refactor_request: RefactorActions):
         action_executions = []
@@ -70,7 +71,7 @@ class WorkflowRefactorExecutor:
             if refactor_method is None:
                 raise RequestParameterInvalidException(f"Unknown workflow editing action encountered [{action_type}]")
             execution = RefactorActionExecution(
-                action=action.dict(),
+                action=action,
                 messages=[],
             )
             refactor_method(action, execution)
@@ -250,7 +251,7 @@ class WorkflowRefactorExecutor:
     def _apply_extract_untyped_parameter(self, action: ExtractUntypedParameter, execution: RefactorActionExecution):
         untyped_parameter_name = action.name
         new_label = action.label or untyped_parameter_name
-        target_value = "${%s}" % untyped_parameter_name
+        target_value = f"${{{untyped_parameter_name}}}"
 
         target_tool_inputs = []
         rename_pjas = []
@@ -329,7 +330,7 @@ class WorkflowRefactorExecutor:
             if untyped_parameter_name != new_label:
                 action_arguments = rename_pja.get("action_arguments")
                 old_newname = action_arguments["newname"]
-                new_newname = old_newname.replace(target_value, "${%s}" % new_label)
+                new_newname = old_newname.replace(target_value, f"${{{new_label}}}")
                 action_arguments["newname"] = new_newname
 
         optional = False
@@ -459,28 +460,29 @@ class WorkflowRefactorExecutor:
         return self._inject(step, execution)
 
     def _inject(self, step, execution):
-        # inject tool state into module, capture upgrade messages that result
+        # compute runtime state, capture upgrade messages that result
         if not hasattr(step, "module"):
             self.module_injector.inject(step)
-            if getattr(step, "upgrade_messages", None):
-                for key, value in step.upgrade_messages.items():
-                    message = RefactorActionExecutionMessage(
-                        message=value,
-                        message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
-                        input_name=key,
-                        step_label=step.label,
-                        order_index=step.order_index,
-                    )
-                    execution.messages.append(message)
-            if getattr(step.module, "version_changes", None):
-                for version_change in step.module.version_changes:
-                    message = RefactorActionExecutionMessage(
-                        message=version_change,
-                        message_type=RefactorActionExecutionMessageTypeEnum.tool_version_change,
-                        step_label=step.label,
-                        order_index=step.order_index,
-                    )
-                    execution.messages.append(message)
+        self.module_injector.compute_runtime_state(step)
+        if getattr(step, "upgrade_messages", None):
+            for key, value in step.upgrade_messages.items():
+                message = RefactorActionExecutionMessage(
+                    message=value,
+                    message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
+                    input_name=key,
+                    step_label=step.label,
+                    order_index=step.order_index,
+                )
+                execution.messages.append(message)
+        if getattr(step.module, "version_changes", None):
+            for version_change in step.module.version_changes:
+                message = RefactorActionExecutionMessage(
+                    message=version_change,
+                    message_type=RefactorActionExecutionMessageTypeEnum.tool_version_change,
+                    step_label=step.label,
+                    order_index=step.order_index,
+                )
+                execution.messages.append(message)
 
         return step
 
@@ -517,7 +519,7 @@ class WorkflowRefactorExecutor:
         # TODO: find workflow outputs that need to be dropped and report them
         upgrade_inputs = step.module.get_all_inputs()
         upgrade_outputs = step.module.get_all_outputs()
-        upgrade_output_names = [u.get("label") or u["name"] for u in upgrade_outputs]
+        upgrade_output_names = {u["name"] for u in upgrade_outputs}
         upgrade_order_index = step_def["id"]
         upgrade_label = step_def.get("label")
         all_input_connections = step_def.get("input_connections")

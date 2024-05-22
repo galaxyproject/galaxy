@@ -1,12 +1,12 @@
 from ._framework import ApiTestCase
 
 
-class TourApiTestCase(ApiTestCase):
+class TestToursApi(ApiTestCase):
     def test_index(self):
         response = self._get("tours")
         self._assert_status_code_is(response, 200)
         tours = response.json()
-        tour_keys = map(lambda t: t["id"], tours)
+        tour_keys = (t["id"] for t in tours)
         assert "core.history" in tour_keys
         for tour in tours:
             self._assert_has_keys(tour, "id", "name", "description", "tags")

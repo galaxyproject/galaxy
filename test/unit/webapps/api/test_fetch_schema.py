@@ -1,6 +1,8 @@
 from copy import deepcopy
 from json import dumps
 
+import yaml
+
 from galaxy.schema.fetch_data import (
     FetchDataPayload,
     FileDataElement,
@@ -10,7 +12,7 @@ from galaxy.schema.fetch_data import (
     UrlDataElement,
 )
 
-HISTORY_ID = "abcdef0123456789"
+HISTORY_ID = "378807ae895b74ff"
 example_payload = {
     "targets": [
         {
@@ -69,7 +71,7 @@ ftp_hdca_target = {
 }
 
 recursive_archive_payload = {
-    "history_id": "f3f73e481f432006",
+    "history_id": "70583a56914a26f9",
     "targets": [
         {
             "destination": {"type": "library", "name": "My Cool Library"},
@@ -82,7 +84,7 @@ recursive_archive_payload = {
 
 
 nested_element_regression_payload = {
-    "history_id": "80a1fcbe9fcb3c61",
+    "history_id": "c369577e3c21d7b7",
     "targets": [
         {
             "destination": {"type": "hdca"},
@@ -121,6 +123,33 @@ nested_element_regression_payload = {
     "auto_decompress": True,
 }
 
+library_payload = yaml.safe_load(
+    """
+destination:
+  type: library
+  name: "Cool Training Library"
+  description: "A longer description."
+  synopsis: "Optional - does anyone ever set this?"
+items:
+  - name: "Test Folder 1"
+    description: "Description of what is in Test Folder 1"  # Only populated with new API.
+    items:
+      - url: https://raw.githubusercontent.com/eteriSokhoyan/test-data/master/cliques-high-representatives.fa
+        src: url
+        ext: fasta
+        info: "A cool longer description."  # Only populated with new API.
+        dbkey: "hg19"  # Only populated with new API.
+  - name: "Test data segmentation-fold"
+    items:
+      - url: https://raw.githubusercontent.com/yhoogstrate/segmentation-fold/55d0bb28b01e613844ca35cf21fa41379fd72770/scripts/energy-estimation-utility/tests/test-data/workflow-test_cd-box_kturns.xml
+        name: workflow-test_cd-box_kturns.xml  # Only populated with new API.
+        info: Downloaded from https://raw.githubusercontent.com/yhoogstrate/segmentation-fold/55d0bb28b01e613844ca35cf21fa41379fd72770/scripts/energy-estimation-utility/tests/test-data/workflow-test_cd-box_kturns.xml
+        src: url
+        ext: xml
+
+"""
+)
+
 
 def test_fetch_data_schema():
     payload = FetchDataPayload(**example_payload)
@@ -156,5 +185,9 @@ def test_recursive_archive_form_like_data():
     FetchDataPayload(**payload)
 
 
-def test_nested_elemet_regression():
+def test_nested_element_regression():
     FetchDataPayload(**nested_element_regression_payload)
+
+
+def test_library_payload():
+    FetchDataPayload(targets=[library_payload], history_id=HISTORY_ID)

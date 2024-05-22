@@ -1,12 +1,16 @@
 """
 Neo4j Composite Dataset
 """
+
 import logging
-import sys
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -19,16 +23,15 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
         # self.regenerate_primary_file(dataset)
         rval = [
-            "<html><head><title>Files for Composite Dataset (%s)</title></head><p/>\
+            f"<html><head><title>Files for Composite Dataset ({self.file_ext})</title></head><p/>\
             This composite dataset is composed of the following files:<p/><ul>"
-            % (self.file_ext)
         ]
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             opt_text = ""
@@ -38,11 +41,11 @@ class Neo4j(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"
@@ -51,7 +54,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -132,9 +135,3 @@ class Neo4jDBzip(Neo4j, Data):
         self.add_composite_file(
             "%s.zip", description="neostore zip", substitute_name_with_metadata="reference_name", is_binary=True
         )
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

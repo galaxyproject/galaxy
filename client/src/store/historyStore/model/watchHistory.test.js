@@ -1,24 +1,19 @@
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import { createPinia, mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
+
 import { watchHistoryOnce } from "./watchHistory";
-import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
-import { datasetStore } from "store/historyStore/datasetStore";
-import { historyStore } from "store/historyStore/historyStore";
-import { historyItemsStore } from "store/historyStore/historyItemsStore";
-import { mount, createLocalVue } from "@vue/test-utils";
-import Vuex from "vuex";
+
+const pinia = createPinia();
 
 const testApp = {
     template: `<div/>`,
     computed: {
-        currentHistoryId() {
-            return this.$store.getters["history/currentHistoryId"];
-        },
-    },
-    methods: {
-        getHistoryItems(filterObj) {
-            return this.$store.getters["getHistoryItems"](filterObj);
-        },
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
     },
 };
 
@@ -53,19 +48,16 @@ describe("watchHistory", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         const localVue = createLocalVue();
-        localVue.use(Vuex);
+        useHistoryItemsStore(pinia);
 
         wrapper = mount(testApp, {
-            store: new Vuex.Store({
-                modules: {
-                    collectionElements: collectionElementsStore,
-                    dataset: datasetStore,
-                    history: historyStore,
-                    historyItems: historyItemsStore,
-                },
-            }),
             localVue,
+            pinia,
         });
+
+        const historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "history-id" }]);
+        historyStore.setCurrentHistoryId("history-id");
     });
 
     afterEach(() => {
@@ -78,10 +70,10 @@ describe("watchHistory", () => {
             .replyOnce(200, historyData)
             .onGet(/api\/histories\/history-id\/contents?.*/)
             .replyOnce(200, historyItems);
-        await watchHistoryOnce(wrapper.vm.$store);
-        expect(wrapper.vm.getHistoryItems({ historyId: "history-id", filterText: "" }).length).toBe(2);
-        expect(wrapper.vm.getHistoryItems({ historyId: "history-id", filterText: "second" })[0].hid).toBe(2);
-        expect(wrapper.vm.getHistoryItems({ historyId: "history-id", filterText: "state:ok" })[0].hid).toBe(1);
+        await watchHistoryOnce();
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
+        expect(wrapper.vm.getHistoryItems("history-id", "second")[0].hid).toBe(2);
+        expect(wrapper.vm.getHistoryItems("history-id", "state:ok")[0].hid).toBe(1);
     });
 
     it("survives a failing request", async () => {
@@ -94,11 +86,11 @@ describe("watchHistory", () => {
             .onGet(`/history/current_history_json`)
             .replyOnce(500);
 
-        await watchHistoryOnce(wrapper.vm.$store);
+        await watchHistoryOnce();
         expect(wrapper.vm.currentHistoryId).toBe("history-id");
-        expect(wrapper.vm.getHistoryItems({ historyId: "history-id", filterText: "" }).length).toBe(2);
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
         try {
-            await watchHistoryOnce(wrapper.vm.$store);
+            await watchHistoryOnce();
         } catch (error) {
             console.log(error);
             expect(error.response.status).toBe(500);
@@ -121,8 +113,8 @@ describe("watchHistory", () => {
                     history_id: "history-id",
                 },
             ]);
-        await watchHistoryOnce(wrapper.vm.$store);
+        await watchHistoryOnce();
         // We should have received the update and have 3 items in the history
-        expect(wrapper.vm.getHistoryItems({ historyId: "history-id", filterText: "" }).length).toBe(3);
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(3);
     });
 });

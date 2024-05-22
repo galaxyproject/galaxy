@@ -21,6 +21,7 @@ class AppInfo:
         galaxy_root_dir: Optional[str] = None,
         default_file_path: Optional[str] = None,
         tool_data_path: Optional[str] = None,
+        galaxy_data_manager_data_path: Optional[str] = None,
         shed_tool_data_path: Optional[str] = None,
         outputs_to_working_directory: bool = False,
         container_image_cache_path: Optional[str] = None,
@@ -35,6 +36,7 @@ class AppInfo:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
         self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
         self.shed_tool_data_path = shed_tool_data_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
@@ -122,13 +124,12 @@ class DependenciesDescription:
         return dict(
             requirements=[r.to_dict() for r in self.requirements],
             installed_tool_dependencies=[
-                DependenciesDescription._toolshed_install_dependency_to_dict(d)
-                for d in self.installed_tool_dependencies
+                self._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies
             ],
         )
 
-    @staticmethod
-    def from_dict(as_dict):
+    @classmethod
+    def from_dict(cls, as_dict):
         if as_dict is None:
             return None
 
@@ -136,11 +137,9 @@ class DependenciesDescription:
         requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get("installed_tool_dependencies", [])
         installed_tool_dependencies = list(
-            map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
+            map(cls._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
         )
-        return DependenciesDescription(
-            requirements=requirements, installed_tool_dependencies=installed_tool_dependencies
-        )
+        return cls(requirements=requirements, installed_tool_dependencies=installed_tool_dependencies)
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):

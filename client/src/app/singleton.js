@@ -2,10 +2,10 @@
  * TODO: Make this part of galaxy.js later, once the global refs are gone
  */
 
-import addLogging from "utils/add-logging";
 import config from "config";
-import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
+
+import { GalaxyApp } from "./galaxy";
 
 export function setGalaxyInstance(factory) {
     if (!config.testBuild === true) {
@@ -16,9 +16,6 @@ export function setGalaxyInstance(factory) {
     let newInstance = factory(GalaxyApp);
     if (!(newInstance instanceof GalaxyApp)) {
         newInstance = new GalaxyApp(newInstance);
-    }
-    if (newInstance.debug === undefined) {
-        addLogging(newInstance, "GalaxyApp");
     }
 
     storage._galaxyInstance = newInstance;

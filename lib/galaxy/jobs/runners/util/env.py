@@ -21,11 +21,9 @@ def env_to_statement(env):
     >>> env_to_statement(dict(execute="module load java/1.5.1"))
     'module load java/1.5.1'
     """
-    source_file = env.get("file", None)
-    if source_file:
+    if source_file := env.get("file", None):
         return f". {__escape(source_file, env)}"
-    execute = env.get("execute", None)
-    if execute:
+    if execute := env.get("execute", None):
         return execute
     name = env["name"]
     value = __escape(env["value"], env)

@@ -1,9 +1,11 @@
 import logging
 
+from sqlalchemy import select
 from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -26,13 +28,13 @@ class UsesItemRatings:
         if not item_rating_assoc_class:
             raise Exception(f"Item does not have ratings: {item.__class__.__name__}")
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
-        ave_rating = db_session.query(func.avg(item_rating_assoc_class.rating)).filter(item_id_filter).scalar()
+        ave_rating = db_session.scalar(select(func.avg(item_rating_assoc_class.rating)).where(item_id_filter))
         # Convert ave_rating to float; note: if there are no item ratings, ave rating is None.
         if ave_rating:
             ave_rating = float(ave_rating)
         else:
             ave_rating = 0
-        num_ratings = int(db_session.query(func.count(item_rating_assoc_class.rating)).filter(item_id_filter).scalar())
+        num_ratings = db_session.scalar(select(func.count(item_rating_assoc_class.rating)).where(item_id_filter))
         return (ave_rating, num_ratings)
 
     def rate_item(self, db_session, user, item, rating, webapp_model=None):
@@ -45,11 +47,13 @@ class UsesItemRatings:
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
             item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
         elif item_rating.rating != rating:
             # User has rated item; update rating.
             item_rating.rating = rating
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
         return item_rating
 
     def get_user_item_rating(self, db_session, user, item, webapp_model=None):
@@ -62,7 +66,9 @@ class UsesItemRatings:
 
         # Query rating table by user and item id.
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
-        return db_session.query(item_rating_assoc_class).filter_by(user=user).filter(item_id_filter).first()
+        return db_session.scalars(
+            select(item_rating_assoc_class).filter_by(user=user).where(item_id_filter).limit(1)
+        ).first()
 
     def _get_item_rating_assoc_class(self, item, webapp_model=None):
         """Returns an item's item-rating association class."""
@@ -90,10 +96,10 @@ class UsesAnnotations:
         return add_item_annotation(db_session, user, item, annotation)
 
     def delete_item_annotation(self, db_session, user, item):
-        annotation_assoc = get_item_annotation_obj(db_session, user, item)
-        if annotation_assoc:
+        if annotation_assoc := get_item_annotation_obj(db_session, user, item):
             db_session.delete(annotation_assoc)
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
 
     def copy_item_annotation(self, db_session, source_user, source_item, target_user, target_item):
         """Copy an annotation from a user/item source to a user/item target."""
@@ -114,7 +120,7 @@ def get_item_annotation_obj(db_session, user, item):
         return None
 
     # Get annotation association object.
-    annotation_assoc = db_session.query(annotation_assoc_class).filter_by(user=user)
+    annotation_assoc = select(annotation_assoc_class).filter_by(user=user)
 
     if item.__class__ == galaxy.model.History:
         annotation_assoc = annotation_assoc.filter_by(history=item)
@@ -130,7 +136,7 @@ def get_item_annotation_obj(db_session, user, item):
         annotation_assoc = annotation_assoc.filter_by(page=item)
     elif item.__class__ == galaxy.model.Visualization:
         annotation_assoc = annotation_assoc.filter_by(visualization=item)
-    return annotation_assoc.first()
+    return db_session.scalars(annotation_assoc.limit(1)).first()
 
 
 def get_item_annotation_str(db_session, user, item):
@@ -174,12 +180,12 @@ def _get_annotation_assoc_class(item):
 def get_foreign_key(source_class, target_class):
     """Returns foreign key in source class that references target class."""
     target_fk = None
-    for fk in source_class.table.foreign_keys:
-        if fk.references(target_class.table):
+    for fk in source_class.__table__.foreign_keys:
+        if fk.references(target_class.__table__):
             target_fk = fk
             break
     if not target_fk:
-        raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
+        raise Exception(f"No foreign key found between objects: {source_class.__table__}, {target_class.__table__}")
     return target_fk
 
 

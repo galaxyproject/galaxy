@@ -1,12 +1,20 @@
+from typing import TYPE_CHECKING
+
 from galaxy_test.driver import integration_util
 from galaxy_test.selenium import framework
 
+if TYPE_CHECKING:
+    from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
+
 selenium_test = framework.selenium_test
+managed_history = framework.managed_history
 
 
 class SeleniumIntegrationTestCase(
     integration_util.IntegrationTestCase, framework.TestWithSeleniumMixin, framework.UsesLibraryAssertions
 ):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
+
     def setUp(self):
         super().setUp()
         self.setup_selenium()

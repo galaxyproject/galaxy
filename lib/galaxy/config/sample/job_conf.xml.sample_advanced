@@ -292,6 +292,13 @@
                 </param> -->
             <!-- Apply additional labels and annotations to the k8s job spec -->
 
+            <!-- <param id="k8s_extra_job_envs">
+                    HDF5_USE_FILE_LOCKING: 'FALSE'
+                    MY_OTHER_ENV_VAR: its_value
+                </param> -->
+            <!-- Sets additional environment variables (in YAML) to be passed to the k8s Jobs that handle each Galaxy job. 
+                 This is probably possible to be set at the destination level as well, based on the source code. -->
+
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
             <!-- <param id="k8s_fs_group_id">0</param> -->
             <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
@@ -1076,9 +1083,10 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
             <param id="container_monitor">true</param>
-            <!-- Flag for appending the container monitor command to jobs. This should be set to false
-                 when running Interactive Tools with the kubernetes runner, but is needed for running with the
-                 local docker runner.
+            <!-- Flag for appending the container monitor command to jobs. The monitor is responsible for determining
+                 the IP and port of the container and reporting it to Galaxy. This should be set to false when running
+                 Interactive Tools with the kubernetes runner, but is needed for running with local, DRM, and
+                 non-Kubernetes Pulsar docker runners.
             -->
         </destination>
         <destination id="kubernetes" runner="k8s">

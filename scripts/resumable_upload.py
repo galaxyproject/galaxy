@@ -2,9 +2,10 @@
 import os
 
 import click
-import requests
 from tusclient import client
 from tusclient.storage import filestorage
+
+from galaxy.util import requests
 
 UPLOAD_ENDPOINT = "/api/upload/resumable_upload"
 SUBMISSION_ENDPOINT = "/api/tools/fetch"

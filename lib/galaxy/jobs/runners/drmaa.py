@@ -11,7 +11,7 @@ import time
 
 from galaxy import model
 from galaxy.jobs import JobDestination
-from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
+from galaxy.jobs.handler import DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -51,7 +51,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             runner_param_specs[f"{retry_exception}_retries"] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
 
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         super().__init__(app, nworkers, **kwargs)
@@ -70,9 +70,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             drmaa = __import__("drmaa")
         except (ImportError, RuntimeError) as exc:
             raise exc.__class__(
-                "The Python drmaa package is required to use this "
-                "feature, please install it or correct the "
-                "following error:\n%s: %s" % (exc.__class__.__name__, str(exc))
+                f"The Python drmaa package is required to use this feature, please install it or correct the following error:\n{exc.__class__.__name__}: {str(exc)}"
             )
         from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
@@ -107,8 +105,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Convert a legacy URL to a job destination"""
         if not url:
             return
-        native_spec = url.split("/")[2]
-        if native_spec:
+        if native_spec := url.split("/")[2]:
             params = dict(nativeSpecification=native_spec)
             log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
             return JobDestination(runner="drmaa", params=params)
@@ -201,7 +198,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             else:
                 log.error(f"({galaxy_id_tag}) All attempts to submit job failed")
                 if not fail_msg:
-                    fail_msg = DEFAULT_JOB_PUT_FAILURE_MESSAGE
+                    fail_msg = DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
                 job_wrapper.fail(fail_msg)
                 return
         else:
@@ -385,7 +382,14 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 commands.execute(cmd)
             log.info(f"({job.id}/{ext_id}) Removed from DRM queue at user's request")
         except drmaa.InvalidJobException:
-            log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
+            log.warning(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
+        except drmaa.InternalException as e:
+            if "already completing or completed" in str(e):
+                log.warning(f"({job.id}/{ext_id}) User killed running job, but job already terminal in DRM queue")
+            else:
+                log.exception(
+                    f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue"
+                )
         except commands.CommandLineException as e:
             log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
         except Exception:

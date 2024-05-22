@@ -46,7 +46,7 @@ Security
 ========
 
 The 17.09 Galaxy version includes many security patches. Per our new `Security Policy
-<https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md>`__ some of these have been
+<https://github.com/galaxyproject/galaxy/blob/dev/SECURITY.md>`__ some of these have been
 applied to Galaxy releases going back 12 months.
 
 Details of the vulnerabilities that have been backported can be found in the `Security patch details`_

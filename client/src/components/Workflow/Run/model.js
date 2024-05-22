@@ -1,6 +1,6 @@
+import { visitInputs } from "components/Form/utilities";
 import _ from "underscore";
 import { isEmpty } from "utils/utils";
-import { visitInputs } from "components/Form/utilities";
 
 export class WorkflowRunModel {
     constructor(runData) {
@@ -100,7 +100,7 @@ export class WorkflowRunModel {
                 name: wp_name,
                 type: "text",
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
-                style: "ui-form-wp-source",
+                cls: "ui-input-linked",
                 links: [],
                 optional: true,
             });
@@ -122,8 +122,7 @@ export class WorkflowRunModel {
                     wp_input.links.push(step);
                     input.wp_linked = true;
                     input.type = "text";
-                    input.backdrop = true;
-                    input.style = "ui-form-wp-target";
+                    input.cls = "ui-input-linked";
                 });
             });
             _.each(step.replacement_parameters, (wp_name) => {
@@ -153,8 +152,9 @@ export class WorkflowRunModel {
                             (data_ref.step_linked && !isDataStep(data_ref.step_linked)) || input.wp_linked;
                     }
                     if (
-                        is_data_input ||
-                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
+                        !input.optional &&
+                        (is_data_input ||
+                            (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked))
                     ) {
                         step.expanded = true;
                         hasOpenToolSteps = true;

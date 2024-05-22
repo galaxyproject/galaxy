@@ -1,6 +1,7 @@
 """
 SLURM job control via the DRMAA API.
 """
+
 import os
 import time
 
@@ -221,6 +222,9 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return OUT_OF_MEMORY_MSG
                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
                         return PROBABLY_OUT_OF_MEMORY_MSG
+        except FileNotFoundError:
+            # Entirely expected, as __check_memory_limit is only called if the job state is CANCELLED
+            return False
         except Exception:
             log.exception("Error reading end of %s:", efile_path)
 

@@ -1,13 +1,15 @@
 """
 Manager and Serializer for TS groups.
 """
+
 import logging
 
 from sqlalchemy import (
     false,
+    select,
     true,
 )
-from sqlalchemy.orm.exc import (
+from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
@@ -20,6 +22,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -46,13 +49,11 @@ class GroupManager:
         if decoded_group_id is None and name is None:
             raise RequestParameterInvalidException("You must supply either ID or a name of the group.")
 
-        name_query = trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.name == name)
-        id_query = trans.sa_session.query(trans.app.model.Group).filter(
-            trans.app.model.Group.table.c.id == decoded_group_id
-        )
-
         try:
-            group = id_query.one() if decoded_group_id else name_query.one()
+            if decoded_group_id:
+                group = trans.sa_session.get(trans.app.model.Group, decoded_group_id)
+            else:
+                group = get_group_by_name(trans.sa_session, name, trans.app.model.Group)
         except MultipleResultsFound:
             raise InconsistentDatabase("Multiple groups found with the same identifier.")
         except NoResultFound:
@@ -73,7 +74,8 @@ class GroupManager:
             # TODO add description field to the model
             group = trans.app.model.Group(name=name)
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return group
 
     def update(self, trans, group, name=None, description=None):
@@ -93,7 +95,8 @@ class GroupManager:
             changed = True
         if changed:
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return group
 
     def delete(self, trans, group, undelete=False):
@@ -107,7 +110,8 @@ class GroupManager:
         else:
             group.deleted = True
         trans.sa_session.add(group)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return group
 
     def list(self, trans, deleted=False):
@@ -117,16 +121,21 @@ class GroupManager:
         :returns: query that will emit all groups
         :rtype:   sqlalchemy query
         """
-        is_admin = trans.user_is_admin
-        query = trans.sa_session.query(trans.app.model.Group)
-        if is_admin:
+        Group = trans.app.model.Group
+        stmt = select(Group)
+        if trans.user_is_admin:
             if deleted is None:
                 #  Flag is not specified, do not filter on it.
                 pass
             elif deleted:
-                query = query.filter(trans.app.model.Group.table.c.deleted == true())
+                stmt = stmt.where(Group.deleted == true())
             else:
-                query = query.filter(trans.app.model.Group.table.c.deleted == false())
+                stmt = stmt.where(Group.deleted == false())
         else:
-            query = query.filter(trans.app.model.Group.table.c.deleted == false())
-        return query
+            stmt = stmt.where(Group.deleted == false())
+        return trans.sa_session.scalars(stmt)
+
+
+def get_group_by_name(session, name, group_model):
+    stmt = select(group_model).where(group_model.name == name)
+    return session.execute(stmt).scalar_one()

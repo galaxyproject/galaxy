@@ -42,8 +42,8 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
 
-source/dev/run_tests_help.txt:
-	bash ../run_tests.sh --help >> source/dev/run_tests_help.txt
+source/dev/run_tests_help.txt: ../run_tests.sh
+	bash ../run_tests.sh --help > source/dev/run_tests_help.txt
 
 source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd > $@

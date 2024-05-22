@@ -1,4 +1,5 @@
 import { safeAssign } from "utils/safeAssign";
+
 import { BaseModel } from "./BaseModel";
 
 export class AwsConfig extends BaseModel {

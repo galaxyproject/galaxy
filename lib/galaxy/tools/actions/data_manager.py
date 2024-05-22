@@ -1,5 +1,6 @@
 import logging
 
+from galaxy.model.base import transaction
 from . import DefaultToolAction
 
 log = logging.getLogger(__name__)
@@ -13,7 +14,8 @@ class DataManagerToolAction(DefaultToolAction):
         if isinstance(rval, tuple) and len(rval) >= 2 and isinstance(rval[0], trans.app.model.Job):
             assoc = trans.app.model.DataManagerJobAssociation(job=rval[0], data_manager_id=tool.data_manager_id)
             trans.sa_session.add(assoc)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         else:
             log.error(f"Got bad return value from DefaultToolAction.execute(): {rval}")
         return rval

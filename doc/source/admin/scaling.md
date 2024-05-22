@@ -1,7 +1,7 @@
 # Scaling and Load Balancing
 
 The Galaxy framework is written in Python and makes extensive use of threads.  However, one of the drawbacks of Python
-is the [Global Interpreter Lock](http://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock),
+is the [Global Interpreter Lock](https://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock),
 which prevents more than one thread from being on CPU at a time.  Because of this, having a multi-core system will not
 improve the Galaxy framework's performance out of the box since Galaxy can use (at most) one core at a time in its
 default configuration.  However, Galaxy can easily run in multiple separate processes, which solves this problem.  For a
@@ -143,10 +143,7 @@ The preferred assignment method is *Database SKIP LOCKED* or *Database Transacti
 [2ndquadrant-skip-locked]: https://www.2ndquadrant.com/en/blog/what-is-select-skip-locked-for-in-postgresql-9-5/
 [2ndquadrant-blog]: https://www.2ndquadrant.com/en/blog/
 
-```eval_rst
-.. _scaling-configuration:
-```
-
+{#scaling-configuration}
 ## Configuration
 
 ### Gunicorn
@@ -272,16 +269,14 @@ as described in the [production configuration](production.md) documentation.
 
 ### Job Handling
 
-```eval_rst
-.. warning::
+```{warning}
+In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler (e.g. to decrease the
+number of handlers) until it has finished processing all its assigned jobs, or else its jobs will never reach a
+terminal state. In order to allow a handler to run but not receive any new jobs, configure it with an unused tag (e.g
+``<handler id="handler5" tags="drain" />``) and restart *all* Galaxy processes.
 
-   In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler (e.g. to decrease the
-   number of handlers) until it has finished processing all its assigned jobs, or else its jobs will never reach a
-   terminal state. In order to allow a handler to run but not receive any new jobs, configure it with an unused tag (e.g
-   ``<handler id="handler5" tags="drain" />``) and restart *all* Galaxy processes.
-
-   Alternatively, you can stop the handler and reassign its jobs to another handler, but this is currently only possible
-   using an ``UPDATE`` query in the database and is only recommended for advanced Galaxy administrators.
+Alternatively, you can stop the handler and reassign its jobs to another handler, but this is currently only possible
+using an ``UPDATE`` query in the database and is only recommended for advanced Galaxy administrators.
 ```
 
 #### all-in-one job handling
@@ -302,12 +297,10 @@ gravity:
 
 Jobs will be handled according to rules outlined above in [Job Handler Assignment Methods](#job-handler-assignment-methods).
 
-```eval_rst
-.. note::
-
-   If a ``<handlers>`` section is defined in ``job_conf.xml``, Galaxy's web workers will no longer load and start the
-   job handling code, so tools cannot be mapped to specific handlers in this strategy. If you wish to control job
-   handling, choose another deployment strategy.
+```{note}
+If a ``<handlers>`` section is defined in ``job_conf.xml``, Galaxy's web workers will no longer load and start the
+job handling code, so tools cannot be mapped to specific handlers in this strategy. If you wish to control job
+handling, choose another deployment strategy.
 ```
 
 ##### Statically defined handlers
@@ -332,14 +325,12 @@ to specific handlers, or to handler tags, as in the following example:
 </job_conf>
 ```
 
-```eval_rst
-.. tip::
-
-   Any untagged handler will be automatically considered a default handler. As seen in the example above, it is possible
-   to map any tool to any handler or tag, however, a handler must be tagged to prevent it from handling jobs created for
-   tools that are not explicitly mapped to handlers. Thus, ``handler2`` will handle *all* executions of tool ``test3``,
-   but it will also (along with ``handler1``) handle tools that are not explicitly mapped to handlers. In contrast,
-   ``handler3`` will *only* handle executions of tool ``test1``.
+```{tip}
+Any untagged handler will be automatically considered a default handler. As seen in the example above, it is possible
+to map any tool to any handler or tag, however, a handler must be tagged to prevent it from handling jobs created for
+tools that are not explicitly mapped to handlers. Thus, ``handler2`` will handle *all* executions of tool ``test3``,
+but it will also (along with ``handler1``) handle tools that are not explicitly mapped to handlers. In contrast,
+``handler3`` will *only* handle executions of tool ``test1``.
 ```
 
 `run.sh` will start the gunicorn and job handler process(es), but if you are not using `run.sh` or the generated supervisor setup you will need to start the webless handler processes yourself. This is done on the command line like so:
@@ -399,6 +390,21 @@ You can omit the `pools` argument, this will then default to:
 If you omit the `processes` argument this will default to a single process.
 You can further customize the handler names using the `name_template` section,
 for a complete example see [this gravity test case](https://github.com/galaxyproject/gravity/blob/a00df1c671fdc01e3fbc42f64a851a45a37a1870/tests/test_process_manager.py#L28).
+
+You can define arbitrary environment variables for dynamic handlers using the ``environnment`` key on a handler
+definition:
+
+```yaml
+gravity:
+  handlers:
+    handler:
+      processes: 3
+      pools:
+        - job-handlers
+      environment:
+        FOO: bar
+        BAZ: quux
+```
 
 If you are not using dynamic handlers please omit the `handlers` entry completely, as these will
 otherwise be idle and not handle jobs or workflows.
@@ -523,12 +529,12 @@ Restart=on-abort
 WorkingDirectory=/srv/galaxy/server
 TimeoutStartSec=10
 ExecStart=/srv/galaxy/venv/bin/galaxy --state-dir /srv/galaxy/database/gravity
-Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 [Install]
 WantedBy=multi-user.target
 ```
 
-We can now enable and start the the Galaxy services with systemd:
+We can now enable and start the Galaxy services with systemd:
 
 ```console
 # systemctl enable galaxy

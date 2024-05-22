@@ -1,7 +1,7 @@
-import $ from "jquery";
-import _l from "utils/localization";
-import _ from "underscore";
 import { getGalaxyInstance } from "app";
+import $ from "jquery";
+import _ from "underscore";
+import _l from "utils/localization";
 
 /**
  * Filters that enable users to show/hide data points dynamically.

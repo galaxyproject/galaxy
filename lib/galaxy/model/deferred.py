@@ -9,9 +9,11 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import (
+    object_session,
+    Session,
+)
 from sqlalchemy.orm.exc import DetachedInstanceError
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -29,6 +31,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
@@ -58,9 +61,9 @@ class SimpleTransientPathMapper(TransientPathMapper):
         self._staging_directory = staging_directory
 
     def transient_paths_for(self, old_dataset: Dataset) -> TransientDatasetPaths:
-        external_filename_basename = "dataset_%s.dat" % str(old_dataset.uuid)
+        external_filename_basename = f"dataset_{old_dataset.uuid}.dat"
         external_filename = os.path.join(self._staging_directory, external_filename_basename)
-        external_extras_basename = "dataset_%s_files" % str(old_dataset.uuid)
+        external_extras_basename = f"dataset_{old_dataset.uuid}_files"
         external_extras = os.path.join(self._staging_directory, external_extras_basename)
         return TransientDatasetPaths(external_filename, external_extras, self._staging_directory)
 
@@ -74,7 +77,7 @@ class DatasetInstanceMaterializer:
         object_store_populator: Optional[ObjectStorePopulator] = None,
         transient_path_mapper: Optional[TransientPathMapper] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[scoped_session] = None,
+        sa_session: Optional[Session] = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -122,8 +125,10 @@ class DatasetInstanceMaterializer:
                 sa_session = self._sa_session
                 if sa_session is None:
                     sa_session = object_session(dataset_instance)
+                assert sa_session
                 sa_session.add(materialized_dataset)
-                sa_session.flush()
+                with transaction(sa_session):
+                    sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             path = self._stream_source(target_source, datatype=dataset_instance.datatype)
             object_store.update_from_file(materialized_dataset, file_name=path)
@@ -151,6 +156,7 @@ class DatasetInstanceMaterializer:
             sa_session = self._sa_session
             if sa_session is None:
                 sa_session = object_session(dataset_instance)
+            assert sa_session
             sa_session.add(materialized_dataset_instance)
         materialized_dataset_instance.copy_from(
             dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
@@ -163,7 +169,7 @@ class DatasetInstanceMaterializer:
             if transient_paths:
                 metadata_tmp_files_dir = transient_paths.metadata_files_dir
             else:
-                # If metadata_tmp_files_dir is set we generate a MetdataTempFile,
+                # If metadata_tmp_files_dir is set we generate a MetadataTempFile,
                 # which we don't want when we're generating an attached materialized dataset instance
                 metadata_tmp_files_dir = None
             materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)
@@ -185,7 +191,7 @@ class DatasetInstanceMaterializer:
             elif action == "datatype_groom":
                 datatype_groom = True
             else:
-                raise Exception(f"Failed to materialize dataest, unknown transformation action {action} applied.")
+                raise Exception(f"Failed to materialize dataset, unknown transformation action {action} applied.")
         if to_posix_lines or spaces_to_tabs:
             convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
             convert_result = convert_fxn(path, False)
@@ -276,7 +282,7 @@ def materializer_factory(
     transient_path_mapper: Optional[TransientPathMapper] = None,
     transient_directory: Optional[str] = None,
     file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[scoped_session] = None,
+    sa_session: Optional[Session] = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)

@@ -2,6 +2,7 @@
 Providers that provide lists of lists generally where each line of a source
 is further subdivided into multiple data (e.g. columns from a line).
 """
+
 import logging
 import re
 from urllib.parse import unquote_plus

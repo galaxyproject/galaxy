@@ -4,11 +4,20 @@ Utilities for validating inputs related to user objects.
 The validate_* methods in this file return simple messages that do not contain
 user inputs - so these methods do not need to be escaped.
 """
+
 import logging
 import re
-import socket
+from typing import Optional
 
-from sqlalchemy import func
+import dns.resolver
+from dns.exception import DNSException
+from sqlalchemy import (
+    func,
+    select,
+)
+from typing_extensions import LiteralString
+
+from galaxy.objectstore import ObjectStore
 
 log = logging.getLogger(__name__)
 
@@ -71,15 +80,10 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     message = validate_email_str(email)
     if not message and validate_domain:
         domain = extract_domain(email)
-        message = validate_domain_resolves(domain)
+        message = validate_email_domain_name(domain)
 
-    if (
-        not message
-        and check_dup
-        and trans.sa_session.query(trans.app.model.User)
-        .filter(func.lower(trans.app.model.User.table.c.email) == email.lower())
-        .first()
-    ):
+    stmt = select(trans.app.model.User).filter(func.lower(trans.app.model.User.email) == email.lower()).limit(1)
+    if not message and check_dup and trans.sa_session.scalars(stmt).first():
         message = f"User with email '{email}' already exists."
 
     if not message:
@@ -97,12 +101,17 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     return message
 
 
-def validate_domain_resolves(domain):
+def validate_email_domain_name(domain: str) -> LiteralString:
     message = ""
     try:
-        socket.gethostbyname(domain)
-    except socket.gaierror:
-        message = "The email domain cannot be resolved."
+        dns.resolver.resolve(domain, "MX")
+    except DNSException:
+        try:
+            # Per RFC 5321, try to fall back to the A record (implicit MX) for
+            # the domain, see https://www.rfc-editor.org/rfc/rfc5321#section-5.1
+            dns.resolver.resolve(domain, "A")
+        except DNSException:
+            message = "The email domain cannot be resolved."
     return message
 
 
@@ -121,10 +130,11 @@ def validate_publicname(trans, publicname, user=None):
     """
     if user and user.username == publicname:
         return ""
-    message = validate_publicname_str(publicname)
-    if message:
+    if message := validate_publicname_str(publicname):
         return message
-    if trans.sa_session.query(trans.app.model.User).filter_by(username=publicname).first():
+
+    stmt = select(trans.app.model.User).filter_by(username=publicname).limit(1)
+    if trans.sa_session.scalars(stmt).first():
         return "Public name is taken; please choose another."
     return ""
 
@@ -148,3 +158,9 @@ def validate_password(trans, password, confirm):
     if password != confirm:
         return "Passwords do not match."
     return validate_password_str(password)
+
+
+def validate_preferred_object_store_id(
+    trans, object_store: ObjectStore, preferred_object_store_id: Optional[str]
+) -> str:
+    return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""

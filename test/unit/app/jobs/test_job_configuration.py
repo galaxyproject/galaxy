@@ -2,7 +2,10 @@ import datetime
 import os
 import shutil
 import tempfile
-import unittest
+from typing import (
+    Dict,
+    Optional,
+)
 from unittest import mock
 
 from pykwalify.core import Core
@@ -10,18 +13,22 @@ from pykwalify.core import Core
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
-from galaxy.util import (
-    galaxy_directory,
-    galaxy_samples_directory,
+from galaxy.util import galaxy_directory
+from galaxy.util.path import StrPath
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
 )
+from galaxy.util.unittest import TestCase
 from galaxy.web_stack import ApplicationStack
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
-SIMPLE_JOB_CONF = os.path.join(galaxy_samples_directory(), "job_conf.xml.sample_basic")
-ADVANCED_JOB_CONF = os.path.join(galaxy_samples_directory(), "job_conf.xml.sample_advanced")
-ADVANCED_JOB_CONF_YAML = os.path.join(os.path.dirname(__file__), "job_conf.sample_advanced.yml")
+GALAXY_SAMPLES_DIRECTORY = resource_path("galaxy.config", "sample")
+SIMPLE_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_basic"
+ADVANCED_JOB_CONF = GALAXY_SAMPLES_DIRECTORY / "job_conf.xml.sample_advanced"
+ADVANCED_JOB_CONF_YAML = GALAXY_SAMPLES_DIRECTORY / "job_conf.sample.yml"
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
 
@@ -31,13 +38,13 @@ class TestApplicationStack(ApplicationStack):
         return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
 
 
-class BaseJobConfXmlParserTestCase(unittest.TestCase):
+class BaseJobConfXmlParserTestCase(TestCase):
     extension = "xml"
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
         self.config = mock.Mock(
-            job_config_file=os.path.join(self.temp_directory, "job_conf.%s" % self.extension),
+            job_config_file=os.path.join(self.temp_directory, f"job_conf.{self.extension}"),
             use_tasked_jobs=False,
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
@@ -45,7 +52,8 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
             track_jobs_in_database=True,
             server_name="main",
         )
-        self._write_config_from(SIMPLE_JOB_CONF)
+        with as_file(SIMPLE_JOB_CONF) as path:
+            self._write_config_from(path)
         self._app = None
         self._application_stack = None
         self._job_configuration = None
@@ -79,17 +87,19 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
         handlers = handlers or []
         template = {
-            "assign_with": ' assign_with="%s"' % assign_with if assign_with is not None else "",
-            "default": ' default="%s"' % default if default is not None else "",
+            "assign_with": f' assign_with="{assign_with}"' if assign_with is not None else "",
+            "default": f' default="{default}"' if default is not None else "",
             "handlers": "\n".join(
-                '<handler id="{id}"{tags}/>'.format(id=x["id"], tags=' tags="%s"' % x["tags"] if "tags" in x else "")
+                '<handler id="{id}"{tags}/>'.format(
+                    id=x["id"], tags=' tags="{}"'.format(x["tags"]) if "tags" in x else ""
+                )
                 for x in handlers
             ),
         }
         self._job_configuration_base_pools = base_pools
         self._write_config_from(HANDLER_TEMPLATE_JOB_CONF, template=template)
 
-    def _write_config_from(self, path, template=None):
+    def _write_config_from(self, path: StrPath, template: Optional[Dict[str, str]] = None) -> None:
         template = template or {}
         try:
             contents = open(path).read()
@@ -111,17 +121,19 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         self._write_config(contents)
 
     def _write_config(self, contents):
-        with open(os.path.join(self.temp_directory, "job_conf.%s" % self.extension), "w") as f:
+        with open(os.path.join(self.temp_directory, f"job_conf.{self.extension}"), "w") as f:
             f.write(contents)
 
     def _with_advanced_config(self):
         if self.extension == "xml":
-            self._write_config_from(ADVANCED_JOB_CONF)
+            trav = ADVANCED_JOB_CONF
         else:
-            self._write_config_from(ADVANCED_JOB_CONF_YAML)
+            trav = ADVANCED_JOB_CONF_YAML
+        with as_file(trav) as path:
+            self._write_config_from(path)
 
 
-class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
+class TestSimpleJobConfXmlParser(BaseJobConfXmlParserTestCase):
     extension = "xml"
 
     def test_load_simple_runner(self):
@@ -237,7 +249,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
             assert self.job_config.destinations[name]
 
 
-class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
+class TestAdvancedJobConfXmlParser(BaseJobConfXmlParserTestCase):
     def test_disable_job_metrics(self):
         self._with_advanced_config()
         self.job_config.destinations["multicore_local"]
@@ -348,24 +360,25 @@ class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.resource_groups["memoryonly"] == ["memory"]
 
 
-class AdvancedJobConfYamlParserTestCase(AdvancedJobConfXmlParserTestCase):
+class TestAdvancedJobConfYamlParser(TestAdvancedJobConfXmlParser):
     extension = "yml"
 
 
 def test_yaml_advanced_validation():
     schema = GALAXY_SCHEMAS_PATH / "job_config_schema.yml"
     integration_tests_dir = os.path.join(galaxy_directory(), "test", "integration")
-    valid_files = [
-        ADVANCED_JOB_CONF_YAML,
-        os.path.join(integration_tests_dir, "delay_job_conf.yml"),
-        os.path.join(integration_tests_dir, "embedded_pulsar_metadata_job_conf.yml"),
-        os.path.join(integration_tests_dir, "io_injection_job_conf.yml"),
-        os.path.join(integration_tests_dir, "resubmission_job_conf.yml"),
-        os.path.join(integration_tests_dir, "resubmission_default_job_conf.yml"),
-    ]
-    for valid_file in valid_files:
-        c = Core(
-            source_file=valid_file,
-            schema_files=[str(schema)],
-        )
-        c.validate()
+    with as_file(ADVANCED_JOB_CONF_YAML) as advanced_job_conf_yaml_path, as_file(schema) as schema_path:
+        valid_files = [
+            os.fspath(advanced_job_conf_yaml_path),
+            os.path.join(integration_tests_dir, "delay_job_conf.yml"),
+            os.path.join(integration_tests_dir, "embedded_pulsar_metadata_job_conf.yml"),
+            os.path.join(integration_tests_dir, "io_injection_job_conf.yml"),
+            os.path.join(integration_tests_dir, "resubmission_job_conf.yml"),
+            os.path.join(integration_tests_dir, "resubmission_default_job_conf.yml"),
+        ]
+        for valid_file in valid_files:
+            c = Core(
+                source_file=valid_file,
+                schema_files=[os.fspath(schema_path)],
+            )
+            c.validate()

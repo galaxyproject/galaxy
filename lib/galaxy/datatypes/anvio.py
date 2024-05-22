@@ -2,13 +2,17 @@
 Datatypes for Anvi'o
 https://github.com/merenlab/anvio
 """
+
 import glob
 import logging
 import os
-import sys
 from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
@@ -23,7 +27,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -41,7 +45,7 @@ class AnvioComposite(Html):
                     missing_text = " (missing)"
                 rval.append(f'<li><a href="{composite_name}">{composite_name}</a>{opt_text}{missing_text}</li>')
             rval.append("</ul>")
-        defined_files = map(lambda x: x[0], defined_files)
+        defined_files = (x[0] for x in defined_files)
         extra_files = []
         for dirpath, _dirnames, filenames in os.walk(dataset.extra_files_path, followlinks=True):
             for filename in filenames:
@@ -58,11 +62,11 @@ class AnvioComposite(Html):
         rval.append("</html>")
         return "\n".join(rval)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Anvio database (multiple files)"
@@ -71,7 +75,7 @@ class AnvioComposite(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -91,11 +95,11 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         if dataset.metadata.anvio_basename is not None and os.path.exists(
             os.path.join(dataset.extra_files_path, dataset.metadata.anvio_basename)
         ):
@@ -168,9 +172,3 @@ class AnvioSamplesDB(AnvioDB):
     _anvio_basename = "SAMPLES.db"
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = "anvio_samples_db"
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

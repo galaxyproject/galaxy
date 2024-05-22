@@ -1,9 +1,11 @@
 <tool id="composite_output_tests" name="composite_output_tests" version="1.0.0">
+  <!-- command mixes files_path and extra_files_path, both should work -->
   <command>
-    mkdir '$output.extra_files_path';
-    mkdir '$output.extra_files_path/output';
-    cp '$input.extra_files_path'/* '$output.extra_files_path';
-    echo "1 2 3" > '$output.extra_files_path/md5out';
+    mkdir '$output.files_path';
+    mkdir '$output.files_path/output';
+    touch '$output';
+    cp '$input.extra_files_path'/* '$output.files_path';
+    echo "1 2 3" > '$output.files_path/md5out';
     echo "1" > '$output.extra_files_path/output/1';
   </command>
   <inputs>

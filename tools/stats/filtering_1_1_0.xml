@@ -1,0 +1,103 @@
+<tool id="Filter1" name="Filter" version="1.1.0">
+  <description>data on any column using simple expressions</description>
+  <edam_operations>
+    <edam_operation>operation_0335</edam_operation>
+  </edam_operations>
+  <command>
+    python '$__tool_directory__/filtering.py' '$input' '$out_file1' '$inputs' ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
+  </command>
+  <configfiles>
+    <inputs name="inputs" />
+  </configfiles>
+  <inputs>
+    <param format="tabular" name="input" type="data" label="Filter" help="Dataset missing? See TIP below."/>
+    <param name="cond" type="text" value="c1=='chr22'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
+      <validator type="empty_field" message="Enter a valid filtering condition, see syntax and examples below."/>
+      <sanitizer>
+        <valid initial="string.printable"/>
+      </sanitizer>
+    </param>
+    <param name="header_lines" type="integer" value="0" label="Number of header lines to skip"/>
+  </inputs>
+  <outputs>
+    <data format_source="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="cond" value="c1=='chr22'"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test1.bed"/>
+    </test>
+    <test>
+      <param name="input" value="7.bed"/>
+      <param name="cond" value="c1=='chr1' and c3-c2>=2000 and c6=='+'"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test2.bed"/>
+    </test>
+    <!-- Test filtering of file with a variable number of columns. -->
+    <test>
+      <param name="input" value="filter1_in3.sam"/>
+      <param name="cond" value="c3=='chr1' and c5>5"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test3.sam"/>
+    </test>
+    <test>
+      <param name="input" value="filter1_inbad.bed"/>
+      <param name="cond" value="c1=='chr22'"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test4.bed"/>
+    </test>
+    <test>
+      <param name="input" value="filter1_in5.tab"/>
+      <param name="cond" value="c8>500"/>
+      <param name="header_lines" value="1"/>
+      <output name="out_file1" file="filter1_test5.tab"/>
+    </test>
+    <test>
+      <param name="input" value="filter1_in6.bed"/>
+      <param name="cond" value="c2=='100%'"/>
+      <param name="header_lines" value="0"/>
+      <output name="out_file1" file="filter1_test6.bed"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
+
+.. class:: infomark
+
+**TIP:** Attempting to apply a filtering condition may throw exceptions if the data type (e.g., string, integer) in every line of the columns being filtered is not appropriate for the condition (e.g., attempting certain numerical calculations on strings).  If an exception is thrown when applying the condition to a line, that line is skipped as invalid for the filter condition.  The number of invalid skipped lines is documented in the resulting history item as a "Condition/data issue".
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
+**Syntax**
+
+The filter tool allows you to restrict the dataset using simple conditional statements.
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+- Make sure that multi-character operators contain no white space ( e.g., **&lt;=** is valid while **&lt; =** is not valid )
+- When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **c1=='chr1'** )
+- Non-numerical values must be included in single or double quotes ( e.g., **c6=='+'** )
+- Filtering condition can include logical operators, but **make sure operators are all lower case** ( e.g., **(c1!='chrX' and c1!='chrY') or not c6=='+'** )
+
+-----
+
+**Example**
+
+- **c1=='chr1'** selects lines in which the first column is chr1
+- **c3-c2&lt;100*c4** selects lines where subtracting column 3 from column 2 is less than the value of column 4 times 100
+- **len(c2.split(',')) &lt; 4** will select lines where the second column has less than four comma separated elements
+- **c2>=1** selects lines in which the value of column 2 is greater than or equal to 1
+- Numbers should not contain commas - **c2&lt;=44,554,350** will not work, but **c2&lt;=44554350** will
+- Some words in the data can be used, but must be single or double quoted ( e.g., **c3=='exon'** )
+
+  </help>
+  <citations/>
+</tool>

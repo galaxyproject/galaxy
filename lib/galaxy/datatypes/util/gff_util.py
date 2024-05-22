@@ -1,6 +1,7 @@
 """
 Provides utilities for working with GFF files.
 """
+
 import copy
 
 from bx.intervals.io import (

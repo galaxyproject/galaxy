@@ -15,7 +15,7 @@ class mStats(Tabular):
 
     file_ext = "metacyto_stats.txt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Quick test on file headings"""
         if file_prefix.startswith("fcs_files\tcluster_id\tlabel\tfcs_names"):
             header_line = file_prefix.string_io().readline()
@@ -31,5 +31,5 @@ class mSummary(Tabular):
 
     file_ext = "metacyto_summary.txt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("study_id\tantibodies\tfilenames")

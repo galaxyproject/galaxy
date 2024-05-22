@@ -1,4 +1,4 @@
-import { saveSet, loadSet } from "utils/setCache";
+import { loadSet, saveSet } from "utils/setCache";
 
 export default {
     props: {

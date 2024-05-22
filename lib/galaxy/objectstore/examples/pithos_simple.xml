@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<object_store type="pithos">
+    <auth url="http://example.org/" token="extoken123" />
+    <container name="foo" project="cow" />
+    <extra_dir type="temp" path="database/tmp_pithos"/>
+    <extra_dir type="job_work" path="database/working_pithos"/>
+</object_store>

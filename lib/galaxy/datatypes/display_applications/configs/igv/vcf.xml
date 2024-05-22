@@ -13,7 +13,7 @@
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>${redirect_url}</url>
         <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" allow_cors="true" mimetype="application/octet-stream"/>
-        <param type="data" name="tabix_file" metadata="tabix_index" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" allow_cors="true" mimetype="application/octet-stream"/>
+        <param type="data" name="tabix_file" metadata="tabix_index" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" allow_cors="true" mimetype="application/octet-stream" />
         <param type="template" name="site_organism" strip="True" >
             #if ($dataset.dbkey in $site_dbkeys)
                 $site_organisms[ $site_dbkeys.index( $bgzip_file.dbkey ) ]
@@ -95,7 +95,7 @@
         <!-- We define url and params as normal, but values defined in dynamic_param are available by specified name -->
         <url>http://www.broadinstitute.org/igv/projects/current/igv.php?sessionURL=${bgzip_file.qp}&amp;genome=${qp($bgzip_file.dbkey)}&amp;merge=true&amp;name=${qp( ( $bgzip_file.name or $DATASET_HASH ).replace( ',', ';' ) )}</url>
         <param type="data" name="bgzip_file" url="galaxy_${DATASET_HASH}.vcf.gz" format="vcf_bgzip" mimetype="application/octet-stream"/>
-        <param type="data" name="tabix_file" metadata="tabix_index" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" format="vcf_bgzip" mimetype="application/octet-stream"/>
+        <param type="data" name="tabix_file" metadata="tabix_index" url="galaxy_${DATASET_HASH}.vcf.gz.tbi" mimetype="application/octet-stream" />
     </dynamic_links>
 </display>
 <!-- Dan Blankenberg -->

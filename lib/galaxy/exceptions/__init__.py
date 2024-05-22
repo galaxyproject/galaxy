@@ -16,7 +16,9 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from ..exceptions.error_codes import (
+from typing import Optional
+
+from .error_codes import (
     error_codes_by_name,
     ErrorCode,
 )
@@ -30,7 +32,7 @@ class MessageException(Exception):
     # Error code information embedded into API json responses.
     err_code: ErrorCode = error_codes_by_name["UNKNOWN"]
 
-    def __init__(self, err_msg=None, type="info", **extra_error_info):
+    def __init__(self, err_msg: Optional[str] = None, type="info", **extra_error_info):
         self.err_msg = err_msg or self.err_code.default_error_message
         self.type = type
         self.extra_error_info = extra_error_info
@@ -57,6 +59,16 @@ class ObjectInvalid(Exception):
 
 
 # Please keep the exceptions ordered by status code
+
+
+class AcceptedRetryLater(MessageException):
+    status_code = 202
+    err_code = error_codes_by_name["ACCEPTED_RETRY_LATER"]
+    retry_after: int
+
+    def __init__(self, msg: Optional[str] = None, retry_after=60):
+        super().__init__(msg)
+        self.retry_after = retry_after
 
 
 class NoContentException(MessageException):
@@ -126,7 +138,7 @@ class ToolMissingException(MessageException):
     status_code = 400
     err_code = error_codes_by_name["USER_TOOL_MISSING_PROBLEM"]
 
-    def __init__(self, err_msg=None, type="info", tool_id=None, **extra_error_info):
+    def __init__(self, err_msg: Optional[str] = None, type="info", tool_id=None, **extra_error_info):
         super().__init__(err_msg, type, **extra_error_info)
         self.tool_id = tool_id
 
@@ -139,6 +151,16 @@ class RequestParameterInvalidException(MessageException):
 class ToolInputsNotReadyException(MessageException):
     status_code = 400
     error_code = error_codes_by_name["TOOL_INPUTS_NOT_READY"]
+
+
+class ToolInputsNotOKException(MessageException):
+    def __init__(self, err_msg: Optional[str] = None, type="info", *, src: str, id: int, **extra_error_info):
+        super().__init__(err_msg, type, **extra_error_info)
+        self.src = src
+        self.id = id
+
+    status_code = 400
+    error_code = error_codes_by_name["TOOL_INPUTS_NOT_OK"]
 
 
 class RealUserRequiredException(MessageException):
@@ -165,6 +187,11 @@ class ItemAccessibilityException(MessageException):
 class ItemOwnershipException(MessageException):
     status_code = 403
     err_code = error_codes_by_name["USER_DOES_NOT_OWN_ITEM"]
+
+
+class ItemImmutableException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_IMMUTABLE"]
 
 
 class ConfigDoesNotAllowException(MessageException):
@@ -199,19 +226,18 @@ class ObjectNotFound(MessageException):
     err_code = error_codes_by_name["USER_OBJECT_NOT_FOUND"]
 
 
+class Conflict(MessageException):
+    status_code = 409
+    err_code = error_codes_by_name["CONFLICT"]
+
+
 class DeprecatedMethod(MessageException):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later
     """
 
-    status_code = 404
-    # TODO:?? 410 Gone?
+    status_code = 410
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
-
-
-class Conflict(MessageException):
-    status_code = 409
-    err_code = error_codes_by_name["CONFLICT"]
 
 
 class ConfigurationError(Exception):

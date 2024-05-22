@@ -23,7 +23,7 @@ tasks:
       python3 -m venv .venv &&
       . .venv/bin/activate &&
       pip install psycopg2 &&
-      pip install -r lib/galaxy/dependencies/dev-requirements.txt &&
+      pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt &&
       pip install tox &&
       gp sync-done setup
     command: createdb galaxy

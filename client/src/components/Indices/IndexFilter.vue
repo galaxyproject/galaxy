@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-input-group>
+        <BInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
                 <b-form-input
                     :id="id"
@@ -9,31 +9,44 @@
                     autocomplete="off"
                     :placeholder="placeholder | localize"
                     data-description="filter index input"
-                    class="search-query"
+                    class="search-query index-filter-query"
                     :size="size"
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
-            <b-input-group-append>
-                <b-button
-                    data-description="show deleted filter toggle"
+            <BInputGroupAppend>
+                <BButton
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <icon icon="question" />
-                </b-button>
-            </b-input-group-append>
-        </b-input-group>
-        <b-modal v-model="showHelp" title="Filtering Options Help" ok-only>
+                    <FontAwesomeIcon icon="question" />
+                </BButton>
+                <BButton
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
+                    title="Clear Filters (esc)"
+                    :size="size"
+                    @click="onReset">
+                    <FontAwesomeIcon icon="times" />
+                </BButton>
+            </BInputGroupAppend>
+        </BInputGroup>
+        <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
-        </b-modal>
+        </BModal>
     </span>
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
 
-import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
+library.add(faTimes, faQuestion);
 
 /**
  * Component for the search/filter button on the top of Galaxy object index grids.
@@ -45,6 +58,7 @@ export default {
         BInputGroupAppend,
         BButton,
         BModal,
+        FontAwesomeIcon,
     },
     props: {
         id: {

@@ -1,11 +1,36 @@
 import json
 import os
 import subprocess
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
+
+from cwl_utils.expression import do_eval as _do_eval
 
 from .util import find_engine
 
+if TYPE_CHECKING:
+    from cwl_utils.types import (
+        CWLObjectType,
+        CWLOutputType,
+    )
+
 FILE_DIRECTORY = os.path.normpath(os.path.dirname(os.path.join(__file__)))
 NODE_ENGINE = os.path.join(FILE_DIRECTORY, "cwlNodeEngine.js")
+
+
+def do_eval(expression: str, jobinput: "CWLObjectType", context: Optional["CWLOutputType"] = None):
+    return _do_eval(
+        expression,
+        jobinput,
+        [{"class": "InlineJavascriptRequirement"}],
+        None,
+        None,
+        {},
+        context=context,
+        cwlVersion="v1.2.1",
+    )
 
 
 def evaluate(config, input):
@@ -29,8 +54,7 @@ def evaluate(config, input):
     input_bytes = input_str.encode("utf-8")
     (stdoutdata, stderrdata) = sp.communicate(input_bytes)
     if sp.returncode != 0:
-        args = (json.dumps(new_input, indent=4), stdoutdata, stderrdata)
-        message = "Expression engine returned non-zero exit code on evaluation of\n%s%s%s" % args
+        message = f"Expression engine returned non-zero exit code on evaluation of\n{json.dumps(new_input, indent=4)}{stdoutdata}{stderrdata}"
         raise Exception(message)
 
     rval_raw = stdoutdata.decode("utf-8")

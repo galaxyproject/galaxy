@@ -153,8 +153,6 @@ Multiple containers can be installed simultaneously by giving ``--containers`` m
 
    $ mulled-update-singularity-containers --containers samtools:1.6--0 bamtools:2.4.1--0 --filepath /tmp/sing/ --installation /usr/local/bin/singularity
 
-.. code-block:: bash
-
 For a large number of containers, it may be more convenient to employ the ``--container-list`` option:
 
 .. code-block:: bash
@@ -163,15 +161,19 @@ For a large number of containers, it may be more convenient to employ the ``--co
 
 Here ``list.txt`` should contain a list of containers, each on a new line.
 
-In order to generate the list file the ``mulled-list`` command may be useful. The following command returns a list of all Docker containers available on the quay.io biocontainers organization, excluding those already available as Singularity containers via https://depot.galaxyproject.org/singularity/.:: bash
+In order to generate the list file the ``mulled-list`` command may be useful. The following command returns a list of all Docker containers available on the quay.io biocontainers organization, excluding those already available as Singularity containers on https://depot.galaxyproject.org/singularity/ .
+
+.. code-block:: bash
 
    $ mulled-list --source docker --not-singularity --blacklist blacklist.txt --file output.txt
 
 The list of containers will be saved as ``output.txt``. The (optional) ``--blacklist`` option may be used to exclude containers which should not included in the output; ``blacklist.txt`` should contain a list of the 'blacklisted' containers, each on a new line.
 
-Containers, once generated, should be tested. This can be achieved by affixing ``--testing test-output.log`` to the command, or alternatively, by use of the dedicated ``mulled-singularity-testing`` tool.:: bash
+The generated containers should also be tested. This can be achieved by affixing ``--testing test-output.log`` to the ``mulled-update-singularity-containers`` command:
 
-   $ mulled-singularity-testing --container-list list.txt --filepath /tmp/sing/ --installation /usr/local/bin/singularity --logfile test-output.txt
+.. code-block:: bash
+
+   $ mulled-update-singularity-containers --container-list list.txt --filepath /tmp/sing/ --installation /usr/local/bin/singularity --testing test-output.log
 
 .. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4

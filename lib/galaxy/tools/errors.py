@@ -1,6 +1,7 @@
 """
 Functionality for dealing with tool errors.
 """
+
 import string
 
 import markupsafe
@@ -8,7 +9,6 @@ import markupsafe
 from galaxy import (
     model,
     util,
-    web,
 )
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
@@ -137,10 +137,10 @@ class ErrorReporter:
         if not isinstance(hda, model.HistoryDatasetAssociation):
             hda_id = hda
             try:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = sa_session.get(model.HistoryDatasetAssociation, hda_id)
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
+                hda = sa_session.get(model.HistoryDatasetAssociation, app.security.decode_id(hda_id))
         assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job
@@ -159,11 +159,11 @@ class ErrorReporter:
     def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         hda = self.hda
         job = self.job
-        host = web.url_for("/", qualified=True)
+        host = self.app.url_for("/", qualified=True)
         history_id_encoded = self.app.security.encode_id(hda.history_id)
-        history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
+        history_view_link = self.app.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(
+        hda_show_params_link = self.app.url_for(
             controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True
         )
         # Build the email message
@@ -243,16 +243,22 @@ class EmailErrorReporter(ErrorReporter):
         to = self.app.config.error_email_to
         assert to, ValueError("Error reporting has been disabled for this Galaxy instance")
 
-        frm = self.app.config.email_from
         error_msg = validate_email_str(email)
         if not error_msg and self._can_access_dataset(user):
             to += f", {email.strip()}"
         subject = f"Galaxy tool error report from {email}"
         try:
-            subject = "{} ({})".format(
-                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id
-            )
+            subject = f"{subject} ({self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id})"
         except Exception:
             pass
 
-        return util.send_mail(frm, to, subject, self.report, self.app.config, html=self.html_report)
+        reply_to = user.email if user else None
+        return util.send_mail(
+            self.app.config.email_from,
+            to,
+            subject,
+            self.report,
+            self.app.config,
+            html=self.html_report,
+            reply_to=reply_to,
+        )

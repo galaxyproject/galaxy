@@ -6,26 +6,25 @@ tags:
   - "UI"
   - "visualization"
 
+requirements:
+  - new_history
+
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
 
-    - element: "#current-history-panel .create-hist-btn"
-      intro: "Before using the Window Manager, we will create a new history for this tour."
+    - component: upload.start
+      intro: "First, we will upload some tabular data into our new history."
       postclick: true
 
-    - element: "#tool-panel-upload-button"
-      intro: "Now, we will upload some tabular data into our new history."
-      postclick: true
-
-    - element: "#btn-new"
+    - component: upload.create_button
       intro: "We will be using the paste feature to create a new dataset."
       postclick: true
 
-    - element: "#upload-row-0 .upload-title"
+    - component: upload.title(n=0)
       intro: "Giving the dataset a name"
       textinsert: First Dataset
 
-    - element: "#upload-row-0 .upload-text-content"
+    - component: upload.paste_content(n=0)
       intro: "...and paste content into the text area field."
       textinsert: |
         1 0.039 0.000
@@ -37,25 +36,23 @@ steps:
         7 0.000 0.000
         8 0.000 0.000
 
-    - element: ".upload-settings"
+    - component: upload.settings_button(n=0)
       intro: "Now, we may further configure the upload content."
       postclick: true
 
-    - element: ".upload-space_to_tab"
+    - component: upload.setting_space_to_tab
       intro: "...by specifying that all spaces in our table should be converted into tabs."
-      postclick:
-        - ".upload-space_to_tab"
-        - ".popover-close"
+      postclick: true
 
-    - element: "#btn-new"
+    - component: upload.create_button
       intro: "We will create another dataset, so that we can try the Window Manager on multiple datasets."
       postclick: true
 
-    - element: "#upload-row-1 .upload-title"
+    - component: upload.title(n=1)
       intro: "Giving the second dataset a name"
       textinsert: Second Dataset
 
-    - element: "#upload-row-1 .upload-text-content"
+    - component: upload.paste_content(n=1)
       intro: "...and paste content into the text area field again."
       textinsert: |
         1 0.069 0.000
@@ -64,11 +61,11 @@ steps:
         4 0.420 0.000
         5 0.190 0.000
 
-    - element: "#btn-start"
+    - component: upload.start_button
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
-    - element: "#btn-close"
+    - component: upload.close_button
       intro: "Hit the close button to close the upload dialog."
       postclick: true
 
@@ -76,9 +73,9 @@ steps:
       intro: "Clicking this button will enable Galaxy's Window Manager mode."
       postclick: true
 
-    - element: "#right"
+    - element: "#current-history-panel"
       intro: "This is your history. It contains our two tables being uploaded."
-    
+
     - component: history_panel.item(hid=1,state=ok).display_button
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
       postclick: true

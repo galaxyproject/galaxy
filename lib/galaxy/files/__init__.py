@@ -1,47 +1,157 @@
 import logging
 import os
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 from typing import (
     Any,
+    Callable,
     Dict,
     List,
+    NamedTuple,
     Optional,
+    Protocol,
     Set,
 )
 
 from galaxy import exceptions
-from galaxy.util import plugin_config
+from galaxy.files.sources import (
+    BaseFilesSource,
+    FilesSourceProperties,
+    PluginKind,
+)
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.plugin_config import (
+    plugin_source_from_dict,
+    plugin_source_from_path,
+    PluginConfigSource,
+    PluginConfigsT,
+)
+from .plugins import (
+    FileSourcePluginLoader,
+    FileSourcePluginsConfig,
+)
 
 log = logging.getLogger(__name__)
 
-FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
+
+class FileSourcePath(NamedTuple):
+    file_source: BaseFilesSource
+    path: str
+
+
+class FileSourceScore(NamedTuple):
+    file_source: BaseFilesSource
+    score: int
+
+
+class NoMatchingFileSource(Exception):
+    pass
+
+
+class UserDefinedFileSources(Protocol):
+    """Entry-point for Galaxy to inject user-defined object stores.
+
+    Supplied object of this class is used to write out concrete
+    description of file sources when serializing all file sources
+    available to a user.
+    """
+
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext") -> None:
+        pass
+
+    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+        pass
+
+    def user_file_sources_to_dicts(
+        self,
+        for_serialization: bool,
+        user_context: "FileSourcesUserContext",
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[FilesSourceProperties]:
+        """Write out user file sources as list of config dictionaries."""
+        # config_dicts: List[FilesSourceProperties] = []
+        # for file_source in self.user_file_sources():
+        #     as_dict = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
+        #     config_dicts.append(as_dict)
+        # return config_dicts
+
+
+class NullUserDefinedFileSources(UserDefinedFileSources):
+
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext") -> None:
+        return None
+
+    def find_best_match(self, url: str) -> Optional[FileSourceScore]:
+        return None
+
+    def user_file_sources_to_dicts(
+        self,
+        for_serialization: bool,
+        user_context: "FileSourcesUserContext",
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[FilesSourceProperties]:
+        return []
+
+
+def _ensure_user_defined_file_sources(
+    user_defined_file_sources: Optional[UserDefinedFileSources] = None,
+) -> UserDefinedFileSources:
+    if user_defined_file_sources is not None:
+        return user_defined_file_sources
+    else:
+        return NullUserDefinedFileSources()
+
+
+class ConfiguredFileSourcesConf:
+    conf_dict: Optional[PluginConfigsT]
+    conf_file: Optional[str]
+
+    def __init__(self, conf_dict: Optional[PluginConfigsT] = None, conf_file: Optional[str] = None):
+        self.conf_dict = conf_dict
+        self.conf_file = conf_file
+
+    @staticmethod
+    def from_app_config(config):
+        config_file = config.file_sources_config_file
+        config_dict = None
+        if not config_file or not os.path.exists(config_file):
+            config_file = None
+            config_dict = config.file_sources
+        return ConfiguredFileSourcesConf(config_dict, config_file)
 
 
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
+    _file_sources: List[BaseFilesSource]
+    _plugin_loader: FileSourcePluginLoader
+    _user_defined_file_sources: UserDefinedFileSources
+
     def __init__(
         self,
-        file_sources_config: "ConfiguredFileSourcesConfig",
-        conf_file=None,
-        conf_dict=None,
-        load_stock_plugins=False,
+        file_sources_config: FileSourcePluginsConfig,
+        configured_file_source_conf: Optional[ConfiguredFileSourcesConf] = None,
+        load_stock_plugins: bool = False,
+        plugin_loader: Optional[FileSourcePluginLoader] = None,
+        user_defined_file_sources: Optional[UserDefinedFileSources] = None,
     ):
         self._file_sources_config = file_sources_config
-        self._plugin_classes = self._file_source_plugins_dict()
-        file_sources = []
-        if conf_file is not None:
-            file_sources = self._load_plugins_from_file(conf_file)
-        elif conf_dict is not None:
-            plugin_source = plugin_config.plugin_source_from_dict(conf_dict)
+        self._plugin_loader = plugin_loader or FileSourcePluginLoader()
+        self._user_defined_file_sources = _ensure_user_defined_file_sources(user_defined_file_sources)
+        file_sources: List[BaseFilesSource] = []
+        if configured_file_source_conf is None:
+            configured_file_source_conf = ConfiguredFileSourcesConf(conf_dict=[])
+        if configured_file_source_conf.conf_file is not None:
+            file_sources = self._load_plugins_from_file(configured_file_source_conf.conf_file)
+        elif configured_file_source_conf.conf_dict is not None:
+            plugin_source = plugin_source_from_dict(configured_file_source_conf.conf_dict)
             file_sources = self._parse_plugin_source(plugin_source)
         else:
             file_sources = []
-        custom_sources_configured = len(file_sources) > 0
+        custom_sources_configured = len(file_sources) > 0 or (user_defined_file_sources is not None)
         if load_stock_plugins:
             stock_file_source_conf_dict = []
 
@@ -51,15 +161,20 @@ class ConfiguredFileSources:
                         return
                 stock_file_source_conf_dict.append({"type": plugin_type})
 
+            _ensure_loaded("http")
+            _ensure_loaded("base64")
+            _ensure_loaded("drs")
+
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")
             if file_sources_config.library_import_dir is not None:
                 _ensure_loaded("gximport")
             if file_sources_config.user_library_import_dir is not None:
                 _ensure_loaded("gxuserimport")
+
             if stock_file_source_conf_dict:
-                stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
-                # insert at begining instead of append so FTP and library import appear
+                stock_plugin_source = plugin_source_from_dict(stock_file_source_conf_dict)
+                # insert at beginning instead of append so FTP and library import appear
                 # at the top of the list (presumably the most common options). Admins can insert
                 # these explicitly for greater control.
                 file_sources = self._parse_plugin_source(stock_plugin_source) + file_sources
@@ -67,47 +182,34 @@ class ConfiguredFileSources:
         self._file_sources = file_sources
         self.custom_sources_configured = custom_sources_configured
 
-    def _load_plugins_from_file(self, conf_file):
-        plugin_source = plugin_config.plugin_source_from_path(conf_file)
+    def _load_plugins_from_file(self, conf_file: str):
+        plugin_source = plugin_source_from_path(conf_file)
         return self._parse_plugin_source(plugin_source)
 
-    def _file_source_plugins_dict(self):
-        import galaxy.files.sources
+    def _parse_plugin_source(self, plugin_source: PluginConfigSource):
+        return self._plugin_loader.load_plugins(plugin_source, self._file_sources_config)
 
-        return plugin_config.plugins_dict(galaxy.files.sources, "plugin_type")
-
-    def _parse_plugin_source(self, plugin_source):
-        extra_kwds = {
-            "file_sources_config": self._file_sources_config,
-        }
-        return plugin_config.load_plugins(
-            self._plugin_classes,
-            plugin_source,
-            extra_kwds,
-            dict_to_list_key="id",
-        )
+    def find_best_match(self, url: str) -> Optional[BaseFilesSource]:
+        """Returns the best matching file source for handling a particular url. Each filesource scores its own
+        ability to match a particular url, and the highest scorer with a score > 0 is selected."""
+        scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
+        user_best_score = self._user_defined_file_sources.find_best_match(url)
+        if user_best_score is not None:
+            scores.append(user_best_score)
+        scores.sort(key=lambda f: f.score, reverse=True)
+        return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
-        scheme, rest = uri.split("://", 1)
-        if scheme not in self.get_schemes():
-            raise exceptions.RequestParameterInvalidException(f"Unsupported URI scheme [{scheme}]")
-
-        if scheme != "gxfiles":
-            # prefix unused
-            id_prefix = None
-            path = rest
-        else:
-            if "/" in rest:
-                id_prefix, path = rest.split("/", 1)
-            else:
-                id_prefix, path = rest, "/"
-        file_source = self.get_file_source(id_prefix, scheme)
+        file_source = self.find_best_match(uri)
+        if not file_source:
+            raise exceptions.RequestParameterInvalidException(f"Could not find handler for URI [{uri}]")
+        path = file_source.to_relative_path(uri)
         return FileSourcePath(file_source, path)
 
-    def validate_uri_root(self, uri, user_context):
+    def validate_uri_root(self, uri: str, user_context: "FileSourcesUserContext"):
         # validate a URI against Galaxy's configuration, environment, and the current
         # user. Throw appropriate exception if there is a problem with the files source
         # referenced by the URI.
@@ -118,6 +220,8 @@ class ConfiguredFileSources:
                 raise exceptions.ConfigDoesNotAllowException(
                     "The configuration of this Galaxy instance does not allow upload from user directories."
                 )
+            if user_login is None:
+                raise exceptions.AuthenticationRequired("Must be logged in to use this feature.")
             full_import_dir = os.path.join(user_base_dir, user_login)
             if not os.path.exists(full_import_dir):
                 raise exceptions.ObjectNotFound("Your user import directory does not exist.")
@@ -138,161 +242,141 @@ class ConfiguredFileSources:
                 raise exceptions.ObjectNotFound(
                     "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
                 )
-
-    def get_file_source(self, id_prefix, scheme):
-        for file_source in self._file_sources:
-            # gxfiles uses prefix to find plugin, other scheme are assumed to have
-            # at most one file_source.
-            if scheme != file_source.get_scheme():
-                continue
-            prefix_match = scheme != "gxfiles" or file_source.get_prefix() == id_prefix
-            if prefix_match:
-                return file_source
+        self._user_defined_file_sources.validate_uri_root(uri, user_context)
 
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
-        if path_or_uri.startswith("gx") and "://" in path_or_uri:
-            for scheme in self.get_schemes():
-                if path_or_uri.startswith(f"{scheme}://"):
-                    return True
-
-        return False
-
-    def get_schemes(self):
-        schemes = set()
-        for file_source in self._file_sources:
-            schemes.add(file_source.get_scheme())
-        return schemes
+        file_source = self.find_best_match(path_or_uri)
+        if file_source:
+            return True
+        else:
+            return False
 
     def plugins_to_dict(
-        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
-    ) -> List[Dict[str, Any]]:
-        rval = []
+        self,
+        for_serialization: bool = False,
+        user_context: "OptionalUserContext" = None,
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[FilesSourceProperties]:
+        rval: List[FilesSourceProperties] = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
                 continue
+            if include_kind and file_source.plugin_kind not in include_kind:
+                continue
+            if exclude_kind and file_source.plugin_kind in exclude_kind:
+                continue
+            if browsable_only and not file_source.get_browsable():
+                continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
+        if user_context:
+            rval.extend(
+                self._user_defined_file_sources.user_file_sources_to_dicts(
+                    for_serialization,
+                    user_context,
+                    browsable_only=browsable_only,
+                    include_kind=include_kind,
+                    exclude_kind=exclude_kind,
+                )
+            )
         return rval
 
-    def to_dict(
-        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
-    ) -> Dict[str, Any]:
+    def to_dict(self, for_serialization: bool = False, user_context: "OptionalUserContext" = None) -> Dict[str, Any]:
         return {
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
         }
 
     @staticmethod
-    def from_app_config(config):
-        config_file = config.file_sources_config_file
-        config_dict = None
-        if not config_file or not os.path.exists(config_file):
-            config_file = None
-            config_dict = config.file_sources
-        file_sources_config = ConfiguredFileSourcesConfig.from_app_config(config)
-        return ConfiguredFileSources(
-            file_sources_config, conf_file=config_file, conf_dict=config_dict, load_stock_plugins=True
-        )
-
-    @staticmethod
-    def from_dict(as_dict):
+    def from_dict(as_dict, load_stock_plugins=False):
         if as_dict is not None:
             sources_as_dict = as_dict["file_sources"]
             config_as_dict = as_dict["config"]
-            file_sources_config = ConfiguredFileSourcesConfig.from_dict(config_as_dict)
+            file_sources_config = FileSourcePluginsConfig.from_dict(config_as_dict)
         else:
             sources_as_dict = []
-            file_sources_config = ConfiguredFileSourcesConfig()
-        return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
+            file_sources_config = FileSourcePluginsConfig()
+        configured_file_sources_conf = ConfiguredFileSourcesConf(conf_dict=sources_as_dict)
+        return ConfiguredFileSources(
+            file_sources_config, configured_file_sources_conf, load_stock_plugins=load_stock_plugins
+        )
 
 
 class NullConfiguredFileSources(ConfiguredFileSources):
     def __init__(
         self,
     ):
-        super().__init__(ConfiguredFileSourcesConfig())
+        super().__init__(FileSourcePluginsConfig(), ConfiguredFileSourcesConf(conf_dict=[]))
 
 
-class ConfiguredFileSourcesConfig:
-    def __init__(
-        self,
-        symlink_allowlist=None,
-        library_import_dir=None,
-        user_library_import_dir=None,
-        ftp_upload_dir=None,
-        ftp_upload_purge=True,
-    ):
-        symlink_allowlist = symlink_allowlist or []
-        self.symlink_allowlist = symlink_allowlist
-        self.library_import_dir = library_import_dir
-        self.user_library_import_dir = user_library_import_dir
-        self.ftp_upload_dir = ftp_upload_dir
-        self.ftp_upload_purge = ftp_upload_purge
+class DictifiableFilesSourceContext(Protocol):
+    @property
+    def role_names(self) -> Set[str]: ...
 
-    @staticmethod
-    def from_app_config(config):
-        # Formalize what we read in from config to create a more clear interface
-        # for this component.
-        kwds = {}
-        kwds["symlink_allowlist"] = getattr(config, "user_library_import_symlink_allowlist", [])
-        kwds["library_import_dir"] = getattr(config, "library_import_dir", None)
-        kwds["user_library_import_dir"] = getattr(config, "user_library_import_dir", None)
-        kwds["ftp_upload_dir"] = getattr(config, "ftp_upload_dir", None)
-        kwds["ftp_upload_purge"] = getattr(config, "ftp_upload_purge", True)
-        return ConfiguredFileSourcesConfig(**kwds)
+    @property
+    def group_names(self) -> Set[str]: ...
 
-    def to_dict(self):
-        return {
-            "symlink_allowlist": self.symlink_allowlist,
-            "library_import_dir": self.library_import_dir,
-            "user_library_import_dir": self.user_library_import_dir,
-            "ftp_upload_dir": self.ftp_upload_dir,
-            "ftp_upload_purge": self.ftp_upload_purge,
-        }
+    @property
+    def file_sources(self) -> ConfiguredFileSources: ...
 
-    @staticmethod
-    def from_dict(as_dict):
-        return ConfiguredFileSourcesConfig(
-            symlink_allowlist=as_dict["symlink_allowlist"],
-            library_import_dir=as_dict["library_import_dir"],
-            user_library_import_dir=as_dict["user_library_import_dir"],
-            ftp_upload_dir=as_dict["ftp_upload_dir"],
-            ftp_upload_purge=as_dict["ftp_upload_purge"],
-        )
+    def to_dict(
+        self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None
+    ) -> Dict[str, Any]: ...
 
 
-class FileSourceDictifiable(Dictifiable):
+class FileSourceDictifiable(Dictifiable, DictifiableFilesSourceContext):
     dict_collection_visible_keys = ("email", "username", "ftp_dir", "preferences", "is_admin")
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         rval["role_names"] = list(self.role_names)
         rval["group_names"] = list(self.group_names)
         return rval
 
-    @property
-    def role_names(self) -> Set[str]:
-        raise NotImplementedError
+
+class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
 
     @property
-    def group_names(sefl) -> Set[str]:
-        raise NotImplementedError
+    def email(self) -> Optional[str]: ...
+
+    @property
+    def username(self) -> Optional[str]: ...
+
+    @property
+    def ftp_dir(self) -> Optional[str]: ...
+
+    @property
+    def preferences(self) -> Dict[str, Any]: ...
+
+    @property
+    def is_admin(self) -> bool: ...
+
+    @property
+    def user_vault(self) -> Dict[str, Any]: ...
+
+    @property
+    def app_vault(self) -> Dict[str, Any]: ...
 
 
-class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
+OptionalUserContext = Optional[FileSourcesUserContext]
+
+
+class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans):
+    def __init__(self, trans, **kwargs):
         self.trans = trans
 
     @property
-    def email(self):
+    def email(self) -> Optional[str]:
         user = self.trans.user
         return user and user.email
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         user = self.trans.user
         return user and user.username
 
@@ -334,8 +418,12 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
         vault = self.trans.app.vault
         return vault or defaultdict(lambda: None)
 
+    @property
+    def file_sources(self):
+        return self.trans.app.file_sources
 
-class DictFileSourcesUserContext(FileSourceDictifiable):
+
+class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     def __init__(self, **kwd):
         self._kwd = kwd
 
@@ -344,7 +432,7 @@ class DictFileSourcesUserContext(FileSourceDictifiable):
         return self._kwd.get("email")
 
     @property
-    def username(self):
+    def username(self) -> Optional[str]:
         return self._kwd.get("username")
 
     @property
@@ -374,3 +462,7 @@ class DictFileSourcesUserContext(FileSourceDictifiable):
     @property
     def app_vault(self):
         return self._kwd.get("app_vault")
+
+    @property
+    def file_sources(self):
+        return self._kwd.get("file_sources")

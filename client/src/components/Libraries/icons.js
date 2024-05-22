@@ -1,23 +1,23 @@
-import { faFile, faSave, faFolder, faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faFile, faFolder, faSave, faSquare } from "@fortawesome/free-regular-svg-icons";
 import {
-    faTimes,
-    faKey,
-    faShieldAlt,
+    faAngleDoubleLeft,
+    faBan,
+    faBook,
+    faDownload,
     faGlobe,
     faHome,
-    faPlus,
-    faSpinner,
-    faTrash,
-    faBan,
-    faUnlock,
-    faPencilAlt,
-    faUsers,
-    faDownload,
-    faBook,
+    faKey,
     faMinusSquare,
-    faAngleDoubleLeft,
+    faPencilAlt,
+    faPlus,
+    faShieldAlt,
+    faSpinner,
+    faTimes,
+    faTrash,
+    faUnlock,
+    faUsers,
 } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 const tableIcons = [
     faFile,

@@ -63,7 +63,7 @@ class JobRunnerMapper:
             module_name = job_config.dynamic_params["rules_module"]
             self.rules_module = importlib.import_module(module_name)
 
-    def __invoke_expand_function(self, expand_function, destination):
+    def __invoke_expand_function(self, expand_function, destination, resource_params_from_job_state=True):
         function_arg_names = getfullargspec(expand_function).args
         app = self.job_wrapper.app
         possible_args = {
@@ -76,47 +76,48 @@ class JobRunnerMapper:
             "referrer": destination,
         }
 
-        actual_args = {}
-
-        # Send through any job_conf.xml defined args to function
-        for destination_param in destination.params.keys():
-            if destination_param in function_arg_names:
-                actual_args[destination_param] = destination.params[destination_param]
-
-        # Populate needed args
-        for possible_arg_name in possible_args:
-            if possible_arg_name in function_arg_names:
-                actual_args[possible_arg_name] = possible_args[possible_arg_name]
-
         # Don't hit the DB to load the job object if not needed
         require_db = False
-        for param in ["job", "user", "user_email", "resource_params", "workflow_invocation_uuid"]:
+        for param in [
+            "job",
+            "user",
+            "user_email",
+            "resource_params",
+            "workflow_invocation_uuid",
+            "workflow_resource_params",
+        ]:
             if param in function_arg_names:
                 require_db = True
                 break
         if require_db:
             job = self.job_wrapper.get_job()
             user = job.user
-            user_email = user and str(user.email)
+            db_param_mapping = {
+                "job": job,
+                "user": user,
+                "user_email": user and str(user.email),
+            }
 
-            if "job" in function_arg_names:
-                actual_args["job"] = job
+        actual_args = {}
 
-            if "user" in function_arg_names:
-                actual_args["user"] = user
-
-            if "user_email" in function_arg_names:
-                actual_args["user_email"] = user_email
-
-            if "resource_params" in function_arg_names:
-                actual_args["resource_params"] = self.job_wrapper.get_resource_parameters(job)
-
-            if "workflow_invocation_uuid" in function_arg_names:
+        for arg in function_arg_names:
+            # Send through any job config defined args to function
+            if arg in destination.params:
+                actual_args[arg] = destination.params[arg]
+            # Populate needed args
+            elif arg in possible_args:
+                actual_args[arg] = possible_args[arg]
+            elif require_db and arg in db_param_mapping:
+                actual_args[arg] = db_param_mapping[arg]
+            elif arg == "resource_params":
+                actual_args["resource_params"] = (
+                    self.job_wrapper.get_resource_parameters(job) if resource_params_from_job_state else {}
+                )
+            elif arg == "workflow_invocation_uuid":
                 param_values = job.raw_param_dict()
                 workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
                 actual_args["workflow_invocation_uuid"] = workflow_invocation_uuid
-
-            if "workflow_resource_params" in function_arg_names:
+            elif arg == "workflow_resource_params":
                 param_values = job.raw_param_dict()
                 workflow_resource_params = param_values.get("__workflow_resource_params__", None)
                 actual_args["workflow_resource_params"] = workflow_resource_params
@@ -159,8 +160,7 @@ class JobRunnerMapper:
         rules_module_name = destination.params.get("rules_module")
         rule_modules = self.__get_rule_modules_or_defaults(rules_module_name)
         expand_function = None
-        expand_function_name = destination.params.get("function")
-        if expand_function_name:
+        if expand_function_name := destination.params.get("function"):
             expand_function = self.__last_matching_function_in_modules(rule_modules, expand_function_name)
             if not expand_function:
                 message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % expand_function_name
@@ -204,7 +204,23 @@ class JobRunnerMapper:
         return self.__handle_rule(expand_function, destination)
 
     def __handle_rule(self, rule_function, destination):
-        job_destination = self.__invoke_expand_function(rule_function, destination)
+        try:
+            job_destination = self.__invoke_expand_function(rule_function, destination)
+        except Exception as e:
+            # Rules have varying quality and don't raise a consistent set of standard exceptions.
+            # so ... if we get an error here let's try again without resource params encoded
+            # in the job state. They're evil anyway.
+            try:
+                job_destination = self.__invoke_expand_function(
+                    rule_function, destination, resource_params_from_job_state=False
+                )
+            except Exception:
+                # raise original exception, dropping resource param from job state didn't help.
+                raise e
+            else:
+                log.warning(
+                    f"Ignored user-specified invalid resource parameter request because it failed with {str(e)}"
+                )
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if "://" in job_destination_rep:
@@ -221,11 +237,16 @@ class JobRunnerMapper:
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination(params)
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
-            job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
-            log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
-            # Recursively handle chained dynamic destinations
-            if job_destination.runner == DYNAMIC_RUNNER_NAME:
-                return self.__determine_job_destination(params, raw_job_destination=job_destination)
+            try:
+                job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
+                log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
+                # Recursively handle chained dynamic destinations
+                if job_destination.runner == DYNAMIC_RUNNER_NAME:
+                    return self.__determine_job_destination(params, raw_job_destination=job_destination)
+            except AssertionError:
+                if params and "job_resource" in params:
+                    params = params.copy()
+                    del params["job_resource"]
         else:
             job_destination = raw_job_destination
             log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)

@@ -1,103 +1,164 @@
-<template>
-    <ConfigProvider v-slot="{ config }">
-        <DatasetProvider
-            :id="datasetId"
-            v-slot="{ result: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
-            <div>
-                <LoadingSpan v-if="isDatasetLoading" />
-                <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
-                <CurrentUser v-else v-slot="{ user }">
-                    <JobDetailsProvider
-                        v-if="!isDatasetLoading && dataset.creating_job !== null"
-                        v-slot="{ result: job, loading: isJobLoading }"
-                        :job-id="dataset.creating_job"
-                        auto-refresh>
-                        <div v-if="!isJobLoading">
-                            <dataset-information class="detail" :hda_id="datasetId" />
-                            <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />
-                            <job-information class="detail" :job_id="dataset.creating_job" />
-                            <dataset-storage class="detail" :dataset-id="datasetId" />
-                            <inheritance-chain class="detail" :dataset-id="datasetId" :dataset-name="dataset.name" />
-                            <job-metrics
-                                v-if="config"
-                                class="detail"
-                                :aws_estimate="config.aws_estimate"
-                                :dataset-id="datasetId" />
-                            <job-destination-params
-                                v-if="user.is_admin"
-                                class="detail"
-                                :job-id="dataset.creating_job" />
-                            <job-dependencies class="detail" :dependencies="job.dependencies"></job-dependencies>
-                            <div v-if="dataset.peek" class="detail">
-                                <h3>Dataset Peek:</h3>
-                                <div v-html="dataset.peek" />
-                            </div>
-                        </div>
-                    </JobDetailsProvider>
-                    <div v-else-if="!isDatasetLoading">
-                        <dataset-information class="detail" :hda_id="datasetId" />
-                        <dataset-storage class="detail" :dataset-id="datasetId" />
-                        <div>
-                            <h3>Job Not Found</h3>
-                            <p>
-                                No job associated with this dataset is recorded in Galaxy. Galaxy cannot determine full
-                                dataset provenance and history for this dataset.
-                            </p>
-                        </div>
-                    </div>
-                </CurrentUser>
-            </div>
-        </DatasetProvider>
-    </ConfigProvider>
-</template>
+<script setup lang="ts">
+import { type AxiosError } from "axios";
+import { BAlert } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted, ref } from "vue";
 
-<script>
-import DatasetInformation from "components/DatasetInformation/DatasetInformation";
-import JobInformation from "components/JobInformation/JobInformation";
-import JobDestinationParams from "components/JobDestinationParams/JobDestinationParams";
-import LoadingSpan from "components/LoadingSpan";
-import DatasetStorage from "components/Dataset/DatasetStorage/DatasetStorage";
-import InheritanceChain from "../InheritanceChain/InheritanceChain";
-import JobParameters from "components/JobParameters/JobParameters";
-import JobMetrics from "components/JobMetrics/JobMetrics";
-import JobDependencies from "components/JobDependencies/JobDependencies";
-import { DatasetProvider } from "components/providers";
-import { JobDetailsProvider } from "components/providers/JobProvider";
-import ConfigProvider from "components/providers/ConfigProvider";
-import CurrentUser from "components/providers/CurrentUser";
-import Alert from "components/Alert";
+import { type HDADetailed } from "@/api";
+import { fetchDatasetDetails } from "@/api/datasets";
+import { fetchJobDetails, JobDetails } from "@/api/jobs";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import { stateIsTerminal } from "@/utils/utils";
 
-export default {
-    components: {
-        Alert,
-        CurrentUser,
-        JobParameters,
-        InheritanceChain,
-        LoadingSpan,
-        DatasetStorage,
-        DatasetInformation,
-        JobInformation,
-        JobMetrics,
-        JobDependencies,
-        JobDestinationParams,
-        DatasetProvider,
-        JobDetailsProvider,
-        ConfigProvider,
-    },
-    props: {
-        datasetId: {
-            type: String,
-            required: true,
-        },
-    },
-};
+import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
+import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
+import InheritanceChain from "@/components/InheritanceChain//InheritanceChain.vue";
+import JobDependencies from "@/components/JobDependencies/JobDependencies.vue";
+import JobDestinationParams from "@/components/JobDestinationParams/JobDestinationParams.vue";
+import JobInformation from "@/components/JobInformation/JobInformation.vue";
+import JobMetrics from "@/components/JobMetrics/JobMetrics.vue";
+import JobParameters from "@/components/JobParameters/JobParameters.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
+
+const { config, isConfigLoaded } = useConfig(true);
+
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+const loading = ref(false);
+const jobLoading = ref(true);
+const jobTimeOut = ref<any>(null);
+const jobDetails = ref<JobDetails>();
+const dataset = ref<HDADetailed | null>(null);
+const jobLoadingError = ref<string | null>(null);
+const datasetLoadingError = ref<string | null>(null);
+
+async function getDatasetDetails() {
+    loading.value = true;
+
+    try {
+        const data = await fetchDatasetDetails({ id: props.datasetId });
+
+        dataset.value = data;
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+
+        datasetLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function loadJobDetails() {
+    jobLoading.value = true;
+
+    try {
+        const { data } = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
+
+        if (stateIsTerminal(data)) {
+            clearTimeout(jobTimeOut.value);
+        } else {
+            jobTimeOut.value = setTimeout(loadJobDetails, 3000);
+        }
+
+        jobDetails.value = data;
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+
+        jobLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+    } finally {
+        jobLoading.value = false;
+    }
+}
+
+onMounted(async () => {
+    await getDatasetDetails();
+
+    if (dataset.value?.creating_job !== null) {
+        await loadJobDetails();
+    }
+});
+
+onUnmounted(() => {
+    clearTimeout(jobTimeOut.value);
+});
 </script>
 
+<template>
+    <div aria-labelledby="dataset-details-heading">
+        <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
+
+        <BAlert v-if="loading" variant="info" show>
+            <LoadingSpan message="Loading dataset details..." />
+        </BAlert>
+        <BAlert v-else-if="datasetLoadingError" variant="error">
+            {{ datasetLoadingError }}
+        </BAlert>
+        <div v-else-if="dataset">
+            <div v-if="dataset.creating_job && !jobLoading" class="details">
+                <DatasetInformation :dataset="dataset" />
+
+                <JobParameters dataset_type="hda" :dataset-id="datasetId" />
+
+                <JobInformation :job_id="dataset.creating_job" />
+
+                <DatasetStorage :dataset-id="datasetId" />
+
+                <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
+
+                <JobMetrics
+                    v-if="isConfigLoaded"
+                    :dataset-id="datasetId"
+                    :carbon-intensity="config.carbon_intensity"
+                    :geographical-server-location-name="config.geographical_server_location_name"
+                    :power-usage-effectiveness="config.power_usage_effectiveness"
+                    :should-show-aws-estimate="config.aws_estimate"
+                    :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
+
+                <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
+
+                <JobDependencies v-if="jobDetails.dependencies" :dependencies="jobDetails.dependencies" />
+
+                <div v-if="dataset.peek">
+                    <h2 class="h-md">Dataset Peek</h2>
+
+                    <div class="dataset-peek" v-html="dataset.peek" />
+                </div>
+            </div>
+
+            <div v-if="!dataset.creating_job" class="details">
+                <DatasetInformation :dataset="dataset" />
+
+                <DatasetStorage :dataset-id="datasetId" />
+
+                <div>
+                    <h2 class="h-md">Job Not Found</h2>
+
+                    <p>
+                        No job associated with this dataset is recorded in Galaxy. Galaxy cannot determine full dataset
+                        provenance and history for this dataset.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
 <style scoped>
-.tool-title {
-    text-align: center;
-}
-.detail {
-    padding-top: 0.6rem;
+.details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .dataset-peek {
+        word-break: break-all;
+    }
 }
 </style>

@@ -8,6 +8,7 @@ from pydantic import (
     BaseModel,
     Field,
     HttpUrl,
+    RootModel,
 )
 
 
@@ -31,13 +32,13 @@ class DatatypeDetails(BaseModel):
         ...,  # Mark this field as required
         title="Extension",
         description="The data type’s Dataset file extension",
-        example="bed",
+        examples=["bed"],
     )
     description: Optional[str] = Field(title="Description", description="A summary description for this data type")
     description_url: Optional[HttpUrl] = Field(
         title="Description URL",
         description="The URL to a detailed description for this datatype",
-        example="https://wiki.galaxyproject.org/Learn/Datatypes#Bed",
+        examples=["https://wiki.galaxyproject.org/Learn/Datatypes#Bed"],
     )
     display_in_upload: bool = Field(
         default=False,
@@ -46,6 +47,11 @@ class DatatypeDetails(BaseModel):
     )
     composite_files: Optional[List[CompositeFileInfo]] = Field(
         default=None, title="Composite files", description="A collection of files composing this data type"
+    )
+    upload_warning: Optional[str] = Field(
+        default=None,
+        title="Upload warning",
+        description="End-user information regarding potential pitfalls with this upload type.",
     )
 
 
@@ -80,21 +86,47 @@ class DatatypeConverter(BaseModel):
         ...,  # Mark this field as required
         title="Source",
         description="Source type for conversion",
-        example="bam",
+        examples=["bam"],
     )
     target: str = Field(
         ...,  # Mark this field as required
         title="Target",
         description="Target type for conversion",
-        example="bai",
+        examples=["bai"],
     )
     tool_id: str = Field(
         ...,  # Mark this field as required
         title="Tool identifier",
         description="The converter tool identifier",
-        example="CONVERTER_Bam_Bai_0",
+        examples=["CONVERTER_Bam_Bai_0"],
     )
 
 
-class DatatypeConverterList(BaseModel):
-    __root__: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
+class DatatypeConverterList(RootModel):
+    root: List[DatatypeConverter] = Field(title="List of data type converters", default=[])
+
+
+class DatatypeEDAMDetails(BaseModel):
+    prefix_IRI: str = Field(
+        ...,  # Mark this field as required
+        title="Prefix IRI",
+        description="The EDAM prefixed Resource Identifier",
+        examples=["format_1782"],
+    )
+    label: Optional[str] = Field(
+        title="Label",
+        description="The EDAM label",
+        examples=["NCBI gene report format"],
+    )
+    definition: Optional[str] = Field(
+        title="Definition",
+        description="The EDAM definition",
+        examples=["Entry (gene) format of the NCBI database."],
+    )
+
+
+class DatatypesEDAMDetailsDict(RootModel):
+    root: Dict[str, DatatypeEDAMDetails] = Field(
+        title="Dict of EDAM details for formats",
+        default={},
+    )

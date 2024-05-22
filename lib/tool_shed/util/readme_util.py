@@ -4,20 +4,21 @@ import os
 
 from mako.template import Template
 
-import tool_shed.util.shed_util_common as suc
 from galaxy import web
+from galaxy.tool_shed.util import basic_util
+from galaxy.tool_shed.util.hg_util import (
+    get_changectx_for_changeset,
+    get_file_context_from_ctx,
+)
+from galaxy.tool_shed.util.repository_util import get_repo_info_tuple_contents
+from galaxy.tool_shed.util.shed_util_common import set_image_paths
 from galaxy.util import (
     rst_to_html,
     unicodify,
     url_get,
 )
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    metadata_util,
-    repository_util,
-)
+from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
+from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
 log = logging.getLogger(__name__)
 
@@ -31,9 +32,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
     if app.name == "galaxy":
         can_use_disk_files = True
     else:
-        latest_downloadable_changeset_revision = metadata_util.get_latest_downloadable_changeset_revision(
-            app, repository
-        )
+        latest_downloadable_changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
         can_use_disk_files = changeset_revision == latest_downloadable_changeset_revision
     readme_files_dict = {}
     if metadata:
@@ -59,7 +58,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         if text_of_reasonable_length.find(".. image:: ") >= 0:
                             # Handle image display for README files that are contained in repositories in the tool shed or installed into Galaxy.
                             try:
-                                text_of_reasonable_length = suc.set_image_paths(
+                                text_of_reasonable_length = set_image_paths(
                                     app,
                                     text_of_reasonable_length,
                                     encoded_repository_id=app.security.encode_id(repository.id),
@@ -85,9 +84,9 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                 else:
                     # We must be in the tool shed and have an old changeset_revision, so we need to retrieve the file contents from the repository manifest.
                     repo = repository.hg_repo
-                    ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
+                    ctx = get_changectx_for_changeset(repo, changeset_revision)
                     if ctx:
-                        fctx = hg_util.get_file_context_from_ctx(ctx, readme_file_name)
+                        fctx = get_file_context_from_ctx(ctx, readme_file_name)
                         if fctx and fctx not in ["DELETED"]:
                             try:
                                 text = unicodify(fctx.data())
@@ -115,9 +114,9 @@ def get_readme_files_dict_for_display(app, tool_shed_url, repo_info_dict):
         repository_owner,
         repository_dependencies,
         installed_td,
-    ) = repository_util.get_repo_info_tuple_contents(repo_info_tuple)
+    ) = get_repo_info_tuple_contents(repo_info_tuple)
     # Handle changing HTTP protocols over time.
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
+    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed_url)
     params = dict(name=name, owner=repository_owner, changeset_revision=changeset_revision)
     pathspec = ["repository", "get_readme_files"]
     raw_text = url_get(

@@ -134,7 +134,6 @@ class TempFileHandler:
 
 # an object corresponding to a reference layered alignment
 class RegionAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
@@ -184,7 +183,7 @@ class RegionAlignment:
 
     # returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -226,7 +225,6 @@ class GenomicRegionAlignment(RegionAlignment):
 
 
 class SplicedAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=None, temp_file_handler=None):
@@ -276,7 +274,7 @@ class SplicedAlignment:
 
     # returns the reverse complement of the sequence for a species
     def get_sequence_reverse_complement(self, species):
-        complement = [base for base in self.get_sequence(species).translate(self.DNA_COMPLEMENT)]
+        complement = list(self.get_sequence(species).translate(self.DNA_COMPLEMENT))
         complement.reverse()
         return "".join(complement)
 
@@ -660,9 +658,6 @@ def get_starts_ends_fields_from_gene_bed(line):
     if len(fields) < 12:
         raise Exception(f"Not a proper 12 column BED line ({line}).")
     tx_start = int(fields[1])
-    strand = fields[5]
-    if strand != "-":
-        strand = "+"  # Default strand is +
     cds_start = int(fields[6])
     cds_end = int(fields[7])
 
@@ -688,7 +683,7 @@ def iter_components_by_src(block, src):
 
 
 def get_components_by_src(block, src):
-    return [value for value in iter_components_by_src(block, src)]
+    return list(iter_components_by_src(block, src))
 
 
 def iter_components_by_src_start(block, src):
@@ -698,7 +693,7 @@ def iter_components_by_src_start(block, src):
 
 
 def get_components_by_src_start(block, src):
-    return [value for value in iter_components_by_src_start(block, src)]
+    return list(iter_components_by_src_start(block, src))
 
 
 def sort_block_components_by_block(block1, block2):

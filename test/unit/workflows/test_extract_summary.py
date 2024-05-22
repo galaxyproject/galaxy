@@ -1,12 +1,11 @@
-import unittest
-
 from galaxy import model
+from galaxy.util.unittest import TestCase
 from galaxy.workflow import extract
 
 UNDEFINED_JOB = object()
 
 
-class TestWorkflowExtractSummary(unittest.TestCase):
+class TestWorkflowExtractSummary(TestCase):
     def setUp(self):
         self.history = MockHistory()
         self.trans = MockTrans(self.history)
@@ -29,8 +28,8 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert len(job_dict) == 2
         assert not warnings
-        self.assertEqual(job_dict[hda1.job], [("out1", hda1), ("out2", hda2)])
-        self.assertEqual(job_dict[hda3.job], [("out3", hda3)])
+        assert job_dict[hda1.job] == [("out1", hda1), ("out2", hda2)]
+        assert job_dict[hda3.job] == [("out3", hda3)]
 
     def test_finds_original_job_if_copied(self):
         hda = MockHda()
@@ -42,7 +41,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        self.assertEqual(job_dict[hda.job], [("out1", derived_hda_2)])
+        assert job_dict[hda.job] == [("out1", derived_hda_2)]
 
     def test_fake_job_hda(self):
         """Fakes job if creating_job_associations is empty."""

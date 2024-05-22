@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class SizzleLoadingTestCase(SeleniumTestCase):
+class TestSizzleLoading(SeleniumTestCase):
     @selenium_test
     def test_sizzle_loads(self):
         self.home()

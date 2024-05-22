@@ -1,54 +1,90 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
 
 
-class CollectionEditTestCase(SeleniumTestCase):
-
+class TestCollectionEdit(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
+    @managed_history
     def test_change_dbkey_simple_list(self):
-        self.use_beta_history()
-        self.create_simple_list_collection()
+        self._create_simple_list_collection("1.fasta", "fasta")
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        dbkeyValue = "unspecified"
-        self.check_current_dbkey_value(dbkeyValue)
-        dbkeyNew = "hg17"
-        self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
-        self.history_panel_wait_for_hid_ok(4)
-        self.use_beta_history()
+        alert_element = self.components.edit_collection_attributes.alert_info.wait_for_visible()
+        assert "This will create a new collection in your History. Your quota will not increase." in alert_element.text
+        dataValue = "unspecified"
+        self.check_current_data_value(dataValue)
+        dataNew = "hg17"
+        self.change_dbkey_value_and_click_submit(dataValue, dataNew)
+        self.history_panel_wait_for_hid_ok(5)
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        self.check_current_dbkey_value(dbkeyNew)
+        self.check_current_data_value(dataNew)
 
-    def create_simple_list_collection(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+    @selenium_test
+    @managed_history
+    def test_change_datatype_simple_list(self):
+        self._create_simple_list_collection("1.txt", "txt")
+        self.open_collection_edit_view()
+        self.navigate_to_datatype_tab()
+        alert_element = self.components.edit_collection_attributes.alert_info.wait_for_visible()
+
+        assert (
+            "This operation might take a short while, depending on the size of your collection." in alert_element.text
+        )
+        dataValue = "txt"
+        self.check_current_data_value(dataValue)
+        dataNew = "tabular"
+        self.change_datatype_value_and_click_submit(dataValue, dataNew)
+        self.check_current_data_value(dataNew)
+        self.wait_for_history()
+        self.history_panel_expand_collection(3)
+        self.history_panel_ensure_showing_item_details(1)
+        item = self.history_panel_item_component(hid=1)
+        item.datatype.wait_for_visible()
+        assert item.datatype.wait_for_text() == dataNew
+
+    def _create_simple_list_collection(self, filename, ext):
+        self.perform_upload(self.get_filename(filename), ext=ext)
         self._wait_for_and_select([1])
 
         self._collection_dropdown("build list")
 
         self.collection_builder_set_name("my cool list")
-        self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self._wait_for_hid_visible(2)
+        self._wait_for_hid_visible(3)
 
     def open_collection_edit_view(self):
         self.components.history_panel.collection_menu_edit_attributes.wait_for_and_click()
 
     def navigate_to_database_tab(self):
-        self.components.edit_collection_attributes.database_genome_tab.wait_for_and_click()
+        self._edit_attributes.database_genome_tab.wait_for_and_click()
 
-    def check_current_dbkey_value(self, dbkeyValue):
-        self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_visible()
+    def navigate_to_datatype_tab(self):
+        self._edit_attributes.datatypes_tab.wait_for_and_click()
 
-    def change_dbkey_value_and_click_submit(self, dbkeyValue, dbkeyNew):
-        self.components.edit_collection_attributes.database_value(dbkey=dbkeyValue).wait_for_and_click()
-        self.find_element_by_selector("input.multiselect__input").send_keys(dbkeyNew)
-        self.find_element_by_selector("input.multiselect__input").send_keys(self.keys.ENTER)
-        self.components.edit_collection_attributes.save_btn.wait_for_and_click()
+    def check_current_data_value(self, dataValue):
+        self._edit_attributes.data_value(data_change=dataValue).wait_for_visible()
+
+    def change_dbkey_value_and_click_submit(self, dataValue, dataNew):
+        self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
+        self._edit_attributes.genome_select_search.wait_for_and_send_keys(dataNew)
+        self._edit_attributes.genome_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.save_dbkey_btn.wait_for_and_click()
+
+    def change_datatype_value_and_click_submit(self, dataValue, dataNew):
+        self._edit_attributes.data_value(data_change=dataValue).wait_for_and_click()
+        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(dataNew)
+        self._edit_attributes.datatype_select_search.wait_for_and_send_keys(self.keys.ENTER)
+        self._edit_attributes.save_datatype_btn.wait_for_and_click()
+
+    @property
+    def _edit_attributes(self):
+        return self.components.edit_collection_attributes
 
     def _wait_for_and_select(self, hids):
         """

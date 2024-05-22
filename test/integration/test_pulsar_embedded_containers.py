@@ -14,40 +14,44 @@ EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER = os.path.join(SCRIPT_DIRECTORY, "embedde
 
 
 class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+    job_config_file: str
+    jobs_directory: str
     framework_tool_and_types = True
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
         super().setUpClass()
 
 
-class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedSingularityPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+    dataset_populator: DatasetPopulator
     # singularity passes $HOME by default
     default_container_home_dir = os.environ.get("HOME", "/")
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_SINGULARITY
     container_type = "singularity"
 
 
-class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedDockerPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+    dataset_populator: DatasetPopulator
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
     container_type = "docker"
 
 
-instance = integration_util.integration_module_instance(EmbeddedSingularityPulsarIntegrationTestCase)
+instance = integration_util.integration_module_instance(TestEmbeddedSingularityPulsarIntegration)
 
 test_tools = integration_util.integration_tool_runner(
     [

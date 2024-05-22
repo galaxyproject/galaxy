@@ -1,8 +1,10 @@
 """
 API operations allowing clients to determine datatype supported by Galaxy.
 """
+
 import logging
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
@@ -16,8 +18,11 @@ from galaxy.managers.datatypes import (
     DatatypeConverterList,
     DatatypeDetails,
     DatatypesCombinedMap,
+    DatatypesEDAMDetailsDict,
     DatatypesMap,
     view_converters,
+    view_edam_data,
+    view_edam_formats,
     view_index,
     view_mapping,
     view_sniffers,
@@ -43,6 +48,12 @@ UploadOnlyQueryParam: Optional[bool] = Query(
     description="Whether to return only datatypes which can be uploaded",
 )
 
+IdentifierOnly: Optional[bool] = Query(
+    default=True,
+    title="prefixIRI only",
+    description="Whether to return only the EDAM prefixIRI rather than the EDAM details",
+)
+
 
 @router.cbv
 class FastAPIDatatypes:
@@ -50,6 +61,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes",
+        public=True,
         summary="Lists all available data types",
         response_description="List of data types",
     )
@@ -63,6 +75,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/mapping",
+        public=True,
         summary="Returns mappings for data types and their implementing classes",
         response_description="Dictionary to map data types with their classes",
     )
@@ -72,6 +85,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/types_and_mapping",
+        public=True,
         summary="Returns all the data types extensions and their mappings",
         response_description="Dictionary to map data types with their classes",
     )
@@ -90,6 +104,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/sniffers",
+        public=True,
         summary="Returns the list of all installed sniffers",
         response_description="List of datatype sniffers",
     )
@@ -99,6 +114,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/converters",
+        public=True,
         summary="Returns the list of all installed converters",
         response_description="List of all datatype converters",
     )
@@ -108,18 +124,44 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/edam_formats",
+        public=True,
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats",
     )
     async def edam_formats(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return self.datatypes_registry.edam_formats
+        return cast(Dict[str, str], view_edam_formats(self.datatypes_registry))
+
+    @router.get(
+        "/api/datatypes/edam_formats/detailed",
+        public=True,
+        summary="Returns a dictionary of datatypes and EDAM format details",
+        response_description="Dictionary of EDAM format details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
+    )
+    async def edam_formats_detailed(self):
+        """Gets a map of datatypes and their corresponding EDAM formats.
+        EDAM formats contain the EDAM iri, label, and definition."""
+        return view_edam_formats(self.datatypes_registry, True)
 
     @router.get(
         "/api/datatypes/edam_data",
+        public=True,
         summary="Returns a dictionary/map of datatypes and EDAM data",
         response_description="Dictionary/map of datatypes and EDAM data",
     )
     async def edam_data(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return self.datatypes_registry.edam_data
+        return cast(Dict[str, str], view_edam_data(self.datatypes_registry))
+
+    @router.get(
+        "/api/datatypes/edam_data/detailed",
+        public=True,
+        summary="Returns a dictionary of datatypes and EDAM data details",
+        response_description="Dictionary of EDAM data details containing the EDAM iri, label, and definition",
+        response_model=DatatypesEDAMDetailsDict,
+    )
+    async def edam_data_detailed(self):
+        """Gets a map of datatypes and their corresponding EDAM data.
+        EDAM data contains the EDAM iri, label, and definition."""
+        return view_edam_data(self.datatypes_registry, True)

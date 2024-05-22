@@ -1,9 +1,9 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
-import { stateIsTerminal } from "./utils";
-import { cleanPaginationParameters } from "./utils";
+
+import { cleanPaginationParameters, stateIsTerminal } from "./utils";
 
 async function jobDetails({ jobId }) {
     const url = `${getAppRoot()}api/jobs/${jobId}?full=True`;
@@ -15,18 +15,7 @@ async function jobDetails({ jobId }) {
     }
 }
 
-async function jobProblems({ jobId }) {
-    const url = `${getAppRoot()}api/jobs/${jobId}/common_problems`;
-    try {
-        const { data } = await axios.get(url);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
 export const JobDetailsProvider = SingleQueryProvider(jobDetails, stateIsTerminal);
-export const JobProblemProvider = SingleQueryProvider(jobProblems, stateIsTerminal);
 
 export function jobsProvider(ctx, callback, extraParams = {}) {
     const { root, ...requestParams } = ctx;

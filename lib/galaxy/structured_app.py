@@ -1,4 +1,6 @@
 """Typed description of Galaxy's app object."""
+
+import abc
 from typing import (
     Any,
     Optional,
@@ -13,6 +15,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
@@ -23,13 +26,16 @@ from galaxy.model.security import (
     HostAgent,
 )
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
+from galaxy.tool_shed.cache import ToolShedRepositoryCache
+from galaxy.tool_util.data import ToolDataTableManager
+from galaxy.tool_util.deps.containers import ContainerFinder
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
-from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.tool_shed.tool_shed_registry import Registry as ToolShedRegistry
 from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
@@ -41,8 +47,9 @@ if TYPE_CHECKING:
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.workflows import WorkflowsManager
+    from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
     from galaxy.tools import ToolBox
-    from galaxy.tools.data import ToolDataTableManager
+    from galaxy.tools.cache import ToolCache
     from galaxy.tools.error_reports import ErrorReports
     from galaxy.visualization.genomes import Genomes
 
@@ -61,16 +68,22 @@ class BasicSharedApp(Container):
     model: SharedModelMapping
     security: IdEncodingHelper
     auth_manager: AuthManager
-    toolbox: "ToolBox"
     security_agent: Any
     quota_agent: QuotaAgent
 
+    @property
+    def toolbox(self) -> "ToolBox":
+        raise NotImplementedError()
+
 
 class MinimalToolApp(Protocol):
+    is_webapp: bool
     name: str
-    config: Any  # 'galaxy.config.BaseAppConfiguration'
+    # Leave config as Any: in a full Galaxy app this is a GalaxyAppConfiguration object, but this is mostly dynamically
+    # generated, and here we want to also allow other kinds of configuration objects (e.g. a Bunch).
+    config: Any
     datatypes_registry: Registry
-    object_store: ObjectStore
+    object_store: BaseObjectStore
     tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
@@ -83,7 +96,7 @@ class MinimalApp(BasicSharedApp):
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
-    object_store: ObjectStore
+    server_starttime: int
 
 
 class MinimalManagerApp(MinimalApp):
@@ -91,6 +104,7 @@ class MinimalManagerApp(MinimalApp):
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     dataset_collection_manager: "DatasetCollectionManager"
+    tool_data_tables: "ToolDataTableManager"
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
     workflow_manager: "WorkflowsManager"
@@ -98,7 +112,7 @@ class MinimalManagerApp(MinimalApp):
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
+    installed_repository_manager: "InstalledRepositoryManager"
     user_manager: Any
     job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
@@ -106,10 +120,15 @@ class MinimalManagerApp(MinimalApp):
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     genomes: "Genomes"
     error_reports: "ErrorReports"
+    notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
+    object_store: BaseObjectStore
+    tool_shed_registry: ToolShedRegistry
 
     @property
-    def is_job_handler(self) -> bool:
-        pass
+    @abc.abstractmethod
+    def is_job_handler(self) -> bool: ...
+
+    def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
 
 class StructuredApp(MinimalManagerApp):
@@ -126,15 +145,17 @@ class StructuredApp(MinimalManagerApp):
 
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
+    container_finder: ContainerFinder
+    tool_dependency_dir: Optional[str]
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
     vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
-    tool_data_tables: "ToolDataTableManager"
-    tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
-    tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
+    tool_data_tables: ToolDataTableManager
+    tool_cache: "ToolCache"
+    tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any

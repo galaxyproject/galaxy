@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<object_store type="distributed">
+    <backends>
+        <backend id="files1" type="disk" weight="2" device="primary_disk">
+            <quota source="1files" />
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend id="files2" type="disk" weight="1" device="primary_disk">
+            <quota source="2files" />
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>

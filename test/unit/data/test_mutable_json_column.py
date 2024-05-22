@@ -1,21 +1,26 @@
 import copy
 
 from galaxy import model
+from galaxy.model.base import transaction
 from .test_galaxy_mapping import BaseModelTestCase
 
 
-class MutableColumnTest(BaseModelTestCase):
+class TestMutableColumn(BaseModelTestCase):
     def persist_and_reload(self, item):
         item_id = item.id
-        self.model.session.flush()
+        session = self.model.session
+        with transaction(session):
+            session.commit()
         self.model.session.expunge_all()
-        return self.model.session.query(model.DynamicTool).get(item_id)
+        return self.model.session.get(model.DynamicTool, item_id)
 
     def test_metadata_mutable_column(self):
         w = model.DynamicTool()
         self.model.session.add(w)
-        self.model.session.flush()
-        w.value = {"x": "z"}
+        session = self.model.session
+        with transaction(session):
+            session.commit()
+        w.value = {"x": "z"}  # type:ignore[assignment]
         persisted = self.persist_and_reload(w)
         assert persisted.value == {"x": "z"}
         persisted.value["x"] = "1"

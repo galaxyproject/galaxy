@@ -1,29 +1,27 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="markdownConfig"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
-    </config-provider>
+    <Markdown
+        v-if="isConfigLoaded"
+        :markdown-config="markdownConfig"
+        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+        :export-link="exportUrl"
+        :download-endpoint="stsUrl(config)"
+        @onEdit="onEdit" />
 </template>
 
 <script>
-import axios from "axios";
-import { Toast } from "ui/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
-import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown.vue";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Markdown from "components/Markdown/Markdown";
+import { Toast } from "composables/toast";
+import { withPrefix } from "utils/redirect";
+import { urlData } from "utils/url";
+import Vue from "vue";
+
+import { useConfig } from "@/composables/config";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ConfigProvider,
         Markdown,
     },
     props: {
@@ -31,6 +29,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {
@@ -40,14 +42,15 @@ export default {
     },
     computed: {
         dataUrl() {
-            return `${getAppRoot()}api/invocations/${this.invocationId}/report`;
+            return `/api/invocations/${this.invocationId}/report`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
     },
     created() {
-        this.getMarkdown()
+        const url = this.dataUrl;
+        urlData({ url })
             .then((response) => {
                 this.markdownConfig = response;
                 this.invocationMarkdown = response.invocation_markdown;
@@ -58,16 +61,10 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = `${getAppRoot()}pages/create?invocation_id=${this.invocationId}`;
+            window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
         },
-        /** Markdown data request helper **/
-        async getMarkdown() {
-            try {
-                const { data } = await axios.get(this.dataUrl);
-                return data;
-            } catch (e) {
-                rethrowSimple(e);
-            }
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
     },
 };

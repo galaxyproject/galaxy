@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from multiprocessing.util import register_after_fork
+from typing import Dict
 
 from sqlalchemy import (
     create_engine,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     exc,
 )
 from sqlalchemy.engine import Engine
+from sqlalchemy.pool import NullPool
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +50,7 @@ def pretty_stack():
 
 
 def build_engine(
-    url,
+    url: str,
     engine_options=None,
     database_query_profiling_proxy=False,
     trace_logger=None,
@@ -99,14 +101,14 @@ def build_engine(
                 except AttributeError:
                     pass
 
-    # Set check_same_thread to False for sqlite, handled by request-specific session
-    # See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
-    connect_args = {}
-    if "sqlite://" in url:
-        connect_args["check_same_thread"] = False
-    # Create the database engine
     engine_options = engine_options or {}
-    engine = create_engine(url, connect_args=connect_args, **engine_options)
+    if url.startswith("sqlite://"):
+        set_sqlite_connect_args(engine_options, url)
+
+    if url.startswith("sqlite://") and url not in ("sqlite:///:memory:", "sqlite://"):
+        engine = create_engine(url, **engine_options, poolclass=NullPool)
+    else:
+        engine = create_engine(url, **engine_options)
 
     # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())
@@ -121,8 +123,17 @@ def build_engine(
         if connection_record.info["pid"] != pid:
             connection_record.dbapi_connection = connection_proxy.dbapi_connection = None
             raise exc.DisconnectionError(
-                "Connection record belongs to pid %s, "
-                "attempting to check out in pid %s" % (connection_record.info["pid"], pid)
+                f"Connection record belongs to pid {connection_record.info['pid']}, attempting to check out in pid {pid}"
             )
 
     return engine
+
+
+def set_sqlite_connect_args(engine_options: Dict, url: str) -> None:
+    """
+    Add or update `connect_args` in `engine_options` if db is sqlite.
+    Set check_same_thread to False for sqlite, handled by request-specific session.
+    See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
+    """
+    connect_args = engine_options.setdefault("connect_args", {})
+    connect_args["check_same_thread"] = False

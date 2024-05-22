@@ -6,32 +6,58 @@ import logging
 import os
 import re
 import sys
-import tarfile
 import threading
-from io import BytesIO
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
-import packaging.version
-import requests
+from conda_package_streaming.package_streaming import stream_conda_info
+from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
+from packaging.version import Version
+from requests import Session
+
+from galaxy.tool_util.deps.conda_util import CondaTarget
+from galaxy.tool_util.version import (
+    LegacyVersion,
+    parse_version,
+)
+from galaxy.util import requests
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.deps.container_resolvers import ResolutionCache
 
 log = logging.getLogger(__name__)
 
 QUAY_REPOSITORY_API_ENDPOINT = "https://quay.io/api/v1/repository"
 BUILD_NUMBER_REGEX = re.compile(r"\d+$")
-PARSED_TAG = collections.namedtuple("PARSED_TAG", "tag version build_string build_number")
 MULLED_SOCKET_TIMEOUT = 12
 QUAY_VERSIONS_CACHE_EXPIRY = 300
 NAMESPACE_HAS_REPO_NAME_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
 TAG_CACHE_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
 
 
-def default_mulled_conda_channels_from_env():
+class PARSED_TAG(NamedTuple):
+    tag: str
+    version: Union[LegacyVersion, Version]
+    build_string: Union[LegacyVersion, Version]
+    build_number: int
+
+
+def default_mulled_conda_channels_from_env() -> Optional[List[str]]:
     if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
         return os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
     else:
         return None
 
 
-def create_repository(namespace, repo_name, oauth_token):
+def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
     assert oauth_token
     headers = {"Authorization": f"Bearer {oauth_token}"}
     data = {
@@ -43,7 +69,7 @@ def create_repository(namespace, repo_name, oauth_token):
     requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
 
 
-def quay_versions(namespace, pkg_name, session=None):
+def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = None) -> List[str]:
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
     data = quay_repository(namespace, pkg_name, session=session)
 
@@ -56,7 +82,7 @@ def quay_versions(namespace, pkg_name, session=None):
     return [tag for tag in data["tags"].keys() if tag != "latest"]
 
 
-def quay_repository(namespace, pkg_name, session=None):
+def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = None) -> Dict[str, Any]:
     assert namespace is not None
     assert pkg_name is not None
     url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
@@ -67,18 +93,8 @@ def quay_repository(namespace, pkg_name, session=None):
     return data
 
 
-def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
-    """
-    Get all quay containers in the biocontainers repo
-    """
-    # resolution_cache.mulled_resolution_cache is the persistent variant of the resolution cache
-    resolution_cache = resolution_cache.mulled_resolution_cache or resolution_cache
-    cache_key = NAMESPACE_HAS_REPO_NAME_KEY
-    if resolution_cache is not None:
-        try:
-            return repo_name in resolution_cache.get(cache_key)
-        except KeyError:
-            pass
+def _get_namespace(namespace: str) -> List[str]:
+    log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
     next_page = None
     repo_names = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
@@ -93,14 +109,39 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
         next_page = repos_response_json.get("next_page")
         if not next_page:
             break
-    if resolution_cache is not None:
-        resolution_cache[cache_key] = repo_names
+    return repo_names
+
+
+def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "ResolutionCache") -> bool:
+    """
+    Get all quay containers in the biocontainers repo
+    """
+    # resolution_cache.mulled_resolution_cache is the persistent variant of the resolution cache
+    preferred_resolution_cache = resolution_cache.mulled_resolution_cache or resolution_cache
+    cache_key = NAMESPACE_HAS_REPO_NAME_KEY
+    if preferred_resolution_cache is not None:
+        try:
+            cached_namespace = preferred_resolution_cache.get(cache_key)
+            if cached_namespace:
+                return repo_name in cached_namespace
+        except KeyError:
+            # preferred_resolution_cache may be a beaker Cache instance, which
+            # raises KeyError if key is not present on `.get`
+            pass
+    repo_names = _get_namespace(namespace)
+    if preferred_resolution_cache is not None:
+        preferred_resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
 
 
 def mulled_tags_for(
-    namespace, image, tag_prefix=None, resolution_cache=None, session=None, expire=QUAY_VERSIONS_CACHE_EXPIRY
-):
+    namespace: str,
+    image: str,
+    tag_prefix: Optional[str] = None,
+    resolution_cache: Optional["ResolutionCache"] = None,
+    session: Optional[Session] = None,
+    expire: float = QUAY_VERSIONS_CACHE_EXPIRY,
+) -> List[str]:
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -119,6 +160,7 @@ def mulled_tags_for(
             resolution_cache = resolution_cache.mulled_resolution_cache._get_cache(
                 "mulled_tag_cache", {"expire": expire}
             )
+        assert resolution_cache is not None
         if cache_key not in resolution_cache:
             resolution_cache[cache_key] = collections.defaultdict(dict)
         tag_cache = resolution_cache.get(cache_key)
@@ -142,12 +184,12 @@ def mulled_tags_for(
     return tags
 
 
-def split_tag(tag):
+def split_tag(tag: str) -> List[str]:
     """Split mulled image tag into conda version and conda build."""
     return tag.rsplit("--", 1)
 
 
-def parse_tag(tag):
+def parse_tag(tag: str) -> PARSED_TAG:
     """Decompose tag of mulled images into version, build string and build number."""
     version = tag.rsplit(":")[-1]
     build_string = "-1"
@@ -167,37 +209,36 @@ def parse_tag(tag):
         build_number = -1
     return PARSED_TAG(
         tag=tag,
-        version=packaging.version.parse(version),
-        build_string=packaging.version.parse(build_string),
+        version=parse_version(version),
+        build_string=parse_version(build_string),
         build_number=build_number,
     )
 
 
-def version_sorted(elements):
+def version_sorted(elements: Iterable[str]) -> List[str]:
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    elements = (parse_tag(tag) for tag in elements)
-    elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.version, reverse=True)
-    return [e.tag for e in elements]
+    parsed_tags_iter = (parse_tag(tag) for tag in elements)
+    sorted_tags = sorted(parsed_tags_iter, key=lambda tag: tag.build_string, reverse=True)
+    sorted_tags = sorted(sorted_tags, key=lambda tag: tag.build_number, reverse=True)
+    sorted_tags = sorted(sorted_tags, key=lambda tag: tag.version, reverse=True)
+    return [e.tag for e in sorted_tags]
 
 
-Target = collections.namedtuple("Target", ["package_name", "version", "build", "package"])
-
-
-def build_target(package_name, version=None, build=None, tag=None):
-    """Use supplied arguments to build a :class:`Target` object."""
+def build_target(
+    package_name: str, version: Optional[str] = None, build: Optional[str] = None, tag: Optional[str] = None
+) -> CondaTarget:
+    """Use supplied arguments to build a :class:`CondaTarget` object."""
     if tag is not None:
         assert version is None
         assert build is None
         version, build = split_tag(tag)
 
     # conda package and quay image names are lowercase
-    return Target(package_name.lower(), version, build, package_name)
+    return CondaTarget(package_name, version=version, build=build)
 
 
-def conda_build_target_str(target):
-    rval = target.package_name
+def conda_build_target_str(target: CondaTarget) -> str:
+    rval = target.package
     if target.version:
         rval += f"={target.version}"
 
@@ -207,7 +248,7 @@ def conda_build_target_str(target):
     return rval
 
 
-def _simple_image_name(targets, image_build=None):
+def _simple_image_name(targets: List[CondaTarget], image_build: Optional[str] = None) -> str:
     target = targets[0]
     suffix = ""
     if target.version is not None:
@@ -219,10 +260,12 @@ def _simple_image_name(targets, image_build=None):
         suffix += f":{target.version}"
         if build is not None:
             suffix += f"--{build}"
-    return f"{target.package_name}{suffix}"
+    return f"{target.package}{suffix}"
 
 
-def v1_image_name(targets, image_build=None, name_override=None):
+def v1_image_name(
+    targets: Iterable[CondaTarget], image_build: Optional[str] = None, name_override: Optional[str] = None
+) -> str:
     """Generate mulled hash version 1 container identifier for supplied arguments.
 
     If a single target is specified, simply use the supplied name and version as
@@ -253,7 +296,7 @@ def v1_image_name(targets, image_build=None, name_override=None):
     if len(targets) == 1:
         return _simple_image_name(targets, image_build=image_build)
     else:
-        targets_order = sorted(targets, key=lambda t: t.package_name)
+        targets_order = sorted(targets, key=lambda t: t.package)
         requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
@@ -261,7 +304,9 @@ def v1_image_name(targets, image_build=None, name_override=None):
         return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
-def v2_image_name(targets, image_build=None, name_override=None):
+def v2_image_name(
+    targets: Iterable[CondaTarget], image_build: Optional[str] = None, name_override: Optional[str] = None
+) -> str:
     """Generate mulled hash version 2 container identifier for supplied arguments.
 
     If a single target is specified, simply use the supplied name and version as
@@ -301,15 +346,15 @@ def v2_image_name(targets, image_build=None, name_override=None):
     if len(targets) == 1:
         return _simple_image_name(targets, image_build=image_build)
     else:
-        targets_order = sorted(targets, key=lambda t: t.package_name)
-        package_name_buffer = "\n".join(map(lambda t: t.package_name, targets_order))
+        targets_order = sorted(targets, key=lambda t: t.package)
+        package_name_buffer = "\n".join(t.package for t in targets_order)
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
 
-        versions = map(lambda t: t.version, targets_order)
+        versions = (t.version for t in targets_order)
         if any(versions):
             # Only hash versions if at least one package has versions...
-            version_name_buffer = "\n".join(map(lambda t: t.version or "null", targets_order))
+            version_name_buffer = "\n".join(t.version or "null" for t in targets_order)
             version_hash = hashlib.sha1()
             version_hash.update(version_name_buffer.encode())
             version_hash_str = version_hash.hexdigest()
@@ -330,16 +375,34 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
-def get_file_from_recipe_url(url):
-    """Downloads file at url and returns tarball"""
-    if url.startswith("file://"):
-        return tarfile.open(mode="r:bz2", name=url[7:])
-    else:
-        r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
-        return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> Dict[str, bytes]:
+    """
+    Get content of specified files in a conda package.
+    The url can be a path to a local file or an url.
+    The filepaths is an iterable of paths to extract from the conda package, if
+    found in it.
+    Return a dictionary mapping each found filepath to the corresponding content
+    (as bytes).
+
+    >>> content_dict = get_files_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2", ["info/recipe/meta.yaml"])
+    >>> assert "info/recipe/meta.yaml" in content_dict, content_dict
+    >>> assert isinstance(content_dict["info/recipe/meta.yaml"], bytes)
+    >>> content_dict = get_files_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda", ["info/about.json", "info/recipe/meta.yaml", "foo/bar"])
+    >>> assert sorted(content_dict.keys()) == ["info/about.json", "info/recipe/meta.yaml"], content_dict
+    """
+
+    try:
+        stream = stream_conda_info(url)
+    except FileNotFoundError:
+        stream = stream_conda_info_from_url(url)
+    ret = {}
+    for tar, member in stream:
+        if member.name in filepaths:
+            ret[member.name] = tar.extractfile(member).read()
+    return ret
 
 
-def split_container_name(name):
+def split_container_name(name: str) -> List[str]:
     """
     Takes a container name (e.g. samtools:1.7--1) and returns a list (e.g. ['samtools', '1.7', '1'])
     >>> split_container_name('samtools:1.7--1')
@@ -349,22 +412,22 @@ def split_container_name(name):
 
 
 class PrintProgress:
-    def __init__(self):
+    def __init__(self) -> None:
         self.thread = threading.Thread(target=self.progress)
         self.stop = threading.Event()
 
-    def progress(self):
+    def progress(self) -> None:
         while not self.stop.is_set():
             print(".", end="")
             sys.stdout.flush()
             self.stop.wait(60)
         print("")
 
-    def __enter__(self):
+    def __enter__(self) -> "PrintProgress":
         self.thread.start()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         self.stop.set()
         self.thread.join()
 
@@ -374,12 +437,12 @@ image_name = v1_image_name  # deprecated
 __all__ = (
     "build_target",
     "conda_build_target_str",
+    "get_files_from_conda_package",
     "image_name",
     "mulled_tags_for",
     "quay_versions",
     "split_container_name",
     "split_tag",
-    "Target",
     "v1_image_name",
     "v2_image_name",
     "version_sorted",

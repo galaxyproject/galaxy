@@ -9,7 +9,7 @@ from .framework import (
 )
 
 
-class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_file(self):
         self.perform_upload(self.get_filename("1.sam"))
@@ -118,11 +118,11 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_list(self):
         self.upload_list([self.get_filename("1.tabular")], name="Test List")
-        self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_ok(3)
         # Make sure modals disappeared - both List creator (TODO: upload).
         self.wait_for_selector_absent_or_hidden(".collection-creator")
 
-        self.assert_item_name(2, "Test List")
+        self.assert_item_name(3, "Test List")
 
         # Make sure source item is hidden when the collection is created.
         self.history_panel_wait_for_hid_hidden(1)
@@ -130,15 +130,17 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_pair(self):
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair")
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         # Make sure modals disappeared - both collection creator (TODO: upload).
         self.wait_for_selector_absent_or_hidden(".collection-creator")
 
-        self.assert_item_name(3, "Test Pair")
+        self.assert_item_name(5, "Test Pair")
 
         # Make sure source items are hidden when the collection is created.
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_hidden(3)
+        self.history_panel_wait_for_hid_hidden(4)
 
     @selenium_test
     def test_upload_pair_specify_extension(self):
@@ -161,14 +163,46 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.upload_paired_list(
             [self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Paired List"
         )
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
         # Make sure modals disappeared - both collection creator (TODO: upload).
         self.wait_for_selector_absent_or_hidden(".collection-creator")
-        self.assert_item_name(3, "Test Paired List")
+        self.assert_item_name(5, "Test Paired List")
 
         # Make sure source items are hidden when the collection is created.
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
+        self.history_panel_wait_for_hid_hidden(3)
+        self.history_panel_wait_for_hid_hidden(4)
+
+    @selenium_test
+    def test_upload_modal_retains_content(self):
+        self.home()
+
+        # initialize 2 uploads and close modal
+        self.upload_start_click()
+        self.upload_queue_local_file(self.get_filename("1.sam"))
+        self.upload_paste_data("some pasted data")
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # reopen modal and check that the files are still there
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-init")
+        self.wait_for_selector_visible("#upload-row-1.upload-init")
+
+        # perform upload and close modal
+        self.upload_start()
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # add another pasted file, but don't upload it
+        self.upload_start_click()
+        self.upload_paste_data("some more pasted data")
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # reopen modal and see 2 uploaded, 1 yet to upload
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-success")
+        self.wait_for_selector_visible("#upload-row-1.upload-success")
+        self.wait_for_selector_visible("#upload-row-2.upload-init")
 
     @selenium_test
     @pytest.mark.gtn_screenshot
@@ -221,10 +255,9 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_2_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -249,8 +282,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
         self._wait_for_upload_modal()
         self.screenshot("rules_example_3_1_inputs")
@@ -360,8 +393,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -438,8 +471,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -474,8 +507,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
             return f.read()
 
     def _wait_for_upload_modal(self):
-        self.components.upload.build_btn.wait_for_visible()
-        self.components.upload.build_btn.wait_for_clickable()
+        self.components.upload.build_button.wait_for_visible()
+        self.components.upload.build_button.wait_for_clickable()
 
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
@@ -492,8 +525,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/uniprot.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
     # @selenium_test

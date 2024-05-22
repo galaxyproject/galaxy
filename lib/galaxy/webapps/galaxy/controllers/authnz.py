@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-
 import datetime
 import json
 import logging
@@ -90,10 +89,10 @@ class OIDC(JSAppLauncher):
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
-                "Did not receive any information from the `{}` identity provider to complete user `{}` authentication "
+                f"Did not receive any information from the `{provider}` identity provider to complete user `{user}` authentication "
                 "flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note "
                 "that this endpoint is to receive authentication callbacks only, and should not be called/reached by "
-                "a user.".format(provider, user)
+                "a user."
             )
         if "error" in kwargs:
             log.error(
@@ -101,9 +100,9 @@ class OIDC(JSAppLauncher):
                 " Error message: {}".format(provider, user, kwargs.get("error", "None"))
             )
             return trans.show_error_message(
-                "Failed to handle authentication callback from {}. "
+                f"Failed to handle authentication callback from {provider}. "
                 "Please try again, and if the problem persists, contact "
-                "the Galaxy instance admin".format(provider)
+                "the Galaxy instance admin"
             )
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.callback(
@@ -120,15 +119,17 @@ class OIDC(JSAppLauncher):
             return trans.show_error_message(message)
         if "?confirm" in redirect_url:
             return trans.response.send_redirect(url_for(redirect_url))
+        if "?connect_external_provider" in redirect_url:
+            return trans.response.send_redirect(url_for(redirect_url))
         elif redirect_url is None:
             redirect_url = url_for("/")
 
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
@@ -143,7 +144,7 @@ class OIDC(JSAppLauncher):
             )
         except exceptions.AuthenticationFailed as e:
             return trans.response.send_redirect(
-                f"{trans.request.base + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}"
+                f"{trans.request.url_path + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}"
             )
 
         if success is False:
@@ -151,9 +152,9 @@ class OIDC(JSAppLauncher):
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
@@ -180,10 +181,13 @@ class OIDC(JSAppLauncher):
     @web.json
     @web.expose
     def logout(self, trans, provider, **kwargs):
-        post_logout_redirect_url = f"{trans.request.base + url_for('/')}root/login?is_logout_redirect=true"
+        post_user_logout_href = trans.app.config.post_user_logout_href
+        if post_user_logout_href is not None:
+            post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
-            provider, trans, post_logout_redirect_url=post_logout_redirect_url
+            provider, trans, post_user_logout_href=post_user_logout_href
         )
+        trans.handle_user_logout()
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -198,13 +202,12 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
-        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
             cilogon_idps = json.loads(url_get("https://cilogon.org/idplist/", params=dict(kwargs)))
         except Exception as e:
             raise Exception(f"Invalid server response. {str(e)}.")
 
-        if allowed_idps:
+        if allowed_idps := trans.app.authnz_manager.get_allowed_idps():
             validated_idps = list(filter(lambda idp: idp["EntityID"] in allowed_idps, cilogon_idps))
 
             if not (len(validated_idps) == len(allowed_idps)):

@@ -1,29 +1,30 @@
-import Vuex from "vuex";
-import { default as Masthead } from "./Masthead.vue";
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
 import { WindowManager } from "layout/window-manager";
-import { fetchMenu } from "layout/menu";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
+
 import { loadWebhookMenuItems } from "./_webhooks";
-import { userStore } from "store/userStore";
-import { configStore } from "store/configStore";
+import { getActiveTab } from "./utilities";
+
+import { default as Masthead } from "./Masthead.vue";
 
 jest.mock("app");
-jest.mock("layout/menu");
 jest.mock("./_webhooks");
+jest.mock("vue-router/composables", () => ({
+    useRoute: jest.fn(() => ({ name: "Home" })),
+}));
+jest.mock("@/api/schema");
 
 describe("Masthead.vue", () => {
     let wrapper;
     let localVue;
     let windowManager;
     let tabs;
-    let store;
-    let state;
-    let actions;
-
-    function stubFetchMenu() {
-        return tabs;
-    }
+    let testPinia;
 
     function stubLoadWebhooks(items) {
         items.push({
@@ -34,30 +35,13 @@ describe("Masthead.vue", () => {
         });
     }
 
-    fetchMenu.mockImplementation(stubFetchMenu);
     loadWebhookMenuItems.mockImplementation(stubLoadWebhooks);
 
     beforeEach(() => {
         localVue = getLocalVue();
-
-        store = new Vuex.Store({
-            modules: {
-                user: {
-                    state,
-                    actions: {
-                        loadUser: jest.fn(),
-                    },
-                    getters: userStore.getters,
-                    namespaced: true,
-                },
-                config: {
-                    state,
-                    actions,
-                    getters: configStore.getters,
-                    namespaced: true,
-                },
-            },
-        });
+        localVue.use(PiniaVuePlugin);
+        testPinia = createTestingPinia();
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
 
         tabs = [
             // Main Analysis Tab..
@@ -81,41 +65,31 @@ describe("Masthead.vue", () => {
                 hidden: true,
             },
         ];
+
         const initialActiveTab = "shared";
-
-        // window manager assumes this is a Backbone collection - mock that out.
-        tabs.add = (x) => {
-            tabs.push(x);
-            return x;
-        };
         windowManager = new WindowManager({});
-        const mastheadState = {
-            windowManager,
-        };
-
+        const windowTab = windowManager.getTab();
         wrapper = mount(Masthead, {
             propsData: {
-                mastheadState,
+                tabs,
+                windowTab,
                 initialActiveTab,
             },
-            store,
             localVue,
+            pinia: testPinia,
         });
     });
 
-    it("should disable brand when displayGalaxyBrand is true", async () => {
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Galaxy");
-        await wrapper.setProps({ brand: "Foo " });
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Galaxy Foo");
-        await wrapper.setProps({ displayGalaxyBrand: false });
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Foo");
+    it("test basic active tab matching", () => {
+        expect(getActiveTab("root", tabs)).toBe("analysis");
+        expect(getActiveTab("_menu_url", tabs)).toBe("shared");
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(5);
+        expect(wrapper.findAll("li.nav-item").length).toBe(6);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("/root");
+        expect(wrapper.find("#analysis a").attributes("href")).toBe("root");
     });
 
     it("should render tab items with menus", () => {
@@ -124,7 +98,7 @@ describe("Masthead.vue", () => {
         expect(wrapper.find("#shared").classes("dropdown")).toBe(true);
 
         expect(wrapper.findAll("#shared .dropdown-menu li").length).toBe(1);
-        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("/_menu_url");
+        expect(wrapper.find("#shared .dropdown-menu li a").attributes().href).toBe("_menu_url");
         expect(wrapper.find("#shared .dropdown-menu li a").attributes().target).toBe("_menu_target");
         expect(wrapper.find("#shared .dropdown-menu li a").text()).toBe("_menu_title");
     });
@@ -132,6 +106,7 @@ describe("Masthead.vue", () => {
     it("should make hidden tabs hidden", () => {
         expect(wrapper.find("#analysis").attributes().style).not.toEqual(expect.stringContaining("display: none"));
         expect(wrapper.find("#hiddentab").attributes().style).toEqual(expect.stringContaining("display: none"));
+        expect(wrapper.get("#interactive").isVisible()).toBeFalsy();
     });
 
     it("should highlight the active tab", () => {
@@ -140,7 +115,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should display window manager button", async () => {
-        expect(wrapper.find("#enable-window-manager a span").classes("fa-th")).toBe(true);
+        expect(wrapper.find("#enable-window-manager a span.fa-th").exists()).toBe(true);
         expect(windowManager.active).toBe(false);
         await wrapper.find("#enable-window-manager a").trigger("click");
         expect(windowManager.active).toBe(true);
@@ -148,5 +123,25 @@ describe("Masthead.vue", () => {
 
     it("should load webhooks on creation", async () => {
         expect(wrapper.find("#extension a").text()).toBe("Extension Point");
+    });
+
+    it("shows link to interactive tools if any is active", async () => {
+        setActivePinia(testPinia);
+        const entryPointStore = useEntryPointStore();
+        entryPointStore.entryPoints = [
+            {
+                model_class: "InteractiveToolEntryPoint",
+                id: "52e496b945151ee8",
+                job_id: "52e496b945151ee8",
+                name: "Jupyter Interactive Tool",
+                active: true,
+                created_time: "2020-02-24T15:59:18.122103",
+                modified_time: "2020-02-24T15:59:20.428594",
+                target: "http://52e496b945151ee8-be8a5bee5d5849a5b4e035b51305256e.interactivetoolentrypoint.interactivetool.localhost:8080/ipython/lab",
+            },
+        ];
+        // avoid race condition with store's reactivity
+        await new Promise((_) => setTimeout(_, 10));
+        expect(wrapper.get("#interactive").isVisible()).toBeTruthy();
     });
 });

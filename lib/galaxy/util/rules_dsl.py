@@ -61,7 +61,8 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
 
 
 class BaseRuleDefinition(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def rule_type(self):
         """Short string describing type of rule (plugin class) to use."""
 
@@ -450,7 +451,7 @@ class SortRuleDefinition(BaseRuleDefinition):
         new_data = []
         new_sources = []
 
-        for (row, source) in sorted_data:
+        for row, source in sorted_data:
             new_data.append(row)
             new_sources.append(source)
 
@@ -577,7 +578,7 @@ class RuleSet:
     def collection_type(self):
         mapping_as_dict = self.mapping_as_dict
         list_columns = mapping_as_dict.get("list_identifiers", {"columns": []})["columns"]
-        collection_type = ":".join(map(lambda c: "list", list_columns))
+        collection_type = ":".join("list" for c in list_columns)
         if "paired_identifier" in mapping_as_dict:
             if collection_type:
                 collection_type += ":paired"

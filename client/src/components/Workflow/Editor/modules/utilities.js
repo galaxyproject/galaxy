@@ -1,5 +1,5 @@
-import _ from "underscore";
 import WorkflowIcons from "components/Workflow/icons";
+import _ from "underscore";
 
 export function getStateUpgradeMessages(data) {
     // Determine if any parameters were 'upgraded' and provide message
@@ -54,20 +54,4 @@ export function getCompatibleRecommendations(predChild, outputDatatypes, datatyp
         }
     }
     return cTools;
-}
-
-export function checkLabels(nodeId, newLabel, nodes) {
-    let duplicate = false;
-    for (const i in nodes) {
-        const n = nodes[i];
-        if (n.label && n.label == newLabel && n.id != nodeId) {
-            duplicate = true;
-            break;
-        }
-    }
-    if (duplicate) {
-        return "Duplicate label. Please fix this before saving the workflow.";
-    } else {
-        return "";
-    }
 }

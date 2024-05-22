@@ -5,14 +5,6 @@ from .test_toolbox import (
     ToolTestCase,
 )
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 log = logging.getLogger(__name__)
 data_managers = None
 
@@ -21,7 +13,6 @@ class DataManagerToolTestCase(ToolTestCase):
     """Test case that runs Data Manager tests based on a `galaxy.tools.test.ToolTest`"""
 
 
-@nottest
 def build_tests(
     tmp_dir=None, testing_shed_tools=False, master_api_key=None, user_api_key=None, create_admin=False, user_email=None
 ):

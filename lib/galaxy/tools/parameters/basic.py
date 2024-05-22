@@ -8,32 +8,42 @@ import logging
 import os
 import os.path
 import re
+import typing
+import urllib.parse
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
+from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import ProvidesFileSourcesUserContext
+from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
     cached_id,
     Dataset,
+    DatasetCollection,
     DatasetCollectionElement,
+    DatasetHash,
     DatasetInstance,
+    DatasetSource,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
-    dbkeys,
     sanitize_param,
     string_as_bool,
     string_as_bool_or_none,
@@ -42,6 +52,7 @@ from galaxy.util import (
 )
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -50,14 +61,24 @@ from . import (
 )
 from .dataset_matcher import get_dataset_matcher_factory
 from .sanitize import ToolParameterSanitizer
+from .workflow_utils import (
+    is_runtime_value,
+    runtime_to_json,
+    runtime_to_object,
+    RuntimeValue,
+)
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from galaxy.model import (
+        History,
+        HistoryItem,
+    )
+    from galaxy.security.idencoding import IdEncodingHelper
+    from galaxy.structured_app import MinimalApp
 
 log = logging.getLogger(__name__)
-
-
-class workflow_building_modes:
-    DISABLED = False
-    ENABLED = True
-    USE_HISTORY = 1
 
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r"\$\{.+?\}")
@@ -77,12 +98,6 @@ def contains_workflow_parameter(value, search=False):
     return False
 
 
-def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (
-        isinstance(value, dict) and value.get("__class__") in ["RuntimeValue", "ConnectedValue"]
-    )
-
-
 def is_runtime_context(trans, other_values):
     if trans.workflow_building_mode:
         return True
@@ -98,8 +113,7 @@ def is_runtime_context(trans, other_values):
 
 
 def parse_dynamic_options(param, input_source):
-    options_elem = input_source.parse_dynamic_options_elem()
-    if options_elem is not None:
+    if (options_elem := input_source.parse_dynamic_options_elem()) is not None:
         return dynamic_options.DynamicOptions(options_elem, param)
     return None
 
@@ -164,11 +178,11 @@ class ToolParameter(Dictifiable):
         self.hidden = input_source.get_bool("hidden", False)
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
+        self.optionality_inferred = False
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
-        sanitizer_elem = input_source.parse_sanitizer_elem()
-        if sanitizer_elem is not None:
+        if (sanitizer_elem := input_source.parse_sanitizer_elem()) is not None:
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:
             self.sanitizer = None
@@ -177,7 +191,7 @@ class ToolParameter(Dictifiable):
             self.validators.append(validation.Validator.from_element(self, elem))
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         """Return true if the parameter should be rendered on the form"""
         return True
 
@@ -212,7 +226,7 @@ class ToolParameter(Dictifiable):
         """
         return []
 
-    def to_json(self, value, app, use_security):
+    def to_json(self, value, app, use_security) -> str:
         """Convert a value to a string representation suitable for persisting"""
         return unicodify(value)
 
@@ -231,7 +245,7 @@ class ToolParameter(Dictifiable):
             if isinstance(self, HiddenToolParameter):
                 raise ParameterValueError(message_suffix="Runtime Parameter not valid", parameter_name=self.name)
             return runtime_to_object(value)
-        elif isinstance(value, dict) and value.get("__class__") == "UnvalidatedValue":
+        elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
             return value["value"]
         # Delegate to the 'to_python' method
         if ignore_errors:
@@ -242,12 +256,12 @@ class ToolParameter(Dictifiable):
         else:
             return self.to_python(value, app)
 
-    def value_to_display_text(self, value):
+    def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
             return "Not available."
         return self.to_text(value)
 
-    def to_text(self, value):
+    def to_text(self, value) -> str:
         """
         Convert a value to a text representation suitable for displaying to
         the user
@@ -285,11 +299,14 @@ class ToolParameter(Dictifiable):
                 value = sanitize_param(value)
         return value
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans=None) -> None:
         if value in ["", None] and self.optional:
             return
         for validator in self.validators:
-            validator.validate(value, trans)
+            try:
+                validator.validate(value, trans)
+            except ValueError as e:
+                raise ValueError(f"Parameter {self.name}: {e}") from None
 
     def to_dict(self, trans, other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
@@ -326,7 +343,24 @@ class SimpleTextToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.optional = input_source.get_bool("optional", False)
+        optional = input_source.get("optional", None)
+        if optional is not None:
+            optional = string_as_bool(optional)
+        else:
+            # Optionality not explicitly defined, default to False
+            optional = False
+            if self.type == "text":
+                # A text parameter that doesn't raise a validation error on empty string
+                # is considered to be optional
+                try:
+                    for validator in self.validators:
+                        validator.validate("")
+                    optional = True
+                    self.optionality_inferred = True
+                except ValueError:
+                    pass
+        self.optional = optional
+
         if self.optional:
             self.value = None
         else:
@@ -353,14 +387,15 @@ class TextToolParameter(SimpleTextToolParameter):
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
+    >>> sorted(p.to_dict(trans).items())
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.datalist = []
-        for (title, value, _) in input_source.parse_static_options():
+        for title, value, _ in input_source.parse_static_options():
             self.datalist.append({"label": title, "value": value})
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
@@ -407,8 +442,6 @@ class IntegerToolParameter(TextToolParameter):
                 int(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
         if self.min:
@@ -483,8 +516,6 @@ class FloatToolParameter(TextToolParameter):
                 float(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         if self.min:
             try:
                 self.min = float(self.min)
@@ -542,7 +573,7 @@ class BooleanToolParameter(ToolParameter):
     >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
     >>> print(p.from_json('true'))
     True
     >>> print(p.to_param_dict_string(True))
@@ -551,13 +582,35 @@ class BooleanToolParameter(ToolParameter):
     False
     >>> print(p.to_param_dict_string(False))
     _falsevalue
+    >>> value = p.to_json('false', trans.app, use_security=False)
+    >>> assert isinstance(value, bool)
+    >>> assert value == False
+    >>> value = p.to_json(True, trans.app, use_security=False)
+    >>> assert isinstance(value, bool)
+    >>> assert value == True
     """
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.truevalue = input_source.get("truevalue", "true")
-        self.falsevalue = input_source.get("falsevalue", "false")
+        truevalue = input_source.get("truevalue", "true")
+        falsevalue = input_source.get("falsevalue", "false")
+        if tool and Version(str(tool.profile)) >= Version("23.1"):
+            if truevalue == falsevalue:
+                raise ParameterValueError("Cannot set true and false to the same value", self.name)
+            if truevalue.lower() == "false":
+                raise ParameterValueError(
+                    f"Cannot set truevalue to [{truevalue}], Galaxy state may encounter issues distinguishing booleans and strings in this case.",
+                    self.name,
+                )
+            if falsevalue.lower() == "true":
+                raise ParameterValueError(
+                    f"Cannot set falsevalue to [{falsevalue}], Galaxy state may encounter issues distinguishing booleans and strings in this case.",
+                    self.name,
+                )
+
+        self.truevalue = truevalue
+        self.falsevalue = falsevalue
         nullable = input_source.get_bool("optional", False)
         self.optional = nullable
         self.checked = input_source.get_bool("checked", None if nullable else False)
@@ -573,8 +626,7 @@ class BooleanToolParameter(ToolParameter):
         return ret_val
 
     def to_json(self, value, app, use_security):
-        rval = json.dumps(self.to_python(value, app))
-        return rval
+        return self.to_python(value, app)
 
     def get_initial_value(self, trans, other_values):
         return self.checked
@@ -618,8 +670,8 @@ class FileToolParameter(ToolParameter):
         # should be pluggable)
         if isinstance(value, FilesPayload):
             # multi-part upload handled and persisted in service layer
-            return value.dict()
-        if type(value) == dict:
+            return value.model_dump()
+        elif isinstance(value, MutableMapping):
             if "session_id" in value:
                 # handle api upload
                 session_id = value["session_id"]
@@ -627,9 +679,6 @@ class FileToolParameter(ToolParameter):
                 if re.match(r"^[\w-]+$", session_id) is None:
                     raise ValueError("Invalid session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-                if upload_store != trans.app.config.new_file_path and not os.path.exists(local_filename):
-                    # Fallback for old chunked API, remove in 22.05
-                    local_filename = os.path.abspath(os.path.join(trans.app.config.new_file_path, session_id))
             else:
                 # handle nginx upload
                 upload_store = trans.app.config.nginx_upload_store
@@ -654,7 +703,7 @@ class FileToolParameter(ToolParameter):
             return None
         elif isinstance(value, str):
             return value
-        elif isinstance(value, dict):
+        elif isinstance(value, MutableMapping):
             # or should we jsonify?
             try:
                 return value["local_filename"]
@@ -728,7 +777,7 @@ class FTPFileToolParameter(ToolParameter):
             if val in [None, ""]:
                 lst = []
                 break
-            if isinstance(val, dict):
+            if isinstance(val, MutableMapping):
                 lst.append(val["name"])
             else:
                 lst.append(val)
@@ -848,6 +897,11 @@ class BaseURLToolParameter(HiddenToolParameter):
         return d
 
 
+def iter_to_string(iterable: typing.Iterable[typing.Any]) -> typing.Generator[str, None, None]:
+    for item in iterable:
+        yield str(item)
+
+
 class SelectToolParameter(ToolParameter):
     """
     Parameter that takes on one (or many) or a specific set of values.
@@ -900,7 +954,7 @@ class SelectToolParameter(ToolParameter):
                 self.validators.append(validator)
         if self.dynamic_options is None and self.options is None:
             self.static_options = input_source.parse_static_options()
-            for (_, value, _) in self.static_options:
+            for _, value, _ in self.static_options:
                 self.legal_values.add(value)
         self.is_dynamic = (self.dynamic_options is not None) or (self.options is not None)
 
@@ -933,7 +987,10 @@ class SelectToolParameter(ToolParameter):
         """
         determine the set of values of legal options
         """
-        return {v for _, v, _ in self.get_options(trans, other_values)}
+        return {
+            history_item_dict_to_python(v, trans.app, self.name) or v
+            for _, v, _ in self.get_options(trans, other_values)
+        }
 
     def get_legal_names(self, trans, other_values):
         """
@@ -974,7 +1031,7 @@ class SelectToolParameter(ToolParameter):
                 "an invalid option (None) was selected, please verify", self.name, None, is_dynamic=self.is_dynamic
             )
         elif not legal_values:
-            if self.optional and self.tool.profile < 18.09:
+            if self.optional and Version(str(self.tool.profile)) < Version("18.09"):
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
                 # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.
@@ -994,8 +1051,9 @@ class SelectToolParameter(ToolParameter):
             elif set(value).issubset(set(fallback_values.keys())):
                 return [fallback_values[v] for v in value]
             else:
+                invalid_options = iter_to_string(set(value) - set(legal_values))
                 raise ParameterValueError(
-                    f"invalid options ({','.join(set(value) - set(legal_values))!r}) were selected (valid options: {','.join(legal_values)})",
+                    f"invalid options ({','.join(invalid_options)!r}) were selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     is_dynamic=self.is_dynamic,
                 )
@@ -1019,7 +1077,7 @@ class SelectToolParameter(ToolParameter):
                 return value
             else:
                 raise ParameterValueError(
-                    f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})",
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
                     self.name,
                     value,
                     is_dynamic=self.is_dynamic,
@@ -1048,7 +1106,12 @@ class SelectToolParameter(ToolParameter):
         return value
 
     def to_json(self, value, app, use_security):
+        if isinstance(value, HistoryDatasetAssociation):
+            return history_item_to_json(value, app, use_security=use_security)
         return value
+
+    def to_python(self, value, app):
+        return history_item_dict_to_python(value, app, self.name) or super().to_python(value, app)
 
     def get_initial_value(self, trans, other_values):
         try:
@@ -1127,7 +1190,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
     _name
@@ -1183,7 +1246,7 @@ class GenomeBuildParameter(SelectToolParameter):
     def _get_dbkey_names(self, trans=None):
         if not self.tool:
             # Hack for unit tests, since we have no tool
-            return dbkeys.read_dbnames(None)
+            return read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
 
 
@@ -1271,7 +1334,7 @@ class SelectTagParameter(SelectToolParameter):
     def get_initial_value(self, trans, other_values):
         if self.default_value is not None:
             return self.default_value
-        return SelectToolParameter.get_initial_value(self, trans, other_values)
+        return super().get_initial_value(trans, other_values)
 
     def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
@@ -1302,8 +1365,8 @@ class ColumnListParameter(SelectToolParameter):
     >>> from galaxy.model.mapping import init
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> dtp =  DataToolParameter(None, XML('<param name="blah" type="data" format="interval"/>'))
     >>> print(dtp.name)
@@ -1332,6 +1395,11 @@ class ColumnListParameter(SelectToolParameter):
             self.default_value = ColumnListParameter._strip_c(self.default_value)
         self.is_dynamic = True
         self.usecolnames = input_source.get_bool("use_header_names", False)
+
+    def to_json(self, value, app, use_security):
+        if isinstance(value, str):
+            return value.strip()
+        return value
 
     def from_json(self, value, trans, other_values=None):
         """
@@ -1369,8 +1437,9 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
+            column = column.strip()
             if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
-                column = column.strip().lower()[1:]
+                column = column.lower()[1:]
         return column
 
     def get_column_list(self, trans, other_values):
@@ -1388,6 +1457,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement) and dataset.hda:
+                dataset = dataset.hda
             if isinstance(dataset, HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(
                     self.ref_input.formats
@@ -1425,20 +1496,31 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
-        if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
+        # if available use column_names metadata for option names
+        # otherwise read first row - assume is a header with tab separated names
+        if self.usecolnames:
             dataset = other_values.get(self.data_ref, None)
-            try:
-                with open(dataset.get_file_name()) as f:
-                    head = f.readline()
-                cnames = head.rstrip("\n\r ").split("\t")
-                column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
-                if self.numerical:  # If numerical was requested, filter columns based on metadata
-                    if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
-                        if len(dataset.metadata.column_types) >= len(cnames):
-                            numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
-                            column_list = [column_list[i] for i in numerics]
-            except Exception:
-                column_list = self.get_column_list(trans, other_values)
+            if (
+                hasattr(dataset, "metadata")
+                and hasattr(dataset.metadata, "column_names")
+                and dataset.metadata.element_is_set("column_names")
+            ):
+                column_list = [
+                    ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
+                ]
+            else:
+                try:
+                    with open(dataset.get_file_name()) as f:
+                        head = f.readline()
+                    cnames = head.rstrip("\n\r ").split("\t")
+                    column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
+                except Exception:
+                    column_list = self.get_column_list(trans, other_values)
+            if self.numerical:  # If numerical was requested, filter columns based on metadata
+                if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
+                    if len(dataset.metadata.column_types) >= len(column_list):
+                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
+                        column_list = [column_list[i] for i in numerics]
         else:
             column_list = self.get_column_list(trans, other_values)
         for col in column_list:
@@ -1472,6 +1554,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.hda
             if isinstance(dataset, DatasetInstance):
                 return not dataset.has_data()
             if is_runtime_value(dataset):
@@ -1499,7 +1583,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=dbkeys.read_dbnames(None))
+    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
     >>> p = DrillDownSelectToolParameter(None, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
@@ -1560,8 +1644,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.display = elem.get("display", None)
         self.hierarchy = elem.get("hierarchy", "exact")  # exact or recurse
         self.separator = elem.get("separator", ",")
-        from_file = elem.get("from_file", None)
-        if from_file:
+        if from_file := elem.get("from_file", None):
             if not os.path.isabs(from_file):
                 from_file = os.path.join(tool.app.config.tool_data_path, from_file)
             elem = XML(f"<root>{open(from_file).read()}</root>")
@@ -1779,7 +1862,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
 
 class BaseDataToolParameter(ToolParameter):
-
     multiple: bool
 
     def __init__(self, tool, input_source, trans):
@@ -1818,11 +1900,10 @@ class BaseDataToolParameter(ToolParameter):
         """
         Build list of classes for supported data formats
         """
-        self.extensions = input_source.get("format", "data").split(",")
+        self.extensions = [extension.strip().lower() for extension in input_source.get("format", "data").split(",")]
         formats = []
         if self.datatypes_registry:  # This may be None when self.tool.app is a ValidationContext
-            normalized_extensions = [extension.strip().lower() for extension in self.extensions]
-            for extension in normalized_extensions:
+            for extension in self.extensions:
                 datatype = self.datatypes_registry.get_datatype_by_extension(extension)
                 if datatype is not None:
                     formats.append(datatype)
@@ -1849,8 +1930,7 @@ class BaseDataToolParameter(ToolParameter):
             return RuntimeValue()
         if self.optional:
             return None
-        history = trans.history
-        if history is not None:
+        if (history := trans.history) is not None:
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
             if isinstance(self, DataToolParameter):
@@ -1865,51 +1945,22 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
-        def single_to_json(value):
-            src = None
-            if isinstance(value, dict) and "src" in value and "id" in value:
-                return value
-            elif isinstance(value, DatasetCollectionElement):
-                src = "dce"
-            elif isinstance(value, HistoryDatasetCollectionAssociation):
-                src = "hdca"
-            elif isinstance(value, LibraryDatasetDatasetAssociation):
-                src = "ldda"
-            elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
-                # hasattr 'id' fires a query on persistent objects after a flush so better
-                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
-                # nice to drop it.
-                src = "hda"
-            if src is not None:
-                object_id = cached_id(value)
-                return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
-                values = [single_to_json(v) for v in value]
+                values = [history_item_to_json(v, app, use_security) for v in value]
             else:
-                values = [single_to_json(value)]
+                values = [history_item_to_json(value, app, use_security)]
             return {"values": values}
         return None
 
     def to_python(self, value, app):
-        def single_to_python(value):
-            if isinstance(value, dict) and "src" in value:
-                id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
-                if value["src"] == "dce":
-                    return app.model.context.query(DatasetCollectionElement).get(id)
-                elif value["src"] == "hdca":
-                    return app.model.context.query(HistoryDatasetCollectionAssociation).get(id)
-                elif value["src"] == "ldda":
-                    return app.model.context.query(LibraryDatasetDatasetAssociation).get(id)
-                else:
-                    return app.model.context.query(HistoryDatasetAssociation).get(id)
 
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             if hasattr(self, "multiple") and self.multiple is True:
-                return [single_to_python(v) for v in value["values"]]
+                return [history_item_dict_to_python(v, app, self.name) for v in value["values"]]
             elif len(value["values"]) > 0:
-                return single_to_python(value["values"][0])
+                return history_item_dict_to_python(value["values"][0], app, self.name)
 
         # Handle legacy string values potentially stored in databases
         none_values = [None, "", "None"]
@@ -1917,7 +1968,7 @@ class BaseDataToolParameter(ToolParameter):
             return None
         if isinstance(value, str) and value.find(",") > -1:
             return [
-                app.model.context.query(HistoryDatasetAssociation).get(int(v))
+                app.model.context.get(HistoryDatasetAssociation, int(v))
                 for v in value.split(",")
                 if v not in none_values
             ]
@@ -1925,13 +1976,13 @@ class BaseDataToolParameter(ToolParameter):
             decoded_id = str(value)[len("__collection_reduce__|") :]
             if not decoded_id.isdigit():
                 decoded_id = app.security.decode_id(decoded_id)
-            return app.model.context.query(HistoryDatasetCollectionAssociation).get(int(decoded_id))
+            return app.model.context.get(HistoryDatasetCollectionAssociation, int(decoded_id))
         elif str(value).startswith("dce:"):
-            return app.model.context.query(DatasetCollectionElement).get(int(value[len("dce:") :]))
+            return app.model.context.get(DatasetCollectionElement, int(value[len("dce:") :]))
         elif str(value).startswith("hdca:"):
-            return app.model.context.query(HistoryDatasetCollectionAssociation).get(int(value[len("hdca:") :]))
+            return app.model.context.get(HistoryDatasetCollectionAssociation, int(value[len("hdca:") :]))
         else:
-            return app.model.context.query(HistoryDatasetAssociation).get(int(value))
+            return app.model.context.get(HistoryDatasetAssociation, int(value))
 
     def validate(self, value, trans=None):
         def do_validate(v):
@@ -1944,7 +1995,10 @@ class BaseDataToolParameter(ToolParameter):
                 ):
                     return
                 else:
-                    validator.validate(v, trans)
+                    try:
+                        validator.validate(v, trans)
+                    except ValueError as e:
+                        raise ValueError(f"Parameter {self.name}: {e}") from None
 
         dataset_count = 0
         if value:
@@ -1960,9 +2014,13 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(dataset_instance)
                 elif isinstance(v, DatasetCollectionElement):
-                    for dataset_instance in v.child_collection.dataset_instances:
+                    if v.hda:
                         dataset_count += 1
-                        do_validate(dataset_instance)
+                        do_validate(v.hda)
+                    else:
+                        for dataset_instance in v.child_collection.dataset_instances:
+                            dataset_count += 1
+                            do_validate(dataset_instance)
                 else:
                     dataset_count += 1
                     do_validate(v)
@@ -1973,6 +2031,31 @@ class BaseDataToolParameter(ToolParameter):
         if self.max is not None:
             if self.max < dataset_count:
                 raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
+
+
+def src_id_to_item(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> Union[
+    DatasetCollectionElement,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
+]:
+    src_to_class = {
+        "hda": HistoryDatasetAssociation,
+        "ldda": LibraryDatasetDatasetAssociation,
+        "dce": DatasetCollectionElement,
+        "hdca": HistoryDatasetCollectionAssociation,
+    }
+    id_value = value["id"]
+    decoded_id = id_value if isinstance(id_value, int) else security.decode_id(id_value)
+    try:
+        item = sa_session.get(src_to_class[value["src"]], decoded_id)
+    except KeyError:
+        raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
+    assert item
+    item.extra_params = {k: v for k, v in value.items() if k not in ("src", "id")}
+    return item
 
 
 class DataToolParameter(BaseDataToolParameter):
@@ -2014,6 +2097,11 @@ class DataToolParameter(BaseDataToolParameter):
         self._parse_options(input_source)
         # Load conversions required for the dataset input
         self.conversions = []
+        self.default_object = input_source.parse_default()
+        if self.optional and self.default_object is not None:
+            raise ParameterValueError(
+                "Cannot specify a Galaxy tool data parameter to be both optional and have a default value.", self.name
+            )
         for name, conv_extension in input_source.parse_conversion_tuples():
             assert None not in [
                 name,
@@ -2029,34 +2117,37 @@ class DataToolParameter(BaseDataToolParameter):
                 self.conversions.append((name, conv_extension, [conv_type]))
 
     def from_json(self, value, trans, other_values=None):
+        session = trans.sa_session
+
         other_values = other_values or {}
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
-        if not value and not self.optional:
+        if not value and not self.optional and not self.default_object:
             raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", ""]:
+            if self.default_object:
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
-        rval = []
+        rval: List[
+            Union[
+                DatasetCollectionElement,
+                HistoryDatasetAssociation,
+                HistoryDatasetCollectionAssociation,
+                LibraryDatasetDatasetAssociation,
+            ]
+        ] = []
         if isinstance(value, list):
-            found_hdca = False
+            found_srcs = set()
             for single_value in value:
-                if isinstance(single_value, dict) and "src" in single_value and "id" in single_value:
-                    if single_value["src"] == "hda":
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
-                    elif single_value["src"] == "hdca":
-                        found_hdca = True
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id))
-                    elif single_value["src"] == "ldda":
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(LibraryDatasetDatasetAssociation).get(decoded_id))
-                    else:
-                        raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
+                if isinstance(single_value, MutableMapping) and "src" in single_value and "id" in single_value:
+                    found_srcs.add(single_value["src"])
+                    rval.append(
+                        src_id_to_item(sa_session=trans.sa_session, value=single_value, security=trans.security)
+                    )
                 elif isinstance(
                     single_value,
                     (
@@ -2074,35 +2165,26 @@ class DataToolParameter(BaseDataToolParameter):
                         log.warning("Encoded ID where unencoded ID expected.")
                         single_value = trans.security.decode_id(single_value)
                     rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(single_value))
-            if found_hdca:
-                for val in rval:
-                    if not isinstance(val, HistoryDatasetCollectionAssociation):
-                        raise ParameterValueError(
-                            "if collections are supplied to multiple data input parameter, only collections may be used",
-                            self.name,
-                        )
+                if len(found_srcs) > 1 and "hdca" in found_srcs:
+                    raise ParameterValueError(
+                        "if collections are supplied to multiple data input parameter, only collections may be used",
+                        self.name,
+                    )
         elif isinstance(value, (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
             rval.append(value)
-        elif isinstance(value, dict) and "src" in value and "id" in value:
-            if value["src"] == "hda":
-                decoded_id = trans.security.decode_id(value["id"])
-                rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
-            elif value["src"] == "hdca":
-                decoded_id = trans.security.decode_id(value["id"])
-                rval.append(trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id))
-            else:
-                raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
+        elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
+            rval.append(src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security))
         elif str(value).startswith("__collection_reduce__|"):
             encoded_ids = [v[len("__collection_reduce__|") :] for v in str(value).split(",")]
             decoded_ids = map(trans.security.decode_id, encoded_ids)
             rval = []
             for decoded_id in decoded_ids:
-                hdca = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id)
+                hdca = session.get(HistoryDatasetCollectionAssociation, decoded_id)
                 rval.append(hdca)
         elif isinstance(value, HistoryDatasetCollectionAssociation) or isinstance(value, DatasetCollectionElement):
             rval.append(value)
         else:
-            rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(value))
+            rval.append(session.get(HistoryDatasetAssociation, int(value)))
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
@@ -2114,14 +2196,16 @@ class DataToolParameter(BaseDataToolParameter):
                         "the previously selected dataset has entered an unusable state", self.name
                     )
                 elif hasattr(v, "dataset"):
+                    if isinstance(v, DatasetCollectionElement):
+                        v = v.hda
                     match = dataset_matcher.hda_match(v)
                     if match and match.implicit_conversion:
-                        v.implicit_conversion = True
+                        v.implicit_conversion = True  # type:ignore[union-attr]
         if not self.multiple:
             if len(rval) > 1:
                 raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
             if len(rval) > 0:
-                rval = rval[0]
+                return rval[0]
             else:
                 raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
         return rval
@@ -2129,7 +2213,7 @@ class DataToolParameter(BaseDataToolParameter):
     def to_param_dict_string(self, value, other_values=None):
         if value is None:
             return "None"
-        return value.file_name
+        return value.get_file_name()
 
     def to_text(self, value):
         if value and not isinstance(value, list):
@@ -2169,9 +2253,9 @@ class DataToolParameter(BaseDataToolParameter):
                     or (not input.dynamic_options and not input.options)
                     or not input.options.converter_safe
                 ):
-                    converter_safe[
-                        0
-                    ] = False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    converter_safe[0] = (
+                        False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    )
 
         self.tool.visit_inputs(other_values, visitor)
         return False not in converter_safe
@@ -2214,7 +2298,7 @@ class DataToolParameter(BaseDataToolParameter):
             # For consistency, should these just always be in the dict?
             d["min"] = self.min
             d["max"] = self.max
-        d["options"] = {"hda": [], "hdca": []}
+        d["options"] = {"dce": [], "ldda": [], "hda": [], "hdca": []}
         d["tag"] = self.tag
 
         # return dictionary without options if context is unavailable
@@ -2241,6 +2325,29 @@ class DataToolParameter(BaseDataToolParameter):
                 value["map_over_type"] = subcollection_type
             return list.append(value)
 
+        def append_dce(dce):
+            d["options"]["dce"].append(
+                {
+                    "id": trans.security.encode_id(dce.id),
+                    "name": dce.element_identifier,
+                    "is_dataset": dce.hda is not None,
+                    "src": "dce",
+                    "tags": [],
+                    "keep": True,
+                }
+            )
+
+        def append_ldda(ldda):
+            d["options"]["ldda"].append(
+                {
+                    "id": trans.security.encode_id(ldda.id),
+                    "name": ldda.name,
+                    "src": "ldda",
+                    "tags": [],
+                    "keep": True,
+                }
+            )
+
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
@@ -2260,6 +2367,10 @@ class DataToolParameter(BaseDataToolParameter):
                 else:
                     hda_state = "unavailable"
                 append(d["options"]["hda"], hda, f"({hda_state}) {hda.name}", "hda", True)
+            elif isinstance(hda, DatasetCollectionElement):
+                append_dce(hda)
+            elif isinstance(hda, LibraryDatasetDatasetAssociation):
+                append_ldda(hda)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
@@ -2310,6 +2421,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
         self._parse_options(input_source)  # TODO: Review and test.
+        self.default_object = input_source.parse_default()
+        if self.optional and self.default_object is not None:
+            raise ParameterValueError(
+                "Cannot specify a Galaxy tool data parameter to be both optional and have a default value.", self.name
+            )
 
     @property
     def collection_types(self):
@@ -2340,15 +2456,19 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 yield history_dataset_collection, match.implicit_conversion
 
     def from_json(self, value, trans, other_values=None):
+        session = trans.sa_session
+
         other_values = other_values or {}
         rval: Optional[Union[DatasetCollectionElement, HistoryDatasetCollectionAssociation]] = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
-        if not value and not self.optional:
+        if not value and not self.optional and not self.default_object:
             raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
+            if self.default_object:
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
@@ -2359,30 +2479,24 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             # a DatasetCollectionElement instead of a
             # HistoryDatasetCollectionAssociation.
             rval = value
-        elif isinstance(value, dict) and "src" in value and "id" in value:
+        elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
-                rval = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(
-                    trans.security.decode_id(value["id"])
-                )
+                rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
-                if isinstance(value, dict) and "src" in value and "id" in value:
+                if isinstance(value, MutableMapping) and "src" in value and "id" in value:
                     if value["src"] == "hdca":
-                        rval = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(
-                            trans.security.decode_id(value["id"])
-                        )
+                        rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
                     elif value["src"] == "dce":
-                        rval = trans.sa_session.query(DatasetCollectionElement).get(
-                            trans.security.decode_id(value["id"])
-                        )
+                        rval = session.get(DatasetCollectionElement, trans.security.decode_id(value["id"]))
         elif isinstance(value, str):
             if value.startswith("dce:"):
-                rval = trans.sa_session.query(DatasetCollectionElement).get(value[len("dce:") :])
+                rval = session.get(DatasetCollectionElement, int(value[len("dce:") :]))
             elif value.startswith("hdca:"):
-                rval = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(value[len("hdca:") :])
+                rval = session.get(HistoryDatasetCollectionAssociation, int(value[len("hdca:") :]))
             else:
-                rval = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(value)
+                rval = session.get(HistoryDatasetCollectionAssociation, int(value))
         if rval and isinstance(rval, HistoryDatasetCollectionAssociation):
             if rval.deleted:
                 raise ParameterValueError("the previously selected dataset collection has been deleted", self.name)
@@ -2424,7 +2538,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             d["options"]["dce"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
-                    "hid": None,
+                    "hid": -1,
                     "name": dce.element_identifier,
                     "src": "dce",
                     "tags": [],
@@ -2456,10 +2570,10 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 {
                     "id": trans.security.encode_id(hdca.id),
                     "hid": hdca.hid,
+                    "map_over_type": subcollection_type,
                     "name": name,
                     "src": "hdca",
                     "tags": [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
-                    "map_over_type": subcollection_type,
                 }
             )
 
@@ -2481,97 +2595,6 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
         self.value = "None"
         self.type = "hidden_data"
         self.hidden = True
-
-
-class LibraryDatasetToolParameter(ToolParameter):
-    """
-    Parameter that lets users select a LDDA from a modal window, then use it within the wrapper.
-    """
-
-    def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-        super().__init__(tool, input_source)
-        self.multiple = input_source.get_bool("multiple", True)
-
-    def from_json(self, value, trans, other_values=None):
-        other_values = other_values or {}
-        return self.to_python(value, trans.app, other_values=other_values, validate=True)
-
-    def to_param_dict_string(self, value, other_values=None):
-        if value is None:
-            return "None"
-        elif self.multiple:
-            return [dataset.get_file_name() for dataset in value]
-        else:
-            return value[0].get_file_name()
-
-    # converts values to json representation:
-    #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
-    def to_json(self, value, app, use_security):
-        if not isinstance(value, list):
-            value = [value]
-        lst: List[Dict[str, str]] = []
-        for item in value:
-            lda_id = lda_name = None
-            if isinstance(item, LibraryDatasetDatasetAssociation):
-                lda_id = app.security.encode_id(item.id) if use_security else item.id
-                lda_name = item.name
-            elif isinstance(item, dict):
-                lda_id = item.get("id")
-                lda_name = item.get("name")
-            else:
-                lst = []
-                break
-            if lda_id is not None:
-                lst.append({"id": lda_id, "name": lda_name, "src": "ldda"})
-        if len(lst) == 0:
-            return None
-        else:
-            return lst
-
-    # converts values into python representation:
-    #   LibraryDatasetDatasetAssociation
-    # valid input values (incl. arrays of mixed sets) are:
-    #   1. LibraryDatasetDatasetAssociation
-    #   2. LibraryDatasetDatasetAssociation.id
-    #   3. { id: LibraryDatasetDatasetAssociation.id, ... }
-    def to_python(self, value, app, other_values=None, validate=False):
-        other_values = other_values or {}
-        if not isinstance(value, list):
-            value = [value]
-        lst = []
-        for item in value:
-            if isinstance(item, LibraryDatasetDatasetAssociation):
-                lst.append(item)
-            else:
-                lda_id = None
-                if isinstance(item, dict):
-                    lda_id = item.get("id")
-                elif isinstance(item, str):
-                    lda_id = item
-                else:
-                    lst = []
-                    break
-                lda = app.model.context.query(LibraryDatasetDatasetAssociation).get(
-                    lda_id if isinstance(lda_id, int) else app.security.decode_id(lda_id)
-                )
-                if lda is not None:
-                    lst.append(lda)
-                elif validate:
-                    raise ParameterValueError(
-                        "one of the selected library datasets is invalid or not available anymore", self.name
-                    )
-        if len(lst) == 0:
-            if not self.optional and validate:
-                raise ParameterValueError("invalid library dataset selected", self.name)
-            return None
-        else:
-            return lst
-
-    def to_dict(self, trans, other_values=None):
-        d = super().to_dict(trans)
-        d["multiple"] = self.multiple
-        return d
 
 
 class BaseJsonToolParameter(ToolParameter):
@@ -2600,7 +2623,7 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        SimpleTextToolParameter.__init__(self, tool, input_source)
+        super().__init__(tool, input_source)
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
@@ -2610,7 +2633,7 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
         file_source = file_source_path.file_source
         if file_source is None:
             raise ParameterValueError(f"'{value}' is not a valid file source uri.", self.name)
-        user_context = ProvidesUserFileSourcesUserContext(trans)
+        user_context = ProvidesFileSourcesUserContext(trans)
         user_has_access = file_source.user_has_access(user_context)
         if not user_has_access:
             raise ParameterValueError(f"The user cannot access {value}.", self.name)
@@ -2623,15 +2646,13 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        BaseJsonToolParameter.__init__(self, tool, input_source)
+        super().__init__(tool, input_source)
         self.data_ref = input_source.get("data_ref", None)
 
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
-        target_name = self.data_ref
-        if target_name in other_values:
-            target = other_values[target_name]
+        if target := other_values.get(self.data_ref):
             if not is_runtime_value(target):
                 d["target"] = {
                     "src": "hdca" if hasattr(target, "collection") else "hda",
@@ -2641,7 +2662,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
-        if not isinstance(value, dict):
+        if not isinstance(value, MutableMapping):
             raise ValueError("No rules specified for rules parameter.")
 
         if "rules" not in value:
@@ -2656,6 +2677,95 @@ class RulesListToolParameter(BaseJsonToolParameter):
             return rule_set.display
         else:
             return ""
+
+
+# Code from CWL branch to massage in order to be shared across tools and workflows,
+# and for CWL artifacts as well as Galaxy ones.
+def raw_to_galaxy(
+    app: "MinimalApp", history: "History", as_dict_value: Dict[str, Any], commit: bool = True
+) -> "HistoryItem":
+    object_class = as_dict_value["class"]
+    if object_class == "File":
+        # TODO: relative_to = "/"
+        location = as_dict_value.get("location")
+        name = (
+            as_dict_value.get("identifier")
+            or as_dict_value.get("basename")
+            or os.path.basename(urllib.parse.urlparse(location).path)
+        )
+        extension = as_dict_value.get("format") or "data"
+        dataset = Dataset()
+        source = DatasetSource()
+        source.source_uri = location
+        # TODO: validate this...
+        source.transform = as_dict_value.get("transform")
+        dataset.sources.append(source)
+
+        for hash_name in HASH_NAMES:
+            # TODO: Convert md5 -> MD5 during tool parsing.
+            if hash_name in as_dict_value:
+                hash_object = DatasetHash()
+                hash_object.hash_function = hash_name
+                hash_object.hash_value = as_dict_value[hash_name]
+                dataset.hashes.append(hash_object)
+
+        if "created_from_basename" in as_dict_value:
+            dataset.created_from_basename = as_dict_value["created_from_basename"]
+
+        dataset.state = Dataset.states.DEFERRED
+        primary_data = HistoryDatasetAssociation(
+            name=name,
+            extension=extension,
+            metadata_deferred=True,
+            designation=None,
+            visible=True,
+            dbkey="?",
+            dataset=dataset,
+            flush=False,
+            sa_session=app.model.session,
+        )
+        primary_data.state = Dataset.states.DEFERRED
+        permissions = app.security_agent.history_get_default_permissions(history)
+        app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
+        app.model.session.add(primary_data)
+        history.stage_addition(primary_data)
+        history.add_pending_items()
+        if commit:
+            app.model.session.commit()
+        return primary_data
+    else:
+        name = as_dict_value.get("name")
+        collection_type = as_dict_value.get("collection_type")
+        collection = DatasetCollection(
+            collection_type=collection_type,
+        )
+        hdca = HistoryDatasetCollectionAssociation(
+            name=name,
+            collection=collection,
+        )
+        app.model.session.add(hdca)
+
+        def write_elements_to_collection(has_elements, collection_builder):
+            element_dicts = has_elements.get("elements")
+            for element_dict in element_dicts:
+                element_class = element_dict["class"]
+                identifier = element_dict["identifier"]
+                if element_class == "File":
+                    # Don't commit for inner elements
+                    hda = raw_to_galaxy(app, history, element_dict, commit=False)
+                    collection_builder.add_dataset(identifier, hda)
+                else:
+                    subcollection_builder = collection_builder.get_level(identifier)
+                    write_elements_to_collection(element_dict, subcollection_builder)
+
+        collection_builder = builder.BoundCollectionBuilder(collection)
+        write_elements_to_collection(as_dict_value, collection_builder)
+        collection_builder.populate()
+        history.stage_addition(hdca)
+        history.add_pending_items()
+        if commit:
+            app.model.session.commit()
+        return hdca
 
 
 parameter_types = dict(
@@ -2675,38 +2785,34 @@ parameter_types = dict(
     ftpfile=FTPFileToolParameter,
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
-    library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
 )
 
 
-def runtime_to_json(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return {"__class__": "ConnectedValue"}
-    else:
-        return {"__class__": "RuntimeValue"}
+def history_item_dict_to_python(value, app, name):
+    if isinstance(value, MutableMapping) and "src" in value:
+        if value["src"] not in ("hda", "dce", "ldda", "hdca"):
+            raise ParameterValueError(f"Invalid value {value}", name)
+        return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
 
 
-def runtime_to_object(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return ConnectedValue()
-    else:
-        return RuntimeValue()
-
-
-class RuntimeValue:
-    """
-    Wrapper to note a value that is not yet set, but will be required at runtime.
-    """
-
-
-class ConnectedValue(RuntimeValue):
-    """
-    Wrapper to note a value that is not yet set, but will be inferred from a connection.
-    """
+def history_item_to_json(value, app, use_security):
+    src = None
+    if isinstance(value, MutableMapping) and "src" in value and "id" in value:
+        return value
+    elif isinstance(value, DatasetCollectionElement):
+        src = "dce"
+    elif isinstance(value, HistoryDatasetCollectionAssociation):
+        src = "hdca"
+    elif isinstance(value, LibraryDatasetDatasetAssociation):
+        src = "ldda"
+    elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
+        # hasattr 'id' fires a query on persistent objects after a flush so better
+        # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
+        # nice to drop it.
+        src = "hda"
+    if src is not None:
+        object_id = cached_id(value)
+        return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}

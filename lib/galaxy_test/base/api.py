@@ -1,13 +1,20 @@
 import os
 from contextlib import contextmanager
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 from urllib.parse import (
     urlencode,
     urljoin,
 )
 
 import pytest
-import requests
+from typing_extensions import Protocol
 
+from galaxy.util import requests
+from galaxy.util.properties import get_from_env
 from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
@@ -25,29 +32,28 @@ from .api_util import (
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]
-DEFAULT_CELERY_BROKER = "memory://"
-DEFAULT_CELERY_BACKEND = "rpc://localhost"
-for prefix in CONFIG_PREFIXES:
-    CELERY_BROKER = os.environ.get(f"{prefix}CELERY_BROKER", DEFAULT_CELERY_BROKER)
-    if CELERY_BROKER != DEFAULT_CELERY_BROKER:
-        break
-    CELERY_BACKEND = os.environ.get(f"{prefix}CELERY_BACKEND", DEFAULT_CELERY_BACKEND)
-    if CELERY_BACKEND != DEFAULT_CELERY_BACKEND:
-        break
+CELERY_BROKER = get_from_env("CELERY_BROKER", CONFIG_PREFIXES, "memory://")
+CELERY_BACKEND = get_from_env("CELERY_BACKEND", CONFIG_PREFIXES, "rpc://localhost")
+
+DEFAULT_CELERY_CONFIG = {
+    "broker_url": CELERY_BROKER,
+    "result_backend": CELERY_BACKEND,
+}
 
 
 @pytest.fixture(scope="session")
 def celery_config():
-    return {"broker_url": CELERY_BROKER, "result_backend": CELERY_BACKEND}
+    return DEFAULT_CELERY_CONFIG
 
 
 class UsesCeleryTasks:
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config: Dict[str, Any]) -> None:
         config["enable_celery_tasks"] = True
         config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
-        config["celery_broker"] = CELERY_BROKER
-        config["celery_backend"] = CELERY_BACKEND
+        celery_conf: Dict[str, Any] = config.get("celery_conf", {})
+        celery_conf.update(DEFAULT_CELERY_CONFIG)
+        config["celery_conf"] = celery_conf
 
     @pytest.fixture(autouse=True, scope="session")
     def _request_celery_app(self, celery_session_app, celery_config):
@@ -79,14 +85,23 @@ class UsesCeleryTasks:
         }
 
 
+class HasAnonymousGalaxyInteractor(Protocol):
+    @property
+    def anonymous_galaxy_interactor(self) -> "ApiTestInteractor":
+        """Return an optionally anonymous galaxy interactor."""
+
+
 class UsesApiTestCaseMixin:
     url: str
+    _galaxy_interactor: Optional["ApiTestInteractor"] = None
 
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
             # Only kill running jobs after test for managed test instances
-            for job in self.galaxy_interactor.get("jobs?state=running&?user_details=true").json():
-                self._delete(f"jobs/{job['id']}")
+            response = self.galaxy_interactor.get("jobs?state=running")
+            if response.ok:
+                for job in response.json():
+                    self._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -96,27 +111,39 @@ class UsesApiTestCaseMixin:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
-        query = urlencode(params)
-        if query:
+        if query := urlencode(params):
             url = f"{url}?{query}"
         return url
 
     def _setup_interactor(self):
         self.user_api_key = get_user_api_key()
         self.master_api_key = get_admin_api_key()
-        self.galaxy_interactor = self._get_interactor()
+        self._galaxy_interactor = self._get_interactor()
 
-    def _get_interactor(self, api_key=None):
-        return ApiTestInteractor(self, api_key=api_key)
+    @property
+    def anonymous_galaxy_interactor(self) -> "ApiTestInteractor":
+        """Return an optionally anonymous galaxy interactor.
 
-    def _setup_user(self, email, password=None, is_admin=True):
-        self.galaxy_interactor.ensure_user_with_email(email, password=password)
-        users = self._get("users", admin=is_admin).json()
-        user = [user for user in users if user["email"] == email][0]
-        return user
+        Lighter requirements for use with API requests that may not required an API key.
+        """
+        return self.galaxy_interactor
 
-    def _setup_user_get_key(self, email, password=None, is_admin=True):
-        user = self._setup_user(email, password, is_admin)
+    @property
+    def galaxy_interactor(self) -> "ApiTestInteractor":
+        assert self._galaxy_interactor is not None
+        return self._galaxy_interactor
+
+    def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
+        if allow_anonymous and api_key is None:
+            return AnonymousGalaxyInteractor(self)
+        else:
+            return ApiTestInteractor(self, api_key=api_key)
+
+    def _setup_user(self, email, password=None):
+        return self.galaxy_interactor.ensure_user_with_email(email, password=password)
+
+    def _setup_user_get_key(self, email, password=None):
+        user = self._setup_user(email, password)
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
@@ -149,6 +176,9 @@ class UsesApiTestCaseMixin:
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
+
+    def _head(self, *args, **kwds):
+        return self.galaxy_interactor.head(*args, **kwds)
 
     def _post(self, *args, **kwds):
         return self.galaxy_interactor.post(*args, **kwds)
@@ -201,6 +231,9 @@ class ApiTestInteractor(BaseInteractor):
     def get(self, *args, **kwds):
         return self._get(*args, **kwds)
 
+    def head(self, *args, **kwds):
+        return self._head(*args, **kwds)
+
     def post(self, *args, **kwds):
         return self._post(*args, **kwds)
 
@@ -212,3 +245,13 @@ class ApiTestInteractor(BaseInteractor):
 
     def put(self, *args, **kwds):
         return self._put(*args, **kwds)
+
+
+class AnonymousGalaxyInteractor(ApiTestInteractor):
+    def __init__(self, test_case):
+        super().__init__(test_case)
+
+    def _get_user_key(
+        self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None
+    ) -> Optional[str]:
+        return None

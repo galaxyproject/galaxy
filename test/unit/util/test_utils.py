@@ -1,6 +1,9 @@
 import errno
+import os
 import tempfile
+from enum import Enum
 from io import StringIO
+from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -99,3 +102,40 @@ def test_safe_loads():
     assert "foo" not in d
     s = '{"foo": "bar"}'
     assert safe_loads(s) == {"foo": "bar"}
+
+
+def test_in_packages(monkeypatch):
+    util_path = Path(util.__file__).parent
+    assert util.in_packages() == (not str(util_path).endswith("lib/galaxy/util"))
+
+
+def test_galaxy_directory(monkeypatch):
+    galaxy_dir = util.galaxy_directory()
+    assert os.path.isabs(galaxy_dir)
+    assert os.path.isfile(os.path.join(galaxy_dir, "run.sh"))
+
+
+def test_listify() -> None:
+    assert util.listify(None) == []
+    assert util.listify(False) == []
+    assert util.listify(True) == [True]
+    assert util.listify("foo") == ["foo"]
+    assert util.listify("foo, bar") == ["foo", " bar"]
+    assert util.listify("foo, bar", do_strip=True) == ["foo", "bar"]
+    assert util.listify([1, 2, 3]) == [1, 2, 3]
+    assert util.listify((1, 2, 3)) == [1, 2, 3]
+    s = {1, 2, 3}
+    assert util.listify(s) == [s]
+    d = {"a": 1, "b": 2, "c": 3}
+    assert util.listify(d) == [d]
+    o = object()
+    assert util.listify(o) == [o]
+
+
+def test_enum_values():
+    class Stuff(str, Enum):
+        A = "a"
+        C = "c"
+        B = "b"
+
+    assert util.enum_values(Stuff) == ["a", "c", "b"]

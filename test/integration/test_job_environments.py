@@ -15,7 +15,7 @@ SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 IO_INJECTION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "io_injection_job_conf.yml")
 SETS_TMP_DIR_TO_TRUE_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_to_true_job_conf.xml")
 SETS_TMP_DIR_AS_EXPRESSION_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_expression_job_conf.xml")
-EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.xml")
+EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.yml")
 
 JobEnvironmentProperties = collections.namedtuple(
     "JobEnvironmentProperties",
@@ -31,7 +31,7 @@ JobEnvironmentProperties = collections.namedtuple(
 
 
 class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase):
-
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -66,7 +66,9 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
         """Extension point that lets subclasses investigate the completed job."""
 
 
-class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -119,7 +121,7 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
-class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestEmbeddedPulsarDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -149,7 +151,7 @@ class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentI
         assert not job_env.tmp.startswith(job_directory)
 
 
-class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestTmpDirToTrueJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -167,7 +169,7 @@ class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegratio
         assert job_env.tmp.startswith(job_directory), job_env
 
 
-class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestTmpDirAsShellCommandJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -185,7 +187,7 @@ class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIn
         assert basename.startswith("cooltmp"), job_env.tmp
 
 
-class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestSharedHomeJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -222,7 +224,7 @@ class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationT
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
-class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestJobIOEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

@@ -21,17 +21,19 @@ def test_sqlite_exploits():
     connection = sqlite.connect(":memory:")
     connection.execute("create TABLE FOO (foo1 text)")
     __assert_has_n_rows(connection, "select * from FOO", 0)
-    __assert_query_errors(connection, "select * from FOOX")
+    __assert_query_errors(connection, "select * from FOOX", "no such table")
 
     # Make sure sqlite query cannot execute multiple statements
-    __assert_query_errors(connection, "select * from FOO; select * from FOO")
+    __assert_query_errors(
+        connection, "select * from FOO; select * from FOO", "You can only execute one statement at a time."
+    )
 
     # Make sure sqlite cannot select on PRAGMA results
-    __assert_query_errors(connection, "select * from (PRAGMA database_list)")
+    __assert_query_errors(connection, "select * from (PRAGMA database_list)", "no such table: PRAGMA")
 
     __assert_has_n_rows(connection, "select * from FOO where foo1 in (SELECT foo1 from FOO)", 0)
     # Ensure nested queries cannot modify database.
-    __assert_query_errors(connection, "select * from FOO where foo1 in (INSERT INTO FOO VALUES ('bar')")
+    __assert_query_errors(connection, "select * from FOO where foo1 in (INSERT INTO FOO VALUES ('bar')", "syntax error")
 
     # Should access to the schema be disallowed?
     # __assert_has_n_rows(connection, "select * from SQLITE_MASTER", 0)
@@ -44,14 +46,14 @@ def __assert_has_n_rows(connection, query, n):
     assert count == n
 
 
-def __assert_query_errors(connection, query):
-    with pytest.raises(Exception):
+def __assert_query_errors(connection, query, match):
+    with pytest.raises(Exception, match=match):
         connection.cursor().execute(query)
 
 
 def __assert_allowed(query):
-    assert sqlite.is_read_only_query(query), "Query [%s] fails allowlist." % query
+    assert sqlite.is_read_only_query(query), f"Query [{query}] fails allowlist."
 
 
 def __assert_not_allowed(query):
-    assert not sqlite.is_read_only_query(query), "Query [%s] incorrectly fails allowlist." % query
+    assert not sqlite.is_read_only_query(query), f"Query [{query}] incorrectly fails allowlist."

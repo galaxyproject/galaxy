@@ -4,12 +4,12 @@ echo 'Hello World' > out1
     ]]></command>
     <inputs>
         <!-- test dataset_metadata_in_file validator with and without negation
-             the test also uses the data table fasta_indexes.loc, but it could be any file in the tool data dir -->
+             the test also uses the loc file all_fasta.loc.sample, but it could be any file in the tool data dir -->
         <param name="value" type="data" format="data">
-            <validator type="dataset_metadata_in_file" filename="fasta_indexes.loc" metadata_name="dbkey" metadata_column="1"/>
+            <validator type="dataset_metadata_in_file" filename="all_fasta.loc.sample" line_startswith="#h" metadata_name="dbkey" metadata_column="1"/>
         </param>
         <param name="value_neg" type="data" format="data">
-            <validator type="dataset_metadata_in_file" filename="fasta_indexes.loc" line_startswith="h" metadata_name="dbkey" metadata_column="1" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="all_fasta.loc.sample" line_startswith="#h" metadata_name="dbkey" metadata_column="1" negate="true"/>
         </param>
     </inputs>
     <outputs>

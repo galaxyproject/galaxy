@@ -3,8 +3,9 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload";
 import GridView from "mvc/grid/grid-view";
+import { getAppRoot } from "onload";
+
 export default {
     props: {
         urlBase: {

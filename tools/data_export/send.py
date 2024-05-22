@@ -102,7 +102,7 @@ def parse_args(args):
         "--object_label",
         type=str,
         required=True,
-        help="The label of the object created on the cloud-based storage for " "the data to be persisted.",
+        help="The label of the object created on the cloud-based storage for the data to be persisted.",
     )
 
     parser.add_argument(
@@ -110,7 +110,7 @@ def parse_args(args):
         "--filename",
         type=str,
         required=True,
-        help="The (absolute) filename of the data to be persisted on the " "cloud-based storage.",
+        help="The (absolute) filename of the data to be persisted on the cloud-based storage.",
     )
 
     parser.add_argument(

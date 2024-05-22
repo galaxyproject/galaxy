@@ -5,25 +5,53 @@ import filecmp
 import hashlib
 import json
 import logging
+import math
 import os
 import os.path
 import re
 import shutil
 import tempfile
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
+try:
+    import numpy
+except ImportError:
+    pass
 try:
     import pysam
 except ImportError:
-    pysam = None  # type: ignore[assignment]
+    pass
+try:
+    from PIL import Image
+except ImportError:
+    Image = None  # type: ignore[assignment, unused-ignore]
+try:
+    import tifffile
+except ImportError:
+    tifffile = None  # type: ignore[assignment, unused-ignore]
+
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_EPS,
+    DEFAULT_METRIC,
+    DEFAULT_PIN_LABELS,
 )
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
+
+if TYPE_CHECKING:
+    import numpy.typing
 
 log = logging.getLogger(__name__)
 
@@ -31,26 +59,30 @@ DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
 
 
 def verify(
-    item_label,
-    output_content,
-    attributes,
-    filename=None,
-    get_filecontent=None,
-    get_filename=None,
-    keep_outputs_dir=None,
-    verify_extra_files=None,
+    item_label: str,
+    output_content: bytes,
+    attributes: Optional[Dict[str, Any]],
+    filename: Optional[str] = None,
+    get_filecontent: Optional[Callable[[str], bytes]] = None,
+    get_filename: Optional[Callable[[str], str]] = None,
+    keep_outputs_dir: Optional[str] = None,
+    verify_extra_files: Optional[Callable] = None,
     mode="file",
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
+    attributes = attributes or {}
     if get_filename is None:
+        get_filecontent_: Callable[[str], bytes]
         if get_filecontent is None:
-            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+            get_filecontent_ = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+        else:
+            get_filecontent_ = get_filecontent
 
-        def get_filename(filename):
-            file_content = get_filecontent(filename)
+        def get_filename(filename: str) -> str:
+            file_content = get_filecontent_(filename)
             local_name = make_temp_fname(fname=filename)
             with open(local_name, "wb") as f:
                 f.write(file_content)
@@ -58,9 +90,9 @@ def verify(
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
-    if attributes is not None and assertions is not None:
+    if assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"])
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
@@ -85,9 +117,6 @@ def verify(
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
-
-    if attributes is None:
-        attributes = {}
 
     # expected object might be None, so don't pull unless available
     has_expected_object = "object" in attributes
@@ -136,7 +165,9 @@ def verify(
             # filename already point to a file that exists on disk
             local_name = filename
         else:
-            local_name = get_filename(filename)
+            filename_ = get_filename(filename)
+            assert filename_, f"Failed to find output target for test {filename_}"
+            local_name = filename_
 
         compare = attributes.get("compare", "diff")
         try:
@@ -162,6 +193,13 @@ def verify(
                 files_delta(local_name, temp_name, attributes=attributes)
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
+            elif compare == "image_diff":
+                if Image and tifffile:
+                    files_image_diff(local_name, temp_name, attributes=attributes)
+                else:
+                    raise Exception(
+                        "pillow and tifffile are not installed, but required to compare files using the 'image_diff' method"
+                    )
             else:
                 raise Exception(f"Unimplemented Compare type: {compare}")
         except AssertionError as err:
@@ -359,6 +397,7 @@ def files_re_match(file1, file2, attributes=None):
     )
     if attributes.get("sort", False):
         history_data.sort()
+        local_file.sort()
     lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []
@@ -422,3 +461,127 @@ def files_contains(file1, file2, attributes=None):
             line_diff_count += 1
         if line_diff_count > lines_diff:
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
+
+
+def _singleobject_intersection_over_union(
+    mask1: "numpy.typing.NDArray",
+    mask2: "numpy.typing.NDArray",
+) -> "numpy.floating":
+    return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
+
+
+def _multiobject_intersection_over_union(
+    mask1: "numpy.typing.NDArray",
+    mask2: "numpy.typing.NDArray",
+    pin_labels: Optional[List[int]] = None,
+    repeat_reverse: bool = True,
+) -> List["numpy.floating"]:
+    iou_list = []
+    for label1 in numpy.unique(mask1):
+        cc1 = mask1 == label1
+
+        # If the label is in `pin_labels`, then use the same label value to find the corresponding object in the second mask.
+        if pin_labels is not None and label1 in pin_labels:
+            cc2 = mask2 == label1
+            iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
+
+        # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
+        else:
+            cc1_iou_list = []
+            for label2 in numpy.unique(mask2[cc1]):
+                if pin_labels is not None and label2 in pin_labels:
+                    continue
+                cc2 = mask2 == label2
+                cc1_iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
+            iou_list.append(max(cc1_iou_list))
+
+    if repeat_reverse:
+        iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, pin_labels, repeat_reverse=False))
+
+    return iou_list
+
+
+def intersection_over_union(
+    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
+) -> "numpy.floating":
+    """Compute the intersection over union (IoU) for the objects in two masks containing lables.
+
+    The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
+    To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
+    The object correspondences are not necessarily symmetric.
+
+    By default, the corresponding object in the other mask is determined as the one with the largest IoU value.
+    If the label of an object is listed in `pin_labels`, then the corresponding object in the other mask is determined as the object with the same label value.
+    Objects with labels listed in `pin_labels` also cannot correspond to objects with different labels.
+    This is particularly useful when specific image regions must always be labeled with a designated label value (e.g., the image background is often labeled with 0 or -1).
+    """
+    assert mask1.dtype == mask2.dtype
+    assert mask1.ndim == mask2.ndim == 2
+    assert mask1.shape == mask2.shape
+    for label in pin_labels or []:
+        count = sum(label in mask for mask in (mask1, mask2))
+        count_str = {1: "one", 2: "both"}
+        assert count == 2, f"Label {label} is pinned but missing in {count_str[2 - count]} of the images."
+    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
+
+
+def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
+    if label_list_str is None:
+        return []
+    else:
+        return [int(label.strip()) for label in label_list_str.split(",") if len(label_list_str) > 0]
+
+
+def get_image_metric(
+    attributes: Dict[str, Any]
+) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
+    metric_name = attributes.get("metric", DEFAULT_METRIC)
+    pin_labels = _parse_label_list(attributes.get("pin_labels", DEFAULT_PIN_LABELS))
+    metrics = {
+        "mae": lambda arr1, arr2: numpy.abs(arr1 - arr2).mean(),
+        # Convert to float before squaring to prevent overflows
+        "mse": lambda arr1, arr2: numpy.square((arr1 - arr2).astype(float)).mean(),
+        "rms": lambda arr1, arr2: math.sqrt(numpy.square((arr1 - arr2).astype(float)).mean()),
+        "fro": lambda arr1, arr2: numpy.linalg.norm((arr1 - arr2).reshape(1, -1), "fro"),
+        "iou": lambda arr1, arr2: 1 - intersection_over_union(arr1, arr2, pin_labels),
+    }
+    try:
+        return metrics[metric_name]
+    except KeyError:
+        raise ValueError(f'No such metric: "{metric_name}"')
+
+
+def _load_image(filepath: str) -> "numpy.typing.NDArray":
+    """
+    Reads the given image, trying tifffile and Pillow for reading.
+    """
+    # Try reading with tifffile first. It fails if the file is not a TIFF.
+    try:
+        arr = tifffile.imread(filepath)
+
+    # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
+    except tifffile.TiffFileError:
+        with Image.open(filepath) as im:
+            arr = numpy.array(im)
+
+    # Return loaded image
+    return arr
+
+
+def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+    """Check the pixel data of 2 image files for differences."""
+    attributes = attributes or {}
+
+    arr1 = _load_image(file1)
+    arr2 = _load_image(file2)
+
+    if arr1.dtype != arr2.dtype:
+        raise AssertionError(f"Image data types did not match ({arr1.dtype}, {arr2.dtype}).")
+
+    if arr1.shape != arr2.shape:
+        raise AssertionError(f"Image dimensions did not match ({arr1.shape}, {arr2.shape}).")
+
+    distance = get_image_metric(attributes)(arr1, arr2)
+    distance_eps = attributes.get("eps", DEFAULT_EPS)
+    if distance > distance_eps:
+        raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
