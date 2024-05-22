@@ -204,8 +204,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     ):
                         # If it's not private to me, and I can manage it, set fixed private permissions.
                         trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-                        if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
-                            raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
             except Exception:
                 log.exception("Error making datasets private.")
                 continue
