@@ -37,7 +37,7 @@ const props = defineProps({
         default: "Select Value",
     },
     value: {
-        type: String as PropType<SelectValue | SelectValue[]>,
+        type: [String, Array] as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
 });
