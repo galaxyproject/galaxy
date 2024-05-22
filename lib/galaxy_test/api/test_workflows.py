@@ -5444,6 +5444,14 @@ outer_input:
         run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 403)
 
+    def test_cannot_run_workflow_as_anon(self):
+        workflow = self.workflow_populator.load_workflow(name="test_for_run_anon_user")
+        workflow_request, _, workflow_id = self._setup_workflow_run(workflow)
+        with self._different_user(anon=True):
+            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+            self._assert_status_code_is(run_workflow_response, 403)
+            self._assert_error_code_is(run_workflow_response, error_codes.error_codes_by_name["USER_NO_API_KEY"])
+
     def test_cannot_run_bootstrap_admin_workflow(self):
         workflow = self.workflow_populator.load_workflow(name="test_bootstrap_admin_cannot_run")
         workflow_request, *_ = self._setup_workflow_run(workflow)
