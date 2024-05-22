@@ -23,6 +23,7 @@ from typing_extensions import Literal
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
+    LibraryDatasetDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     MetadataFile,
     User,
@@ -965,6 +966,7 @@ def _get_ref_data(other_values, ref_name):
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            LibraryDatasetDatasetAssociation,
             DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
@@ -976,7 +978,7 @@ def _get_ref_data(other_values, ref_name):
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda
-    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
+    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):
         ref = ref.to_hda_representative(multiple=True)
