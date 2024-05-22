@@ -18,6 +18,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import requests
 import yaml
 from gxformat2 import (
     convert_and_import_workflow,
@@ -38,7 +39,6 @@ from galaxy.util import (
     asbool,
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
-    requests,
 )
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import populators

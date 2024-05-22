@@ -11,9 +11,9 @@ from urllib.parse import (
 )
 
 import pytest
+import requests
 from typing_extensions import Protocol
 
-from galaxy.util import requests
 from galaxy.util.properties import get_from_env
 from .api_asserts import (
     assert_error_code_is,

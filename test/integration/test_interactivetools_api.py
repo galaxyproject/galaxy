@@ -10,8 +10,8 @@ from typing import (
 )
 
 import pytest
+import requests
 
-from galaxy.util import requests
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetPopulator,
