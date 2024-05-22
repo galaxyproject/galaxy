@@ -322,6 +322,8 @@ async function provideItems(ctx: ItemsProviderContext): Promise<SelectionItem[]>
         );
         const result = response.entries.map(entryToRecord);
         totalItems.value = response.totalMatches;
+        items.value = result;
+        formatRows();
         return result;
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
