@@ -193,7 +193,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         }
         for history in histories:
             try:
-                self.history_manager.error_unless_mutable(history)
                 # Set default role for history to private
                 trans.app.security_agent.history_set_default_permissions(history, private_permissions)
                 # Set private role for all datasets
