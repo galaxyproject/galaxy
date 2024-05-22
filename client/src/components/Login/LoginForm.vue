@@ -195,7 +195,8 @@ function returnToLogin() {
                                             required
                                             :state="passwordState"
                                             name="password"
-                                            type="password" />
+                                            type="password"
+                                            autocomplete="current-password" />
 
                                         <BFormText v-if="showResetLink">
                                             <span v-localize>Forgot password?</span>
