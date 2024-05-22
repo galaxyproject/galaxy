@@ -1206,25 +1206,24 @@ class Axt(data.Text):
         >>> Axt().sniff( fname )
         False
         """
-        headers = get_headers(file_prefix, None)
-        if len(headers) < 4:
+        headers = get_headers(file_prefix, None, count=4, comment_designator="#")
+        if not (
+            len(headers) == 4
+            and len(headers[0]) == 9
+            and headers[0][0].isdigit()
+            and headers[0][2].isdigit()
+            and headers[0][3].isdigit()
+            and headers[0][5].isdigit()
+            and headers[0][6].isdigit()
+            and headers[0][7] in data.valid_strand
+            and headers[0][8].isdigit()
+            and len(headers[1]) == 1
+            and len(headers[2]) == 1
+            and headers[3] == []
+        ):
             return False
-        for hdr in headers:
-            if len(hdr) > 0 and hdr[0].startswith("##matrix=axt"):
-                return True
-            if len(hdr) > 0 and not hdr[0].startswith("#"):
-                if len(hdr) != 9:
-                    return False
-                try:
-                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
-                        int(_)
-                except ValueError:
-                    return False
-                if hdr[7] not in data.valid_strand:
-                    return False
-                else:
-                    return True
-        return False
+        else:
+            return True
 
 
 @build_sniff_from_prefix
