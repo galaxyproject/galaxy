@@ -25,12 +25,14 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
+import { Toast } from "composables/toast";
 import { mapActions } from "pinia";
 
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
 import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
@@ -76,17 +78,38 @@ export default {
     },
     methods: {
         ...mapActions(useHistoryStore, ["applyFilters"]),
-        onDelete(item, recursive = false) {
-            deleteContent(item, { recursive: recursive });
+        async onDelete(item, recursive = false) {
+            try {
+                await deleteContent(item, { recursive: recursive });
+            } catch (error) {
+                this.onError(error);
+            }
         },
-        onUndelete(item) {
-            updateContentFields(item, { deleted: false });
+        onError(e) {
+            const error = errorMessageAsString(e, "Dataset operation failed.");
+            Toast.error(error);
+            console.error(error);
         },
-        onHide(item) {
-            updateContentFields(item, { visible: false });
+        async onUndelete(item) {
+            try {
+                await updateContentFields(item, { deleted: false });
+            } catch (error) {
+                this.onError(error);
+            }
         },
-        onUnhide(item) {
-            updateContentFields(item, { visible: true });
+        async onHide(item) {
+            try {
+                await updateContentFields(item, { visible: false });
+            } catch (error) {
+                this.onError(error);
+            }
+        },
+        async onUnhide(item) {
+            try {
+                await updateContentFields(item, { visible: true });
+            } catch (error) {
+                this.onError(error);
+            }
         },
         async onHighlight(item) {
             const { history_id } = item;
