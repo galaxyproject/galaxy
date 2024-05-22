@@ -192,21 +192,17 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
         }
         for history in histories:
-            try:
-                # Set default role for history to private
-                trans.app.security_agent.history_set_default_permissions(history, private_permissions)
-                # Set private role for all datasets
-                for hda in history.datasets:
-                    if (
-                        not hda.dataset.library_associations
-                        and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
-                        and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)
-                    ):
-                        # If it's not private to me, and I can manage it, set fixed private permissions.
-                        trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
-            except Exception:
-                log.exception("Error making datasets private.")
-                continue
+            # Set default role for history to private
+            trans.app.security_agent.history_set_default_permissions(history, private_permissions)
+            # Set private role for all datasets
+            for hda in history.datasets:
+                if (
+                    not hda.dataset.library_associations
+                    and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
+                    and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)
+                ):
+                    # If it's not private to me, and I can manage it, set fixed private permissions.
+                    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
         }
