@@ -725,15 +725,23 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         errors: List[DatasetErrorMessage] = []
         for dataset in payload.datasets:
             try:
-                manager = self.dataset_manager_by_type[dataset.src]
-                dataset_instance = manager.get_owned(dataset.id, trans.user)
-                manager.error_unless_mutable(dataset_instance.history)
-                if dataset.src == DatasetSourceType.hda:
-                    self.hda_manager.error_if_uploading(dataset_instance)
-                if payload.purge:
-                    manager.purge(dataset_instance, flush=True)
+                if dataset.src == "hda":
+                    hda_manager = self.dataset_manager_by_type[dataset.src]
+                    hda = hda_manager.get_owned(dataset.id, trans.user)
+                    hda_manager.error_if_uploading(hda)
+                    hda_manager.error_unless_mutable(hda.history)
+                    if payload.purge:
+                        hda_manager.purge(hda, flush=True)
+                    else:
+                        hda_manager.delete(hda, flush=False)
                 else:
-                    manager.delete(dataset_instance, flush=False)
+                    ldda_manager = self.dataset_manager_by_type[dataset.src]
+                    ldda = ldda_manager.get_owned(dataset.id, trans.user)
+                    if payload.purge:
+                        ldda_manager.purge(ldda, flush=True)
+                    else:
+                        ldda_manager.delete(ldda, flush=False)
+
                 success_count += 1
             except galaxy_exceptions.MessageException as e:
                 errors.append(
