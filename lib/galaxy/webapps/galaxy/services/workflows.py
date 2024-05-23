@@ -124,6 +124,9 @@ class WorkflowsService(ServiceBase):
         workflow_id,
         payload: InvokeWorkflowPayload,
     ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
+        if trans.anonymous:
+            raise exceptions.AuthenticationRequired("You need to be logged in to run workflows.")
+        trans.check_user_activation()
         # Get workflow + accessibility check.
         by_stored_id = not payload.instance
         stored_workflow = self._workflows_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id)
