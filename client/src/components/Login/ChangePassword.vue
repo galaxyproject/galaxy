@@ -50,15 +50,15 @@ async function submit() {
 
         <BCard header="Change your password">
             <BFormGroup v-if="expiredUser" label="Current Password">
-                <BFormInput v-model="current" type="password" />
+                <BFormInput v-model="current" type="password" autocomplete="current-password" />
             </BFormGroup>
 
             <BFormGroup label="New Password">
-                <BFormInput v-model="password" type="password" />
+                <BFormInput v-model="password" type="password" autocomplete="new-password" />
             </BFormGroup>
 
             <BFormGroup label="Confirm password">
-                <BFormInput v-model="confirm" type="password" />
+                <BFormInput v-model="confirm" type="password" autocomplete="new-password" />
             </BFormGroup>
 
             <BButton type="submit">Save new password</BButton>
