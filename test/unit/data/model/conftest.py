@@ -158,7 +158,9 @@ def make_history_dataset_association(session):
 @pytest.fixture
 def make_history_dataset_collection_association(session):
     def f(**kwd):
+        collection = m.DatasetCollection(collection_type="list")
         model = m.HistoryDatasetCollectionAssociation(**kwd)
+        model.collection = collection
         write_to_db(session, model)
         return model
 

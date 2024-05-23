@@ -55,7 +55,7 @@ def setup_db(
     make_job_import_history_archive(history=histories[20])
     make_job_export_history_archive(history=histories[21])
     make_workflow_invocation(history=histories[22])
-    make_history_dataset_collection_association(history=histories[23])
+    make_history_dataset_collection_association(history=histories[23], hid=histories[23].hid_counter + 1)
     make_history_dataset_association(history=histories[25])
     make_job().history = histories[24]
 
