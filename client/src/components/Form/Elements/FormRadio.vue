@@ -1,16 +1,20 @@
-<script setup>
+<script setup lang="ts">
+import { BAlert, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
-const emit = defineEmits(["input"]);
-const props = defineProps({
-    value: {
-        default: null,
-    },
+interface Props {
+    value?: string | number;
     options: {
-        type: Array,
-        required: true,
-    },
-});
+        label: string;
+        value: string | number;
+    }[];
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "input", value: string | number | undefined): void;
+}>();
 
 const currentValue = computed({
     get: () => {
@@ -27,10 +31,10 @@ const hasOptions = computed(() => {
 </script>
 
 <template>
-    <b-form-radio-group v-if="hasOptions" v-model="currentValue" stacked>
-        <b-form-radio v-for="(option, index) in options" :key="index" :value="option.value">
+    <BFormRadioGroup v-if="hasOptions" v-model="currentValue" stacked>
+        <BFormRadio v-for="(option, index) in options" :key="index" :value="option.value">
             {{ option.label }}
-        </b-form-radio>
-    </b-form-radio-group>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+        </BFormRadio>
+    </BFormRadioGroup>
+    <BAlert v-else v-localize variant="warning" show> No options available. </BAlert>
 </template>

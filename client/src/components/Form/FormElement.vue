@@ -3,26 +3,29 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
-import FormBoolean from "./Elements/FormBoolean.vue";
-import FormColor from "./Elements/FormColor.vue";
-import FormData from "./Elements/FormData/FormData.vue";
-import FormDataDialog from "./Elements/FormDataDialog.vue";
-import FormDirectory from "./Elements/FormDirectory.vue";
-import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
-import FormHidden from "./Elements/FormHidden.vue";
-import FormInput from "./Elements/FormInput.vue";
-import FormNumber from "./Elements/FormNumber.vue";
-import FormOptionalText from "./Elements/FormOptionalText.vue";
-import FormRulesEdit from "./Elements/FormRulesEdit.vue";
-import FormSelection from "./Elements/FormSelection.vue";
-import FormTags from "./Elements/FormTags.vue";
-import FormText from "./Elements/FormText.vue";
-import FormUpload from "./Elements/FormUpload.vue";
+import FormBoolean from "@/components/Form/Elements/FormBoolean.vue";
+import FormColor from "@/components/Form/Elements/FormColor.vue";
+import FormData from "@/components/Form/Elements/FormData/FormData.vue";
+import FormDataDialog from "@/components/Form/Elements/FormDataDialog.vue";
+import FormDirectory from "@/components/Form/Elements/FormDirectory.vue";
+import FormDrilldown from "@/components/Form/Elements/FormDrilldown/FormDrilldown.vue";
+import FormHidden from "@/components/Form/Elements/FormHidden.vue";
+import FormInput from "@/components/Form/Elements/FormInput.vue";
+import FormNumber from "@/components/Form/Elements/FormNumber.vue";
+import FormOptionalText from "@/components/Form/Elements/FormOptionalText.vue";
+import FormRulesEdit from "@/components/Form/Elements/FormRulesEdit.vue";
+import FormSelection from "@/components/Form/Elements/FormSelection.vue";
+import FormTags from "@/components/Form/Elements/FormTags.vue";
+import FormText from "@/components/Form/Elements/FormText.vue";
+import FormUpload from "@/components/Form/Elements/FormUpload.vue";
+
+library.add(faCaretSquareDown, faCaretSquareUp, faArrowsAltH, faExclamation, faTimes);
 
 interface FormElementProps {
     id?: string;
@@ -49,8 +52,15 @@ interface FormElementProps {
 
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
+    type: "text",
+    value: "",
+    title: "",
     refreshOnChange: false,
+    help: "",
+    error: "",
+    warning: "",
     disabled: false,
+    attributes: undefined,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
     collapsedEnableIcon: "far fa-caret-square-down",
@@ -66,8 +76,6 @@ const emit = defineEmits<{
     (e: "input", value: FormParameterValue, id: string): void;
     (e: "change", shouldRefresh: boolean): void;
 }>();
-
-library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.
  useAttrs is *not* reactive, and does not play nice with type safety.
@@ -180,25 +188,26 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         class="ui-form-element section-row"
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
         <div v-if="hasAlert" class="ui-form-error">
-            <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
+            <FontAwesomeIcon class="mr-1" :icon="faExclamation" />
+
             <span class="ui-form-error-text" v-html="props.error || props.warning" />
         </div>
 
         <div class="ui-form-title">
             <span v-if="collapsible || connectable">
-                <b-button
+                <BButton
                     v-if="collapsible && !connected"
                     class="ui-form-collapsible-icon"
                     :title="collapseText"
                     @click="onCollapse">
                     <FontAwesomeIcon v-if="collapsed" :icon="props.collapsedEnableIcon" />
                     <FontAwesomeIcon v-else :icon="props.collapsedDisableIcon" />
-                </b-button>
+                </BButton>
 
-                <b-button v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
+                <BButton v-if="connectable" class="ui-form-connected-icon" :title="connectText" @click="onConnect">
                     <FontAwesomeIcon v-if="connected" :icon="props.connectedEnableIcon" />
                     <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
-                </b-button>
+                </BButton>
 
                 <span v-if="props.title" class="ui-form-title-text ml-1">
                     <label :for="props.id">{{ props.title }}</label>
@@ -221,6 +230,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 - optional
             </span>
         </div>
+
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
@@ -237,7 +247,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :id="id"
                 v-model="currentValue"
                 :readonly="attrs.readonly"
-                :value="attrs.value"
                 :area="attrs.area"
                 :placeholder="attrs.placeholder"
                 :multiple="attrs.multiple"
@@ -252,7 +261,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :id="id"
                 v-model="currentValue"
                 :readonly="attrs.readonly"
-                :value="attrs.value"
                 :area="attrs.area"
                 :placeholder="attrs.placeholder"
                 :color="attrs.color"
@@ -306,7 +314,10 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>
 
-        <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
+        <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">
+            {{ previewText }}
+        </div>
+
         <span v-if="Boolean(helpText)" class="ui-form-info form-text text-muted" v-html="helpText" />
     </div>
 </template>

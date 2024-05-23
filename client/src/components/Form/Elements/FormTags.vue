@@ -20,5 +20,5 @@ function onInput(tags: string[]) {
 </script>
 
 <template>
-    <StatelessTags :value="valueArray" :placeholder="props.placeholder" @input="onInput"></StatelessTags>
+    <StatelessTags :value="valueArray" :placeholder="props.placeholder" @input="onInput" />
 </template>
