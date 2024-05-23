@@ -82,33 +82,33 @@ export default {
             try {
                 await deleteContent(item, { recursive: recursive });
             } catch (error) {
-                this.onError(error);
+                this.onError(error, "Failed to delete item");
             }
         },
-        onError(e) {
+        onError(e, title = "Error") {
             const error = errorMessageAsString(e, "Dataset operation failed.");
-            Toast.error(error);
+            Toast.error(error, title);
             console.error(error);
         },
         async onUndelete(item) {
             try {
                 await updateContentFields(item, { deleted: false });
             } catch (error) {
-                this.onError(error);
+                this.onError(error, "Failed to undelete item");
             }
         },
         async onHide(item) {
             try {
                 await updateContentFields(item, { visible: false });
             } catch (error) {
-                this.onError(error);
+                this.onError(error, "Failed to hide item");
             }
         },
         async onUnhide(item) {
             try {
                 await updateContentFields(item, { visible: true });
             } catch (error) {
-                this.onError(error);
+                this.onError(error, "Failed to unhide item");
             }
         },
         async onHighlight(item) {
@@ -121,7 +121,7 @@ export default {
             try {
                 await this.applyFilters(history_id, filters);
             } catch (error) {
-                this.onError(error);
+                this.onError(error, "Failed to highlight related items");
             }
         },
     },
