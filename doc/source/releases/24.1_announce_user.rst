@@ -1,0 +1,104 @@
+
+===========================================================
+June 2024 Galaxy Release (v 24.1)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+
+Visualizations
+===========================================================
+
+.. visualizations
+* Fix pca 3d rendering of tabular files and visualization error handling in general
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18211`_
+
+Datatypes
+===========================================================
+
+.. datatypes
+* Better display of estimated line numbers and add number of columns for tabular
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17492`_
+* add colabfold tar file datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 17567`_
+* Set minimal metadata also for empty bed datasets
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 17586`_
+* Code cleanups from ruff and pyupgrade
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17654`_
+* Npz sniffing: do not read the whole file
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17672`_
+* Never fail dataset serialization if display_peek fails
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17937`_
+* Enable ``warn_unused_ignores`` mypy option
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17991`_
+* Add support for additional media types
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18054`_
+* Enable flake8-implicit-str-concat ruff rules
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18067`_
+* Chore: remove repetitive words
+  (thanks to `@tianzedavid <https://github.com/tianzedavid>`__).
+  `Pull Request 18076`_
+* Add Net datatype
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18080`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Code cleanups from ruff and pyupgrade
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17654`_
+* Rename JupyTool to something more searchable (i.e. JupyterLab which includes the substring Jupyter)
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 17849`_
+* Enable ``warn_unused_ignores`` mypy option
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17991`_
+* Enable flake8-implicit-str-concat ruff rules
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18067`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the :doc:`full release notes <24.1_announce>` for more details.
+
+.. include:: 24.1_prs.rst
+
+.. include:: _thanks.rst
