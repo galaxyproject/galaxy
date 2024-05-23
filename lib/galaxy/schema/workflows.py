@@ -53,23 +53,17 @@ WorkflowCreator = Annotated[
 ]
 
 
-class Input(Model):
+class WorkflowDictExportStepInput(Model):
     name: str = Field(..., title="Name", description="The name of the input.")
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
 
 
-# TODO - Not in use
-class Output(Model):
-    name: str = Field(..., title="Name", description="The name of the output.")
-    type: str = Field(..., title="Type", description="The extension or type of output.")
-
-
 class InputConnection(Model):
-    id: int = Field(..., title="ID", description="The identifier of the input.")
+    id: int = Field(..., title="ID", description="The order index of the step.")
     output_name: str = Field(
         ...,
         title="Output Name",
-        description="The name assigned to the output.",
+        description="The output name of the input step that serves as the source for this connection.",
     )
     input_subworkflow_step_id: Optional[int] = Field(
         None,
@@ -132,7 +126,6 @@ class WorkflowInput(Model):
     value: Optional[Any] = Field(
         ...,
         title="Value",
-        description="TODO",
     )
     uuid: Optional[UUID4] = Field(
         ...,
@@ -150,7 +143,7 @@ class WorkflowOutput(Model):
     output_name: str = Field(
         ...,
         title="Output Name",
-        description="The name assigned to the output.",
+        description="The name of the step output.",
     )
     uuid: Optional[UUID4] = Field(
         None,
@@ -817,7 +810,7 @@ class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
         title="Sub Workflow",
         description="Full information about the subworkflow associated with this step.",
     )
-    inputs: Optional[List[Input]] = Field(
+    inputs: Optional[List[WorkflowDictExportStepInput]] = Field(
         None,
         title="Inputs",
         description="The inputs of the step.",
