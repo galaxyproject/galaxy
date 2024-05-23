@@ -4074,7 +4074,7 @@ class Dataset(Base, StorableObject, Serializable):
     active_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
                 HistoryDatasetAssociation.deleted == false(),  # type: ignore[has-type]
                 HistoryDatasetAssociation.purged == false(),  # type: ignore[arg-type]
             )
@@ -4084,7 +4084,7 @@ class Dataset(Base, StorableObject, Serializable):
     purged_history_associations: Mapped[List["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: and_(
-                Dataset.id == HistoryDatasetAssociation.dataset_id,  # type: ignore[attr-defined]
+                Dataset.id == HistoryDatasetAssociation.dataset_id,
                 HistoryDatasetAssociation.purged == true(),  # type: ignore[arg-type]
             )
         ),

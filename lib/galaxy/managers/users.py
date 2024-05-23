@@ -196,7 +196,7 @@ class BaseUserManager(Generic[U], base.ModelManager[U], deletable.PurgableManage
             raise exceptions.Conflict("Email must be unique", email=email)
 
     def by_id(self, user_id: int) -> U:
-        return self.app.model.session.get(self.model_class, user_id)
+        return self.one(id=user_id)
 
     # ---- filters
     def by_email(self, email: str, filters=None, **kwargs) -> Optional[U]:
