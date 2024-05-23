@@ -24,7 +24,6 @@ import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
-import { CloudAuth } from "components/User/CloudAuth";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { NotificationsPreferences } from "components/User/Notifications";
@@ -497,11 +496,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/api_key",
                         component: APIKey,
-                        redirect: redirectAnon(),
-                    },
-                    {
-                        path: "user/cloud_auth",
-                        component: CloudAuth,
                         redirect: redirectAnon(),
                     },
                     {

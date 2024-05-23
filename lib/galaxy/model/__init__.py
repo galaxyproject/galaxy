@@ -793,7 +793,6 @@ class User(Base, Dictifiable, RepresentById):
     addresses: Mapped[List["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
-    cloudauthz: Mapped[List["CloudAuthz"]] = relationship(back_populates="user")
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
@@ -10203,42 +10202,6 @@ class CustosAuthnzToken(Base, RepresentById):
     expiration_time: Mapped[datetime] = mapped_column(nullable=True)
     refresh_expiration_time: Mapped[datetime] = mapped_column(nullable=True)
     user: Mapped["User"] = relationship("User", back_populates="custos_auth")
-
-
-class CloudAuthz(Base):
-    __tablename__ = "cloudauthz"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    provider: Mapped[Optional[str]] = mapped_column(String(255))
-    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    authn_id: Mapped[Optional[int]] = mapped_column(ForeignKey("oidc_user_authnz_tokens.id"), index=True)
-    tokens: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    last_update: Mapped[Optional[datetime]]
-    last_activity: Mapped[Optional[datetime]]
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    user: Mapped[Optional["User"]] = relationship(back_populates="cloudauthz")
-    authn: Mapped[Optional["UserAuthnzToken"]] = relationship()
-
-    def __init__(self, user_id, provider, config, authn_id, description=None):
-        self.user_id = user_id
-        self.provider = provider
-        self.config = config
-        self.authn_id = authn_id
-        self.last_update = now()
-        self.last_activity = now()
-        self.description = description
-
-    def equals(self, user_id, provider, authn_id, config):
-        return (
-            self.user_id == user_id
-            and self.provider == provider
-            and self.authn_id
-            and self.authn_id == authn_id
-            and len({k: self.config[k] for k in self.config if k in config and self.config[k] == config[k]})
-            == len(self.config)
-        )
 
 
 class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
