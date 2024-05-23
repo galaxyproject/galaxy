@@ -94,12 +94,12 @@ class WorkflowStepLayoutPosition(Model):
         title="Right",
         description="Right margin or right-most position of the box.",
     )
-    x: Optional[Union[int, float]] = Field(
+    x: Optional[int] = Field(
         None,
         title="X",
         description="Horizontal coordinate of the top right corner of the box.",
     )
-    y: Optional[Union[int, float]] = Field(
+    y: Optional[int] = Field(
         None,
         title="Y",
         description="Vertical coordinate of the top right corner of the box.",
