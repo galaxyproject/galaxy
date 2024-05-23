@@ -610,8 +610,15 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         rval: Any = ""
         try:
-            dataset_manager = self.dataset_manager_by_type[hda_ldda]
-            dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+            dataset_instance: Union[model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation]
+            if hda_ldda == "hda":
+                hda_manager = self.dataset_manager_by_type[hda_ldda]
+                dataset_instance = hda = hda_manager.get_accessible(dataset_id, trans.user)
+                hda_manager.ensure_dataset_on_disk(trans, hda)
+            else:
+                ldda_manager = self.dataset_manager_by_type[hda_ldda]
+                dataset_instance = ldda = ldda_manager.get_accessible(dataset_id, trans.user)
+                ldda_manager.ensure_dataset_on_disk(trans, ldda)
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
