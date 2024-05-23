@@ -849,7 +849,9 @@ class DiskObjectStore(ConcreteObjectStore):
             # Absolutely possible that a delete request races, but that's "fine".
             return True
         except OSError as ex:
-            log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}")
+            # Likely a race condition in which we delete the job working directory
+            # and another process writes files into that directory.
+            log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}", exc_info=True)
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
