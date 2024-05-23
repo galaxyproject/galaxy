@@ -182,7 +182,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
 
         # Verify job is active. Don't update the contents of complete jobs.
         job = trans.sa_session.get(Job, job_id)
-        if job.finished:
+        if job.state not in Job.non_ready_states:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
         return job
