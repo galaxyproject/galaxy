@@ -1205,10 +1205,13 @@ class Axt(data.Text):
         >>> fname = get_test_fname( 'alignment.lav' )
         >>> Axt().sniff( fname )
         False
+        >>> fname = get_test_fname( '2.chain' )
+        >>> Axt().sniff( fname )
+        False
         """
         headers = get_headers(file_prefix, None, count=4, comment_designator="#")
         if not (
-            len(headers) == 4
+            len(headers) >= 3
             and len(headers[0]) == 9
             and headers[0][0].isdigit()
             and headers[0][2].isdigit()
@@ -1219,8 +1222,10 @@ class Axt(data.Text):
             and headers[0][8].isdigit()
             and len(headers[1]) == 1
             and len(headers[2]) == 1
-            and headers[3] == []
         ):
+            return False
+        # the optional fourth non-comment line has to be empty
+        if len(headers) == 4 and not headers[3] == []:
             return False
         else:
             return True
