@@ -242,7 +242,7 @@ class VisualizationController(
         try:
             return plugin.render(trans=trans, embedded=embedded, **kwargs)
         except Exception as exception:
-            self._handle_plugin_error(trans, visualization_name, exception)
+            return self._handle_plugin_error(trans, visualization_name, exception)
 
     def _get_plugin_from_registry(self, trans, visualization_name):
         """
