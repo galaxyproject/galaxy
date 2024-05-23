@@ -11,6 +11,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TypedDict,
     Union,
 )
 
@@ -32,10 +33,7 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.datasets import (
-    DatasetAssociationManager,
-    DatasetManager,
-)
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import (
     HDAManager,
     HDASerializer,
@@ -286,6 +284,11 @@ class DeleteDatasetBatchResult(Model):
     )
 
 
+class DatasetManagerByType(TypedDict):
+    hda: HDAManager
+    ldda: LDDAManager
+
+
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def __init__(
         self,
@@ -316,7 +319,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return {"dataset": self.hda_serializer, "dataset_collection": self.hdca_serializer}
 
     @property
-    def dataset_manager_by_type(self) -> Dict[str, DatasetAssociationManager]:
+    def dataset_manager_by_type(self) -> DatasetManagerByType:
         return {"hda": self.hda_manager, "ldda": self.ldda_manager}
 
     def index(
