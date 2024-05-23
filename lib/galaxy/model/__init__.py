@@ -6847,7 +6847,7 @@ class HistoryDatasetCollectionAssociation(
     collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    hid: Mapped[int] = mapped_column(nullabled=True)
+    hid: Mapped[int] = mapped_column(nullable=True)
     visible: Mapped[Optional[bool]]
     deleted: Mapped[Optional[bool]] = mapped_column(default=False)
     copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
