@@ -111,7 +111,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         return (start, end)
 
     def _query_to_filter(self, query: Optional[str]) -> Optional[List[str]]:
-        if query is None:
+        if not query:
             return None
         return [f"*{query}*"]
 

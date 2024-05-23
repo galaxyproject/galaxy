@@ -131,6 +131,18 @@ def test_search(temp_file_source: TempFilesSource):
     assert result[0]["name"] == "e"
 
 
+def test_query_with_empty_string(temp_file_source: TempFilesSource):
+    recursive = False
+    root_lvl_entries, count = temp_file_source.list("/", recursive=recursive)
+    assert count == 4
+    assert len(root_lvl_entries) == 4
+
+    result, count = temp_file_source.list("/", recursive=recursive, query="")
+    assert count == 4
+    assert len(result) == 4
+    assert result == root_lvl_entries
+
+
 def test_pagination_not_supported_raises(temp_file_source: TempFilesSource):
     TempFilesSource.supports_pagination = False
     recursive = False

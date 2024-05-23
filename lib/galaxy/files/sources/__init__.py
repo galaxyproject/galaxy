@@ -393,6 +393,7 @@ class BaseFilesSource(FilesSource):
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
         kwd.pop("browsable", None)
+        kwd.pop("supports", None)
         return kwd
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> FilesSourceProperties:
