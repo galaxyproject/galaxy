@@ -243,7 +243,7 @@ class ModelManager(Generic[U], HasModelClass[U]):
         order_by=None,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-    ) -> Query:
+    ) -> Query[U]:
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -256,8 +256,8 @@ class ModelManager(Generic[U], HasModelClass[U]):
         return self._filter_and_order_query(query, filters=filters, order_by=order_by, limit=limit, offset=offset)
 
     def _filter_and_order_query(
-        self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> Query:
+        self, query: Query[U], filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> Query[U]:
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
         query = self._apply_order_by(query, order_by)
@@ -265,7 +265,7 @@ class ModelManager(Generic[U], HasModelClass[U]):
         return query
 
     # .... filters
-    def _apply_orm_filters(self, query: Query, filters) -> Query:
+    def _apply_orm_filters(self, query: Query[U], filters) -> Query[U]:
         """
         Add any filters to the given query.
         """
@@ -280,7 +280,7 @@ class ModelManager(Generic[U], HasModelClass[U]):
         return query
 
     # .... order, limit, and offset
-    def _apply_order_by(self, query: Query, order_by) -> Query:
+    def _apply_order_by(self, query: Query[U], order_by) -> Query[U]:
         """
         Return the query after adding the order_by clauses.
 
@@ -299,7 +299,7 @@ class ModelManager(Generic[U], HasModelClass[U]):
         """
         return (self.model_class.__table__.c.create_time,)
 
-    def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
+    def _apply_orm_limit_offset(self, query: Query[U], limit: Optional[int], offset: Optional[int]) -> Query[U]:
         """
         Return the query after applying the given limit and offset (if not None).
         """
