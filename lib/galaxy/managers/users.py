@@ -295,7 +295,7 @@ class BaseUserManager(Generic[U], base.ModelManager[U], deletable.PurgableManage
             raise exceptions.AuthenticationFailed(msg, **kwargs)
         return user
 
-    def get_user_by_identity(self, identity) -> Optional[U]:
+    def get_user_by_identity(self, identity: str) -> Optional[U]:
         """Get user by username or email."""
         if VALID_EMAIL_RE.match(identity):
             # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
@@ -499,7 +499,7 @@ class BaseUserManager(Generic[U], base.ModelManager[U], deletable.PurgableManage
         with transaction(session):
             session.commit()
 
-    def _get_user_by_email_case_insensitive(self, session, email):
+    def _get_user_by_email_case_insensitive(self, session, email: str):
         stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
         return session.scalars(stmt).first()
 
