@@ -640,7 +640,8 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # 'extended_metadata': self.serialize_extended_metadata,
             # 'extended_metadata_id': self.serialize_id,
             # remapped
-            "genome_build": lambda item, key, **context: item.dbkey,
+            # TODO: Replace string cast with https://github.com/pydantic/pydantic/pull/9137 on 24.1
+            "genome_build": lambda item, key, **context: str(item.dbkey) if item.dbkey is not None else None,
             # derived (not mapped) attributes
             "data_type": lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
             "converted": self.serialize_converted_datasets,
