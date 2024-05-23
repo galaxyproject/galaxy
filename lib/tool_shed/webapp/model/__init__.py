@@ -96,7 +96,7 @@ class APIKeys(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    key: Mapped[str] = mapped_column(TrimmedString(32), index=True, unique=True)
+    key: Mapped[str] = mapped_column(TrimmedString(32), index=True, unique=True, nullable=True)
     user = relationship("User", back_populates="api_keys")
     deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
 

@@ -782,7 +782,7 @@ class User(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
-    username: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
+    username: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True, nullable=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
     external: Mapped[Optional[bool]] = mapped_column(default=False)
@@ -6847,7 +6847,7 @@ class HistoryDatasetCollectionAssociation(
     collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True)
     name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    hid: Mapped[int]
+    hid: Mapped[int] = mapped_column(nullabled=True)
     visible: Mapped[Optional[bool]]
     deleted: Mapped[Optional[bool]] = mapped_column(default=False)
     copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
@@ -11152,7 +11152,7 @@ class APIKeys(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    key: Mapped[str] = mapped_column(TrimmedString(32), index=True, unique=True)
+    key: Mapped[str] = mapped_column(TrimmedString(32), index=True, unique=True, nullable=True)
     user: Mapped[Optional["User"]] = relationship(back_populates="api_keys")
     deleted: Mapped[bool] = mapped_column(index=True, server_default=false())
 
