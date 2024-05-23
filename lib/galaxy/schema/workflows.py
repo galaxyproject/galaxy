@@ -68,7 +68,6 @@ class InputConnection(Model):
     input_subworkflow_step_id: Optional[int] = Field(
         None,
         title="Input Subworkflow Step ID",
-        description="TODO",
     )
 
 
@@ -166,7 +165,6 @@ class ToolShedRepositorySummary(Model):
     changeset_revision: str = Field(
         ...,
         title="Changeset Revision",
-        description="TODO",
     )
     tool_shed: str = Field(
         ...,
@@ -204,7 +202,6 @@ class StepIn(Model):
     default: Any = Field(
         ...,
         title="Default",
-        description="TODO",
     )
 
 
@@ -253,7 +250,6 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         True,
         title="Require Exact Tool Versions",
         description="If true, exact tool versions are required for workflow invocation.",
-        # description="TODO",
     )
     allow_tool_state_corrections: Optional[bool] = Field(
         False,
@@ -295,27 +291,22 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     inputs: Optional[Dict[str, Any]] = Field(
         None,
         title="Inputs",
-        description="TODO",
     )
     ds_map: Optional[Dict[str, Dict[str, Any]]] = Field(
         {},
         title="Dataset Map",
-        description="TODO",
     )
     resource_params: Optional[Dict[str, Any]] = Field(
         {},
         title="Resource Parameters",
-        description="TODO",
     )
     replacement_params: Optional[Dict[str, Any]] = Field(
         {},
         title="Replacement Parameters",
-        description="TODO",
     )
     step_parameters: Optional[Dict[str, Any]] = Field(
         None,
         title="Step Parameters",
-        description="TODO",
     )
     no_add_to_history: Optional[bool] = Field(
         False,
@@ -337,7 +328,6 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         None,
         title="Effective Outputs",
         # lib/galaxy/workflow/run_request.py - see line 455
-        description="TODO",
     )
     preferred_intermediate_object_store_id: Optional[str] = Field(
         None,
@@ -815,7 +805,7 @@ class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
         title="Inputs",
         description="The inputs of the step.",
     )
-    in_parameter: Optional[Dict[str, StepIn]] = Field(None, title="In", description="TODO", alias="in")
+    in_parameter: Optional[Dict[str, StepIn]] = Field(None, title="In", alias="in")
     input_connections: Optional[Dict[str, Union[InputConnection, List[InputConnection]]]] = Field(
         None,
         title="Input Connections",
