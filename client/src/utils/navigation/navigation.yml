@@ -39,7 +39,7 @@ masthead:
     _: '#masthead'
 
     # bootstrap-vue a tag doesn't work as link target, need to hit span inside
-    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
+    user: '#user.loggedin-only > a.nav-link > span'
     register_or_login: '#user.loggedout-only > .nav-link'
 
     user_menu: '#user .dropdown-menu a'

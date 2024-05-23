@@ -3,8 +3,8 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { userLogout } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import { onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -12,11 +12,9 @@ import { useUserStore } from "@/stores/userStore";
 import { loadWebhookMenuItems } from "./_webhooks";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
-import { getActiveTab } from "./utilities";
 
 const { isAnonymous } = storeToRefs(useUserStore());
 
-const route = useRoute();
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
 
@@ -43,14 +41,8 @@ const props = defineProps({
     },
 });
 
-const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
-
-function setActiveTab() {
-    const currentRoute = route.path;
-    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
-}
 
 function openUrl(url, target = null) {
     if (!target) {
@@ -70,16 +62,8 @@ function onWindowToggle() {
     props.windowTab.onclick();
 }
 
-watch(
-    () => route.path,
-    () => {
-        setActiveTab();
-    }
-);
-
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
-    setActiveTab();
 });
 </script>
 
@@ -101,6 +85,7 @@ onMounted(() => {
         </BNavbarNav>
         <BNavbarNav v-if="isConfigLoaded" class="mr-1">
             <MastheadItem id="analysis" tooltip="Tools, Workflows and Histories" icon="fa-home" @click="openUrl('/')" />
+            <MastheadItem id="library" icon="fa-database" tooltip="Data Libraries" @click="openUrl('/libraries')" />
             <MastheadItem
                 v-if="windowTab"
                 :id="windowTab.id"
@@ -118,7 +103,7 @@ onMounted(() => {
                 :url="tab.url"
                 :tooltip="tab.tooltip"
                 :target="tab.target"
-                @click="tab.onclick" />
+                @click="tab.onclick ? tab.onclick : undefined" />
             <MastheadItem
                 id="help"
                 icon="fa-question"
@@ -127,16 +112,19 @@ onMounted(() => {
             <QuotaMeter />
             <MastheadItem
                 v-if="isAnonymous && config.allow_user_creation"
+                class="loggedout-only"
                 id="user"
                 title="Login or Register"
                 @click="openUrl('/login/start')" />
             <MastheadItem
                 v-if="isAnonymous && !config.allow_user_creation"
+                class="loggedout-only"
                 id="user"
                 title="Login"
                 @click="openUrl('/login/start')" />
             <MastheadItem
                 v-if="!isAnonymous && !config.single_user"
+                class="loggedin-only"
                 id="user"
                 icon="fa-sign-out-alt"
                 tooltip="Logout"
