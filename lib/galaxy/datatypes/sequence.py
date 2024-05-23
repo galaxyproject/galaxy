@@ -1213,7 +1213,7 @@ class Axt(data.Text):
         if not (
             len(headers) >= 3
             and len(headers[0]) == 9
-            and headers[0][0].isdigit()
+            and headers[0][0] == "0"
             and headers[0][2].isdigit()
             and headers[0][3].isdigit()
             and headers[0][5].isdigit()
