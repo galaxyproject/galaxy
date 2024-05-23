@@ -88,7 +88,6 @@ export default {
         onError(e, title = "Error") {
             const error = errorMessageAsString(e, "Dataset operation failed.");
             Toast.error(error, title);
-            console.error(error);
         },
         async onUndelete(item) {
             try {
