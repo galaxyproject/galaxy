@@ -1,6 +1,5 @@
 <tool id="composite_output" name="composite_output" version="1.0.0">
     <command><![CDATA[
-touch '$output' &&
 mkdir '$output.extra_files_path' &&
 cp '$input.extra_files_path'/* '$output.extra_files_path' &&
 cp '$input.extra_files_path'/Log '$output.extra_files_path'/second_log &&
