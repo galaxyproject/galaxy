@@ -804,7 +804,7 @@ StyleQueryParam = Annotated[
     Optional[str],
     Query(
         title="Style of export",
-        description="The default is 'export', which is the meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are more tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download.",
+        description="The default is 'export', which is meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download.",
     ),
 ]
 
