@@ -4019,14 +4019,10 @@ export interface components {
             /**
              * Source
              * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             * @enum {string}
              */
-            src: components["schemas"]["DatasetSourceType"];
+            src: "hda" | "ldda";
         };
-        /**
-         * DatasetSourceType
-         * @enum {string}
-         */
-        DatasetSourceType: "hda" | "ldda";
         /**
          * DatasetState
          * @enum {string}
@@ -4645,8 +4641,9 @@ export interface components {
             /**
              * Source
              * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             * @enum {string}
              */
-            src: components["schemas"]["DatasetSourceType"];
+            src: "hda" | "ldda";
         };
         /** EncodedHdcaSourceId */
         EncodedHdcaSourceId: {
@@ -5605,7 +5602,7 @@ export interface components {
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+            hda_ldda?: components["schemas"]["DataItemSourceType"] | null;
             /**
              * HID
              * @description The index position of this item in the History.
@@ -5851,7 +5848,7 @@ export interface components {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"];
+            hda_ldda?: components["schemas"]["DataItemSourceType"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -6000,7 +5997,7 @@ export interface components {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"];
+            hda_ldda?: components["schemas"]["DataItemSourceType"];
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -9370,8 +9367,9 @@ export interface components {
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
+             * @enum {string}
              */
-            source: components["schemas"]["DatasetSourceType"];
+            source: "hda" | "ldda";
         };
         /** MessageNotificationContent */
         MessageNotificationContent: {
@@ -13847,7 +13845,7 @@ export interface operations {
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
                 data_type?: components["schemas"]["RequestDataType"] | null;
                 view?: string | null;
                 keys?: string | null;
@@ -14148,7 +14146,7 @@ export interface operations {
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14184,7 +14182,7 @@ export interface operations {
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14218,7 +14216,7 @@ export interface operations {
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14287,7 +14285,7 @@ export interface operations {
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14353,7 +14351,7 @@ export interface operations {
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
+                hda_ldda?: "hda" | "ldda";
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -19697,7 +19695,7 @@ export interface operations {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+                hda_ldda?: ("hda" | "ldda") | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -19798,7 +19796,7 @@ export interface operations {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              */
             query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+                hda_ldda?: ("hda" | "ldda") | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

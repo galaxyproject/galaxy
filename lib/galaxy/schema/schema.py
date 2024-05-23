@@ -503,9 +503,7 @@ class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
     dataset_collection = "dataset_collection"
 
 
-class DatasetSourceType(str, Enum):
-    hda = "hda"
-    ldda = "ldda"
+DatasetSourceType = Annotated[Literal["hda", "ldda"], Field(description="Type of dataset association")]
 
 
 class DataItemSourceType(str, Enum):

@@ -394,7 +394,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
-            if hda_ldda == DatasetSourceType.hda:
+            if hda_ldda == "hda":
                 return self.hda_serializer.serialize_to_view(
                     dataset, view=serialization_params.view or "detailed", user=trans.user, trans=trans
                 )
@@ -407,7 +407,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
-        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+        hda_ldda: DatasetSourceType = "hda",
     ) -> DatasetStorageDetails:
         """
         Display user-facing storage details related to the objectstore a
@@ -457,7 +457,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
-        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+        hda_ldda: DatasetSourceType = "hda",
     ) -> DatasetInheritanceChain:
         """
         Display inheritance chain for the given dataset.
@@ -475,7 +475,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
         payload: ComputeDatasetHashPayload,
-        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+        hda_ldda: DatasetSourceType = "hda",
     ) -> AsyncTaskResultSummary:
         dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
         request = ComputeDatasetHashTaskRequest(
@@ -488,12 +488,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return async_task_summary(result)
 
     def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
+        hda_ldda: DatasetSourceType
         if object_id.startswith("hda-"):
             decoded_object_id = self.decode_id(object_id[len("hda-") :], kind="drs")
-            hda_ldda = DatasetSourceType.hda
+            hda_ldda = "hda"
         elif object_id.startswith("ldda-"):
             decoded_object_id = self.decode_id(object_id[len("ldda-") :], kind="drs")
-            hda_ldda = DatasetSourceType.ldda
+            hda_ldda = "ldda"
         else:
             raise galaxy_exceptions.RequestParameterInvalidException(
                 "Invalid object_id format specified for this Galaxy server"
@@ -552,7 +553,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
         payload: UpdateDatasetPermissionsPayload,
-        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+        hda_ldda: DatasetSourceType = "hda",
     ) -> DatasetAssociationRoles:
         """
         Updates permissions of a dataset.
@@ -590,7 +591,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
-        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
+        hda_ldda: DatasetSourceType = "hda",
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
