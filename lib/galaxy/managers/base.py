@@ -200,6 +200,13 @@ class HasModelClass(Generic[U]):
     model_class: Type[U]
 
 
+HasIdT = TypeVar("HasIdT", covariant=True)
+
+
+class HasById(Protocol[HasIdT]):
+    def by_id(self, id: int) -> HasIdT: ...
+
+
 # -----------------------------------------------------------------------------
 class ModelManager(Generic[U], HasModelClass[U]):
     """
