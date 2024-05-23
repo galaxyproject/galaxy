@@ -1214,12 +1214,12 @@ class Axt(data.Text):
             len(headers) >= 3
             and len(headers[0]) == 9
             and headers[0][0] == "0"
-            and headers[0][2].isdigit()
-            and headers[0][3].isdigit()
-            and headers[0][5].isdigit()
-            and headers[0][6].isdigit()
+            and headers[0][2].isdecimal()
+            and headers[0][3].isdecimal()
+            and headers[0][5].isdecimal()
+            and headers[0][6].isdecimal()
             and headers[0][7] in data.valid_strand
-            and headers[0][8].isdigit()
+            and headers[0][8].isdecimal()
             and len(headers[1]) == 1
             and len(headers[2]) == 1
         ):
