@@ -196,7 +196,12 @@ class HDAManager(
             session.commit()
 
     def copy(
-        self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
+        self,
+        item: model.HistoryDatasetAssociation,
+        history=None,
+        hide_copy: bool = False,
+        flush: bool = True,
+        **kwargs: Any,
     ) -> model.HistoryDatasetAssociation:
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
