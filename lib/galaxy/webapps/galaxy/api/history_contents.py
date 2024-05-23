@@ -39,7 +39,6 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     DatasetAssociationRoles,
-    DatasetSourceType,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
@@ -1066,7 +1065,7 @@ class FastAPIHistoryContents:
         # values are already validated, use model_construct
         materialize_request = MaterializeDatasetInstanceRequest.model_construct(
             history_id=history_id,
-            source=DatasetSourceType.hda,
+            source="hda",
             content=id,
         )
         rval = self.service.materialize(trans, materialize_request)

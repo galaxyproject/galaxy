@@ -377,7 +377,7 @@ class FastAPIJobs:
     def parameters_display_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = "hda",
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
@@ -398,7 +398,7 @@ class FastAPIJobs:
     def parameters_display_by_dataset(
         self,
         dataset_id: DatasetIdPathParam,
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = "hda",
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
@@ -417,7 +417,7 @@ class FastAPIJobs:
     def metrics_by_job(
         self,
         job_id: JobIdPathParam,
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = "hda",
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
         hda_ldda_str = hda_ldda or "hda"
@@ -433,7 +433,7 @@ class FastAPIJobs:
     def metrics_by_dataset(
         self,
         dataset_id: DatasetIdPathParam,
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = "hda",
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
         job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)

@@ -699,11 +699,14 @@ class HDAInaccessible(HDACommon):
     state: DatasetStateField
 
 
-HdaLddaField = Field(
-    DatasetSourceType.hda,
-    title="HDA or LDDA",
-    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-)
+HdaLddaField = Annotated[
+    DataItemSourceType,
+    Field(
+        "hda",
+        title="HDA or LDDA",
+        description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+    ),
+]
 
 
 class DatasetValidatedState(str, Enum):
@@ -760,7 +763,7 @@ class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
     model_class: Annotated[HDA_MODEL_CLASS, ModelClassField(HDA_MODEL_CLASS)]
-    hda_ldda: DatasetSourceType = HdaLddaField
+    hda_ldda: HdaLddaField
     accessible: bool = AccessibleField
     misc_info: Optional[str] = Field(
         default=None,
@@ -942,7 +945,7 @@ class HDAObject(Model, WithModelClass):
     id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: DatasetStateField
-    hda_ldda: DatasetSourceType = HdaLddaField
+    hda_ldda: HdaLddaField
     history_id: HistoryID
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None

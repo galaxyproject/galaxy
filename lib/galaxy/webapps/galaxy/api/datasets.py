@@ -81,7 +81,7 @@ DatasetIDPathParam = Annotated[
 ]
 
 DatasetSourceQueryParam: DatasetSourceType = Query(
-    default=DatasetSourceType.hda,
+    default="hda",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
 
@@ -421,7 +421,7 @@ class FastAPIDatasets:
         dataset_id: HistoryDatasetIDPathParam,
         trans=DependsOnTrans,
         hda_ldda: DatasetSourceType = Query(
-            default=DatasetSourceType.hda,
+            default="hda",
             description=("The type of information about the dataset to be requested."),
         ),
         data_type: Optional[RequestDataType] = Query(

@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from galaxy import (
@@ -122,7 +123,9 @@ class JobsService(ServiceBase):
         elif dataset_id is not None:
             # Following checks dataset accessible
             if hda_ldda == "hda":
-                dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+                dataset_instance: Union[model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation] = (
+                    self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+                )
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
             if not dataset_instance.creating_job:

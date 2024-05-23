@@ -14,6 +14,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from sqlalchemy import (
@@ -51,7 +52,6 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
-from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemCleanupError,
@@ -184,8 +184,10 @@ class HDAManager(
             sa_session=self.app.model.session(),
         )
         user = self.user_manager.by_id(request_user.user_id)
-        if request.source == DatasetSourceType.hda:
-            dataset_instance = self.get_accessible(request.content, user)
+        if request.source == "hda":
+            dataset_instance: Union[model.HistoryDatasetAssociation, model.LibraryDatasetDatasetAssociation] = (
+                self.get_accessible(request.content, user)
+            )
         else:
             dataset_instance = self.ldda_manager.get_accessible(request.content, user)
         history = self.app.history_manager.by_id(request.history_id)
