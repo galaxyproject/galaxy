@@ -40,10 +40,7 @@ from typing import (
     Optional,
 )
 
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-)
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -210,7 +207,7 @@ class _BlastDb(Data):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

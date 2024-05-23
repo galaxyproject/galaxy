@@ -28,7 +28,6 @@ from markupsafe import escape
 from galaxy import util
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,
     HasExtraFilesPath,
@@ -266,7 +265,7 @@ class _Isa(Data):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

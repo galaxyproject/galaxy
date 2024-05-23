@@ -69,7 +69,6 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,
     HasFileName,
@@ -692,7 +691,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -2094,7 +2093,7 @@ class H5MLM(H5):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

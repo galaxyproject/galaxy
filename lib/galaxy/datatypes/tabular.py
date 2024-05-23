@@ -53,7 +53,6 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
     DatasetProtocol,
     HasFileName,
     HasMetadata,
@@ -168,7 +167,7 @@ class TabularData(Text):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

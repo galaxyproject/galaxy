@@ -135,6 +135,10 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+)
 from galaxy.files.templates import (
     FileSourceConfiguration,
     FileSourceTemplate,
@@ -475,6 +479,7 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
+    create_time: Mapped[Optional[datetime]]
     update_time: Mapped[Optional[datetime]]
 
     @property
@@ -4530,7 +4535,7 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     return ret
 
 
-class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
+class DatasetInstance(DatasetProtocol, RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
@@ -4973,7 +4978,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination(
-            self, accepted_formats, _get_datatypes_registry(), **kwd  # type:ignore[arg-type]
+            self,
+            accepted_formats,
+            _get_datatypes_registry(),
         )
 
     def add_validation_error(self, validation_error):
@@ -5172,12 +5179,15 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             rval["file_metadata"] = file_metadata
 
 
-class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
+class HistoryDatasetAssociation(
+    DatasetHasHidProtocol, DatasetInstance, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
+):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
 
     history_id: Optional[int]
+    dataset_id: Mapped[int]
 
     def __init__(
         self,
@@ -5965,7 +5975,7 @@ class LibraryDataset(Base, Serializable):
         return rval
 
 
-class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable, UsesCreateAndUpdateTime):
 
     def __init__(
         self,

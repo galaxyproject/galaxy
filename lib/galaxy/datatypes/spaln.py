@@ -14,7 +14,6 @@ from typing import (
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
@@ -117,7 +116,7 @@ class _SpalnDb(Data):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

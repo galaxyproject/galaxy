@@ -422,7 +422,7 @@ class Data(metaclass=DataMeta):
                 yield fpath, rpath
 
     def _serve_raw(
-        self, dataset: DatasetHasHidProtocol, to_ext: Optional[str], headers: Headers, **kwd
+        self, dataset: DatasetProtocol, to_ext: Optional[str], headers: Headers, **kwd
     ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
         headers["content-type"] = (
@@ -516,7 +516,7 @@ class Data(metaclass=DataMeta):
     def display_data(
         self,
         trans,
-        dataset: DatasetHasHidProtocol,
+        dataset: DatasetProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -648,7 +648,7 @@ class Data(metaclass=DataMeta):
 
     def _download_filename(
         self,
-        dataset: DatasetHasHidProtocol,
+        dataset: Union[DatasetProtocol, DatasetHasHidProtocol],
         to_ext: Optional[str] = None,
         hdca: Optional[DatasetHasHidProtocol] = None,
         element_identifier: Optional[str] = None,
@@ -665,7 +665,7 @@ class Data(metaclass=DataMeta):
         template_values = {
             "name": escape(dataset.name),
             "ext": to_ext,
-            "hid": dataset.hid,
+            "hid": getattr(dataset, "hid", "-library"),
         }
 
         if not filename_pattern:
