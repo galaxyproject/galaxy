@@ -26,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "toggleHighlights"): void;
+    (e: "edit"): void;
 }>();
 
 const result = computed(() => datasetStore.getDataset(props.id));
