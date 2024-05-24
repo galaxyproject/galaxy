@@ -103,9 +103,9 @@ class Chain(data.Text):
                         len(tokens) in [12, 13]
                         and tokens[4] in self.strands
                         and tokens[9] in self.strands
-                        and tokens[3].isdigit()
-                        and tokens[5].isdigit()
-                        and tokens[6].isdigit()
+                        and tokens[3].isdecimal()
+                        and tokens[5].isdecimal()
+                        and tokens[6].isdecimal()
                     ):
                         return False
                     prior_token_len = 0
@@ -118,7 +118,7 @@ class Chain(data.Text):
                             return False
                         if len(tokens) not in [1, 3]:
                             return False
-                        if not all(token.isdigit() for token in tokens):
+                        if not all(token.isdecimal() for token in tokens):
                             return False
                         prior_token_len = len(tokens)
                     if prior_token_len == 1:
@@ -167,7 +167,7 @@ class Net(data.Text):
             if line:  # first non-empty line
                 if line.startswith("net"):
                     tokens = line.split()
-                    if not (len(tokens) == 3 and tokens[2].isdigit()):
+                    if not (len(tokens) == 3 and tokens[2].isdecimal()):
                         return False
                     for line in fh:
                         if line[0] != " ":  # children are indented one space
@@ -180,11 +180,11 @@ class Net(data.Text):
                             len(tokens) >= 7  # seven fixed fields
                             and len(tokens) <= 41  # plus seventeen optional name/value pairs
                             and tokens[0] in allowed_classes
-                            and tokens[1].isdigit()
-                            and tokens[2].isdigit()
+                            and tokens[1].isdecimal()
+                            and tokens[2].isdecimal()
                             and tokens[4] in strands
-                            and tokens[5].isdigit()
-                            and tokens[6].isdigit()
+                            and tokens[5].isdecimal()
+                            and tokens[6].isdecimal()
                         ):
                             return False
                         else:
