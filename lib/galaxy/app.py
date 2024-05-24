@@ -152,7 +152,6 @@ from galaxy.tours import (
     build_tours_registry,
     ToursRegistry,
 )
-from galaxy.util import user_agent  # noqa: F401
 from galaxy.util import (
     ExecutionTimer,
     heartbeat,

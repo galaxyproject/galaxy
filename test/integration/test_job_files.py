@@ -20,6 +20,7 @@ import os
 import tempfile
 from typing import Dict
 
+import requests
 from sqlalchemy import select
 from tusclient import client
 
@@ -28,7 +29,6 @@ from galaxy.model.base import (
     ensure_object_added_to_session,
     transaction,
 )
-from galaxy.util import requests
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util

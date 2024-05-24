@@ -67,8 +67,6 @@ from typing_extensions import (
     Self,
 )
 
-from galaxy.util import requests
-
 try:
     import grp
 except ImportError:
@@ -125,6 +123,7 @@ except ImportError:
         XML,
     )
 
+from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
 from .path import (  # noqa: F401
