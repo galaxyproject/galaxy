@@ -6083,6 +6083,8 @@ export interface components {
          * @description History Dataset Association Object
          */
         HDAObject: {
+            /** Accessible */
+            accessible: boolean;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**

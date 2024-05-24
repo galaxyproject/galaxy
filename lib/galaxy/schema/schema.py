@@ -939,6 +939,7 @@ class HDAObject(Model, WithModelClass):
     history_id: HistoryID
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
+    accessible: bool
     model_config = ConfigDict(extra="allow")
 
 
