@@ -6,7 +6,11 @@ import logging
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import build_sniff_from_prefix, FilePrefix, get_headers
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+    get_headers,
+)
 from galaxy.util import (
     commaify,
     compression_utils,
