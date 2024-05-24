@@ -6084,7 +6084,7 @@ export interface components {
          */
         HDAObject: {
             /** Accessible */
-            accessible: boolean;
+            accessible?: boolean | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
