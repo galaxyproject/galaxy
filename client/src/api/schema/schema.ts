@@ -6006,7 +6006,7 @@ export interface components {
              * Accessible
              * @constant
              */
-            accessible: Record<string, never>;
+            accessible: false;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
