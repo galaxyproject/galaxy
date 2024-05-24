@@ -43,6 +43,7 @@ TEST_TUS_CHUNK_SIZE = 1024
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
+    dataset_populator: DatasetPopulator
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -60,7 +61,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session = self.sa_session
             stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
             assert len(sa_session.scalars(stmt).all()) == 1
             self.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
@@ -85,6 +86,22 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         response = requests.get(get_url, params=data)
         _assert_insufficient_permissions(response)
+
+    def test_read_fails_if_input_file_purged(self):
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        input_file_path = self.input_hda.get_file_name()
+        data = {"path": input_file_path, "job_key": job_key}
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        head_response = requests.head(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(head_response)
+        delete_response = self.dataset_populator.delete_dataset(
+            self.input_hda_dict["history_id"], content_id=self.input_hda_dict["id"], purge=True, wait_for_purge=True
+        )
+        assert delete_response.status_code == 200
+        head_response = requests.get(get_url, params=data)
+        assert head_response.status_code == 400
+        assert head_response.json()["err_msg"] == "Input dataset(s) for job have been purged."
 
     def test_write_by_state(self):
         job, output_hda, working_directory = self.create_static_job_with_state("running")
