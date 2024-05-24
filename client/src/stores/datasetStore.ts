@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, set } from "vue";
 
-import type { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
+import { type DatasetDetails, type DatasetEntry, type HistoryContentItemBase, isInaccessible } from "@/api";
 import { fetchDataset } from "@/api/datasets";
 import { ApiResponse } from "@/api/schema";
 import { useKeyedCache } from "@/composables/keyedCache";
@@ -16,6 +16,9 @@ export const useDatasetStore = defineStore("datasetStore", () => {
         return (dataset?: DatasetEntry) => {
             if (!dataset) {
                 return true;
+            }
+            if (isInaccessible(dataset)) {
+                return false;
             }
             const isNotDetailed = !("peek" in dataset);
             return isNotDetailed;
