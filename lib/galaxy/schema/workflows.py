@@ -1150,7 +1150,7 @@ class WorkflowCreatePayload(Model):
         description="A dictionary containing information about a new workflow to import.",
     )
 
-    @field_validator("workflow", mode="before")
+    @field_validator("workflow", "dataset_ids", "dataset_collection_ids", "job_ids", mode="before")
     @classmethod
     def decode_json(cls, v):
         if isinstance(v, str):
