@@ -45,7 +45,7 @@ const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
 const router = useRouter();
 const { config } = useConfig();
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history")
 );
@@ -146,7 +146,7 @@ onMounted(() => {
 
         <BButtonGroup v-if="currentUser">
             <BButton
-                v-if="config && config.object_store_allows_id_selection"
+                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
                 :id="`history-storage-${history.id}`"
                 title="Manage Preferred History Storage"
                 variant="link"
@@ -157,7 +157,7 @@ onMounted(() => {
             </BButton>
 
             <PreferredStorePopover
-                v-if="config && config.object_store_allows_id_selection"
+                v-if="config && config.object_store_allows_id_selection && !isAnonymous"
                 :history-id="history.id"
                 :history-preferred-object-store-id="historyPreferredObjectStoreId"
                 :user="currentUser">

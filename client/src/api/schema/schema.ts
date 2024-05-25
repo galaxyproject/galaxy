@@ -5999,10 +5999,93 @@ export interface components {
             visible: boolean;
         };
         /**
+         * HDAInaccessible
+         * @description History Dataset Association information when the user can not access it.
+         */
+        HDAInaccessible: {
+            /**
+             * Accessible
+             * @constant
+             */
+            accessible: false;
+            /** Copied From Ldda Id */
+            copied_from_ldda_id?: string | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid: number;
+            /**
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             * @constant
+             */
+            history_content_type: "dataset";
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name: string | null;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state: components["schemas"]["DatasetState"];
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Type
+             * @description The type of this item.
+             */
+            type: string;
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible: boolean;
+        };
+        /**
          * HDAObject
          * @description History Dataset Association Object
          */
         HDAObject: {
+            /** Accessible */
+            accessible?: boolean | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -6925,6 +7008,7 @@ export interface components {
             | components["schemas"]["HDACustom"]
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
+            | components["schemas"]["HDAInaccessible"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
         )[];
@@ -6941,6 +7025,7 @@ export interface components {
                 | components["schemas"]["HDACustom"]
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
+                | components["schemas"]["HDAInaccessible"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
             )[];
@@ -13533,6 +13618,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -13713,7 +13799,8 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"];
+                        | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"];
                 };
             };
             /** @description Validation Error */
@@ -16465,12 +16552,14 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
+                              | components["schemas"]["HDAInaccessible"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17054,6 +17143,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17105,6 +17195,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17337,12 +17428,14 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
+                              | components["schemas"]["HDAInaccessible"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17393,6 +17486,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17443,6 +17537,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17674,6 +17769,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];

@@ -90,6 +90,11 @@ export type DatasetSummary = components["schemas"]["HDASummary"];
 export type DatasetDetails = components["schemas"]["HDADetailed"];
 
 /**
+ * Represents a HistoryDatasetAssociation that is inaccessible to the user.
+ */
+export type HDAInaccessible = components["schemas"]["HDAInaccessible"];
+
+/**
  * Contains storage (object store, quota, etc..) details for a dataset.
  */
 export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails"];
@@ -97,7 +102,7 @@ export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails
 /**
  * Represents a HistoryDatasetAssociation with either summary or detailed information.
  */
-export type DatasetEntry = DatasetSummary | DatasetDetails;
+export type DatasetEntry = DatasetSummary | DatasetDetails | HDAInaccessible;
 
 /**
  * Contains summary information about a DCE (DatasetCollectionElement).
@@ -181,6 +186,10 @@ export function isCollectionElement(element: DCESummary): element is DCECollecti
  */
 export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
     return "peek" in entry;
+}
+
+export function isInaccessible(entry: DatasetEntry): entry is HDAInaccessible {
+    return "accessible" in entry && !entry.accessible;
 }
 
 /**
