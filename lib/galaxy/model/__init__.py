@@ -6500,6 +6500,14 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return q
 
     @property
+    def elements_deleted(self):
+        stmt = self._build_nested_collection_attributes_stmt(
+            hda_attributes=("deleted",), dataset_attributes=("deleted",)
+        )
+        stmt = exists(stmt).where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
+        return object_session(self).execute(select(stmt)).scalar()
+
+    @property
     def dataset_states_and_extensions_summary(self):
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
             stmt = self._build_nested_collection_attributes_stmt(
