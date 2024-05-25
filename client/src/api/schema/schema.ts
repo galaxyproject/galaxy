@@ -14643,12 +14643,12 @@ export interface components {
              * X
              * @description Horizontal coordinate of the top right corner of the box.
              */
-            x?: number | number | null;
+            x?: number | null;
             /**
              * Y
              * @description Vertical coordinate of the top right corner of the box.
              */
-            y?: number | number | null;
+            y?: number | null;
         };
         /** WorkflowUpdatePayload */
         WorkflowUpdatePayload: {
@@ -24136,14 +24136,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -24771,7 +24764,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -24948,14 +24941,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -25484,7 +25470,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
@@ -25562,7 +25555,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Validation Error */
@@ -25659,7 +25652,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
