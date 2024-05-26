@@ -642,7 +642,7 @@ class WorkflowsService(ServiceBase):
     ):
         try:
             stored_workflow = self._uses_stored_workflow_mix_in.get_stored_workflow(
-                trans, workflow_id, check_ownership=False
+                trans, workflow_id, check_ownership=False, app_by_trans=True
             )
         except Exception:
             raise exceptions.ObjectNotFound("Malformed workflow id specified.")
