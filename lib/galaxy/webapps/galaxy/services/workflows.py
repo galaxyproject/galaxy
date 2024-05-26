@@ -602,8 +602,7 @@ class WorkflowsService(ServiceBase):
             return self._api_import_shared_workflow(trans, workflow_id, payload)
 
         if "workflow" in payload:
-            a = self._api_import_new_workflow(trans, payload)
-            return a
+            return self._api_import_new_workflow(trans, payload)
 
         # This was already raised above, but just in case...
         raise exceptions.RequestParameterMissingException("No method for workflow creation supplied.")
