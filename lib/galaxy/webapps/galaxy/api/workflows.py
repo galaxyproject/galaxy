@@ -221,10 +221,6 @@ class WorkflowsAPIController(
             raise exceptions.ObjectAttributeMissingException("Missing required parameter 'workflow_id'.")
         self.service._api_import_shared_workflow(trans, workflow_id, payload)
 
-    def __get_stored_workflow(self, trans, workflow_id, **kwd):
-        instance = util.string_as_bool(kwd.get("instance", "false"))
-        return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
-
 
 StoredWorkflowIDPathParam = Annotated[
     DecodedDatabaseIdField,
