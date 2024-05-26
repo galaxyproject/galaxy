@@ -1075,17 +1075,17 @@ class WorkflowCreatePayload(Model):
         title="From History ID",
         description="The ID of a history from which to extract a workflow.",
     )
-    job_ids: Optional[List[str]] = Field(
+    job_ids: Optional[List[Union[str, int]]] = Field(
         None,
         title="Job IDs",
         description="If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.",
     )
-    dataset_ids: Optional[List[str]] = Field(
+    dataset_ids: Optional[Union[str, int]] = Field(
         None,
         title="Dataset IDs",
         description="If from_history_id is set, this is an optional list of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history.",
     )
-    dataset_collection_ids: Optional[List[str]] = Field(
+    dataset_collection_ids: Optional[Union[str, int]] = Field(
         None,
         title="Dataset Collection IDs",
         description="If from_history_id is set, this is an optional list of HDCA 'hid's corresponding to workflow inputs when extracting a workflow from history.",
