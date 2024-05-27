@@ -237,6 +237,10 @@ function hasOwner(history: AnyHistory): history is HistorySummaryExtended {
     return "user_id" in history && history.user_id !== null;
 }
 
+export function canMutateHistory(history: AnyHistory): boolean {
+    return !history.purged && !history.archived;
+}
+
 export type DatasetHash = components["schemas"]["DatasetHash"];
 
 export type DatasetTransform = {
