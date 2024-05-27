@@ -7,7 +7,7 @@ from .framework import (
 class TestPublishedPagesGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_index(self):
-        self.navigate_to_published_pages()
+        self.navigate_to_pages()
         assert len(self.get_grid_entry_names("#pages-published-grid")) == 2
 
     def setup_shared_state(self):

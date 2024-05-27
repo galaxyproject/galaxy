@@ -42,7 +42,7 @@ export const Activities = [
         visible: true,
     },
     {
-        anonymous: false,
+        anonymous: true,
         description: "Displays a panel to search and access workflows.",
         icon: "sitemap",
         id: "workflows",
@@ -78,7 +78,7 @@ export const Activities = [
         visible: true,
     },
     {
-        anonymous: false,
+        anonymous: true,
         description: "Displays the list of all histories.",
         icon: "fa-hdd",
         id: "histories",
@@ -114,7 +114,7 @@ export const Activities = [
         visible: true,
     },
     {
-        anonymous: false,
+        anonymous: true,
         description: "Display and create new Pages.",
         icon: "fa-file-contract",
         id: "pages",
