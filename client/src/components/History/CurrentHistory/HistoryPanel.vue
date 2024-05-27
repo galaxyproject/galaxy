@@ -542,7 +542,7 @@ function setItemDragstart(
                         :summarized="isMultiViewItem"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" />
+                    <HistoryMessages :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
