@@ -9,7 +9,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { HistorySummaryExtended } from "@/api";
+import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useHistoryContentStats } from "@/composables/historyContentStats";
@@ -137,7 +137,7 @@ onMounted(() => {
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none history-storage-overview-button"
-            :disabled="!showControls"
+            :disabled="!userOwnsHistory(currentUser, props.history)"
             data-description="storage dashboard button"
             @click="onDashboard">
             <FontAwesomeIcon :icon="faDatabase" />

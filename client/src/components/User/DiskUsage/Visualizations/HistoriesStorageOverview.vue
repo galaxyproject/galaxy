@@ -196,6 +196,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         item-type="history"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)"
+                        :can-edit="!isArchivedDataPoint(data)"
                         @set-current-history="onSetCurrentHistory"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
