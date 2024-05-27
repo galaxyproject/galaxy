@@ -35,12 +35,7 @@
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
-        <HistoryPanel
-            v-else
-            :history="history"
-            :can-edit-history="canEditHistory"
-            filterable
-            @view-collection="onViewCollection" />
+        <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
         <CopyModal id="copy-history-modal" :history="history" @ok="copyOkay" />
     </div>
@@ -87,22 +82,13 @@ export default {
             return this.currentHistory?.id == this.history?.id;
         },
         isSetAsCurrentDisabled() {
-            return this.isCurrentHistory || this.history.archived || this.history.purged;
+            return this.isCurrentHistory;
         },
         setAsCurrentTitle() {
             if (this.isCurrentHistory) {
                 return "This history is already your current history.";
             }
-            if (this.history.archived) {
-                return "This history has been archived and cannot be set as your current history. Unarchive it first.";
-            }
-            if (this.history.purged) {
-                return "This history has been purged and cannot be set as your current history.";
-            }
             return "Switch to this history";
-        },
-        canEditHistory() {
-            return this.userOwnsHistory && !this.history.archived && !this.history.purged;
         },
         showHistoryArchived() {
             return this.history.archived && this.userOwnsHistory;
