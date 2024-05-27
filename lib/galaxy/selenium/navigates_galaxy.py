@@ -784,31 +784,6 @@ class NavigatesGalaxy(HasDriver):
             self.assert_error_message()
         elif assert_valid:
             self.wait_for_logged_in()
-            '''
-            # Code below previously was needed because there was a bug that would prevent the masthead from changing,
-            # the bug seems maybe to be fixed though - so we could consider eliminating these extra checks to speed
-            # up tests.
-            self.home()
-            self.wait_for_logged_in()
-            self.click_masthead_user()
-            # Make sure the user menu was dropped down
-            user_menu = self.components.masthead.user_menu.wait_for_visible()
-            try:
-                username_element = self.components.masthead.username.wait_for_visible()
-            except SeleniumTimeoutException as e:
-                menu_items = user_menu.find_elements(By.CSS_SELECTOR, "li a")
-                menu_text = [mi.text for mi in menu_items]
-                message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
-                raise self.prepend_timeout_message(e, message)
-
-            text = username_element.text
-            assert username in text
-            user_object = self.get_logged_in_user()
-            assert user_object and "email" in user_object
-            assert user_object["email"] == email
-
-            # clicking away no longer closes menu post Masthead -> VueJS
-            self.click_masthead_user()'''
 
     def wait_for_logged_in(self):
         try:
