@@ -22,6 +22,7 @@ function create_history(historyId, userId, purged = false, archived = false) {
         name: historyName,
         purged: purged,
         archived: archived,
+        deleted: purged,
         count: 10,
         annotation: "This is a history",
         tags: ["tag_1", "tag_2"],
@@ -174,17 +175,17 @@ describe("History center panel View", () => {
         const wrapper = await createWrapper(localVue, "user_1", history);
         expect(wrapper.vm.history).toEqual(history);
 
-        // history purged, not switchable and not importable
+        // history purged, is switchable but not importable
         const switchButton = wrapper.find("[data-description='switch to history button']");
         const importButton = wrapper.find("[data-description='import history button']");
-        expect(switchButton.attributes("disabled")).toBeTruthy();
+        expect(switchButton.attributes("disabled")).toBeFalsy();
         expect(importButton.exists()).toBe(false);
 
-        // storage dashboard button should be disabled
-        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
+        // storage dashboard button can be accessed
+        expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         // instead we have an alert
-        expect(wrapper.find("[data-description='history state info']").text()).toBe("This history has been purged.");
+        expect(wrapper.find("[data-description='history messages']").text()).toBe("History has been purged");
     });
 
     it("should not display archived message and should be importable when user is not owner and history is archived", async () => {
@@ -202,7 +203,8 @@ describe("History center panel View", () => {
         expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
 
         expectCorrectLayout(wrapper);
-        expect(wrapper.find("[data-description='history state info']").exists()).toBe(false);
+        // There is no message about the history status
+        expect(wrapper.find("[data-description='history messages']").text()).toBe("");
     });
 
     it("should display archived message and should not be importable when user is owner and history is archived", async () => {
@@ -213,13 +215,12 @@ describe("History center panel View", () => {
         const switchButton = wrapper.find("[data-description='switch to history button']");
         const importButton = wrapper.find("[data-description='import history button']");
         expect(switchButton.exists()).toBe(true);
-        expect(switchButton.attributes("disabled")).toBeTruthy();
         expect(importButton.exists()).toBe(false);
 
-        // storage dashboard button should be disabled
-        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
+        // storage dashboard button can be accessed
+        expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         expectCorrectLayout(wrapper);
-        expect(wrapper.find("[data-description='history state info']").text()).toBe("This history has been archived.");
+        expect(wrapper.find("[data-description='history messages']").text()).toBe("History has been archived");
     });
 });
