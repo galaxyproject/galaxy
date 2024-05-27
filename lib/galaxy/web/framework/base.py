@@ -264,6 +264,7 @@ class WebApplication:
         except Exception as e:
             body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
+                trans.response.headers.pop("content-length", None)
                 raise
         body_renderer = body_renderer or self._render_body
         return body_renderer(trans, body, environ, start_response)
