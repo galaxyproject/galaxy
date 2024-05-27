@@ -506,12 +506,7 @@ def set_metadata_portable(
                     dataset.dataset.uuid = context["uuid"]
                 if not final_job_state == Job.states.ERROR:
                     line_count = context.get("line_count", None)
-                    try:
-                        # Certain datatype's set_peek methods contain a line_count argument
-                        dataset.set_peek(line_count=line_count)
-                    except TypeError:
-                        # ... and others don't
-                        dataset.set_peek()
+                    dataset.set_peek(line_count=line_count)
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
