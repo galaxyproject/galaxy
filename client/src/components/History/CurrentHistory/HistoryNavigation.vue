@@ -30,9 +30,9 @@ import {
     BSpinner,
 } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
-import type { HistorySummary } from "@/api";
+import { canMutateHistory, type HistorySummary } from "@/api";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -79,6 +79,10 @@ const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 const { totalHistoryCount } = storeToRefs(historyStore);
+
+const canEditHistory = computed(() => {
+    return canMutateHistory(props.history);
+});
 
 function onDelete() {
     if (purgeHistory.value) {
@@ -161,6 +165,7 @@ function userTitle(title: string) {
                     <BDropdownDivider />
 
                     <BDropdownItem
+                        :disabled="!canEditHistory"
                         :title="localize('Resume all Paused Jobs in this History')"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <FontAwesomeIcon fixed-width :icon="faPlay" class="mr-1" />
@@ -198,7 +203,7 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || history.archived"
                         data-description="archive history"
                         :title="userTitle('Archive this History')"
                         @click="$router.push(`/histories/${history.id}/archive`)">
@@ -225,7 +230,7 @@ function userTitle(title: string) {
                     <BDropdownDivider />
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
@@ -234,7 +239,7 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faUserLock" class="mr-1" />
@@ -243,7 +248,7 @@ function userTitle(title: string) {
 
                     <BDropdownItem
                         v-b-modal:history-privacy-modal
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Make this History Private')">
                         <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
                         <span v-localize>Make Private</span>
