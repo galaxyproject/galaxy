@@ -84,6 +84,18 @@ const canEditHistory = computed(() => {
     return canMutateHistory(props.history);
 });
 
+const historyState = computed(() => {
+    if (props.history.purged) {
+        return "purged";
+    } else if (props.history.deleted) {
+        return "deleted";
+    } else if (props.history.archived) {
+        return "archived";
+    } else {
+        return "active";
+    }
+});
+
 function onDelete() {
     if (purgeHistory.value) {
         historyStore.deleteHistory(props.history.id, true);
@@ -163,6 +175,14 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownDivider />
+
+                    <BDropdownText v-if="!canEditHistory">
+                        This history has been <span class="font-weight-bold">{{ historyState }}</span
+                        >.
+                        <span v-localize>Some actions might not be available.</span>
+                    </BDropdownText>
+
+                    <BDropdownDivider v-if="!canEditHistory" />
 
                     <BDropdownItem
                         :disabled="!canEditHistory"
