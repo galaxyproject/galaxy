@@ -11,6 +11,7 @@ from galaxy import (
     model,
     web,
 )
+from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
@@ -258,7 +259,10 @@ class VisualizationController(
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception("error rendering visualization (%s)", visualization_name)
+        if isinstance(exception, MessageException):
+            log.debug("error rendering visualization (%s): %s", visualization_name, exception)
+        else:
+            log.exception("error rendering visualization (%s)", visualization_name)
         if trans.debug:
             raise exception
         return trans.show_error_message(
