@@ -238,7 +238,7 @@ function userTitle(title: string) {
                     <BDropdownItem
                         :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
-                        @click="iframeRedirect('/workflow/build_from_current_history')">
+                        @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faFileExport" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
                     </BDropdownItem>
