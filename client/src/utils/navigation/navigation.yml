@@ -600,6 +600,7 @@ tool_form:
 
 workflows:
   selectors:
+    activity: '#activity-workflows'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'

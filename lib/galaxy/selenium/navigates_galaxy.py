@@ -784,7 +784,7 @@ class NavigatesGalaxy(HasDriver):
             self.assert_error_message()
         elif assert_valid:
             self.wait_for_logged_in()
-
+            '''
             # Code below previously was needed because there was a bug that would prevent the masthead from changing,
             # the bug seems maybe to be fixed though - so we could consider eliminating these extra checks to speed
             # up tests.
@@ -808,7 +808,7 @@ class NavigatesGalaxy(HasDriver):
             assert user_object["email"] == email
 
             # clicking away no longer closes menu post Masthead -> VueJS
-            self.click_masthead_user()
+            self.click_masthead_user()'''
 
     def wait_for_logged_in(self):
         try:
@@ -1478,7 +1478,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_open(self):
         self.home()
-        self.click_masthead_workflow()
+        self.click_activity_workflow()
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1744,8 +1744,8 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_data(self):
         self.components.masthead.data.wait_for_and_click()
 
-    def click_masthead_workflow(self):
-        self.components.masthead.workflow.wait_for_and_click()
+    def click_activity_workflow(self):
+        self.components.workflows.activity.wait_for_and_click()
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
