@@ -11,6 +11,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Job
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
@@ -34,7 +35,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     """
 
     @expose_api_raw_anonymous_and_sessionless
-    def index(self, trans, job_id, **kwargs):
+    def index(self, trans: ProvidesAppContext, job_id, **kwargs):
         """
         GET /api/jobs/{job_id}/files
 
@@ -56,9 +57,21 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     binary
         :returns:   contents of file
         """
-        self.__authorize_job_access(trans, job_id, **kwargs)
-        path = kwargs.get("path", None)
-        return open(path, "rb")
+        job = self.__authorize_job_access(trans, job_id, **kwargs)
+        path = kwargs["path"]
+        try:
+            return open(path, "rb")
+        except FileNotFoundError:
+            # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
+            # Here we discriminate that case from truly unexpected bugs.
+            # Not failing the job here, this is or should be handled by pulsar.
+            match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
+            if match:
+                # This looks like a galaxy dataset, check if any job input has been deleted.
+                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
+                    raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
+            else:
+                raise
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, job_id, payload, **kwargs):
