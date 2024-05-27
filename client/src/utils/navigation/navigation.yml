@@ -41,6 +41,7 @@ masthead:
     # bootstrap-vue a tag doesn't work as link target, need to hit span inside
     user: '#user.loggedin-only > a.nav-link > span'
     register_or_login: '#user.loggedout-only > .nav-link'
+    logout: '#user.loggedin-only > .nav-link'
 
     user_menu: '#user .dropdown-menu a'
     workflow: '#workflow .nav-link'
@@ -66,7 +67,6 @@ masthead:
     workflow: 'Workflow'
 
     # user menu
-    logout: 'Sign Out'
     preferences: 'Preferences'
 
     # data menu
@@ -78,6 +78,8 @@ masthead:
 
 preferences:
   selectors:
+    activity: "#activity-settings"
+    activity_expand: ".activity-panel-footer"
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
@@ -457,6 +459,7 @@ collection_builders:
 
 histories:
   selectors:
+    activity: '#activity-histories'
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
@@ -532,6 +535,7 @@ history_import:
 
 pages:
   selectors:
+    activity: "#activity-pages"
     create: '#page-create'
     submit: '#submit'
     create_title_input: '#form-element-title input'
@@ -856,6 +860,7 @@ workflow_show:
 
 invocations:
   selectors:
+    activity: "#activity-invocation"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
     pager: '[data-description="grid pager"]'
