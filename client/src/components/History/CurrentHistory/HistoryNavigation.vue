@@ -202,7 +202,10 @@ function userTitle(title: string) {
                         <span v-localize>Copy this History</span>
                     </BDropdownItem>
 
-                    <BDropdownItem v-b-modal:delete-history-modal :title="localize('Permanently Delete History')">
+                    <BDropdownItem
+                        v-b-modal:delete-history-modal
+                        :disabled="!canEditHistory"
+                        :title="localize('Permanently Delete History')">
                         <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
                         <span v-localize>Delete this History</span>
                     </BDropdownItem>
@@ -216,6 +219,7 @@ function userTitle(title: string) {
 
                     <BDropdownItem
                         data-description="export to file"
+                        :disabled="history.purged"
                         :title="localize('Export and Download History as a File')"
                         @click="$router.push(`/histories/${history.id}/export`)">
                         <FontAwesomeIcon fixed-width :icon="faFileArchive" class="mr-1" />
@@ -223,7 +227,7 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :disabled="isAnonymous || history.archived"
+                        :disabled="isAnonymous || history.archived || history.purged"
                         data-description="archive history"
                         :title="userTitle('Archive this History')"
                         @click="$router.push(`/histories/${history.id}/archive`)">
