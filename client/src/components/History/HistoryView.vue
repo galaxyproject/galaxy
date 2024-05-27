@@ -1,9 +1,5 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
-            {{ historyStateInfoMessage }}
-        </b-alert>
-
         <div class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
@@ -89,22 +85,6 @@ export default {
                 return "This history is already your current history.";
             }
             return "Switch to this history";
-        },
-        showHistoryArchived() {
-            return this.history.archived && this.userOwnsHistory;
-        },
-        showHistoryStateInfo() {
-            return this.showHistoryArchived || this.history.purged;
-        },
-        historyStateInfoMessage() {
-            if (this.showHistoryArchived && this.history.purged) {
-                return "This history has been archived and purged.";
-            } else if (this.showHistoryArchived) {
-                return "This history has been archived.";
-            } else if (this.history.purged) {
-                return "This history has been purged.";
-            }
-            return "";
         },
         canImportHistory() {
             return !this.userOwnsHistory && !this.history.purged;
