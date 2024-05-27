@@ -906,6 +906,10 @@ tour:
       next: '${_} .tour-next'
       end: '${_} .tour-end'
 
+tools:
+  selectors:
+    activity: "#activity-tools"
+
 admin:
   allowlist:
     selectors:

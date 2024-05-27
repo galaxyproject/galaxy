@@ -1268,6 +1268,10 @@ class NavigatesGalaxy(HasDriver):
         self.components.histories.activity.wait_for_and_click()
         self.components.published_histories.tab.wait_for_and_click()
 
+    def navigate_to_tools(self):
+        self.home()
+        self.components.tools.activity.wait_for_and_click()
+
     def admin_open(self):
         self.components.admin.activity.wait_for_and_click()
 

@@ -118,6 +118,7 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         preferences = self.components.preferences
         preferences.preferred_storage.wait_for_and_click()
         self.select_storage("second")
+        self.navigate_to_tools()
         self.run_environment_test_tool()
         self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
@@ -136,7 +137,7 @@ class TestObjectStoreSelectionSeleniumIntegration(SeleniumIntegrationTestCase, C
         preferences = self.components.preferences
         preferences.preferred_storage.wait_for_and_click()
         self.select_storage("__null__")
-
+        self.navigate_to_tools()
         self.run_environment_test_tool()
         self.wait_for_hid_ok_and_open_details(1)
         details = self.components.object_store_details
