@@ -1,9 +1,8 @@
 import argparse
 import json
 
+import requests
 import yaml
-
-from galaxy.util import requests
 
 
 def main():

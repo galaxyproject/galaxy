@@ -1,7 +1,11 @@
 <%!
+import csv
 import sys
 from io import StringIO
-import csv
+
+from galaxy.exceptions import RequestParameterInvalidException
+
+MAX_SIZE = 100000  # 100 KB, empirically the largest value I can render on my browser (m2 mac, chrome)
 %>
 
 <%
@@ -29,11 +33,15 @@ def create_options(header):
     return colour_options, start_options
 
 def load_data():
-    input = "\n".join(list(hda.datatype.dataprovider(hda, 'line', comment_char=none, provide_blank=True, strip_lines=False, strip_newlines=True)))
-    tabular_file = StringIO(input)
-    dialect = csv.Sniffer().sniff(tabular_file.read(1024), delimiters=";,\t")
-    tabular_file.seek(0)
-    table = csv.reader(tabular_file, dialect)
+    lines = []
+    size = 0
+    for line in hda.datatype.dataprovider(hda, 'line', comment_char=none, provide_blank=True, strip_lines=False, strip_newlines=True):
+        size += len(line)
+        if size > MAX_SIZE:
+            raise RequestParameterInvalidException("Dataset too large to render, dataset must be less than 100 KB in size.")
+        lines.append(line)
+    dialect = csv.Sniffer().sniff("\n".join(lines))
+    table = csv.reader(lines, dialect)
     data = "["
     for i, row in enumerate(table):
         if i == 0:

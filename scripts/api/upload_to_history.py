@@ -7,14 +7,7 @@ import json
 import os
 import sys
 
-try:
-    from galaxy.util import requests
-except ImportError:
-    print(
-        "Could not import the requests module. See http://docs.python-requests.org/en/latest/"
-        " or install with 'pip install requests'"
-    )
-    raise
+import requests
 
 
 def upload_file(base_url, api_key, history_id, filepath, **kwargs):

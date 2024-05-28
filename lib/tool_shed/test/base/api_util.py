@@ -9,9 +9,9 @@ from typing import (
 )
 from urllib.parse import urljoin
 
+import requests
 from typing_extensions import Literal
 
-from galaxy.util import requests
 from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,

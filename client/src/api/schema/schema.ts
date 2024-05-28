@@ -398,6 +398,8 @@ export interface paths {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_ftp_files_get"];
     };
@@ -1439,6 +1441,8 @@ export interface paths {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_remote_files_get"];
         /**
@@ -2687,6 +2691,15 @@ export interface components {
              * @description Only users with the roles specified here can access this files source.
              */
             requires_roles?: string | null;
+            /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
             /**
              * Type
              * @description The type of the plugin.
@@ -5202,6 +5215,15 @@ export interface components {
              */
             requires_roles?: string | null;
             /**
+             * @description Features supported by this file source.
+             * @default {
+             *   "pagination": false,
+             *   "search": false,
+             *   "sorting": false
+             * }
+             */
+            supports?: components["schemas"]["FilesSourceSupports"];
+            /**
              * Type
              * @description The type of the plugin.
              */
@@ -5225,6 +5247,27 @@ export interface components {
             | components["schemas"]["BrowsableFilesSourcePlugin"]
             | components["schemas"]["FilesSourcePlugin"]
         )[];
+        /** FilesSourceSupports */
+        FilesSourceSupports: {
+            /**
+             * Pagination
+             * @description Whether this file source supports server-side pagination.
+             * @default false
+             */
+            pagination?: boolean;
+            /**
+             * Search
+             * @description Whether this file source supports server-side search.
+             * @default false
+             */
+            search?: boolean;
+            /**
+             * Sorting
+             * @description Whether this file source supports server-side sorting.
+             * @default false
+             */
+            sorting?: boolean;
+        };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
@@ -5989,10 +6032,95 @@ export interface components {
             visible: boolean;
         };
         /**
+         * HDAInaccessible
+         * @description History Dataset Association information when the user can not access it.
+         */
+        HDAInaccessible: {
+            /**
+             * Accessible
+             * @constant
+             * @enum {boolean}
+             */
+            accessible: false;
+            /** Copied From Ldda Id */
+            copied_from_ldda_id?: string | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid: number;
+            /**
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             * @constant
+             * @enum {string}
+             */
+            history_content_type: "dataset";
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name: string | null;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state: components["schemas"]["DatasetState"];
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Type
+             * @description The type of this item.
+             */
+            type: string;
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible: boolean;
+        };
+        /**
          * HDAObject
          * @description History Dataset Association Object
          */
         HDAObject: {
+            /** Accessible */
+            accessible?: boolean | null;
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -6925,6 +7053,7 @@ export interface components {
             | components["schemas"]["HDACustom"]
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
+            | components["schemas"]["HDAInaccessible"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
         )[];
@@ -6941,6 +7070,7 @@ export interface components {
                 | components["schemas"]["HDACustom"]
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
+                | components["schemas"]["HDAInaccessible"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
             )[];
@@ -13788,6 +13918,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -13910,6 +14041,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -14078,7 +14210,8 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
-                        | components["schemas"]["HDASummary"];
+                        | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"];
                 };
             };
             /** @description Validation Error */
@@ -15334,6 +15467,8 @@ export interface operations {
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
@@ -15341,12 +15476,20 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -17017,12 +17160,14 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
+                              | components["schemas"]["HDAInaccessible"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17606,6 +17751,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17657,6 +17803,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17889,12 +18036,14 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
+                              | components["schemas"]["HDAInaccessible"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17945,6 +18094,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17995,6 +18145,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -18226,6 +18377,7 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDAInaccessible"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -21650,6 +21802,8 @@ export interface operations {
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
+         *
+         * The total count of files and directories is returned in the 'total_matches' header.
          */
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
@@ -21657,12 +21811,20 @@ export interface operations {
             /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
+            /** @description Maximum number of entries to return. */
+            /** @description Number of entries to skip. */
+            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
+            /** @description Sort the entries by the specified field. */
             query?: {
                 target?: string;
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
                 recursive?: boolean | null;
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
                 writeable?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                query?: string | null;
+                sort_by?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

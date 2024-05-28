@@ -29,12 +29,12 @@ def test_file_source():
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    res = file_source.list("/", recursive=True)
+    res, _ = file_source.list("/", recursive=True)
     a_file = find_file_a(res)
     assert a_file
     assert a_file["uri"] == "gxfiles://test1/a", a_file
 
-    res = file_source.list("/", recursive=False)
+    res, _ = file_source.list("/", recursive=False)
     file_a = find_file_a(res)
     assert file_a
     assert file_a["uri"] == "gxfiles://test1/a"

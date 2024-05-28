@@ -9,6 +9,8 @@ from urllib.parse import (
     urlparse,
 )
 
+import requests
+
 from galaxy.files import (
     ConfiguredFileSources,
     DictFileSourcesUserContext,
@@ -18,7 +20,6 @@ from galaxy.files.sources.util import (
     fetch_drs_to_file,
     RetryOptions,
 )
-from galaxy.util import requests
 from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase

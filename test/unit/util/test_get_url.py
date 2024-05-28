@@ -1,11 +1,9 @@
 import pytest
+import requests
 import responses
 from werkzeug.wrappers.response import Response
 
-from galaxy.util import (
-    requests,
-    url_get,
-)
+from galaxy.util import url_get
 
 
 @responses.activate
@@ -29,7 +27,7 @@ def test_get_url_retry_after(httpserver):
     attempts = []
 
     def retry_handler(request):
-        attempts.append(requests)
+        attempts.append(request)
         if len(attempts) < 4:
             return Response("try again later", status=429, content_type="text/plain")
         else:

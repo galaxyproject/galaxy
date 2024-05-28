@@ -278,7 +278,7 @@ export default {
                     _l(
                         "WARNING: This will make all datasets (excluding library datasets) for which you have " +
                             "'management' permissions, in all of your histories " +
-                            "private, and will set permissions such that all " +
+                            "private (including archived and purged), and will set permissions such that all " +
                             "of your new data in these histories is created as private.  Any " +
                             "datasets within that are currently shared will need " +
                             "to be re-shared or published.  Are you sure you " +

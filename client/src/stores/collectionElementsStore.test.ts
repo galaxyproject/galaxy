@@ -150,6 +150,7 @@ function mockElement(collectionId: string, i: number): DCESummary {
             hda_ldda: "hda",
             history_id: "1",
             tags: [],
+            accessible: true,
         },
     };
 }

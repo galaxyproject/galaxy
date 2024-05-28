@@ -6,6 +6,7 @@ from typing import (
     ClassVar,
     List,
     Optional,
+    Tuple,
     Type,
 )
 
@@ -22,6 +23,7 @@ from galaxy.files import OptionalUserContext
 from . import (
     AnyRemoteEntry,
     BaseFilesSource,
+    DEFAULT_PAGE_LIMIT,
     FilesSourceOptions,
     FilesSourceProperties,
 )
@@ -34,6 +36,8 @@ PACKAGE_MESSAGE = "FilesSource plugin is missing required Python PyFilesystem2 p
 class PyFilesystem2FilesSource(BaseFilesSource):
     required_module: ClassVar[Optional[Type[FS]]]
     required_package: ClassVar[str]
+    supports_pagination = True
+    supports_search = True
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
@@ -42,7 +46,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None):
+    def _open_fs(self, user_context: OptionalUserContext = None, opts: Optional[FilesSourceOptions] = None) -> FS:
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
     def _list(
@@ -51,27 +55,65 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         recursive=False,
         user_context: OptionalUserContext = None,
         opts: Optional[FilesSourceOptions] = None,
-    ) -> List[AnyRemoteEntry]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         """Return dictionary of 'Directory's and 'File's."""
         try:
             with self._open_fs(user_context=user_context, opts=opts) as h:
                 if recursive:
-                    res: List[AnyRemoteEntry] = []
-                    for p, dirs, files in h.walk(path):
+                    recursive_result: List[AnyRemoteEntry] = []
+                    for p, dirs, files in h.walk(path, namespaces=["details"]):
                         to_dict = functools.partial(self._resource_info_to_dict, p)
-                        res.extend(map(to_dict, dirs))
-                        res.extend(map(to_dict, files))
-                    return res
+                        recursive_result.extend(map(to_dict, dirs))
+                        recursive_result.extend(map(to_dict, files))
+                    return recursive_result, len(recursive_result)
                 else:
-                    res = h.scandir(path, namespaces=["details"])
+                    page = self._to_page(limit, offset)
+                    filter = self._query_to_filter(query)
+                    count = self._get_total_matches_count(h, path, filter)
+                    result = h.filterdir(path, namespaces=["details"], page=page, files=filter, dirs=filter)
                     to_dict = functools.partial(self._resource_info_to_dict, path)
-                    return list(map(to_dict, res))
+                    return list(map(to_dict, result)), count
         except fs.errors.PermissionDenied as e:
             raise AuthenticationRequired(
                 f"Permission Denied. Reason: {e}. Please check your credentials in your preferences for {self.label}."
             )
         except fs.errors.FSError as e:
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
+
+    def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[List[str]] = None) -> int:
+        # For some reason, using "*" as glob does not return all files and directories, only files.
+        # So we need to count files and directories "*/" separately.
+        # Also, some filesystems do not properly support directories count (like Google Cloud Storage),
+        # so we need to catch TypeError exceptions and fallback to 0.
+        files_glob_pattern = f"{path}/{filter[0] if filter else '*'}"
+        try:
+            files_count = fs.glob(files_glob_pattern).count().files
+        except TypeError:
+            files_count = 0
+
+        directory_glob_pattern = f"{files_glob_pattern}/"
+        try:
+            directories_count = fs.glob(directory_glob_pattern).count().directories
+        except TypeError:
+            directories_count = 0
+        return files_count + directories_count
+
+    def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
+        if limit is None and offset is None:
+            return None
+        limit = limit or DEFAULT_PAGE_LIMIT
+        start = offset or 0
+        end = start + limit
+        return (start, end)
+
+    def _query_to_filter(self, query: Optional[str]) -> Optional[List[str]]:
+        if not query:
+            return None
+        return [f"*{query}*"]
 
     def _realize_to(
         self,

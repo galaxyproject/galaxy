@@ -1,4 +1,4 @@
-from galaxy.util import requests
+import requests
 
 
 def delete(api_key, url, data, return_formatted=True):

@@ -417,7 +417,10 @@ const matchedValues = computed(() => {
                 const options = props.options[entry.src] || [];
                 const option = options.find((v) => v.id === entry.id && v.src === entry.src);
                 if (option) {
-                    values.push({ ...option, name: option.name || entry.id });
+                    const accepted = !props.tag || option.tags?.includes(props.tag);
+                    if (accepted) {
+                        values.push({ ...option, name: option.name || entry.id });
+                    }
                 }
             }
         });
@@ -426,7 +429,7 @@ const matchedValues = computed(() => {
 });
 
 onMounted(() => {
-    if (props.value) {
+    if (props.value && matchedValues.value.length > 0) {
         $emit("input", createValue(matchedValues.value));
     } else {
         $emit("input", createValue(currentValue.value));

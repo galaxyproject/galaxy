@@ -39,6 +39,25 @@ async function mountDatasetAttributes(conversion_disable = false) {
     return wrapper;
 }
 
+async function buildWrapperWithError(error: string) {
+    const axiosMock = new MockAdapter(axios);
+    axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(400);
+    const wrapper = mount(DatasetAttributes, {
+        propsData: {
+            datasetId: DATASET_ID,
+            messageText: error,
+            messageVariant: "danger",
+        },
+        localVue,
+        stubs: {
+            FontAwesomeIcon: false,
+            FormElement: false,
+        },
+    });
+    await flushPromises();
+    return wrapper;
+}
+
 describe("DatasetAttributes", () => {
     it("check rendering", async () => {
         const wrapper = await mountDatasetAttributes();
@@ -70,5 +89,16 @@ describe("DatasetAttributes", () => {
         expect(wrapper.findAll("#permission_text").length).toBe(1);
         expect(wrapper.findAll(".tab-pane").length).toBe(3);
         expect(wrapper.findAll(".ui-portlet-section").length).toBe(1);
+    });
+
+    it("doesn't render edit controls with error", async () => {
+        const wrapper = await buildWrapperWithError("error");
+        expect(wrapper.findAll("button").length).toBe(0);
+        expect(wrapper.findAll("#attribute_text").length).toBe(0);
+        expect(wrapper.findAll("#conversion_text").length).toBe(0);
+        expect(wrapper.findAll("#datatype_text").length).toBe(0);
+        expect(wrapper.findAll("#permission_text").length).toBe(0);
+        expect(wrapper.findAll(".tab-pane").length).toBe(0);
+        expect(wrapper.findAll(".ui-portlet-section").length).toBe(0);
     });
 });
