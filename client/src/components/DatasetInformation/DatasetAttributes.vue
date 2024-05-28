@@ -4,7 +4,7 @@ import { faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser } from
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type AxiosError } from "axios";
 import { BAlert, BButton, BTab, BTabs } from "bootstrap-vue";
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { fetchDatasetAttributes } from "@/api/datasets";
 import { setAttributes } from "@/components/DatasetInformation/services";
@@ -30,6 +30,7 @@ const messageText = ref("");
 const messageVariant = ref("danger");
 const formData = ref<Record<string, any>>({});
 const datasetAttributes = ref<Record<string, any>>({});
+const hasError = computed(() => messageVariant.value === "danger");
 
 function onAttribute(data: object) {
     formData.value["attribute"] = data;
@@ -101,7 +102,7 @@ onMounted(async () => {
         <BAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset attributes..." />
         </BAlert>
-        <div v-else class="mt-3">
+        <div v-else-if="!hasError" class="mt-3">
             <BTabs>
                 <BTab v-if="!datasetAttributes['attribute_disable']">
                     <template v-slot:title>

@@ -4829,8 +4829,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             # extension is None
             return "data"
 
-    def set_peek(self, **kwd):
-        return self.datatype.set_peek(self, **kwd)
+    def set_peek(self, line_count=None, **kwd):
+        try:
+            # Certain datatype's set_peek methods contain a line_count argument
+            return self.datatype.set_peek(self, line_count=line_count, **kwd)
+        except TypeError:
+            # ... and others don't
+            return self.datatype.set_peek(self, **kwd)
+        except Exception:
+            # Never fail peek setting, but do log exception so datatype logic can be fixed
+            log.exception("Setting peek failed")
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)

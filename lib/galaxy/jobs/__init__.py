@@ -1790,13 +1790,9 @@ class MinimalJobWrapper(HasResourceParameters):
                     working_directory=self.working_directory,
                     remote_metadata_directory=remote_metadata_directory,
                 )
-            line_count = context.get("line_count", None)
-            try:
-                # Certain datatype's set_peek methods contain a line_count argument
+            if final_job_state != job.states.ERROR:
+                line_count = context.get("line_count", None)
                 dataset.set_peek(line_count=line_count)
-            except TypeError:
-                # ... and others don't
-                dataset.set_peek()
         else:
             # Handle purged datasets.
             dataset.blurb = "empty"
