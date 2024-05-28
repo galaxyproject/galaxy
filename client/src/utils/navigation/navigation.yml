@@ -47,7 +47,7 @@ masthead:
     home: '#analysis'
     help: '#help'
     login: '#user'
-    library: '#library'
+    libraries: '#library'
     window_manager: '#enable-window-manager'
     workflow: '#workflow .nav-link'
 
