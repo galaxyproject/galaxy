@@ -9,9 +9,11 @@
 _:  # global stuff
 
   selectors:
+    center_panel: '#center'
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
+    left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
     right_panel_drag: '.flex-panel.right .drag-handle'
@@ -42,8 +44,11 @@ masthead:
     user: '#user.loggedin-only > a.nav-link > span'
     register_or_login: '#user.loggedout-only > .nav-link'
     logout: '#user.loggedin-only > .nav-link'
-
-    user_menu: '#user .dropdown-menu a'
+    home: '#analysis'
+    help: '#help'
+    login: '#user'
+    library: '#library'
+    window_manager: '#enable-window-manager'
     workflow: '#workflow .nav-link'
 
     username:
@@ -655,6 +660,7 @@ workflows:
 visualization:
   selectors:
     _: '#center div.plugin-list'
+    activity: '#activity-visualizations'
     plugin_item: '[data-plugin-name*="${id}"]'
 
 trs_search:
@@ -909,7 +915,12 @@ tour:
 
 tools:
   selectors:
-    activity: "#activity-tools"
+    activity: '#activity-tools'
+    body: '#center #tool-card-body'
+    execute: '#execute'
+    help: 'div.form-help'
+    search: '.search-query'
+    title: '.toolSectionTitle'
 
 admin:
   allowlist:
@@ -1139,6 +1150,7 @@ upload:
     source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
     start_button: '#btn-start'
+    local_button: '#btn-local'
 
 new_user_welcome:
   selectors:
