@@ -11,6 +11,7 @@ from galaxy import (
     model,
     web,
 )
+from galaxy.exceptions import MessageException
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
@@ -241,7 +242,7 @@ class VisualizationController(
         try:
             return plugin.render(trans=trans, embedded=embedded, **kwargs)
         except Exception as exception:
-            self._handle_plugin_error(trans, visualization_name, exception)
+            return self._handle_plugin_error(trans, visualization_name, exception)
 
     def _get_plugin_from_registry(self, trans, visualization_name):
         """
@@ -257,7 +258,10 @@ class VisualizationController(
         """
         Log, raise if debugging; log and show html message if not.
         """
-        log.exception("error rendering visualization (%s)", visualization_name)
+        if isinstance(exception, MessageException):
+            log.debug("error rendering visualization (%s): %s", visualization_name, exception)
+        else:
+            log.exception("error rendering visualization (%s)", visualization_name)
         if trans.debug:
             raise exception
         return trans.show_error_message(

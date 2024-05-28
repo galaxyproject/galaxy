@@ -343,6 +343,17 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_display_error_handling(self, history_id):
+        hda1 = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+        )
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(display_response, 409)
+        assert (
+            display_response.json()["err_msg"]
+            == "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
+        )
+
     def test_get_content_as_text(self, history_id):
         contents = textwrap.dedent(
             """\

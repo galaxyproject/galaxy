@@ -2,6 +2,7 @@
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { hasDetails } from "@/api";
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
@@ -26,6 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "toggleHighlights"): void;
+    (e: "edit"): void;
 }>();
 
 const result = computed(() => datasetStore.getDataset(props.id));
@@ -40,7 +42,7 @@ function toggleHighlights() {
 
 <template>
     <div>
-        <div v-if="result && !isLoading" class="dataset">
+        <div v-if="result && !isLoading && hasDetails(result)" class="dataset">
             <div class="details not-loading">
                 <div class="summary">
                     <div v-if="stateText" class="mb-1">{{ stateText }}</div>

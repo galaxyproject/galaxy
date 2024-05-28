@@ -3,6 +3,10 @@ import collections
 import json
 import sys
 from numpy import inf
+
+from galaxy.exceptions import RequestParameterInvalidException
+
+MAX_SIZE = 100000  # 100 KB
 %>
 
 <%
@@ -58,8 +62,15 @@ def write_reaction(edge_id, left_index, right_index, substrates, products, rate,
 def load_data():
     output = {"nodes": "", "border_nodes": "", "edges": "", "edges": "", "self_loops": ""}
 
-    data = ''.join(list(hda.datatype.dataprovider(hda, 'line', strip_lines=True, strip_newlines=True)))
-    data = json.loads(data)
+    lines = []
+    size = 0
+
+    for line in hda.datatype.dataprovider(hda, 'line', strip_lines=True, strip_newlines=True):
+        size += len(line)
+        if size > MAX_SIZE:
+            raise RequestParameterInvalidException("Dataset too large to render, dataset must be less than 100 KB in size.")
+        lines.append(line)
+    data = json.loads("".join(lines))
 
     ordering = data['ordering']
     nodes = {int(key): to_counter(data['nodes'][key], ordering) for key in data['nodes'].keys()}
