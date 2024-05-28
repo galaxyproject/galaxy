@@ -61,26 +61,6 @@ masthead:
       selector: 'storage dashboard link'
       type: data-description
 
-  labels:
-    # top-level menus
-    admin: 'Admin'
-    analyze: 'Analyze Data'
-    data: 'Data'
-    help: 'Help'
-    user: 'User'
-    visualization: 'Visualization'
-    workflow: 'Workflow'
-
-    # user menu
-    preferences: 'Preferences'
-
-    # data menu
-    libraries: 'Data Libraries'
-    histories: 'Histories'
-    invocations: 'Workflow Invocations'
-    pages: 'Pages'
-    workflows: 'Workflows'
-
 preferences:
   selectors:
     activity: "#activity-settings"
