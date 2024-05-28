@@ -39,23 +39,17 @@ async function mountDatasetAttributes(conversion_disable = false) {
     return wrapper;
 }
 
-async function buildWrapperWithError(error) {
+async function buildWrapperWithError(error: string) {
+    const axiosMock = new MockAdapter(axios);
+    axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(400);
     const wrapper = mount(DatasetAttributes, {
         propsData: {
-            datasetId: "dataset_id",
+            datasetId: DATASET_ID,
             messageText: error,
             messageVariant: "danger",
         },
-        computed: {
-            hasError() {
-                return true;
-            },
-        },
         localVue,
         stubs: {
-            DatasetAttributesProvider: MockProvider({
-                result: null,
-            }),
             FontAwesomeIcon: false,
             FormElement: false,
         },
