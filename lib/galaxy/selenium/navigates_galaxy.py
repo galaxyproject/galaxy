@@ -1253,6 +1253,7 @@ class NavigatesGalaxy(HasDriver):
     def navigate_to_invocations(self):
         self.home()
         self.components.invocations.activity.wait_for_and_click()
+        self.components.invocations.activity_expand.wait_for_and_click()
 
     def navigate_to_pages(self):
         self.home()

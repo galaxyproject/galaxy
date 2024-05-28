@@ -861,6 +861,7 @@ workflow_show:
 invocations:
   selectors:
     activity: "#activity-invocation"
+    activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
     pager: '[data-description="grid pager"]'
