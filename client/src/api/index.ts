@@ -26,7 +26,8 @@ export interface HistoryContentsStats {
  * Data returned by the API when requesting `?view=summary&keys=size,contents_active,user_id`.
  */
 export interface HistorySummaryExtended extends HistorySummary, HistoryContentsStats {
-    user_id: string;
+    /** The ID of the user that owns the history. Null if the history is owned by an anonymous user. */
+    user_id: string | null;
 }
 
 type HistoryDetailedModel = components["schemas"]["HistoryDetailed"];
@@ -207,6 +208,7 @@ export function isHistorySummaryExtended(history: AnyHistory): history is Histor
 
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
+/** Represents a registered user.**/
 export interface User extends QuotaUsageResponse {
     id: string;
     email: string;
@@ -224,18 +226,30 @@ export interface AnonymousUser {
 
 export type GenericUser = User | AnonymousUser;
 
-export function isRegisteredUser(user: User | AnonymousUser | null): user is User {
-    return !user?.isAnonymous;
+/** Represents any user, including anonymous users or session-less (null) users.**/
+export type AnyUser = GenericUser | null;
+
+export function isRegisteredUser(user: AnyUser): user is User {
+    return user !== null && !user?.isAnonymous;
 }
 
-export function userOwnsHistory(user: User | AnonymousUser | null, history: AnyHistory) {
+export function isAnonymousUser(user: AnyUser): user is AnonymousUser {
+    return user !== null && user.isAnonymous;
+}
+
+export function userOwnsHistory(user: AnyUser, history: AnyHistory) {
     return (
         // Assuming histories without user_id are owned by the current user
         (isRegisteredUser(user) && !hasOwner(history)) ||
-        (isRegisteredUser(user) && hasOwner(history) && user.id === history.user_id)
+        (isRegisteredUser(user) && hasOwner(history) && user.id === history.user_id) ||
+        (isAnonymousUser(user) && hasAnonymousOwner(history))
     );
 }
 
 function hasOwner(history: AnyHistory): history is HistorySummaryExtended {
     return "user_id" in history && history.user_id !== null;
+}
+
+function hasAnonymousOwner(history: AnyHistory): history is HistorySummaryExtended {
+    return "user_id" in history && history.user_id === null;
 }
