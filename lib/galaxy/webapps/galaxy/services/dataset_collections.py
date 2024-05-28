@@ -273,7 +273,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]),
                 )
-            else:
+            elif result["element_type"] == DCEType.hda:
                 result["object"]["accessible"] = self.hda_manager.is_accessible(dsc_element.element_object, trans.user)
             return result
 
