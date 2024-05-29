@@ -147,4 +147,25 @@ describe("HistoryExport.vue", () => {
 
         expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
     });
+
+    it("should not display a fatal error alert if the history is found and loaded", async () => {
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#fatal-error-alert").exists()).toBe(false);
+
+        expect(wrapper.find("#history-name").exists()).toBe(true);
+        expect(wrapper.find("#history-export-options").exists()).toBe(true);
+        expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
+    });
+
+    it("should not render the UI and display a fatal error message if the history cannot be found or loaded", async () => {
+        axiosMock.onGet(FAKE_HISTORY_URL).reply(404);
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#fatal-error-alert").exists()).toBe(true);
+
+        expect(wrapper.find("#history-name").exists()).toBe(false);
+        expect(wrapper.find("#history-export-options").exists()).toBe(false);
+        expect(wrapper.find("#direct-download-tab").exists()).toBe(false);
+    });
 });
