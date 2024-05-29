@@ -24,6 +24,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
+import { rethrowSimple } from "@/utils/simple-error";
 import { sortByObjectProp } from "@/utils/sorting";
 
 const PAGINATION_LIMIT = 10;
@@ -209,7 +210,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             selectHistory(history);
             return history;
         } catch (error) {
-            console.error(error);
+            rethrowSimple(error);
         }
     }
 
@@ -257,7 +258,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
                     await handleTotalCountChange(histories.length);
                 }
             } catch (error) {
-                console.error(error);
+                rethrowSimple(error);
             } finally {
                 setHistoriesLoading(false);
             }
@@ -272,7 +273,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 setHistory(history);
                 return history;
             } catch (error) {
-                console.error(error);
+                rethrowSimple(error);
             } finally {
                 isLoadingHistory.delete(historyId);
             }
@@ -321,7 +322,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             setHistory(contentStats);
             return contentStats;
         } catch (error) {
-            console.error(error);
+            rethrowSimple(error);
         }
     }
 
