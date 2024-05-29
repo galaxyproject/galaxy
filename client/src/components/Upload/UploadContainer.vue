@@ -1,5 +1,5 @@
 <script setup>
-import { BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
 import {
@@ -12,6 +12,8 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
+import { canMutateHistory } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
 import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
@@ -82,6 +84,8 @@ const regular = ref(null);
 
 const { percentage, status } = storeToRefs(useUploadStore());
 
+const { currentHistory } = storeToRefs(useHistoryStore());
+
 const effectiveExtensions = computed(() => {
     if (props.formats === null || !datatypesMapperReady.value) {
         return listExtensions.value;
@@ -106,6 +110,7 @@ const historyAvailable = computed(() => Boolean(props.currentHistoryId));
 const ready = computed(
     () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value
 );
+const canUploadToHistory = computed(() => currentHistory.value && canMutateHistory(currentHistory.value));
 const showCollection = computed(() => !props.formats && props.multiple);
 const showComposite = computed(() => !props.formats || hasCompositeExtension);
 const showRegular = computed(() => !props.formats || hasRegularExtension);
@@ -160,7 +165,13 @@ defineExpose({
 </script>
 
 <template>
-    <BTabs v-if="ready">
+    <BAlert v-if="!canUploadToHistory" variant="warning" show>
+        <span v-localize>
+            The current history is immutable and you cannot upload data to it. Please select a different history or
+            create a new one.
+        </span>
+    </BAlert>
+    <BTabs v-else-if="ready">
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <DefaultBox
                 ref="regular"

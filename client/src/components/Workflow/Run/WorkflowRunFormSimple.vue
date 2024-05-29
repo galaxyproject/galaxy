@@ -1,11 +1,17 @@
 <template>
     <div>
         <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
+            <BAlert v-if="!canRunOnHistory" variant="warning" show>
+                <span v-localize>
+                    The workflow cannot run because the current history is immutable. Please select a different history
+                    or send the results to a new one using the run settings ⚙️
+                </span>
+            </BAlert>
             <b>Workflow: {{ model.name }}</b>
             <ButtonSpinner
                 id="run-workflow"
                 :wait="waitingForRequest"
-                :disabled="hasValidationErrors"
+                :disabled="hasValidationErrors || !canRunOnHistory"
                 class="float-right"
                 title="Run Workflow"
                 @onClick="onExecute" />
@@ -89,6 +95,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        canMutateCurrentHistory: {
+            type: Boolean,
+            required: true,
+        },
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
@@ -142,6 +152,9 @@ export default {
         },
         hasValidationErrors() {
             return Boolean(Object.values(this.stepValidations).find((value) => value !== null && value !== undefined));
+        },
+        canRunOnHistory() {
+            return this.canMutateCurrentHistory || this.sendToNewHistory;
         },
     },
     methods: {

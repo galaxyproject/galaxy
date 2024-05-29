@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistoryItemSummary, HistorySummaryExtended } from "@/api";
+import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -15,6 +15,7 @@ import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
 import { useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setDrag } from "@/utils/setDrag";
 
@@ -49,7 +50,6 @@ interface Props {
     listOffset?: number;
     history: HistorySummaryExtended;
     filter?: string;
-    canEditHistory?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
@@ -59,7 +59,6 @@ type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
-    canEditHistory: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -90,6 +89,14 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const { currentUser } = storeToRefs(useUserStore());
+
+const currentUserOwnsHistory = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
+});
+const canEditHistory = computed(() => {
+    return currentUserOwnsHistory.value && !props.history.deleted && !props.history.archived;
+});
 
 const historyUpdateTime = computed(() => {
     return props.history.update_time;
@@ -535,13 +542,14 @@ function setItemDragstart(
                         :summarized="isMultiViewItem"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" />
+                    <HistoryMessages :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastCheckedTime"
                         :show-controls="canEditHistory"
+                        :owned-by-current-user="userOwnsHistory(currentUser, history)"
                         :filter-text.sync="filterText"
                         :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />

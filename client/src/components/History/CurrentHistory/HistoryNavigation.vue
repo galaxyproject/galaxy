@@ -30,9 +30,9 @@ import {
     BSpinner,
 } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
-import type { HistorySummary } from "@/api";
+import { canMutateHistory, type HistorySummary } from "@/api";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -79,6 +79,22 @@ const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 const { totalHistoryCount } = storeToRefs(historyStore);
+
+const canEditHistory = computed(() => {
+    return canMutateHistory(props.history);
+});
+
+const historyState = computed(() => {
+    if (props.history.purged) {
+        return "purged";
+    } else if (props.history.deleted) {
+        return "deleted";
+    } else if (props.history.archived) {
+        return "archived";
+    } else {
+        return "active";
+    }
+});
 
 function onDelete() {
     if (purgeHistory.value) {
@@ -160,7 +176,16 @@ function userTitle(title: string) {
 
                     <BDropdownDivider />
 
+                    <BDropdownText v-if="!canEditHistory">
+                        This history has been <span class="font-weight-bold">{{ historyState }}</span
+                        >.
+                        <span v-localize>Some actions might not be available.</span>
+                    </BDropdownText>
+
+                    <BDropdownDivider v-if="!canEditHistory" />
+
                     <BDropdownItem
+                        :disabled="!canEditHistory"
                         :title="localize('Resume all Paused Jobs in this History')"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <FontAwesomeIcon fixed-width :icon="faPlay" class="mr-1" />
@@ -177,7 +202,10 @@ function userTitle(title: string) {
                         <span v-localize>Copy this History</span>
                     </BDropdownItem>
 
-                    <BDropdownItem v-b-modal:delete-history-modal :title="localize('Permanently Delete History')">
+                    <BDropdownItem
+                        v-b-modal:delete-history-modal
+                        :disabled="!canEditHistory"
+                        :title="localize('Permanently Delete History')">
                         <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
                         <span v-localize>Delete this History</span>
                     </BDropdownItem>
@@ -191,6 +219,7 @@ function userTitle(title: string) {
 
                     <BDropdownItem
                         data-description="export to file"
+                        :disabled="history.purged"
                         :title="localize('Export and Download History as a File')"
                         @click="$router.push(`/histories/${history.id}/export`)">
                         <FontAwesomeIcon fixed-width :icon="faFileArchive" class="mr-1" />
@@ -198,7 +227,7 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || history.archived || history.purged"
                         data-description="archive history"
                         :title="userTitle('Archive this History')"
                         @click="$router.push(`/histories/${history.id}/archive`)">
@@ -209,7 +238,7 @@ function userTitle(title: string) {
                     <BDropdownItem
                         :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
-                        @click="iframeRedirect('/workflow/build_from_current_history')">
+                        @click="iframeRedirect(`/workflow/build_from_current_history?history_id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faFileExport" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
                     </BDropdownItem>
@@ -225,7 +254,7 @@ function userTitle(title: string) {
                     <BDropdownDivider />
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
@@ -234,7 +263,7 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
                         <FontAwesomeIcon fixed-width :icon="faUserLock" class="mr-1" />
@@ -243,7 +272,7 @@ function userTitle(title: string) {
 
                     <BDropdownItem
                         v-b-modal:history-privacy-modal
-                        :disabled="isAnonymous"
+                        :disabled="isAnonymous || !canEditHistory"
                         :title="userTitle('Make this History Private')">
                         <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
                         <span v-localize>Make Private</span>
