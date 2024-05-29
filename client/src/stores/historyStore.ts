@@ -97,6 +97,38 @@ export const useHistoryStore = defineStore("historyStore", () => {
         };
     });
 
+    const pinnedHistoriesSummarizedStatus = computed(() => {
+        let annotation = false;
+        let tags = false;
+        let loaded = true;
+
+        for (const h of pinnedHistories.value) {
+            const history = storedHistories.value[h.id];
+            if (!history) {
+                loaded = false;
+                break;
+            }
+
+            if (history.annotation) {
+                annotation = true;
+            }
+
+            if (history.tags.length > 0) {
+                tags = true;
+            }
+        }
+
+        if (!loaded || (annotation && tags)) {
+            return "both";
+        } else if (annotation) {
+            return "annotation";
+        } else if (tags) {
+            return "tags";
+        } else {
+            return "none";
+        }
+    });
+
     async function setCurrentHistory(historyId: string) {
         const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
         selectHistory(currentHistory);
@@ -334,6 +366,11 @@ export const useHistoryStore = defineStore("historyStore", () => {
         currentHistoryId,
         currentFilterText,
         pinnedHistories,
+        /** Returns a string that indicates whether all the pinned histories have annotations,
+         * tags, both, or none of them.
+         * This is used to format the `DetailsLayout` header uniformly for multi-view histories.
+         */
+        pinnedHistoriesSummarizedStatus,
         getHistoryById,
         getHistoryNameById,
         setCurrentHistory,
