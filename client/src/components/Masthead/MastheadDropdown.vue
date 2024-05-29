@@ -30,17 +30,13 @@ defineProps({
 </script>
 
 <template>
-    <BNavItemDropdown :id="id" :title="tooltip" ref="dropdown" right v-b-tooltip.hover.bottom>
+    <BNavItemDropdown :id="id" ref="dropdown" v-b-tooltip.hover.bottom :title="tooltip" right>
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
             <span class="fa fa-fw" :class="icon" />
         </template>
         <template>
-            <BDropdownItem
-                v-for="(item, idx) in menu"
-                :key="idx"
-                role="menuitem"
-                @click="item.handler">
+            <BDropdownItem v-for="(item, idx) in menu" :key="idx" role="menuitem" @click="item.handler">
                 <span class="fa fa-fw" :class="item.icon" />
                 <span>{{ item.title }}</span>
             </BDropdownItem>
