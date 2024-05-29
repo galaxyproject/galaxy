@@ -15,6 +15,9 @@ defineProps<Props>();
 <template>
     <BListGroup v-if="testResults">
         <ConfigurationTestItem :status="testResults?.template_definition" />
+        <ConfigurationTestItem
+            v-if="testResults?.oauth2_access_token_generation != null"
+            :status="testResults?.oauth2_access_token_generation" />
         <ConfigurationTestItem :status="testResults?.template_settings" />
         <ConfigurationTestItem :status="testResults?.connection" />
     </BListGroup>

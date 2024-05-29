@@ -56,6 +56,7 @@ from galaxy.util.config_templates import (
 from ._config_templates import (
     CanTestPluginStatus,
     CreateInstancePayload,
+    CreateTestTarget,
     ModifyInstancePayload,
     prepare_environment,
     prepare_template_parameters_for_testing,
@@ -63,6 +64,7 @@ from ._config_templates import (
     recover_secrets,
     save_template_instance,
     sort_templates,
+    TemplateServerConfiguration,
     TestModifyInstancePayload,
     TestUpdateInstancePayload,
     TestUpgradeInstancePayload,
@@ -262,13 +264,14 @@ class ObjectStoreInstancesManager:
         return self._plugin_status(trans, persisted_object_store, to_template_reference(persisted_object_store))
 
     def plugin_status(self, trans: ProvidesUserContext, payload: CreateInstancePayload) -> PluginStatus:
-        return self._plugin_status(trans, payload, payload)
+        target = CreateTestTarget(payload, UserObjectStore)
+        return self._plugin_status(trans, target, payload)
 
     def _plugin_status(
-        self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template_reference: TemplateReference
+        self, trans: ProvidesUserContext, target: CanTestPluginStatus, template_reference: TemplateReference
     ):
         template = self._catalog.find_template(template_reference)
-        return self._plugin_status_for_template(trans, payload, template)
+        return self._plugin_status_for_template(trans, target, template)
 
     def _plugin_status_for_template(
         self, trans: ProvidesUserContext, payload: CanTestPluginStatus, template: ObjectStoreTemplate
@@ -300,7 +303,7 @@ class ObjectStoreInstancesManager:
         template: ObjectStoreTemplate,
     ) -> Tuple[Optional[ObjectStoreConfiguration], PluginAspectStatus]:
         template_parameters = prepare_template_parameters_for_testing(
-            trans, template, payload, self._app_vault, self._app_config
+            trans, template, TemplateServerConfiguration(), payload, self._app_vault, self._app_config
         )
 
         configuration = None

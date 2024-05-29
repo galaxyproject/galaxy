@@ -27,6 +27,7 @@ TEST_TEMPLATE_VERSION = 0
 
 class TestTemplate(StrictModel):
     id: str
+    type: str = "test"
     version: int
     variables: Optional[List[TemplateVariable]]
     secrets: Optional[List[TemplateSecret]]

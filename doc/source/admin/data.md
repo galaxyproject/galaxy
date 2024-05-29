@@ -350,6 +350,19 @@ configuration).
 
 ![](file_source_azure_configuration.png)
 
+#### ``dropbox``
+
+The syntax for the ``configuration`` section of ``dropbox`` templates looks like this.
+
+![](file_source_dropbox_configuration_template.png)
+
+At runtime, after the ``configuration`` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to ``file_sources_conf.yml`` (Galaxy's global file source
+configuration).
+
+![](file_source_dropbox_configuration.png)
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
@@ -397,6 +410,74 @@ and you are comfortable with it storing your user's secrets.
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_private_bucket.yml
 :language: yaml
 ```
+
+### Production OAuth 2.0 File Source Templates
+
+Unlike the examples in the previous section. These examples will require a bit of
+configuration on the part of the admin. This is to obtain client credentials from the
+external service and register an OAuth 2.0 redirection callback with the remote service.
+
+#### Dropbox
+
+Once you have OAuth 2.0 client credentials from Dropbox (called ``oauth2_client_id`` and
+``oauth2_client_secret`` here), the following configuration can be used configure your Galaxy
+instance to enable Dropbox.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
+:language: yaml
+```
+
+To use this template - you'll need to make your credentials available to Galaxy's
+web and job handler processes using the environment variables ``GALAXY_DROPBOX_APP_CLIENT_ID``
+and ``GALAXY_DROPBOX_APP_CLIENT_SECRET``. Your jobs themselves do not require
+these secrets to be set and will not be given the secrets.
+
+If you'd like to configure these secrets explicit - you can configure them explicitly
+in the configuration. If your configuration file is managed by Ansible, these secrets
+could potentially be populated from your Ansible vault.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
+:language: yaml
+```
+
+To obtain the OAuth 2.0 credentials from Dropbox, you'll need to navigate to your
+[Dropbox Apps](https://www.dropbox.com/developers/apps) and create a new app 
+for your Galaxy instance with the "Create app" button.
+
+![Screenshot of Dropbox](dropbox_create_button.png)
+
+The only option available is "Scoped access" and this works fine for typical
+Galaxy use cases. You will however want to click "Full Dropbox" to request
+full access to your user's account. You will also need to give your "App" a name
+here, this should likely be something related to your Galaxy instances name.
+
+![Screenshot of Dropbox](dropbox_create_app_options_1.png)
+
+After your app is created, you'll be presented with a management screen for it.
+The first thing you'll want to do is navigate to the permissions tab and enable
+permissions to read and write to files and directories so the file source plugin
+works properly:
+
+![Screenshot of Dropbox](dropbox_scopes.png)
+
+Next, navigate back to the "Settings" tab. You'll need to register a callback
+for your Galaxy instance (it will need HTTPS enabled). This should be the URL
+to your Galaxy instance with ``oauth2_callback`` appended to it.
+
+![Screenshot of Dropbox](dropbox_callback.png)
+
+Finally you'll be able to find the ``oauth2_client_id`` and ``oauth2_client_secret``
+to configured your Galaxy with on this settings page.
+
+![Screenshot of Dropbox](dropbox_client_creds.png)
+
+Until you have 50 users, your App will be considered a "development" application.
+The upshot of this is that your user's will get a scary message during authorization
+but there seems to be no way around this. 50 users would definitely be considered
+a production Galaxy instance but Dropbox operates on a different scale.
+
+For more information on what Dropbox considers a "development" app versus a "production"
+app - checkout the [Dropbox documentation](https://www.dropbox.com/developers/reference/developer-guide#production-approval).
 
 ## Playing Nicer with Ansible
 
@@ -604,3 +685,70 @@ variable is not defined at runtime.
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/admin_secrets_with_defaults.yml
 :language: yaml
 ```
+
+## OAuth 2.0 Enabled Configurations
+
+[OAuth 2.0](https://oauth.net/2/) has become an industry standard for allowing users
+of various services (e.g. Dropbox or Google Drive) to authorize other services (e.g. Galaxy)
+fine grained access to the services. There is a bit of a dance the services need to do
+but the result can be a fairly nice end-user experience. The framework for configuring
+user defined data access templates can support OAuth 2.0.
+
+Galaxy keeps track of which plugin ``type``s (currently only file source types) require
+OAuth2 to work properly and will take care of authorization redirection, saving refresh tokens,
+etc.. implicitly. One such ``type`` is ``dropbox``. Here is the production Dropbox
+template distributed with Galaxy.
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_dropbox.yml
+:language: yaml
+```
+
+OAuth2 enabled plugin types include template definitions that include ``oauth2_client_id``
+and ``oauth2_client_secret`` in the configuration (as shown in the following specification
+and in the above examples).
+
+![](file_source_dropbox_configuration_template.png)
+
+The above example defines these secrets using environment variables but they can stored in
+Galaxy's Vault explicitly by the admin or written right to the configuration files as shown
+in the next two examples:
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_in_vault.yml
+:language: yaml
+```
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/dropbox_client_secrets_explicit.yml
+:language: yaml
+```
+
+Looking at the configuration objects that get generated at runtime
+from these templates though - ``oauth2_client_id`` and ``oauth2_client_secret`` no longer
+appear and instead have been replaced with a ``oauth2_access_token`` parameter.
+Galaxy will take care of stripping out the client (e.g. Galaxy server) information and
+replacing it with short-term access tokens generated for the user's resources.
+
+![](file_source_dropbox_configuration.png)
+
+Normally, a UUID is created for each user configured instance object and this is used
+to store the template's explicitly listed secrets in Galaxy's Vault. For OAuth 2.0
+plugin types - before user's are even prompted for configuration metadata they are redirected
+to the remote service and prompted to authorize Galaxy to act on their behalf when using
+the remote service. If they authorize this, the remote service will send an [`authorization
+code`](https://oauth.net/2/grant-types/authorization-code/) to ``https://<galaxy_url>/oauth2_callback`` along with state information
+to recover which instance is being configured. At this point, Galaxy will fetch a [`refresh token`](https://oauth.net/2/refresh-tokens/) from the remote resource using the
+supplied authorization code. The refresh token is stored in the Vault in key associated with
+the UUID of the object that will be created when the user finishes the creation process.
+Specifically it is stored at 
+
+```
+/galaxy/user/<user_id>/file_source_config/<file_source_instance_uuid>/_oauth2_refresh_token
+```
+
+Here is the prefix at the end of ``_`` is indicating that Galaxy is managing this instead of
+it being listed explicitly in a ``secrets`` section of the template configuration like the
+explicit Vault secrets discussed in this document.
+
+Galaxy knows how to fetch an [`access token`](https://oauth.net/2/access-tokens/) from this
+refresh token that is actually used to interact with the remote resource. This is the property
+``oauth2_access_token`` that is injected into the configuration object shown above and passed
+along to the actual object store or file source plugin implementation.
