@@ -20,7 +20,7 @@ from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
 from galaxy.util.unittest_utils import skip_if_site_down
 
 
-@skip_if_site_down("toolshed.g2.bx.psu.edu")
+@skip_if_site_down(DEFAULT_TOOL_SHED_URL)
 def test_against_production_shed(tmp_path: Path):
     repo_owner = "iuc"
     repo_name = "featurecounts"
