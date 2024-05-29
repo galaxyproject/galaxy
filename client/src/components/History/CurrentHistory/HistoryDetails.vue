@@ -11,12 +11,12 @@ import UtcDate from "@/components/UtcDate.vue";
 interface Props {
     history: HistorySummary;
     writeable: boolean;
-    summarized: boolean;
+    summarized?: "both" | "annotation" | "tags" | "none";
 }
 
 const props = withDefaults(defineProps<Props>(), {
     writeable: true,
-    summarized: false,
+    summarized: undefined,
 });
 
 const historyStore = useHistoryStore();
