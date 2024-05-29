@@ -39,6 +39,7 @@ const hasGoToAll = computed(
             <BButton
                 v-if="hasGoToAll"
                 class="activity-panel-footer"
+                variant="primary"
                 :data-description="`props.mainButtonText button`"
                 :to="props.href"
                 size="sm"
