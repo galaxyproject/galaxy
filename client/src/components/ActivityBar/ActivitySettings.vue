@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faSquare, faStar as faStarRegular } from "@fortawesome/free-regular-svg-icons";
 import { faCheckSquare, faStar, faThumbtack, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
@@ -13,6 +13,7 @@ library.add({
     faCheckSquare,
     faSquare,
     faStar,
+    faStarRegular,
     faTrash,
     faThumbtack,
 });
