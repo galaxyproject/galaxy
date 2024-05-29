@@ -838,7 +838,7 @@ class WorkflowDictPreviewSummary(WorkflowDictExtendedBaseModel):
 
 
 class WorkflowDictEditorSummary(WorkflowDictExtendedBaseModel):
-    upgrade_messages: Dict[int, str] = Field(
+    upgrade_messages: Dict[int, Union[str, Dict[str, str]]] = Field(
         ...,
         title="Upgrade Messages",
         description="Upgrade messages for each step in the workflow.",
