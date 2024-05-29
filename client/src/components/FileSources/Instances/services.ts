@@ -9,6 +9,10 @@ export const testInstance = fetcher
     .create();
 export const update = fetcher.path("/api/file_source_instances/{user_file_source_id}").method("put").create();
 export const testUpdate = fetcher.path("/api/file_source_instances/{user_file_source_id}/test").method("post").create();
+export const getOAuth2Info = fetcher
+    .path("/api/file_source_templates/{template_id}/{template_version}/oauth2")
+    .method("get")
+    .create();
 
 export async function hide(instance: UserFileSourceModel) {
     const payload = { hidden: true };

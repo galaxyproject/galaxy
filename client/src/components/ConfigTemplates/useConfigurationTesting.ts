@@ -43,6 +43,7 @@ export function useConfigurationTesting() {
 export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
     what: string,
     template: Ref<T>,
+    uuid: Ref<string | undefined>,
     test: (payload: CreateInstancePayload) => Promise<{ data: PluginStatus }>,
     create: (payload: CreateInstancePayload) => Promise<{ data: R }>,
     onCreate: (result: R) => unknown
@@ -52,6 +53,9 @@ export function useConfigurationTemplateCreation<T extends TemplateSummary, R>(
 
     async function onSubmit(formData: any) {
         const payload = createFormDataToPayload(template.value, formData);
+        if (uuid.value) {
+            payload.uuid = uuid.value;
+        }
         let pluginStatus;
         try {
             testRunning.value = true;

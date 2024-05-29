@@ -17,7 +17,9 @@ from galaxy.objectstore.badges import (
 from galaxy.util.config_templates import (
     EnvironmentDict,
     expand_raw_config,
+    ImplicitConfigurationParameters,
     MarkdownContent,
+    merge_implicit_parameters,
     populate_default_variables,
     SecretsDict,
     StrictModel,
@@ -317,6 +319,7 @@ class ObjectStoreTemplateSummary(ObjectStoreTemplateBase):
 class ObjectStoreTemplate(ObjectStoreTemplateBase):
     configuration: ObjectStoreTemplateConfiguration
     environment: Optional[List[TemplateEnvironmentEntry]] = None
+    type: ObjectStoreTemplateType
 
 
 ObjectStoreTemplateCatalog = RootModel[List[ObjectStoreTemplate]]
@@ -332,10 +335,12 @@ def template_to_configuration(
     secrets: SecretsDict,
     user_details: UserDetailsDict,
     environment: EnvironmentDict,
+    implicit: Optional[ImplicitConfigurationParameters] = None,
 ) -> ObjectStoreConfiguration:
     configuration_template = template.configuration
     populate_default_variables(template.variables, variables)
     raw_config = expand_raw_config(configuration_template, variables, secrets, user_details, environment)
+    merge_implicit_parameters(raw_config, implicit)
     return to_configuration_object(raw_config)
 
 

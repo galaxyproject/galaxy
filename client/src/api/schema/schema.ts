@@ -332,6 +332,10 @@ export interface paths {
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
     };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
+    };
     "/api/folders/{folder_id}/contents": {
         /**
          * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
@@ -2053,6 +2057,10 @@ export interface paths {
         /** Service Info */
         get: operations["service_info_ga4gh_drs_v1_service_info_get"];
     };
+    "/oauth2_callback": {
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        get: operations["oauth2_callback_oauth2_callback_get"];
+    };
 }
 
 export type webhooks = Record<string, never>;
@@ -3151,6 +3159,8 @@ export interface components {
             template_id: string;
             /** Template Version */
             template_version: number;
+            /** Uuid */
+            uuid?: string | null;
             /** Variables */
             variables: {
                 [key: string]: (string | boolean | number) | undefined;
@@ -5178,7 +5188,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "dropbox" | "googledrive";
             /** Variables */
             variables?:
                 | (
@@ -9954,6 +9964,11 @@ export interface components {
              */
             updated_count: number;
         };
+        /** OAuth2Info */
+        OAuth2Info: {
+            /** Authorize Url */
+            authorize_url: string;
+        };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
             /**
@@ -10479,6 +10494,7 @@ export interface components {
         /** PluginStatus */
         PluginStatus: {
             connection?: components["schemas"]["PluginAspectStatus"] | null;
+            oauth2_access_token_generation?: components["schemas"]["PluginAspectStatus"] | null;
             template_definition: components["schemas"]["PluginAspectStatus"];
             template_settings?: components["schemas"]["PluginAspectStatus"] | null;
         };
@@ -12790,7 +12806,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "dropbox" | "googledrive";
             /** Uri Root */
             uri_root: string;
             /** Uuid */
@@ -15168,6 +15184,35 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__template_oauth2: {
+        /** Template Oauth2 */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The template ID of the target file source template. */
+            /** @description The template version of the target file source template. */
+            path: {
+                template_id: string;
+                template_version: number;
+            };
+        };
+        responses: {
+            /** @description OAuth2 authorization url to redirect user to prior to creation. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["OAuth2Info"];
                 };
             };
             /** @description Validation Error */
@@ -25622,6 +25667,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+        };
+    };
+    oauth2_callback_oauth2_callback_get: {
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        parameters: {
+            /** @description Base-64 encoded JSON used to route request within Galaxy. */
+            query: {
+                state: string;
+                code: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
