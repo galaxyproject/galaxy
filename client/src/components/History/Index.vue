@@ -40,8 +40,7 @@ function onViewCollection(collection: CollectionEntry, currentOffset?: number) {
                 <HistoryNavigation
                     :history="currentHistory"
                     :histories="histories"
-                    :histories-loading="historiesLoading"
-                    title="Histories" />
+                    :histories-loading="historiesLoading" />
             </template>
         </HistoryPanel>
 
