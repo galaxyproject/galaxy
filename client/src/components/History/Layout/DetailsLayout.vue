@@ -194,7 +194,8 @@ function selectText() {
 
 <style lang="scss" scoped>
 .summarized-details {
-    margin: 1rem 1rem 0 1rem;
+    margin-top: 1rem;
+    margin-left: 0.5rem;
     max-width: 15rem;
 
     &.both {
