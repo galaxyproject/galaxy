@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
 
+import { useActivityAction } from "@/composables/useActivityAction";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 library.add({
@@ -22,6 +23,7 @@ const props = defineProps<{
 
 const activityStore = useActivityStore();
 const { activities } = storeToRefs(activityStore);
+const activityAction = useActivityAction();
 
 const filteredActivities = computed(() => {
     if (props.query?.length > 0) {
@@ -45,8 +47,6 @@ const foundActivities: ComputedRef<boolean> = computed(() => {
     return filteredActivities.value.length > 0;
 });
 
-function onClick(activity: Activity) {}
-
 function onFavorite(activity: Activity) {
     if (activity.optional) {
         activity.visible = !activity.visible;
@@ -62,7 +62,10 @@ function onRemove(activity: Activity) {
     <div class="activity-settings rounded no-highlight">
         <div v-if="foundActivities" class="activity-settings-content">
             <div v-for="activity in filteredActivities" :key="activity.id">
-                <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
+                <button
+                    v-if="activity.optional"
+                    class="activity-settings-item p-2 cursor-pointer"
+                    @click="activityAction.executeActivity(activity)">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="d-flex justify-content-between w-100">
                             <span>
@@ -71,7 +74,7 @@ function onRemove(activity: Activity) {
                                     activity.title || "No title available"
                                 }}</span>
                             </span>
-                            <div v-if="activity.optional">
+                            <div>
                                 <BButton
                                     v-if="activity.mutable"
                                     v-b-tooltip.hover
@@ -88,7 +91,7 @@ function onRemove(activity: Activity) {
                                     size="sm"
                                     title="Hide in Activity Bar"
                                     variant="link"
-                                    @click="onFavorite(activity)">
+                                    @click.stop="onFavorite(activity)">
                                     <FontAwesomeIcon icon="fas fa-star" fa-fw />
                                 </BButton>
                                 <BButton
@@ -97,7 +100,7 @@ function onRemove(activity: Activity) {
                                     size="sm"
                                     title="Show in Activity Bar"
                                     variant="link"
-                                    @click="onFavorite(activity)">
+                                    @click.stop="onFavorite(activity)">
                                     <FontAwesomeIcon icon="far fa-star" fa-fw />
                                 </BButton>
                             </div>
