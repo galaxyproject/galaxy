@@ -372,7 +372,7 @@ class FastAPIJobs:
     @router.get(
         "/api/jobs/{job_id}/console_output",
         name="get_console_output",
-        summary="Returns STDOUT and STDERR from job.",
+        summary="Returns STDOUT and STDERR from the tool running in a specific job.",
     )
     def console_output(
         self,
@@ -384,7 +384,7 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobConsoleOutput:
         """
-        Get the stdout and/or stderr of a job. The position parameters are the index
+        Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
         of where to start reading stdout/stderr. The length parameters control how much
         stdout/stderr is read.
         """
