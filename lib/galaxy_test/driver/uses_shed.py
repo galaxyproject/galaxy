@@ -5,7 +5,10 @@ import string
 import tempfile
 from typing import ClassVar
 
+from unittest import SkipTest
+
 from galaxy.app import UniverseApplication
+from galaxy.util.unittest_utils import is_site_up
 from galaxy.model.base import transaction
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.base.uses_shed_api import UsesShedApi
@@ -34,6 +37,8 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 <tables>
 </tables>"""
 
+TOOLSHED_URL = "https://toolshed.g2.bx.psu.edu/"
+
 
 class UsesShed(UsesShedApi):
     @property
@@ -47,6 +52,8 @@ class UsesShed(UsesShedApi):
 
     @classmethod
     def configure_shed(cls, config):
+        if not is_site_up(TOOLSHED_URL):
+            raise SkipTest("Test depends on [{TOOLSHED_URL}] being up and it appears to be down.")
         cls.shed_tools_dir = tempfile.mkdtemp()
         cls.shed_tool_data_dir = tempfile.mkdtemp()
         cls._test_driver.temp_directories.extend([cls.shed_tool_data_dir, cls.shed_tools_dir])
