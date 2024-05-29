@@ -53,7 +53,7 @@ class UsesShed(UsesShedApi):
     @classmethod
     def configure_shed(cls, config):
         if not is_site_up(TOOLSHED_URL):
-            raise SkipTest("Test depends on [{TOOLSHED_URL}] being up and it appears to be down.")
+            raise SkipTest(f"Test depends on [{TOOLSHED_URL}] being up and it appears to be down.")
         cls.shed_tools_dir = tempfile.mkdtemp()
         cls.shed_tool_data_dir = tempfile.mkdtemp()
         cls._test_driver.temp_directories.extend([cls.shed_tool_data_dir, cls.shed_tools_dir])
