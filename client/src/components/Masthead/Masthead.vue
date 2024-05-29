@@ -10,6 +10,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
+import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 
@@ -122,12 +123,24 @@ onMounted(() => {
                 class="loggedout-only"
                 title="Login"
                 @click="openUrl('/login/start')" />
-            <MastheadItem
+            <MastheadDropdown
                 v-if="!isAnonymous && !config.single_user"
                 id="user"
                 class="loggedin-only"
-                icon="fa-sign-out-alt"
-                tooltip="Logout"
+                icon="fa-user"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: 'fa-gear',
+                        handler: () => openUrl('/user'),
+                    },
+                    {
+                        title: 'Sign Out',
+                        icon: 'fa-sign-out-alt',
+                        handler: () => userLogout(),
+                    },
+                ]"
                 @click="userLogout" />
         </BNavbarNav>
     </BNavbar>
