@@ -1,9 +1,7 @@
 <script setup>
-import { BDropdownItem, BNavItemDropdown, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
+import { BDropdownItem, BNavItemDropdown, VBTooltipPlugin } from "bootstrap-vue";
 import Vue, { ref } from "vue";
 
-Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
 
 const dropdown = ref(null);
@@ -41,9 +39,7 @@ defineProps({
             <BDropdownItem
                 v-for="(item, idx) in menu"
                 :key="idx"
-                :href="withPrefix(item.url)"
                 role="menuitem"
-                title=""
                 @click="item.handler">
                 <span class="fa fa-fw" :class="item.icon" />
                 <span>{{ item.title }}</span>
