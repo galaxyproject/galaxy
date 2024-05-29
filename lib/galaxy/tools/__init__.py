@@ -3355,18 +3355,20 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         how = incoming["which"]["which_dataset"]
         if how == "first":
             extracted_element = collection.first_dataset_element
+            if not extracted_element:
+                raise exceptions.RequestParameterInvalidException("Input collection has no dataset elements.")
         elif how == "by_identifier":
             try:
                 extracted_element = collection[incoming["which"]["identifier"]]
             except KeyError as e:
-                raise exceptions.MessageException(e.args[0])
+                raise exceptions.RequestParameterInvalidException(e.args[0])
         elif how == "by_index":
             try:
                 extracted_element = collection[int(incoming["which"]["index"])]
             except KeyError as e:
-                raise exceptions.MessageException(e.args[0])
+                raise exceptions.RequestParameterInvalidException(e.args[0])
         else:
-            raise exceptions.MessageException("Invalid tool parameters.")
+            raise exceptions.RequestParameterInvalidException("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(
             copy_tags=extracted.tags, new_name=extracted_element.element_identifier, flush=False
