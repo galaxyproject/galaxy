@@ -13325,12 +13325,12 @@ export interface components {
              * Dataset Collection IDs
              * @description If from_history_id is set, this is an optional list of HDCA 'hid's corresponding to workflow inputs when extracting a workflow from history.
              */
-            dataset_collection_ids?: string[] | null;
+            dataset_collection_ids?: (string | number)[] | null;
             /**
              * Dataset IDs
              * @description If from_history_id is set, this is an optional list of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history.
              */
-            dataset_ids?: string[] | null;
+            dataset_ids?: (string | number)[] | null;
             /**
              * From History ID
              * @description The ID of a history from which to extract a workflow.
@@ -13347,7 +13347,7 @@ export interface components {
              * Job IDs
              * @description If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.
              */
-            job_ids?: string[] | null;
+            job_ids?: (string | number)[] | null;
             /**
              * Object ID
              * @description If from_path is set, this is an optional object ID to include when importing a workflow from a path.
@@ -13548,7 +13548,21 @@ export interface components {
              * @description Upgrade messages for each step in the workflow.
              */
             upgrade_messages: {
-                [key: string]: string | undefined;
+                [key: string]:
+                    | (
+                          | string
+                          | {
+                                [key: string]:
+                                    | (
+                                          | string
+                                          | {
+                                                [key: string]: string | undefined;
+                                            }
+                                      )
+                                    | undefined;
+                            }
+                      )
+                    | undefined;
             };
             /**
              * Version
@@ -25470,14 +25484,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -25515,14 +25522,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -25555,7 +25555,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
@@ -25652,14 +25659,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Validation Error */
@@ -25785,7 +25785,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
