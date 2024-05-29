@@ -216,9 +216,9 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="cog"
+                    icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
-                    title="Settings"
+                    title="More"
                     tooltip="Edit preferences"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
