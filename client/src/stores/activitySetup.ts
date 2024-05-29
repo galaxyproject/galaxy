@@ -66,7 +66,7 @@ export const Activities = [
         visible: true,
     },
     {
-        anonymous: false,
+        anonymous: true,
         description: "Displays the list of available visualizations.",
         icon: "chart-bar",
         id: "visualizations",

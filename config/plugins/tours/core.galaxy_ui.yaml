@@ -138,13 +138,13 @@ steps:
       component: masthead.help
       intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
 
-    - title: "Login"
-      component: masthead.login
-      intro: "Login and start your analysis!"
-
     - title: "Window Manager"
       component: masthead.window_manager
       intro: "Window Manager offers you multiple visualizations next to each other. Have a look at our Window Manager tour to learn more about it."
+
+    - title: "Login"
+      component: masthead.login
+      intro: "Login and start your analysis!"
 
     - title: "Enjoy Galaxy"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"
