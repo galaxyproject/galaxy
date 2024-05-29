@@ -4,12 +4,11 @@ import shutil
 import string
 import tempfile
 from typing import ClassVar
-
 from unittest import SkipTest
 
 from galaxy.app import UniverseApplication
-from galaxy.util.unittest_utils import is_site_up
 from galaxy.model.base import transaction
+from galaxy.util.unittest_utils import is_site_up
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.driver_util import (
