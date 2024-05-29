@@ -20,6 +20,7 @@ class HgWebConfigManager:
         self.hgweb_config_dir = None
         self.in_memory_config = None
         self.lock = threading.Lock()
+        self.hgweb_repo_prefix = None
 
     def add_entry(self, lhs, rhs):
         """Add an entry in the hgweb.config file for a new repository."""

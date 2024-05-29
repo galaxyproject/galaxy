@@ -505,8 +505,8 @@ def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Op
 
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
-        old_lhs = f"repos/{repository.user.username}/{repository.name}"
-        new_lhs = f"repos/{repository.user.username}/{kwds['name']}"
+        old_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
+        new_lhs = f"{trans.app.config.hgweb_repo_prefix}{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.

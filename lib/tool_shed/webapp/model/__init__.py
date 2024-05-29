@@ -508,7 +508,9 @@ class Repository(Base, Dictifiable):
 
     def repo_path(self, app=None):
         # Keep app argument for compatibility with tool_shed_install Repository model
-        return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
+        return hgweb_config_manager.get_entry(
+            os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
+        )
 
     def revision(self):
         repo = self.hg_repo
