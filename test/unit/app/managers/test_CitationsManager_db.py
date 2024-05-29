@@ -35,8 +35,8 @@ def test_DoiCache(url_factory):  # noqa: F811
         try:
             assert "Jörg" in doi_cache.get_bibtex("10.1093/bioinformatics/bts252")
             assert "Özkurt" in doi_cache.get_bibtex("10.1101/2021.12.24.474111")
-            assert not is_cache_empty(db_url, "doi")
-            doi_cache._cache.clear()
-            assert is_cache_empty(db_url, "doi")
         except requests.exceptions.RequestException as e:
             raise SkipTest(f"dx.doi failed to respond: {e}")
+        assert not is_cache_empty(db_url, "doi")
+        doi_cache._cache.clear()
+        assert is_cache_empty(db_url, "doi")
