@@ -73,10 +73,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     });
 
-    /** Returns history from storedHistories, will load history if not in store */
+    /** Returns history from storedHistories, will load history if not in store by default.
+     * If shouldFetchIfMissing is false, will return null if history is not in store.
+     */
     const getHistoryById = computed(() => {
-        return (historyId: string) => {
-            if (!storedHistories.value[historyId]) {
+        return (historyId: string, shouldFetchIfMissing = true) => {
+            if (!storedHistories.value[historyId] && shouldFetchIfMissing) {
                 // TODO: Try to remove this as it can cause computed side effects
                 loadHistoryById(historyId);
             }
