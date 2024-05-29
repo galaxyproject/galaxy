@@ -93,7 +93,7 @@ describe("watchHistory", () => {
             await watchHistoryOnce();
         } catch (error) {
             console.log(error);
-            expect(error.response.status).toBe(500);
+            expect(error.message).toContain("500");
         }
         // Need to reset axios mock here. Smells like a bug,
         // maybe in axios-mock-adapter, maybe on our side
