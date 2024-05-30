@@ -6507,7 +6507,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return elements
 
     @property
-    def first_dataset_element(self):
+    def first_dataset_element(self) -> Optional[HistoryDatasetAssociation]:
         for element in self.elements:
             if element.is_collection:
                 first_element = element.child_collection.first_dataset_element
