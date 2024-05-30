@@ -144,6 +144,7 @@ onMounted(() => {
                 ]"
                 @click="userLogout" />
         </BNavbarNav>
+        <Icon v-else icon="spinner" class="fa-spin mr-2 text-light" />
     </BNavbar>
 </template>
 
