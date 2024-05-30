@@ -1,30 +1,12 @@
 <template>
-    <div>
-        <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link
-                v-b-tooltip.hover.bottom
-                to="/storage"
-                :disabled="isAnonymous"
-                class="ml-auto"
-                :title="title"
-                data-description="storage dashboard link">
-                {{ usingString + " " + totalUsageString }}
-            </b-link>
-        </div>
-        <div v-else class="quota-meter d-flex align-items-center">
-            <b-link
-                v-b-tooltip.hover.left
-                class="quota-progress"
-                :disabled="isAnonymous"
-                to="/storage"
-                :title="title"
-                data-description="storage dashboard link">
-                <b-progress :max="100">
-                    <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
-                </b-progress>
-                <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
-            </b-link>
-        </div>
+    <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" title="Storage and Usage Details">
+        <b-link class="quota-progress" to="/storage" data-description="storage dashboard link">
+            <b-progress :max="100">
+                <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
+            </b-progress>
+            <span v-if="hasQuota">{{ usingString + " " + usage.toFixed(0) }}%</span>
+            <span v-else>{{ usingString + " " + totalUsageString }}</span>
+        </b-link>
     </div>
 </template>
 
@@ -44,11 +26,10 @@ export default {
     },
     computed: {
         ...mapState(useConfigStore, ["config"]),
-        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
+        ...mapState(useUserStore, ["currentUser"]),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;
             const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
-
             return quotasEnabled && quotaLimited;
         },
         usage() {
@@ -61,20 +42,6 @@ export default {
         totalUsageString() {
             const total = this.currentUser?.total_disk_usage ?? 0;
             return bytesToString(total, true);
-        },
-        title() {
-            let details = "";
-            if (this.isAnonymous) {
-                details = this.l("Log in for details.");
-            } else {
-                details = this.l("Click for details.");
-            }
-
-            if (this.hasQuota) {
-                return this.usingString + " " + this.totalUsageString + ". " + details;
-            } else {
-                return details;
-            }
         },
         variant() {
             if (!this.hasQuota || this.usage < 80) {
@@ -90,24 +57,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.quote-container {
+.quota-meter {
     position: relative;
     height: 100%;
-}
-.quota-text {
-    @extend .quote-container;
-    background: var(--masthead-link-color);
-    padding-right: 0.5rem;
-    padding-left: 0.5rem;
-    a {
-        color: var(--masthead-text-color);
-        text-decoration: none;
-    }
-}
-.quota-meter {
-    @extend .quote-container;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
     .quota-progress {
-        width: 100px;
+        width: 150px;
         height: 1.4em;
         position: relative;
         & > * {
