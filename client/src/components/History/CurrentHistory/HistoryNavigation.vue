@@ -71,7 +71,12 @@ const props = withDefaults(defineProps<Props>(), {
     minimal: false,
 });
 
+// modal refs
 const showSwitchModal = ref(false);
+const showDeleteModal = ref(false);
+const showPrivacyModal = ref(false);
+const showCopyModal = ref(false);
+
 const purgeHistory = ref(false);
 
 const userStore = useUserStore();
@@ -202,17 +207,17 @@ function userTitle(title: string) {
                     <BDropdownDivider />
 
                     <BDropdownItem
-                        v-b-modal:copy-current-history-modal
                         :disabled="isAnonymous"
-                        :title="userTitle('Copy History to a New History')">
+                        :title="userTitle('Copy History to a New History')"
+                        @click="showCopyModal = !showCopyModal">
                         <FontAwesomeIcon fixed-width :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy this History</span>
                     </BDropdownItem>
 
                     <BDropdownItem
-                        v-b-modal:delete-history-modal
                         :disabled="!canEditHistory"
-                        :title="localize('Permanently Delete History')">
+                        :title="localize('Permanently Delete History')"
+                        @click="showDeleteModal = !showDeleteModal">
                         <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
                         <span v-localize>Delete this History</span>
                     </BDropdownItem>
@@ -278,9 +283,9 @@ function userTitle(title: string) {
                     </BDropdownItem>
 
                     <BDropdownItem
-                        v-b-modal:history-privacy-modal
                         :disabled="isAnonymous || !canEditHistory"
-                        :title="userTitle('Make this History Private')">
+                        :title="userTitle('Make this History Private')"
+                        @click="showPrivacyModal = !showPrivacyModal">
                         <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </BDropdownItem>
@@ -297,13 +302,19 @@ function userTitle(title: string) {
             :show-modal.sync="showSwitchModal"
             @selectHistory="historyStore.setCurrentHistory($event.id)" />
 
-        <CopyModal id="copy-current-history-modal" :history="history" />
+        <CopyModal :history="history" :show-modal.sync="showCopyModal" />
 
         <BModal
-            id="history-privacy-modal"
+            v-model="showPrivacyModal"
             title="Make History Private"
             title-tag="h2"
             @ok="historyStore.secureHistory(history)">
+            <h4>
+                History:
+                <b
+                    ><i>{{ history.name }}</i></b
+                >
+            </h4>
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
@@ -312,7 +323,7 @@ function userTitle(title: string) {
         </BModal>
 
         <BModal
-            id="delete-history-modal"
+            v-model="showDeleteModal"
             title="Delete History?"
             title-tag="h2"
             @ok="onDelete"
