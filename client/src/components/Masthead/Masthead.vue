@@ -14,7 +14,7 @@ import MastheadDropdown from "./MastheadDropdown";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 
-const { isAnonymous } = storeToRefs(useUserStore());
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
 
 const router = useRouter();
 const { config, isConfigLoaded } = useConfig();
@@ -128,6 +128,7 @@ onMounted(() => {
                 id="user"
                 class="loggedin-only"
                 icon="fa-user"
+                :title="currentUser.username"
                 tooltip="User Preferences"
                 :menu="[
                     {

@@ -34,6 +34,7 @@ defineProps({
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
             <span class="fa fa-fw" :class="icon" />
+            <span>{{ title }}</span>
         </template>
         <template>
             <BDropdownItem v-for="(item, idx) in menu" :key="idx" role="menuitem" @click="item.handler">
