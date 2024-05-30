@@ -6,14 +6,21 @@ Create Date: 2024-05-29 21:53:53.516506
 
 """
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy import (
     Boolean,
     Column,
+    ForeignKey,
+    Integer,
+    false,
+    select,
 )
+from sqlalchemy import func
 
 from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (
     add_column,
+    alter_column,
     drop_column,
     drop_index,
     transaction,
@@ -32,9 +39,23 @@ index_name = build_index_name(table_name, column_name)
 
 
 def upgrade():
-    add_column(
-        table_name, Column(column_name, Boolean(), default=False, index=True, nullable=False, server_default=sa.false())
-    )
+    with transaction():
+        # Add a nullable deleted column
+        add_column(table_name, Column(column_name, Boolean(), nullable=True, index=True))
+        table = sa.sql.table(
+            table_name,
+            Column("id", Integer, primary_key=True),
+            Column("user_id", ForeignKey("galaxy_user.id"), index=True),
+            Column(column_name, Boolean, index=True, default=False),
+        )
+        # Set everything to deleted
+        op.execute(table.update().where(table.c.deleted.is_(None)).values(deleted=True))
+        # Select the latest api keys
+        s = select(func.max(table.c.id)).group_by(table.c.user_id)
+        # Set all of these api keys to not deleted
+        op.execute(table.update().where(table.c.id.in_(s)).values(deleted=False))
+        # Make column not nullable and default to false
+        alter_column(table_name, column_name, existing_type=Boolean(), nullable=False, server_default=false())
 
 
 def downgrade():
