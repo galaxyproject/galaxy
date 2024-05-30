@@ -228,7 +228,7 @@ def create_repository(
     # Create the local repository.
     init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
-    lhs = f"repos/{repository.user.username}/{repository.name}"
+    lhs = f"{app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
     app.hgweb_config_manager.add_entry(lhs, repository_path)
     # Create a .hg/hgrc file for the local repository.
     create_hgrc_file(app, repository)
