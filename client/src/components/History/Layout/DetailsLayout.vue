@@ -20,7 +20,7 @@ interface Props {
     writeable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
-    summarized?: "both" | "annotation" | "tags" | "none";
+    summarized?: "both" | "annotation" | "tags" | "none" | "hidden";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -125,7 +125,9 @@ function selectText() {
                 v-short="annotation"
                 class="mt-2"
                 data-description="annotation value" />
-            <div v-else-if="summarized" :class="{ annotation: ['both', 'annotation'].includes(summarized) }">
+            <div
+                v-else-if="summarized"
+                :class="{ annotation: ['both', 'annotation'].includes(summarized), hidden: summarized === 'hidden' }">
                 <TextSummary
                     v-if="annotation"
                     :description="annotation"
@@ -135,7 +137,11 @@ function selectText() {
             </div>
             <StatelessTags
                 v-if="tags"
-                :class="{ 'mt-2': !summarized, tags: ['both', 'tags'].includes(summarized) }"
+                :class="{
+                    'mt-2': !summarized,
+                    tags: ['both', 'tags'].includes(summarized),
+                    hidden: summarized === 'hidden',
+                }"
                 :value="tags"
                 disabled
                 :max-visible-tags="summarized ? 1 : 5" />
@@ -205,6 +211,9 @@ function selectText() {
     }
     .annotation {
         min-height: 2rem;
+    }
+    .hidden {
+        display: none;
     }
 }
 </style>

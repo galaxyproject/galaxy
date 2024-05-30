@@ -11,7 +11,7 @@ import UtcDate from "@/components/UtcDate.vue";
 interface Props {
     history: HistorySummary;
     writeable: boolean;
-    summarized?: "both" | "annotation" | "tags" | "none";
+    summarized?: "both" | "annotation" | "tags" | "none" | "hidden";
 }
 
 const props = withDefaults(defineProps<Props>(), {

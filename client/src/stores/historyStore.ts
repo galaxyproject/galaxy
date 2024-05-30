@@ -102,6 +102,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         let tags = false;
         let loaded = true;
 
+        if (pinnedHistories.value.length === 0) {
+            return "hidden";
+        }
+
         for (const h of pinnedHistories.value) {
             const history = storedHistories.value[h.id];
             if (!history) {
