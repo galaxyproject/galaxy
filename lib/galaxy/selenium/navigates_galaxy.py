@@ -1247,8 +1247,8 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_user_preferences(self):
         self.home()
-        self.components.preferences.activity.wait_for_and_click()
-        self.components.preferences.activity_expand.wait_for_and_click()
+        self.components.masthead.user.wait_for_and_click()
+        self.components.masthead.preferences.wait_for_and_click()
 
     def navigate_to_invocations(self):
         self.home()
@@ -1989,6 +1989,7 @@ class NavigatesGalaxy(HasDriver):
 
     def logout(self):
         self.components.masthead.logged_in_only.wait_for_visible()
+        self.components.masthead.user.wait_for_and_click()
         self.components.masthead.logout.wait_for_and_click()
         try:
             self.components.masthead.logged_out_only.wait_for_visible()

@@ -40,26 +40,24 @@ masthead:
   selectors:
     _: '#masthead'
 
-    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
-    user: '#user.loggedin-only > a.nav-link > span'
-    register_or_login: '#user.loggedout-only > .nav-link'
-    logout: '#user.loggedin-only > .nav-link'
-    home: '#analysis'
     help: '#help'
-    login: '#user'
+    home: '#analysis'
     libraries: '#library'
-    window_manager: '#enable-window-manager'
-    workflow: '#workflow .nav-link'
-
-    username:
-      type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
-
+    login: '#user'
+    logout: '.dropdown-menu > li > a > .fa-sign-out-alt'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    preferences: '.dropdown-menu > li > a > .fa-gear'
+    register_or_login: '#user.loggedout-only > .nav-link'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
+    user: '#user.loggedin-only > a.nav-link > .fa'
+    username:
+      type: xpath
+      selector: '//a[contains(text(), "Signed in as")]'
+    window_manager: '#enable-window-manager'
+    workflow: '#workflow .nav-link'
 
 preferences:
   selectors:
