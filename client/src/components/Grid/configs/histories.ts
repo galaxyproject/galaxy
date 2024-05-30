@@ -142,7 +142,6 @@ const fields: FieldArray = [
             {
                 title: "Switch",
                 icon: faExchangeAlt,
-                condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
                     const historyStore = useHistoryStore();
                     historyStore.setCurrentHistory(String(data.id));

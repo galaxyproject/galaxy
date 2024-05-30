@@ -9,6 +9,7 @@ from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
+    get_headers,
 )
 from galaxy.util import (
     commaify,
@@ -91,41 +92,31 @@ class Chain(data.Text):
         >>> fname = get_test_fname( '1.chain' )
         >>> Chain().sniff( fname )
         True
+        >>> fname = get_test_fname( '2.chain' )
+        >>> Chain().sniff( fname )
+        True
         >>>
         """
-        fh = file_prefix.string_io()
-        for line in fh:
-            line = line.strip()
-            if line:  # first non-empty line
-                if line.startswith("chain"):
-                    tokens = line.split()
-                    if not (
-                        len(tokens) in [12, 13]
-                        and tokens[4] in self.strands
-                        and tokens[9] in self.strands
-                        and tokens[3].isdigit()
-                        and tokens[5].isdigit()
-                        and tokens[6].isdigit()
-                    ):
-                        return False
-                    prior_token_len = 0
-                    for line in fh:
-                        line = line.strip()
-                        if line == "":
-                            break
-                        tokens = line.split()
-                        if prior_token_len == 1:
-                            return False
-                        if len(tokens) not in [1, 3]:
-                            return False
-                        if not all(token.isdigit() for token in tokens):
-                            return False
-                        prior_token_len = len(tokens)
-                    if prior_token_len == 1:
-                        return True
-                else:
-                    return False
-        return False
+        headers = get_headers(file_prefix, None, count=2, comment_designator="#")
+        if not (
+            len(headers) == 2
+            and len(headers[0]) in [12, 13]
+            and headers[0][0] == "chain"
+            and headers[0][1].isdecimal()
+            and headers[0][3].isdecimal()
+            and headers[0][4] in self.strands
+            and headers[0][5].isdecimal()
+            and headers[0][6].isdecimal()
+            and headers[0][8].isdecimal()
+            and headers[0][9] in self.strands
+            and headers[0][10].isdecimal()
+            and headers[0][11].isdecimal()
+            and headers[1][0].isdecimal()
+            and len(headers[1]) in [1, 3]
+        ):
+            return False
+        else:
+            return True
 
 
 @build_sniff_from_prefix
@@ -161,34 +152,21 @@ class Net(data.Text):
         allowed_classes = ["fill", "gap"]
         strands = ["+", "-"]
 
-        fh = file_prefix.string_io()
-        for line in fh:
-            line = line.strip()
-            if line:  # first non-empty line
-                if line.startswith("net"):
-                    tokens = line.split()
-                    if not (len(tokens) == 3 and tokens[2].isdigit()):
-                        return False
-                    for line in fh:
-                        if line[0] != " ":  # children are indented one space
-                            return False
-                        line = line.strip()
-                        if line == "":
-                            break
-                        tokens = line.split()
-                        if not (
-                            len(tokens) >= 7  # seven fixed fields
-                            and len(tokens) <= 41  # plus seventeen optional name/value pairs
-                            and tokens[0] in allowed_classes
-                            and tokens[1].isdigit()
-                            and tokens[2].isdigit()
-                            and tokens[4] in strands
-                            and tokens[5].isdigit()
-                            and tokens[6].isdigit()
-                        ):
-                            return False
-                        else:
-                            return True
-                else:
-                    return False
-        return False
+        headers = get_headers(file_prefix, None, count=2, comment_designator="#")
+        if not (
+            len(headers) == 2
+            and len(headers[0]) == 3
+            and headers[0][0] == "net"
+            and headers[0][2].isdecimal()
+            and len(headers[1]) >= 7  # seven fixed fields
+            and len(headers[1]) <= 41  # plus seventeen optional name/value pairs
+            and headers[1][0] in allowed_classes
+            and headers[1][1].isdecimal()
+            and headers[1][2].isdecimal()
+            and headers[1][4] in strands
+            and headers[1][5].isdecimal()
+            and headers[1][6].isdecimal()
+        ):
+            return False
+        else:
+            return True

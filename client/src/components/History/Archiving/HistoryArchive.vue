@@ -66,6 +66,10 @@ function onViewHistoryInCenterPanel(history: ArchivedHistorySummary) {
     router.push(`/histories/view?id=${history.id}`);
 }
 
+function onSetAsCurrentHistory(history: ArchivedHistorySummary) {
+    historyStore.setCurrentHistory(history.id);
+}
+
 async function onRestoreHistory(history: ArchivedHistorySummary) {
     const confirmTitle = localize(`Unarchive '${history.name}'?`);
     const confirmMessage =
@@ -145,6 +149,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                     <ArchivedHistoryCard
                         :history="history"
                         @onView="onViewHistoryInCenterPanel"
+                        @onSwitch="onSetAsCurrentHistory"
                         @onRestore="onRestoreHistory"
                         @onImportCopy="onImportCopy" />
                 </BListGroupItem>

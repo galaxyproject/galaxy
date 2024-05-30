@@ -57,6 +57,7 @@ class DoiCache:
         # content encoding from the Content-Type header (res.encoding), and if
         # that fails, falls back to guessing from the content itself (res.apparent_encoding).
         # The guessed encoding is sometimes wrong, better to default to utf-8.
+        res.raise_for_status()
         if res.encoding is None:
             res.encoding = "utf-8"
         return res.text

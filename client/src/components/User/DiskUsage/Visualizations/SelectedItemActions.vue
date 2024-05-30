@@ -25,12 +25,14 @@ interface SelectedItemActionsProps {
     isRecoverable: boolean;
     itemType: ItemTypes;
     isArchived?: boolean;
+    canEdit?: boolean;
 }
 
 const { currentHistoryId } = useHistoryStore();
 
 const props = withDefaults(defineProps<SelectedItemActionsProps>(), {
     isArchived: false,
+    canEdit: false,
 });
 
 library.add(faArchive, faChartBar, faInfoCircle, faLocationArrow, faTrash, faUndo);
@@ -38,9 +40,7 @@ library.add(faArchive, faChartBar, faInfoCircle, faLocationArrow, faTrash, faUnd
 const label = computed(() => props.data?.label ?? "No data");
 const prettySize = computed(() => bytesToString(props.data?.value ?? 0));
 const viewDetailsIcon = computed(() => (props.itemType === "history" ? "chart-bar" : "info-circle"));
-const canSetAsCurrent = computed(
-    () => props.itemType === "history" && !props.isArchived && props.data.id !== currentHistoryId
-);
+const canSetAsCurrent = computed(() => props.itemType === "history" && props.data.id !== currentHistoryId);
 
 const emit = defineEmits<{
     (e: "set-current-history", historyId: string): void;
@@ -99,7 +99,7 @@ function onPermanentlyDeleteItem() {
                 <FontAwesomeIcon :icon="viewDetailsIcon" />
             </BButton>
             <BButton
-                v-if="isRecoverable"
+                v-if="isRecoverable && canEdit"
                 variant="outline-primary"
                 size="sm"
                 class="mx-2"
@@ -108,6 +108,7 @@ function onPermanentlyDeleteItem() {
                 <FontAwesomeIcon icon="undo" />
             </BButton>
             <BButton
+                v-if="canEdit"
                 variant="outline-danger"
                 size="sm"
                 class="mx-2"

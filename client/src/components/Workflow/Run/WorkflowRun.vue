@@ -5,6 +5,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
+import { canMutateHistory } from "@/api";
 import { copyWorkflow } from "@/components/Workflow/workflows.services";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -52,6 +53,13 @@ const editorLink = computed(() => `/workflows/edit?id=${props.workflowId}`);
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
 const isOwner = computed(() => currentUser.value?.username === workflowModel.value.runData.owner);
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
+const canRunOnHistory = computed(() => {
+    if (!currentHistoryId.value) {
+        return false;
+    }
+    const history = historyStore.getHistoryById(currentHistoryId.value);
+    return (history && canMutateHistory(history)) ?? false;
+});
 
 function handleInvocations(incomingInvocations: any) {
     invocations.value = incomingInvocations;
@@ -177,12 +185,14 @@ defineExpose({
                         :model="workflowModel"
                         :target-history="simpleFormTargetHistory"
                         :use-job-cache="simpleFormUseJobCache"
+                        :can-mutate-current-history="canRunOnHistory"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError"
                         @showAdvanced="showAdvanced" />
                     <WorkflowRunForm
                         v-else
                         :model="workflowModel"
+                        :can-mutate-current-history="canRunOnHistory"
                         @submissionSuccess="handleInvocations"
                         @submissionError="handleSubmissionError" />
                 </div>
