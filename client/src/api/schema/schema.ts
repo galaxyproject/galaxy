@@ -23139,7 +23139,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ExecuteToolResponse"];
                 };
             };
             /** @description Validation Error */
@@ -23167,7 +23167,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["ExecuteToolResponse"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
