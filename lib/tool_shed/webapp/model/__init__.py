@@ -97,7 +97,7 @@ class APIKeys(Base):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
-    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
+    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False, nullable=False)
 
 
 class User(Base, Dictifiable):
