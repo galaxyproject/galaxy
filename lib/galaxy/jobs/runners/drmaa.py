@@ -43,7 +43,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Start the job runner"""
         global drmaa
 
-        runner_param_specs = {"drmaa_library_path": dict(map=str, default=os.environ.get("DRMAA_LIBRARY_PATH", None))}
+        runner_param_specs = {"drmaa_library_path": dict(map=str, default=os.environ.get("DRMAA_LIBRARY_PATH", None)),
+                              "job_environment_variables": ''}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
             runner_param_specs[f"{retry_exception}_state"] = dict(
                 map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK
@@ -76,6 +77,18 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         # make the drmaa library also available to subclasses
         self.drmaa = drmaa
+
+        # extract environment variables defined in the plugin config file
+        self.job_environment_variables = {}
+        env_strings = [ e.strip() for e in self.runner_params.job_environment_variables.split('\n') if e.strip() ]
+        for env in env_strings:
+          try:
+            env_name, env_content = env.split('=', 1)
+            if env_name:
+              self.job_environment_variables[env_name] = env_content
+          except (ValueError) as exc:
+            log.debug("DRMAAJobRunner::__init__ : invalid environment variable syntax for job_environment_variables, ignoring %s", env)
+        log.debug("DRMAAJobRunner::__init__ : built job_environment_variables = %s", self.job_environment_variables)
 
         # Subclasses may need access to state constants
         self.drmaa_job_states = drmaa.JobState
@@ -140,10 +153,18 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         job_name = self._job_name(job_wrapper)
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_name=job_name)
 
+        # get current env and add requested variables from plugin configuration
+        newenv = {}
+        if self.job_environment_variables:
+          newenv = os.environ
+          newenv.update(self.job_environment_variables)
+          log.debug("(%s) submitting with the following environment variables : %s", galaxy_id_tag, newenv)
+
         # set up the drmaa job template
         jt = dict(
             remoteCommand=ajs.job_file,
             jobName=ajs.job_name,
+            jobEnvironment=newenv,
             workingDirectory=job_wrapper.working_directory,
             outputPath=f":{ajs.output_file}",
             errorPath=f":{ajs.error_file}",
@@ -382,14 +403,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 commands.execute(cmd)
             log.info(f"({job.id}/{ext_id}) Removed from DRM queue at user's request")
         except drmaa.InvalidJobException:
-            log.warning(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
-        except drmaa.InternalException as e:
-            if "already completing or completed" in str(e):
-                log.warning(f"({job.id}/{ext_id}) User killed running job, but job already terminal in DRM queue")
-            else:
-                log.exception(
-                    f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue"
-                )
+            log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except commands.CommandLineException as e:
             log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
         except Exception:

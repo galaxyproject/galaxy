@@ -12,6 +12,14 @@
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
+            <!-- Additional environment variables can be pushed by drmaa when submitting the job,
+                 using the following job_environment_variables parameter. -->
+            <!--
+            <param id="job_environment_variables">
+              HTTPS_PROXY=my.proxy.domain.org:8080
+              VAR3=environment_variable_example_content
+            </param>
+            -->
             <!-- Different DRMs handle successfully completed jobs differently,
                  these options can be changed to handle such differences. Defaults are
                  shown. -->
