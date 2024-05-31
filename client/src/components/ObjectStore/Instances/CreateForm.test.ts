@@ -2,8 +2,8 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { PluginStatus } from "@/api/configTemplates";
 import { mockFetcher } from "@/api/schema/__mocks__";
+import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 import CreateForm from "./CreateForm.vue";
@@ -58,21 +58,6 @@ const SIMPLE_TEMPLATE: ObjectStoreTemplateSummary = {
     badges: [],
 };
 
-const FAKE_PLUGIN_STATUS: PluginStatus = {
-    template_definition: {
-        state: "ok",
-        message: "ok",
-    },
-    template_settings: {
-        state: "ok",
-        message: "ok",
-    },
-    connection: {
-        state: "ok",
-        message: "ok",
-    },
-};
-
 describe("CreateForm", () => {
     it("should render a form with admin markdown converted to HTML in help", async () => {
         const wrapper = mount(CreateForm, {
@@ -99,7 +84,7 @@ describe("CreateForm", () => {
             },
             localVue,
         });
-        mockFetcher.path("/api/object_store_instances/test").method("post").mock({ data: FAKE_PLUGIN_STATUS });
+        mockFetcher.path("/api/object_store_instances/test").method("post").mock({ data: OK_PLUGIN_STATUS });
         mockFetcher.path("/api/object_store_instances").method("post").mock({ data: FAKE_OBJECT_STORE });
         await flushPromises();
         const nameForElement = wrapper.find("#form-element-_meta_name");
@@ -119,7 +104,7 @@ describe("CreateForm", () => {
             },
             localVue,
         });
-        mockFetcher.path("/api/object_store_instances/test").method("post").mock({ data: FAKE_PLUGIN_STATUS });
+        mockFetcher.path("/api/object_store_instances/test").method("post").mock({ data: OK_PLUGIN_STATUS });
         mockFetcher
             .path("/api/object_store_instances")
             .method("post")
@@ -130,12 +115,13 @@ describe("CreateForm", () => {
         const nameForElement = wrapper.find("#form-element-_meta_name");
         nameForElement.find("input").setValue("My New Name");
         const submitElement = wrapper.find("#submit");
-        expect(wrapper.find(".object-store-instance-creation-error").exists()).toBe(false);
+        expect(wrapper.find("[data-description='object-store-creation-error']").exists()).toBe(false);
         submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
-        const errorEl = wrapper.find(".object-store-instance-creation-error");
+        const errorEl = wrapper.find("[data-description='object-store-creation-error']");
+        console.log(wrapper.html());
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("Error creating this");
     });

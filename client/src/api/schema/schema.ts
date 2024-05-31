@@ -315,12 +315,18 @@ export interface paths {
         post: operations["file_sources__test_new_instance_configuration"];
     };
     "/api/file_source_instances/{user_file_source_id}": {
-        /** Get a list of persisted file source instances defined by the requesting user. */
+        /** Get a persisted user file source instance. */
         get: operations["file_sources__instances_get"];
         /** Update or upgrade user file source instance. */
         put: operations["file_sources__instances_update"];
         /** Purge user file source instance. */
         delete: operations["file_sources__instances_purge"];
+    };
+    "/api/file_source_instances/{user_file_source_id}/test": {
+        /** Test a file source instance and return status. */
+        get: operations["file_sources__instances_test_instance"];
+        /** Test updating or upgrading user file source instance. */
+        post: operations["file_sources__test_instances_update"];
     };
     "/api/file_source_templates": {
         /** Get a list of file source templates available to build user defined file sources from */
@@ -1266,12 +1272,18 @@ export interface paths {
         post: operations["object_stores__test_new_instance_configuration"];
     };
     "/api/object_store_instances/{user_object_store_id}": {
-        /** Get a persisted object store instances owned by the requesting user. */
+        /** Get a persisted user object store instance. */
         get: operations["object_stores__instances_get"];
         /** Update or upgrade user object store instance. */
         put: operations["object_stores__instances_update"];
         /** Purge user object store instance. */
         delete: operations["object_stores__instances_purge"];
+    };
+    "/api/object_store_instances/{user_object_store_id}/test": {
+        /** Get a persisted user object store instance. */
+        get: operations["object_stores__instances_test_instance"];
+        /** Test updating or upgrading user object source instance. */
+        post: operations["object_stores__test_instances_update"];
     };
     "/api/object_store_templates": {
         /** Get a list of object store templates available to build user defined object stores from */
@@ -11980,6 +11992,26 @@ export interface components {
              */
             type: "string";
         };
+        /** TestUpdateInstancePayload */
+        TestUpdateInstancePayload: {
+            /** Variables */
+            variables?: {
+                [key: string]: (string | boolean | number) | undefined;
+            } | null;
+        };
+        /** TestUpgradeInstancePayload */
+        TestUpgradeInstancePayload: {
+            /** Secrets */
+            secrets: {
+                [key: string]: string | undefined;
+            };
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            };
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -14962,7 +14994,7 @@ export interface operations {
         };
     };
     file_sources__instances_get: {
-        /** Get a list of persisted file source instances defined by the requesting user. */
+        /** Get a persisted user file source instance. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -15038,6 +15070,67 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__instances_test_instance: {
+        /** Test a file source instance and return status. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__test_instances_update: {
+        /** Test updating or upgrading user file source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20886,7 +20979,7 @@ export interface operations {
         };
     };
     object_stores__instances_get: {
-        /** Get a persisted object store instances owned by the requesting user. */
+        /** Get a persisted user object store instance. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -20962,6 +21055,67 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__instances_test_instance: {
+        /** Get a persisted user object store instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__test_instances_update: {
+        /** Test updating or upgrading user object source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {

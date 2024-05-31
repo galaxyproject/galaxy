@@ -1,4 +1,5 @@
 import type {
+    CreateInstancePayload,
     Instance,
     PluginStatus,
     SecretData,
@@ -139,7 +140,7 @@ export function createTemplateForm(template: TemplateSummary, what: string): For
     return form;
 }
 
-export function createFormDataToPayload(template: TemplateSummary, formData: any) {
+export function createFormDataToPayload(template: TemplateSummary, formData: any): CreateInstancePayload {
     const variables = template.variables ?? [];
     const secrets = template.secrets ?? [];
     const variableData: VariableData = {};

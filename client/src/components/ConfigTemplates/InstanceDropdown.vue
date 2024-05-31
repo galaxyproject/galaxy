@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowUp, faCaretDown, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUp, faCaretDown, faEdit, faStethoscope, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useRouter } from "vue-router/composables";
 
@@ -12,7 +12,7 @@ interface Props {
     isUpgradable: boolean;
 }
 
-library.add(faArrowUp, faCaretDown, faEdit, faTrash);
+library.add(faArrowUp, faCaretDown, faEdit, faStethoscope, faTrash);
 
 const router = useRouter();
 
@@ -20,6 +20,7 @@ defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "remove"): void;
+    (e: "test"): void;
 }>();
 </script>
 
@@ -52,6 +53,10 @@ const emit = defineEmits<{
                 @click.prevent="router.push(routeEdit)">
                 <FontAwesomeIcon icon="edit" />
                 <span v-localize>Edit configuration</span>
+            </button>
+            <button class="dropdown-item" @keypress="emit('test')" @click.prevent="emit('test')">
+                <FontAwesomeIcon icon="stethoscope" />
+                <span v-localize>Test instance</span>
             </button>
             <button class="dropdown-item" @keypress="emit('remove')" @click.prevent="emit('remove')">
                 <FontAwesomeIcon icon="trash" />

@@ -14,6 +14,8 @@ from galaxy.managers.object_store_instances import (
     CreateInstancePayload,
     ModifyInstancePayload,
     ObjectStoreInstancesManager,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
     UpgradeInstancePayload,
@@ -146,9 +148,9 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         assert response.variables
         assert response.variables["var1"] == "newval"
 
-        user_file_source_showed = self.manager.show(self.trans, user_object_store.uuid)
-        assert user_file_source_showed.variables
-        assert user_file_source_showed.variables["var1"] == "newval"
+        user_object_store_showed = self.manager.show(self.trans, user_object_store.uuid)
+        assert user_object_store_showed.variables
+        assert user_object_store_showed.variables["var1"] == "newval"
 
     def test_update_errors_on_extra_variables(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
@@ -328,6 +330,25 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         assert status.template_settings
         assert not status.template_settings.is_not_ok
 
+    def test_status_existing_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={"sec1": "foosec"},
+        )
+        user_object_store = self._create_instance(create_payload)
+        status = self.manager.plugin_status_for_instance(self.trans, user_object_store.uuid)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
     def test_status_invalid_settings_undefined_variable(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path, config_dict=simple_vault_template_with_undefined_jinja_problem(tmp_path))
@@ -348,12 +369,96 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         )
         assert status.connection is None
 
+    def test_status_update_valid(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "originalvarval"},
+            secrets={},
+        )
+        user_object_store = self._create_instance(create_payload)
+
+        update = TestUpdateInstancePayload(
+            variables={
+                "var1": "newval",
+            }
+        )
+        status = self.manager.test_modify_instance(self.trans, user_object_store.uuid, update)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert not status.connection.is_not_ok
+
+    def test_status_upgrade_valid(self, tmp_path):
+        user_object_store = self._init_upgrade_test_case(tmp_path)
+        assert "sec1" in user_object_store.secrets
+        assert "sec2" not in user_object_store.secrets
+        self._assert_secret_is(user_object_store, "sec1", "moocow")
+        self._assert_secret_absent(user_object_store, "foobarxyz")
+        self._assert_secret_absent(user_object_store, "sec2")
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_object_store.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert not status.connection.is_not_ok
+
+    def test_status_upgrade_invalid(self, tmp_path):
+        user_object_store = self._init_invalid_upgrade_test_case(tmp_path)
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={},
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_object_store.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert (
+            "Problem with template definition causing invalid settings resolution" in status.template_settings.message
+        )
+        assert status.connection is None
+
     def _init_upgrade_test_case(self, tmp_path) -> UserConcreteObjectStoreModel:
         example_yaml_str = UPGRADE_EXAMPLE
         example_yaml_str.replace("/data", str(tmp_path))
         config = safe_load(example_yaml_str)
         self._init_managers(tmp_path, config)
         user_object_store = self._create_instance(UPGRADE_INITIAL_PAYLOAD)
+        return user_object_store
+
+    def _init_invalid_upgrade_test_case(self, tmp_path) -> UserConcreteObjectStoreModel:
+        version_0 = simple_vault_template(tmp_path)
+        version_0["version"] = 0
+        version_1 = simple_vault_template_with_undefined_jinja_problem(tmp_path)
+        version_1["version"] = 1
+        version_1["id"] = version_0["id"]
+        config_dict = [
+            version_0,
+            version_1,
+        ]
+        self._init_managers(tmp_path, config_dict=config_dict)
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_vault",
+            template_version=0,
+            variables={},
+            secrets={"sec1": "foosec"},
+        )
+        user_object_store = self._create_instance(create_payload)
         return user_object_store
 
     def _read_secret(self, user_object_store: UserConcreteObjectStoreModel, secret_name: str) -> str:

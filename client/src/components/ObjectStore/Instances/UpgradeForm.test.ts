@@ -3,6 +3,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
+import { OK_PLUGIN_STATUS } from "@/components/ConfigTemplates/test_fixtures";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 import type { UserConcreteObjectStore } from "./types";
@@ -109,6 +110,10 @@ describe("UpgradeForm", () => {
             localVue,
             router,
         });
+        mockFetcher
+            .path("/api/object_store_instances/{user_object_store_id}/test")
+            .method("post")
+            .mock({ data: OK_PLUGIN_STATUS });
         mockFetcher.path("/api/object_store_instances/{user_object_store_id}").method("put").mock({ data: INSTANCE });
         await flushPromises();
         const submitElement = wrapper.find("#submit");
@@ -129,6 +134,10 @@ describe("UpgradeForm", () => {
             router,
         });
         mockFetcher
+            .path("/api/object_store_instances/{user_object_store_id}/test")
+            .method("post")
+            .mock({ data: OK_PLUGIN_STATUS });
+        mockFetcher
             .path("/api/object_store_instances/{user_object_store_id}")
             .method("put")
             .mock(() => {
@@ -136,12 +145,12 @@ describe("UpgradeForm", () => {
             });
         await flushPromises();
         const submitElement = wrapper.find("#submit");
-        expect(wrapper.find(".object-store-instance-upgrade-error").exists()).toBe(false);
+        expect(wrapper.find("[data-description='object-store-upgrade-error']").exists()).toBe(false);
         submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(0);
-        const errorEl = wrapper.find(".object-store-instance-upgrade-error");
+        const errorEl = wrapper.find("[data-description='object-store-upgrade-error']");
         expect(errorEl.exists()).toBe(true);
         expect(errorEl.html()).toContain("problem upgrading");
     });

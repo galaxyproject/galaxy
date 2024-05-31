@@ -3,6 +3,7 @@ import { BButton } from "bootstrap-vue";
 
 import { type FormEntry } from "./formUtil";
 
+import ForceActionButton from "./ForceActionButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -12,14 +13,18 @@ interface Props {
     inputs?: Array<FormEntry>; // not fully reactive so make sure to not mutate this array
     submitTitle: string;
     loadingMessage: string;
+    busy: boolean;
+    showForceActionButton?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
     inputs: undefined,
+    showForceActionButton: false,
 });
 
 const emit = defineEmits<{
     (e: "onSubmit", formData: any): void;
+    (e: "onForceSubmit", formData: any): void;
 }>();
 
 let formData: any;
@@ -30,6 +35,10 @@ function onChange(incoming: any) {
 
 async function handleSubmit() {
     emit("onSubmit", formData);
+}
+
+async function handleForceSubmit() {
+    emit("onForceSubmit", formData);
 }
 </script>
 <template>
@@ -42,9 +51,11 @@ async function handleSubmit() {
                 </template>
             </FormCard>
             <div class="mt-3">
-                <BButton id="submit" variant="primary" class="mr-1" @click="handleSubmit">
+                <BButton id="submit" variant="primary" class="mr-1" :disabled="busy" @click="handleSubmit">
                     {{ submitTitle }}
                 </BButton>
+                <ForceActionButton v-show="showForceActionButton" :action="submitTitle" @click="handleForceSubmit">
+                </ForceActionButton>
             </div>
         </div>
     </div>
