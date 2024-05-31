@@ -3,17 +3,25 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
 jest.mock("@/api/schema");
 
+let configValues = { enable_quotas: true };
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { value: { ...configValues } },
+        isConfigLoaded: true,
+    })),
+}));
+
 const localVue = getLocalVue();
 
 async function createQuotaMeterWrapper(config: any, userData: any) {
-    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    configValues = { ...config };
     const pinia = createTestingPinia();
     const userStore = useUserStore();
     userStore.currentUser = { ...userStore.currentUser, ...userData };
@@ -66,7 +74,6 @@ describe("QuotaMeter.vue", () => {
             const user = { total_disk_usage: 7168 };
             const config = { enable_quotas: false };
             const wrapper = await createQuotaMeterWrapper(config, user);
-            console.log(wrapper.html());
             expect(wrapper.find("span").text()).toBe("Using 7 KB");
         }
         {

@@ -44,8 +44,8 @@ const variant = computed(() => {
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
-            <span v-if="hasQuota">{{ "Usage " + usage.toFixed(0) }}%</span>
-            <span v-else>{{ "Usage " + totalUsageString }}</span>
+            <span v-if="hasQuota">{{ "Using " + usage.toFixed(0) }}%</span>
+            <span v-else>{{ "Using " + totalUsageString }}</span>
         </BLink>
     </div>
 </template>
