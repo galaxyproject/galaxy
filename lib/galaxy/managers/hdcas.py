@@ -45,7 +45,7 @@ def write_dataset_collection(dataset_collection_instance, archive):
         raise RequestParameterInvalidException("Attempt to write dataset collection that has not been populated yet")
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
-        if hda.state != hda.states.OK:
+        if hda.state != hda.states.OK or hda.purged or hda.dataset.purged:
             continue
         for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
             archive.write(file_path, relpath)

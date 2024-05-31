@@ -275,12 +275,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             },
         }
 
-        headers = self._get_request_headers(user_context)
-        if "Authorization" not in headers:
-            raise Exception(
-                "Cannot create record without authentication token. Please set your personal access token in your Galaxy preferences."
-            )
-
+        headers = self._get_request_headers(user_context, auth_required=True)
         response = requests.post(self.records_url, json=create_record_request, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
@@ -296,7 +291,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     ):
         record = self._get_draft_record(record_id, user_context=user_context)
         upload_file_url = record["links"]["files"]
-        headers = self._get_request_headers(user_context)
+        headers = self._get_request_headers(user_context, auth_required=True)
 
         # Add file metadata entry
         response = requests.post(upload_file_url, json=[{"key": filename}], headers=headers)
@@ -452,27 +447,37 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         }
 
     def _get_response(
-        self, user_context: OptionalUserContext, request_url: str, params: Optional[Dict[str, Any]] = None
+        self,
+        user_context: OptionalUserContext,
+        request_url: str,
+        params: Optional[Dict[str, Any]] = None,
+        auth_required: bool = False,
     ) -> dict:
-        headers = self._get_request_headers(user_context)
+        headers = self._get_request_headers(user_context, auth_required)
         response = requests.get(request_url, params=params, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
-    def _get_request_headers(self, user_context: OptionalUserContext):
+    def _get_request_headers(self, user_context: OptionalUserContext, auth_required: bool = False):
         token = self.plugin.get_authorization_token(user_context)
         headers = {"Authorization": f"Bearer {token}"} if token else {}
+        if auth_required and token is None:
+            self._raise_auth_required()
         return headers
 
     def _ensure_response_has_expected_status_code(self, response, expected_status_code: int):
-        if response.status_code == 403:
-            record_url = response.url.replace("/api", "").replace("/files", "")
-            raise AuthenticationRequired(f"Please make sure you have the necessary permissions to access: {record_url}")
         if response.status_code != expected_status_code:
+            if response.status_code == 403:
+                self._raise_auth_required()
             error_message = self._get_response_error_message(response)
             raise Exception(
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
+
+    def _raise_auth_required(self):
+        raise AuthenticationRequired(
+            f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
+        )
 
     def _get_response_error_message(self, response):
         response_json = response.json()
