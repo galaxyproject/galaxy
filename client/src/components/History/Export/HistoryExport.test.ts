@@ -1,6 +1,8 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -13,7 +15,6 @@ import {
     FILE_SOURCE_STORE_RECORD,
     RECENT_STS_DOWNLOAD_RECORD,
 } from "@/components/Common/models/testData/exportData";
-import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoryExport from "./HistoryExport.vue";
 
@@ -25,9 +26,20 @@ const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<
 mockFetchExportRecords.mockResolvedValue([]);
 
 const FAKE_HISTORY_ID = "fake-history-id";
-const FAKE_HISTORY = {
+const FAKE_HISTORY_URL = `/api/histories/${FAKE_HISTORY_ID}`;
+const FAKE_HISTORY: HistorySummary = {
     id: FAKE_HISTORY_ID,
     name: "fake-history-name",
+    annotation: "fake-history-annotation",
+    archived: false,
+    deleted: false,
+    purged: false,
+    published: false,
+    model_class: "History",
+    tags: [],
+    count: 0,
+    update_time: "2021-09-01T00:00:00.000Z",
+    url: FAKE_HISTORY_URL,
 };
 
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
@@ -48,13 +60,6 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePlugin[] = [
 async function mountHistoryExport() {
     const pinia = createTestingPinia({ stubActions: false });
     setActivePinia(pinia);
-    const historyStore = useHistoryStore(pinia);
-
-    // the mocking method described in the pinia docs does not work in vue2
-    // this is a work-around
-    jest.spyOn(historyStore, "getHistoryById").mockImplementation(
-        (_history_id: string) => FAKE_HISTORY as HistorySummary
-    );
 
     const wrapper = shallowMount(HistoryExport as object, {
         propsData: { historyId: FAKE_HISTORY_ID },
@@ -66,8 +71,12 @@ async function mountHistoryExport() {
 }
 
 describe("HistoryExport.vue", () => {
+    let axiosMock: MockAdapter;
+
     beforeEach(async () => {
         mockFetcher.path(REMOTE_FILES_API_ENDPOINT).method("get").mock({ data: [] });
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(FAKE_HISTORY_URL).reply(200, FAKE_HISTORY);
     });
 
     it("should render the history name", async () => {
@@ -137,5 +146,26 @@ describe("HistoryExport.vue", () => {
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#zenodo-file-source-tab").exists()).toBe(true);
+    });
+
+    it("should not display a fatal error alert if the history is found and loaded", async () => {
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#fatal-error-alert").exists()).toBe(false);
+
+        expect(wrapper.find("#history-name").exists()).toBe(true);
+        expect(wrapper.find("#history-export-options").exists()).toBe(true);
+        expect(wrapper.find("#direct-download-tab").exists()).toBe(true);
+    });
+
+    it("should not render the UI and display a fatal error message if the history cannot be found or loaded", async () => {
+        axiosMock.onGet(FAKE_HISTORY_URL).reply(404);
+        const wrapper = await mountHistoryExport();
+
+        expect(wrapper.find("#fatal-error-alert").exists()).toBe(true);
+
+        expect(wrapper.find("#history-name").exists()).toBe(false);
+        expect(wrapper.find("#history-export-options").exists()).toBe(false);
+        expect(wrapper.find("#direct-download-tab").exists()).toBe(false);
     });
 });
