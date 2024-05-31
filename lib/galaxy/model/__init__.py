@@ -10980,7 +10980,8 @@ class UserPreference(Base, RepresentById):
 
 
 class UsesTemplatesAppConfig(Protocol):
-    user_config_templates_index_by: Literal["uuid", "id"]
+    # TODO: delete this config protocol def and uses in dev
+    pass
 
 
 class HasConfigSecrets(RepresentById):
@@ -10990,10 +10991,7 @@ class HasConfigSecrets(RepresentById):
     user: Mapped["User"]
 
     def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
-        if app_config.user_config_templates_index_by == "id":
-            id_str = str(self.id)
-        else:
-            id_str = str(self.uuid)
+        id_str = str(self.uuid)
         user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
         return user_vault_id_prefix
 

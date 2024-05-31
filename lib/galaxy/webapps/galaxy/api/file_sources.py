@@ -29,7 +29,7 @@ router = Router(tags=["file_sources"])
 
 
 UserFileSourceIdPathParam: str = Path(
-    ..., title="User File Source ID", description="The index for a persisted UserFileSourceStore object."
+    ..., title="User File Source UUID", description="The UUID index for a persisted UserFileSourceStore object."
 )
 
 
