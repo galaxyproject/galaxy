@@ -4,7 +4,7 @@ import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileS
 import { useFileSourceInstancesStore } from "@/stores/fileSourceInstancesStore";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 
-export function useInstanceAndTemplate(instanceIdRef: Ref<string | number>) {
+export function useInstanceAndTemplate(instanceIdRef: Ref<string>) {
     const fileSourceTemplatesStore = useFileSourceTemplatesStore();
     const fileSourceInstancesStore = useFileSourceInstancesStore();
     fileSourceInstancesStore.fetchInstances();

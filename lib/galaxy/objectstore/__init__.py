@@ -1364,17 +1364,10 @@ class DistributedObjectStore(NestedObjectStore):
             if not user:
                 return "Supplied object store id is not accessible"
             rest_of_uri = object_store_id.split("://", 1)[1]
-            index_by = self.config.user_config_templates_index_by
-            if index_by == "id":
-                user_object_store_id = int(rest_of_uri)
-                for user_object_store in user.object_stores:
-                    if user_object_store.id == user_object_store_id:
-                        return None
-            else:
-                user_object_store_uuid = rest_of_uri
-                for user_object_store in user.object_stores:
-                    if str(user_object_store.uuid) == user_object_store_uuid:
-                        return None
+            user_object_store_uuid = rest_of_uri
+            for user_object_store in user.object_stores:
+                if str(user_object_store.uuid) == user_object_store_uuid:
+                    return None
             return "Supplied object store id was not found"
         if object_store_id not in self.object_store_ids_allowing_selection():
             return "Supplied object store id is not an allowed object store selection"
@@ -1658,7 +1651,6 @@ def build_object_store_from_config(
 class UserObjectStoresAppConfig(BaseModel):
     object_store_cache_path: str
     object_store_cache_size: int
-    user_config_templates_index_by: Literal["uuid", "id"]
     user_config_templates_use_saved_configuration: Literal["fallback", "preferred", "never"]
     jobs_directory: str
     new_file_path: str
