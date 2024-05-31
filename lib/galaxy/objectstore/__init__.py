@@ -851,7 +851,12 @@ class DiskObjectStore(ConcreteObjectStore):
         except OSError as ex:
             # Likely a race condition in which we delete the job working directory
             # and another process writes files into that directory.
-            log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}", exc_info=True)
+            # If the path doesn't exist anymore, another rmtree call was successful.
+            path = self.__get_filename(obj, **kwargs)
+            if path is None:
+                return True
+            else:
+                log.critical(f"{path} delete error {ex}", exc_info=True)
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
