@@ -38,6 +38,9 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
+# Global variable to pass database contexts around - only needed for older
+# Tool Shed twill tests that didn't utilize the API for such interactions.
+tool_shed_context = None
 
 
 def build_shed_app(simple_kwargs):

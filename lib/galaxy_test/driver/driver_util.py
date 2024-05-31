@@ -69,9 +69,8 @@ DEFAULT_LOCALES = "en"
 log = logging.getLogger("test_driver")
 
 
-# Global variables to pass database contexts around - only needed for older
+# Global variable to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
-tool_shed_context = None
 install_context = None
 
 
