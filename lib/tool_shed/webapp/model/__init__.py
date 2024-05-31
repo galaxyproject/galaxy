@@ -143,6 +143,11 @@ class User(Base, Dictifiable):
         self.purged = False
         self.new_repo_alert = False
 
+    @property
+    def current_galaxy_session(self):
+        if self.galaxy_sessions:
+            return self.galaxy_sessions[0]
+
     def all_roles(self):
         roles = [ura.role for ura in self.roles]
         for group in [uga.group for uga in self.groups]:
