@@ -51,8 +51,10 @@ export class UploadQueue {
     // Remove file from queue and file set by index
     remove(index) {
         const file = this.queue.get(index);
-        const fileSetKey = file.name + file.size;
-        this.queue.delete(index) && this.fileSet.delete(fileSetKey);
+        if (file) {
+            const fileSetKey = file.name + file.size;
+            this.queue.delete(index) && this.fileSet.delete(fileSetKey);
+        }
     }
 
     // Remove all entries from queue
