@@ -10085,7 +10085,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     )
     title = Column(TEXT)
     deleted = Column(Boolean, index=True, default=False)
-    importable = Column(Boolean, index=True, default=False, key="_importable")
+    importable = Column(Boolean, index=True, default=False)
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
     user = relationship("User")
