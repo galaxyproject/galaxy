@@ -16,6 +16,8 @@ const hasQuota = computed(() => {
     return quotasEnabled && quotaLimited;
 });
 
+const quotaLimit = computed(() => currentUser.value?.quota ?? 0);
+
 const totalUsageString = computed(() => {
     const total = currentUser.value?.total_disk_usage ?? 0;
     return bytesToString(total, true);
@@ -44,8 +46,14 @@ const variant = computed(() => {
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
-            <span v-if="hasQuota">{{ "Using " + usage.toFixed(0) }}%</span>
-            <span v-else>{{ "Using " + totalUsageString }}</span>
+            <span>
+                <span v-localize>Using</span>
+                <span v-if="hasQuota">
+                    <span>{{ usage.toFixed(0) }}%</span>
+                    <span v-if="quotaLimit !== 0">of {{ quotaLimit }}</span>
+                </span>
+                <span v-else>{{ totalUsageString }}</span>
+            </span>
         </BLink>
     </div>
 </template>
@@ -57,7 +65,7 @@ const variant = computed(() => {
     margin-left: 0.5rem;
     margin-right: 0.5rem;
     .quota-progress {
-        width: 150px;
+        width: 12rem;
         height: 1.4em;
         position: relative;
         & > * {
@@ -65,8 +73,6 @@ const variant = computed(() => {
             width: 100%;
             height: 100%;
             text-align: center;
-        }
-        & > span {
             line-height: 1.4em;
             pointer-events: none;
         }

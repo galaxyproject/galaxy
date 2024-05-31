@@ -38,10 +38,11 @@ describe("QuotaMeter.vue", () => {
         const user = {
             total_disk_usage: 5120,
             quota_percent: 50,
+            quota: "100 MB",
         };
         const config = { enable_quotas: true };
         const wrapper = await createQuotaMeterWrapper(config, user);
-        expect(wrapper.find(".quota-progress > span").text()).toBe("Using 50%");
+        expect(wrapper.find(".quota-progress > span").text()).toBe("Using 50% of 100 MB");
     });
 
     it("changes appearance depending on usage", async () => {
