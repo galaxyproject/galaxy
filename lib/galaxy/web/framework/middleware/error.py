@@ -177,7 +177,7 @@ class ErrorMiddleware:
                 start_response("500 Internal Server Error", [("content-type", "text/html")], exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
-                return [response]
+                return [response.encode(errors="ignore")]
             finally:
                 # clean up locals...
                 exc_info = None
@@ -188,7 +188,7 @@ class ErrorMiddleware:
             return app_iter
         return CatchingIter(app_iter, environ, sr_checker, self)
 
-    def exception_handler(self, exc_info, environ):
+    def exception_handler(self, exc_info, environ) -> str:
         simple_html_error = False
         if self.xmlhttp_key:
             get_vars = wsgilib.parse_querystring(environ)
@@ -362,7 +362,7 @@ def handle_exception(
     error_message=None,
     simple_html_error=False,
     environ=None,
-):
+) -> str:
     """
     For exception handling outside of a web context
 
