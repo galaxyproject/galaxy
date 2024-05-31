@@ -6683,7 +6683,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return elements
 
     @property
-    def first_dataset_element(self):
+    def first_dataset_element(self) -> Optional["DatasetCollectionElement"]:
         for element in self.elements:
             if element.is_collection:
                 first_element = element.child_collection.first_dataset_element
@@ -10309,6 +10309,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
+        if "importable" in rval and rval["importable"] is None:
+            # pages created prior to 2011 might not have importable field
+            # probably not worth creating a migration to fix that
+            rval["importable"] = False
         rev = []
         for a in self.revisions:
             rev.append(a.id)
