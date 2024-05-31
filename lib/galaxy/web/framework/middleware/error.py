@@ -13,7 +13,10 @@ import logging
 import sys
 import traceback
 from io import StringIO
-from typing import cast
+from typing import (
+    cast,
+    Optional,
+)
 
 import markupsafe
 from paste import (
@@ -188,7 +191,7 @@ class ErrorMiddleware:
             return app_iter
         return CatchingIter(app_iter, environ, sr_checker, self)
 
-    def exception_handler(self, exc_info, environ) -> str:
+    def exception_handler(self, exc_info, environ) -> Optional[str]:
         simple_html_error = False
         if self.xmlhttp_key:
             get_vars = wsgilib.parse_querystring(environ)
@@ -362,7 +365,7 @@ def handle_exception(
     error_message=None,
     simple_html_error=False,
     environ=None,
-) -> str:
+) -> Optional[str]:
     """
     For exception handling outside of a web context
 
