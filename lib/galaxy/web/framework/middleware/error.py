@@ -191,13 +191,13 @@ class ErrorMiddleware:
             return app_iter
         return CatchingIter(app_iter, environ, sr_checker, self)
 
-    def exception_handler(self, exc_info, environ) -> Optional[str]:
+    def exception_handler(self, exc_info, environ) -> str:
         simple_html_error = False
         if self.xmlhttp_key:
             get_vars = wsgilib.parse_querystring(environ)
             if dict(get_vars).get(self.xmlhttp_key):
                 simple_html_error = True
-        return handle_exception(
+        rval = handle_exception(
             exc_info,
             environ["wsgi.errors"],
             html=True,
@@ -215,6 +215,8 @@ class ErrorMiddleware:
             simple_html_error=simple_html_error,
             environ=environ,
         )
+        rval = cast(str, rval)  # we know handle_exception returns string because html=True
+        return rval
 
 
 class ResponseStartChecker:
@@ -351,7 +353,7 @@ class Supplement:
 def handle_exception(
     exc_info,
     error_stream,
-    html=True,
+    html: bool = True,
     debug_mode=False,
     error_email=None,
     error_log=None,
