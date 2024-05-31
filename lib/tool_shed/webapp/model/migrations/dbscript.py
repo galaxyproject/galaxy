@@ -30,6 +30,8 @@ REVISION_TAGS = {
     "23.1": "1b5bf427db25",
     "release_23.2": "1b5bf427db25",
     "23.2": "1b5bf427db25",
+    "release_24.0": "1b5bf427db25",
+    "24.0": "1b5bf427db25",
 }
 
 
