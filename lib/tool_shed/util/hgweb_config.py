@@ -5,8 +5,6 @@ import shutil
 import threading
 from datetime import date
 
-from galaxy.util import unicodify
-
 log = logging.getLogger(__name__)
 
 new_hgweb_config_template = """
@@ -36,8 +34,8 @@ class HgWebConfigManager:
             self.in_memory_config.set("paths", lhs, rhs)
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception as e:
-            log.debug("Exception in HgWebConfigManager.add_entry(): %s", unicodify(e))
+        except Exception:
+            log.exception("Exception in HgWebConfigManager.add_entry()")
         finally:
             self.lock.release()
 
@@ -52,8 +50,8 @@ class HgWebConfigManager:
             self.in_memory_config.set("paths", new_lhs, new_rhs)
             # Persist our in-memory configuration.
             self.write_config()
-        except Exception as e:
-            log.debug("Exception in HgWebConfigManager.change_entry(): %s", unicodify(e))
+        except Exception:
+            log.exception("Exception in HgWebConfigManager.change_entry()")
         finally:
             self.lock.release()
 

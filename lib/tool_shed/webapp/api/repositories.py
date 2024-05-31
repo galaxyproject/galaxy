@@ -986,7 +986,7 @@ class RepositoriesController(BaseAPIController):
             type=repo_type,
             description=synopsis,
             long_description=description,
-            user_id=trans.user.id,
+            user=trans.user,
             category_ids=category_ids,
             remote_repository_url=remote_repository_url,
             homepage_url=homepage_url,

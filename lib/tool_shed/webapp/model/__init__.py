@@ -422,12 +422,13 @@ class Repository(Base, Dictifiable):
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
-    def __init__(self, private=False, times_downloaded=0, deprecated=False, **kwd):
+    def __init__(self, private=False, times_downloaded=0, deprecated=False, user=None, **kwd):
         super().__init__(**kwd)
         self.private = private
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
         self.name = self.name or "Unnamed repository"
+        self.user = user
 
     @property
     def hg_repo(self):
