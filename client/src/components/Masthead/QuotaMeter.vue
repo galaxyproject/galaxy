@@ -1,60 +1,54 @@
+<script setup lang="ts">
+import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import { bytesToString } from "@/utils/utils";
+
+const { config } = useConfig();
+const { currentUser } = storeToRefs(useUserStore());
+
+const hasQuota = computed(() => {
+    const quotasEnabled = config.value.enable_quotas ?? false;
+    const quotaLimited = currentUser.value?.quota !== "unlimited" ?? false;
+    return quotasEnabled && quotaLimited;
+});
+
+const totalUsageString = computed(() => {
+    const total = currentUser.value?.total_disk_usage ?? 0;
+    return bytesToString(total, true);
+});
+
+const usage = computed(() => {
+    if (hasQuota.value) {
+        return currentUser.value?.quota_percent ?? 0;
+    }
+    return currentUser.value?.total_disk_usage ?? 0;
+});
+
+const variant = computed(() => {
+    if (!hasQuota.value || usage.value < 80) {
+        return "success";
+    } else if (usage.value < 95) {
+        return "warning";
+    }
+    return "danger";
+});
+</script>
+
 <template>
     <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" title="Storage and Usage Details">
-        <b-link class="quota-progress" to="/storage" data-description="storage dashboard link">
-            <b-progress :max="100">
-                <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
-            </b-progress>
-            <span v-if="hasQuota">{{ usingString + " " + usage.toFixed(0) }}%</span>
-            <span v-else>{{ usingString + " " + totalUsageString }}</span>
-        </b-link>
+        <BLink class="quota-progress" to="/storage" data-description="storage dashboard link">
+            <BProgress :max="100">
+                <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
+            </BProgress>
+            <span v-if="hasQuota">{{ "Usage " + usage.toFixed(0) }}%</span>
+            <span v-else>{{ "Usage " + totalUsageString }}</span>
+        </BLink>
     </div>
 </template>
-
-<script>
-import { mapState } from "pinia";
-import { bytesToString } from "utils/utils";
-
-import { useConfigStore } from "@/stores/configurationStore";
-import { useUserStore } from "@/stores/userStore";
-
-export default {
-    name: "QuotaMeter",
-    data() {
-        return {
-            usingString: this.l("Using"),
-        };
-    },
-    computed: {
-        ...mapState(useConfigStore, ["config"]),
-        ...mapState(useUserStore, ["currentUser"]),
-        hasQuota() {
-            const quotasEnabled = this.config?.enable_quotas ?? false;
-            const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
-            return quotasEnabled && quotaLimited;
-        },
-        usage() {
-            if (this.hasQuota) {
-                return this.currentUser?.quota_percent ?? 0;
-            } else {
-                return this.currentUser?.total_disk_usage ?? 0;
-            }
-        },
-        totalUsageString() {
-            const total = this.currentUser?.total_disk_usage ?? 0;
-            return bytesToString(total, true);
-        },
-        variant() {
-            if (!this.hasQuota || this.usage < 80) {
-                return "success";
-            } else if (this.usage < 95) {
-                return "warning";
-            } else {
-                return "danger";
-            }
-        },
-    },
-};
-</script>
 
 <style lang="scss" scoped>
 .quota-meter {

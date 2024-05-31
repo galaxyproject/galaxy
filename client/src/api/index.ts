@@ -223,7 +223,7 @@ export interface User extends QuotaUsageResponse {
     username?: string;
 }
 
-export interface AnonymousUser {
+export interface AnonymousUser extends QuotaUsageResponse {
     id?: string;
     isAnonymous: true;
     is_admin?: false;
