@@ -11,6 +11,8 @@ from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
+from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 
 log = driver_util.build_logger()
 
@@ -36,6 +38,48 @@ shed_data_manager_conf_xml_template = """<?xml version="1.0"?>
 <data_managers>
 </data_managers>
 """
+
+
+def build_shed_app(simple_kwargs):
+    """Build a Galaxy app object from a simple keyword arguments.
+
+    Construct paste style complex dictionary. Also setup "global" reference
+    to sqlalchemy database context for tool shed database.
+    """
+    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
+    # TODO: Simplify global_conf to match Galaxy above...
+    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
+    simple_kwargs["global_conf"] = driver_util.get_webapp_global_conf()
+
+    app = ToolshedUniverseApplication(**simple_kwargs)
+    log.info("Embedded Toolshed application started")
+
+    global tool_shed_context
+    tool_shed_context = app.model.context
+
+    return app
+
+
+def launch_shed_server(app_factory, webapp_factory, prefix="TOOL_SHED", galaxy_config=None, config_object=None):
+    name = prefix.lower()
+    host, port = driver_util.explicitly_configured_host_and_port(prefix, config_object)
+    port = driver_util.attempt_ports(port)
+
+    app = app_factory()
+    url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
+    wsgi_webapp = webapp_factory(
+        galaxy_config["global_conf"],
+        app=app,
+        use_translogger=False,
+        static_enabled=True,
+        register_shutdown_at_exit=False,
+    )
+    asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
+
+    server, port, thread = driver_util.uvicorn_serve(asgi_app, host=host, port=port)
+    driver_util.set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
+    log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
+    return driver_util.EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
 
 
 class ToolShedTestDriver(driver_util.TestDriver):
@@ -116,11 +160,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
         os.environ["TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF"] = shed_tool_data_table_conf_file
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
-        tool_shed_server_wrapper = driver_util.launch_server(
-            app_factory=lambda: driver_util.build_shed_app(kwargs),
+        tool_shed_server_wrapper = launch_shed_server(
+            app_factory=lambda: build_shed_app(kwargs),
             webapp_factory=toolshedbuildapp.app_factory,
             galaxy_config=kwargs,
-            prefix="TOOL_SHED",
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
         tool_shed_test_host = tool_shed_server_wrapper.host

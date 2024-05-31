@@ -50,8 +50,6 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
 )
-from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
-from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
@@ -583,26 +581,6 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     return app
 
 
-def build_shed_app(simple_kwargs):
-    """Build a Galaxy app object from a simple keyword arguments.
-
-    Construct paste style complex dictionary. Also setup "global" reference
-    to sqlalchemy database context for tool shed database.
-    """
-    log.info("Tool shed database connection: %s", simple_kwargs["database_connection"])
-    # TODO: Simplify global_conf to match Galaxy above...
-    simple_kwargs["__file__"] = "tool_shed_wsgi.yml.sample"
-    simple_kwargs["global_conf"] = get_webapp_global_conf()
-
-    app = ToolshedUniverseApplication(**simple_kwargs)
-    log.info("Embedded Toolshed application started")
-
-    global tool_shed_context
-    tool_shed_context = app.model.context
-
-    return app
-
-
 def explicitly_configured_host_and_port(prefix, config_object):
     host_env_key = f"{prefix}_TEST_HOST"
     port_env_key = f"{prefix}_TEST_PORT"
@@ -794,8 +772,6 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
     )
     if name == "galaxy":
         asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
-    elif name == "tool_shed":
-        asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
     else:
         raise NotImplementedError(f"Launching {name} not implemented")
 
