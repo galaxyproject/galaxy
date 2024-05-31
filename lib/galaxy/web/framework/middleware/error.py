@@ -9,6 +9,7 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
+import logging
 import sys
 import traceback
 from io import StringIO
@@ -24,6 +25,8 @@ from paste.exceptions import (
     formatter,
     reporter,
 )
+
+log = logging.getLogger(__name__)
 
 __all__ = ("ErrorMiddleware", "handle_exception")
 
@@ -170,6 +173,7 @@ class ErrorMiddleware:
                 for expect in environ.get("paste.expected_exceptions", []):
                     if isinstance(exc_info[1], expect):
                         raise
+                log.exception("Uncaught Exception")
                 start_response("500 Internal Server Error", [("content-type", "text/html")], exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
