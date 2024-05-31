@@ -60,28 +60,6 @@ def build_shed_app(simple_kwargs):
     return app
 
 
-def launch_shed_server(app_factory, webapp_factory, prefix="TOOL_SHED", galaxy_config=None, config_object=None):
-    name = prefix.lower()
-    host, port = driver_util.explicitly_configured_host_and_port(prefix, config_object)
-    port = driver_util.attempt_ports(port)
-
-    app = app_factory()
-    url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
-    wsgi_webapp = webapp_factory(
-        galaxy_config["global_conf"],
-        app=app,
-        use_translogger=False,
-        static_enabled=True,
-        register_shutdown_at_exit=False,
-    )
-    asgi_app = init_tool_shed_fast_app(wsgi_webapp, app)
-
-    server, port, thread = driver_util.uvicorn_serve(asgi_app, host=host, port=port)
-    driver_util.set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
-    log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
-    return driver_util.EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
-
-
 class ToolShedTestDriver(driver_util.TestDriver):
     """Instantiate a Galaxy-style TestDriver for testing the tool shed."""
 
@@ -160,10 +138,12 @@ class ToolShedTestDriver(driver_util.TestDriver):
         os.environ["TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF"] = shed_tool_data_table_conf_file
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
-        tool_shed_server_wrapper = launch_shed_server(
+        tool_shed_server_wrapper = driver_util.launch_server(
             app_factory=lambda: build_shed_app(kwargs),
             webapp_factory=toolshedbuildapp.app_factory,
             galaxy_config=kwargs,
+            prefix="TOOL_SHED",
+            init_fast_app=init_tool_shed_fast_app,
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
         tool_shed_test_host = tool_shed_server_wrapper.host

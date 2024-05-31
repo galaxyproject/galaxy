@@ -736,7 +736,14 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     )
 
 
-def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
+def launch_server(
+    app_factory,
+    webapp_factory,
+    prefix=DEFAULT_CONFIG_PREFIX,
+    galaxy_config=None,
+    config_object=None,
+    init_fast_app=init_galaxy_fast_app,
+):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
     port = attempt_ports(port)
@@ -770,10 +777,7 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
         static_enabled=True,
         register_shutdown_at_exit=False,
     )
-    if name == "galaxy":
-        asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
-    else:
-        raise NotImplementedError(f"Launching {name} not implemented")
+    asgi_app = init_fast_app(wsgi_webapp, app)
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
