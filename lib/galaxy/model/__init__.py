@@ -10135,6 +10135,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
+        if "importable" in rval and rval["importable"] is None:
+            # pages created prior to 2011 might not have importable field
+            # probably not worth creating a migration to fix that
+            rval["importable"] = False
         rev = []
         for a in self.revisions:
             rev.append(a.id)
