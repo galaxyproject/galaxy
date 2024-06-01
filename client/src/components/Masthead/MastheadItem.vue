@@ -38,7 +38,7 @@ defineProps({
 <template>
     <BNavItem
         :id="id"
-        v-b-tooltip.hover.bottom
+        v-b-tooltip.noninteractive.hover.bottom
         :href="withPrefix(url)"
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
