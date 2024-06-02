@@ -13311,6 +13311,8 @@ export interface components {
             | components["schemas"]["FreehandComment"];
         /** WorkflowCreatePayload */
         WorkflowCreatePayload: {
+            /** Allow Missing Tools */
+            allow_missing_tools?: boolean | null;
             /**
              * Archive File
              * @description A file containing a workflow archive to be imported.
@@ -13331,6 +13333,13 @@ export interface components {
              * @description If from_history_id is set, this is an optional list of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history.
              */
             dataset_ids?: (string | number)[] | null;
+            /** Dry Run */
+            dry_run?: boolean | null;
+            /**
+             * Exact Tools
+             * @description If False, allow running with less exact tool versions
+             */
+            exact_tools?: boolean | null;
             /**
              * From History ID
              * @description The ID of a history from which to extract a workflow.
@@ -13341,23 +13350,46 @@ export interface components {
              * @description A path from which to import a workflow.
              */
             from_path?: string | null;
+            /**
+             * From Tool Form
+             * @description If True, assume all tool state coming from generated form instead of potentially simpler json stored in DB/exported
+             */
+            from_tool_form?: boolean | null;
             /** Import Tools */
             import_tools?: boolean | null;
+            /** Importable */
+            importable?: boolean | null;
+            /** Install Repository Dependencies */
+            install_repository_dependencies?: boolean | null;
+            /** Install Resolver Dependencies */
+            install_resolver_dependencies?: boolean | null;
+            /** Install Tool Dependencies */
+            install_tool_dependencies?: boolean | null;
             /**
              * Job IDs
              * @description If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.
              */
             job_ids?: (string | number)[] | null;
+            /** New Tool Panel Section Label */
+            new_tool_panel_section_label?: string | null;
             /**
              * Object ID
              * @description If from_path is set, this is an optional object ID to include when importing a workflow from a path.
              */
             object_id?: string | null;
+            /** Publish */
+            publish?: boolean | null;
             /**
              * Shared Workflow ID
              * @description The ID of a shared workflow to import.
              */
             shared_workflow_id?: string | null;
+            /** Shed Tool Conf */
+            shed_tool_conf?: string | null;
+            /** Tool Panel Section Id */
+            tool_panel_section_id?: string | null;
+            /** Tool Panel Section Mapping */
+            tool_panel_section_mapping?: Record<string, never> | null;
             /**
              * TRS Server
              * @description If archive_source is set to 'trs_tool', this is the server of the Tool Registry Service (TRS) from which to import a workflow.
@@ -25522,7 +25554,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
@@ -25555,14 +25594,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
