@@ -26,10 +26,7 @@ from pydantic import (
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
