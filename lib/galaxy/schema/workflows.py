@@ -1068,6 +1068,7 @@ class WorkflowUpdatePayload(Model):
     )
 
 
+# TODO Think if these are really all optional
 class WorkflowCreatePayload(Model):
     # TODO - Description comes from previous endpoint
     from_history_id: Optional[str] = Field(
@@ -1111,9 +1112,6 @@ class WorkflowCreatePayload(Model):
         title="From Path",
         description="A path from which to import a workflow.",
     )
-    import_tools: Optional[bool] = Field(
-        None,
-    )
     object_id: Optional[str] = Field(
         None,
         title="Object ID",
@@ -1156,3 +1154,50 @@ class WorkflowCreatePayload(Model):
         if isinstance(v, str):
             return json.loads(v)
         return v
+
+    # TODO - these fields are only used, when creating a WorkflowCreateOptions
+    # Descriptions are taken from the WorkflowCreateOptions class
+    from_tool_form: Optional[bool] = Field(
+        default=None,
+        description="If True, assume all tool state coming from generated form instead of potentially simpler json stored in DB/exported",
+    )
+    exact_tools: Optional[bool] = Field(
+        default=None, description="If False, allow running with less exact tool versions"
+    )
+    import_tools: Optional[bool] = Field(
+        None,
+    )
+    allow_missing_tools: Optional[bool] = Field(
+        None,
+    )
+    dry_run: Optional[bool] = Field(
+        None,
+    )
+    publish: Optional[bool] = Field(
+        None,
+    )
+    importable: Optional[bool] = Field(
+        None,
+    )
+    install_repository_dependencies: Optional[bool] = Field(
+        None,
+    )
+    install_resolver_dependencies: Optional[bool] = Field(
+        None,
+    )
+    install_tool_dependencies: Optional[bool] = Field(
+        None,
+    )
+    new_tool_panel_section_label: Optional[str] = Field(
+        None,
+    )
+    tool_panel_section_id: Optional[str] = Field(
+        None,
+    )
+    shed_tool_conf: Optional[str] = Field(
+        None,
+    )
+    # TODO Type further
+    tool_panel_section_mapping: Optional[Dict[Any, Any]] = Field(
+        None,
+    )
