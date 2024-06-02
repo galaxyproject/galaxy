@@ -13341,6 +13341,11 @@ export interface components {
              */
             exact_tools?: boolean | null;
             /**
+             * Fill Defaults
+             * @description Fill in default tool state when updating, may change tool_state
+             */
+            fill_defaults?: boolean | null;
+            /**
              * From History ID
              * @description The ID of a history from which to extract a workflow.
              */
@@ -13410,6 +13415,8 @@ export interface components {
              * @description If archive_source is set to 'trs_tool', this is the version ID of the tool in the Tool Registry Service (TRS) from which to import a workflow.
              */
             trs_version_id?: string | null;
+            /** Update Stored Workflow Attributes */
+            update_stored_workflow_attributes?: boolean | null;
             /**
              * Workflow
              * @description A dictionary containing information about a new workflow to import.
