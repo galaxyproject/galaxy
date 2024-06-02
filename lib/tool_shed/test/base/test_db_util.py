@@ -18,7 +18,7 @@ log = logging.getLogger("test.tool_shed.test_db_util")
 
 
 def sa_session():
-    from galaxy_test.driver.driver_util import tool_shed_context as sa_session
+    from .driver import tool_shed_context as sa_session
 
     return sa_session
 
