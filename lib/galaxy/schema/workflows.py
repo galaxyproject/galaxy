@@ -1157,6 +1157,10 @@ class WorkflowCreatePayload(Model):
 
     # TODO - these fields are only used, when creating a WorkflowCreateOptions
     # Descriptions are taken from the WorkflowCreateOptions class
+    fill_defaults: Optional[bool] = Field(
+        None,
+        description="Fill in default tool state when updating, may change tool_state",
+    )
     from_tool_form: Optional[bool] = Field(
         default=None,
         description="If True, assume all tool state coming from generated form instead of potentially simpler json stored in DB/exported",
@@ -1164,13 +1168,16 @@ class WorkflowCreatePayload(Model):
     exact_tools: Optional[bool] = Field(
         default=None, description="If False, allow running with less exact tool versions"
     )
-    import_tools: Optional[bool] = Field(
+    update_stored_workflow_attributes: Optional[bool] = Field(
         None,
     )
     allow_missing_tools: Optional[bool] = Field(
         None,
     )
     dry_run: Optional[bool] = Field(
+        None,
+    )
+    import_tools: Optional[bool] = Field(
         None,
     )
     publish: Optional[bool] = Field(
