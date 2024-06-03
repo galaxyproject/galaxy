@@ -28,6 +28,7 @@ from galaxy import (
     jobs,
     tools,
 )
+from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.celery.base_task import (
     GalaxyTaskBeforeStart,
     GalaxyTaskBeforeStartUserRateLimitPostgres,
@@ -556,6 +557,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         if configure_logging:
             config.configure_logging(self.config, self.application_stack.facts)
+        # Carbon emissions configuration
+        carbon_intensity_entry = get_carbon_intensity_entry(self.config.geographical_server_location_code)
+        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
+        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(

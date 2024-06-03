@@ -7,5 +7,3 @@ prune galaxy/webapps/base/static/plugins/
 exclude galaxy/webapps/base/static/style/base.css
 exclude galaxy/webapps/base/static/welcome.html
 graft galaxy/webapps/base/templates/
-include tool_shed/webapp/model/migrate/migrate.cfg
-graft tool_shed/webapp/templates/
