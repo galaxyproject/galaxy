@@ -204,28 +204,27 @@ def create_repository(
     # Create an admin role for the repository.
     create_repository_admin_role(app, repository)
     # Create a temporary repo_path on disk.
-    with tempfile.TemporaryDirectory(
+    repository_path = tempfile.mkdtemp(
         dir=app.config.file_path,
-        prefix="f{repository.user.username}-{repository.name}",
-        delete=False,
-    ) as repository_path:
-        # Create the local repository.
-        init_repository(repo_path=repository_path)
-        # Create a .hg/hgrc file for the local repository.
-        create_hgrc_file(app, repository, repo_path=repository_path)
-        # Add an entry in the hgweb.config file for the local repository.
-        lhs = f"{app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
-        # Flush to get the id.
-        session = sa_session()
-        with transaction(session):
-            session.commit()
-        dir = os.path.join(app.config.file_path, *util.directory_hash_id(repository.id))
-        # Define repo name inside hashed directory.
-        final_repository_path = os.path.join(dir, "repo_%d" % repository.id)
-        # Create final repository directory.
-        if not os.path.exists(final_repository_path):
-            os.makedirs(final_repository_path)
-        os.rename(repository_path, final_repository_path)
+        prefix=f"{repository.user.username}-{repository.name}",
+    )
+    # Create the local repository.
+    init_repository(repo_path=repository_path)
+    # Create a .hg/hgrc file for the local repository.
+    create_hgrc_file(app, repository, repo_path=repository_path)
+    # Add an entry in the hgweb.config file for the local repository.
+    lhs = f"{app.config.hgweb_repo_prefix}{repository.user.username}/{repository.name}"
+    # Flush to get the id.
+    session = sa_session()
+    with transaction(session):
+        session.commit()
+    dir = os.path.join(app.config.file_path, *util.directory_hash_id(repository.id))
+    # Define repo name inside hashed directory.
+    final_repository_path = os.path.join(dir, "repo_%d" % repository.id)
+    # Create final repository directory.
+    if not os.path.exists(final_repository_path):
+        os.makedirs(final_repository_path)
+    os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
     # Update the repository registry.
     app.repository_registry.add_entry(repository)
