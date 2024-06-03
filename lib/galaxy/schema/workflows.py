@@ -1071,12 +1071,12 @@ class WorkflowUpdatePayload(Model):
 # TODO Think if these are really all optional
 class WorkflowCreatePayload(Model):
     # TODO - Description comes from previous endpoint
-    from_history_id: Optional[str] = Field(
+    from_history_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="From History ID",
         description="The ID of a history from which to extract a workflow.",
     )
-    job_ids: Optional[List[Union[str, int]]] = Field(
+    job_ids: Optional[List[DecodedDatabaseIdField]] = Field(
         None,
         title="Job IDs",
         description="If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.",

@@ -568,10 +568,11 @@ class WorkflowsService(ServiceBase):
 
         if "from_history_id" in payload:
             from_history_id = payload.get("from_history_id")
-            from_history_id = self.decode_id(from_history_id)
+            # from_history_id = self.decode_id(from_history_id)
             history = self._history_manager.get_accessible(from_history_id, trans.user, current_history=trans.history)
 
-            job_ids = [self.decode_id(_) for _ in payload.get("job_ids", [])]
+            # job_ids = [self.decode_id(_) for _ in payload.get("job_ids", [])]
+            job_ids = payload.get("job_ids", [])
             dataset_ids = payload.get("dataset_ids", [])
             dataset_collection_ids = payload.get("dataset_collection_ids", [])
             workflow_name = payload["workflow_name"]
