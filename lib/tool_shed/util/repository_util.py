@@ -205,7 +205,9 @@ def create_repository(
     create_repository_admin_role(app, repository)
     # Create a temporary repo_path on disk.
     with tempfile.TemporaryDirectory(
-        dir=app.config.file_path, prefix="f{repository.user.username}-{repository.name}"
+        dir=app.config.file_path,
+        prefix="f{repository.user.username}-{repository.name}",
+        delete=False,
     ) as repository_path:
         # Create the local repository.
         init_repository(repo_path=repository_path)
