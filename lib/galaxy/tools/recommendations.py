@@ -266,7 +266,7 @@ class ToolRecommendations:
         """
         Get predicted tools. If predicted tools are less in number, combine them with published tools
         """
-        last_compatible_tools = list()
+        last_compatible_tools = []
         if last_tool_name in self.model_data_dictionary:
             last_tool_name_id = self.model_data_dictionary[last_tool_name]
             if last_tool_name_id in self.compatible_tools:
