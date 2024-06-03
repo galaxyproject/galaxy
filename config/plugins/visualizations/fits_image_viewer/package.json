@@ -8,10 +8,12 @@
     "license": "AFL-3.0",
     "dependencies": {
         "aladin-lite-galaxy": "^1.0.0",
-        "parcel-bundler": "^1.4.1",
         "cpy-cli": "^5.0.0"
     },
     "scripts": {
-        "build": "cpy --flat node_modules/aladin-lite-galaxy static/dist/aladin-lite-galaxy && parcel build src/script.js -d static"
+        "build": "cpy --flat node_modules/aladin-lite-galaxy static/dist/aladin-lite-galaxy && parcel build src/script.js --dist-dir static"
+    },
+    "devDependencies": {
+        "parcel": "^2.12.0"
     }
 }
