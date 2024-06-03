@@ -222,12 +222,7 @@ class ToolRecommendations:
             c_dict = {}
             for t_id in self.all_tools:
                 # select the name and tool id if it is installed in Galaxy
-                if (
-                    t_id == child
-                    and score >= 0.0
-                    and child not in self.deprecated_tools
-                    and child != last_tool_name
-                ):
+                if t_id == child and score >= 0.0 and child not in self.deprecated_tools and child != last_tool_name:
                     full_tool_id = self.all_tools[t_id][0]
                     pred_input_extensions, _ = self.__get_tool_extensions(trans, full_tool_id)
                     c_dict["name"] = self.all_tools[t_id][1]
@@ -278,9 +273,7 @@ class ToolRecommendations:
         t_intersect, u_intersect = self.__sort_by_usage(
             t_intersect, self.tool_weights_sorted, self.model_data_dictionary
         )
-        t_diff, u_diff = self.__sort_by_usage(
-            t_diff, self.tool_weights_sorted, self.model_data_dictionary
-        )
+        t_diff, u_diff = self.__sort_by_usage(t_diff, self.tool_weights_sorted, self.model_data_dictionary)
         t_intersect_compat = list(set(last_compatible_tools).intersection(set(t_diff)))
         # filter against rare bad predictions for any tool
         if len(t_intersect_compat) > 0:
