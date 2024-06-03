@@ -13,10 +13,7 @@ import logging
 import sys
 import traceback
 from io import StringIO
-from typing import (
-    cast,
-    Optional,
-)
+from typing import cast
 
 import markupsafe
 from paste import (
@@ -197,10 +194,9 @@ class ErrorMiddleware:
             get_vars = wsgilib.parse_querystring(environ)
             if dict(get_vars).get(self.xmlhttp_key):
                 simple_html_error = True
-        rval = handle_exception(
+        return handle_exception(
             exc_info,
             environ["wsgi.errors"],
-            html=True,
             debug_mode=self.debug_mode,
             error_email=self.error_email,
             error_log=self.error_log,
@@ -215,8 +211,6 @@ class ErrorMiddleware:
             simple_html_error=simple_html_error,
             environ=environ,
         )
-        rval = cast(str, rval)  # we know handle_exception returns string because html=True
-        return rval
 
 
 class ResponseStartChecker:
@@ -353,7 +347,6 @@ class Supplement:
 def handle_exception(
     exc_info,
     error_stream,
-    html: bool = True,
     debug_mode=False,
     error_email=None,
     error_log=None,
@@ -367,7 +360,7 @@ def handle_exception(
     error_message=None,
     simple_html_error=False,
     environ=None,
-) -> Optional[str]:
+) -> str:
     """
     For exception handling outside of a web context
 
@@ -398,54 +391,51 @@ def handle_exception(
             smtp_use_tls=smtp_use_tls,
             subject_prefix=error_subject_prefix,
         )
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if error_log:
         rep = reporter.LogReporter(filename=error_log)
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if show_exceptions_in_wsgi_errors:
         rep = reporter.FileReporter(file=error_stream)
-        rep_err = send_report(rep, exc_data, html=html)
+        rep_err = send_report(rep, exc_data, html=True)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     else:
         error_stream.write(f"Error - {exc_data.exception_type}: {exc_data.exception_value}\n")
-    if html:
-        if debug_mode and simple_html_error:
-            return_error = formatter.format_html(
-                exc_data, include_hidden_frames=False, include_reusable=False, show_extra_data=False
-            )
-            reported = True
-        elif debug_mode and not simple_html_error:
-            error_html = formatter.format_html(exc_data, include_hidden_frames=True, include_reusable=False)
-            head_html = formatter.error_css + formatter.hide_display_js
-            return_error = error_template(head_html, error_html, extra_data)
-            extra_data = ""
-            reported = True
-        else:
-            msg = (
-                error_message
-                or """
-            An error occurred.
-            """
-            )
-            extra = "<p><b>The error has been logged to our team.</b>"
-            if "sentry_event_id" in environ:
-                extra += " If you want to contact us about this error, please reference the following<br><br>"
-                extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
-            extra += "</p>"
-            return_error = error_template("", msg, extra)
+    if debug_mode and simple_html_error:
+        return_error = formatter.format_html(
+            exc_data, include_hidden_frames=False, include_reusable=False, show_extra_data=False
+        )
+        reported = True
+    elif debug_mode and not simple_html_error:
+        error_html = formatter.format_html(exc_data, include_hidden_frames=True, include_reusable=False)
+        head_html = formatter.error_css + formatter.hide_display_js
+        return_error = error_template(head_html, error_html, extra_data)
+        extra_data = ""
+        reported = True
     else:
-        return_error = None
+        msg = (
+            error_message
+            or """
+        An error occurred.
+        """
+        )
+        extra = "<p><b>The error has been logged to our team.</b>"
+        if "sentry_event_id" in environ:
+            extra += " If you want to contact us about this error, please reference the following<br><br>"
+            extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
+        extra += "</p>"
+        return_error = error_template("", msg, extra)
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
         err_report += f"\n{'-' * 60}\n"
