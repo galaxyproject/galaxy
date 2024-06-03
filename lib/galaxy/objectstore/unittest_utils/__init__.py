@@ -108,7 +108,6 @@ def app_config(tmpdir) -> objectstore.UserObjectStoresAppConfig:
         gid=0o077,
         object_store_cache_path=str(tmpdir / "cache"),
         object_store_cache_size=1,
-        user_config_templates_index_by="uuid",
         user_config_templates_use_saved_configuration="fallback",
     )
     return app_config

@@ -299,6 +299,7 @@ def test_examples_parse():
     _assert_example_parses("templating_override.yml")
     _assert_example_parses("admin_secrets.yml")
     _assert_example_parses("admin_secrets_with_defaults.yml")
+    _assert_example_parses("testing_multi_version_with_secrets.yml")
 
 
 def _assert_example_parses(filename: str):

@@ -15,8 +15,8 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const routeEdit = computed(() => `/file_source_instances/${props.fileSource.id}/edit`);
-const routeUpgrade = computed(() => `/file_source_instances/${props.fileSource.id}/upgrade`);
+const routeEdit = computed(() => `/file_source_instances/${props.fileSource.uuid}/edit`);
+const routeUpgrade = computed(() => `/file_source_instances/${props.fileSource.uuid}/upgrade`);
 const isUpgradable = computed(() =>
     fileSourceTemplatesStore.canUpgrade(props.fileSource.template_id, props.fileSource.template_version)
 );
@@ -28,6 +28,7 @@ async function onRemove() {
 
 const emit = defineEmits<{
     (e: "entryRemoved"): void;
+    (e: "test"): void;
 }>();
 </script>
 
@@ -38,5 +39,6 @@ const emit = defineEmits<{
         :is-upgradable="isUpgradable"
         :route-upgrade="routeUpgrade"
         :route-edit="routeEdit"
+        @test="emit('test')"
         @remove="onRemove" />
 </template>

@@ -25,6 +25,7 @@ from galaxy.managers.object_store_instances import (
     CreateInstancePayload,
     ModifyInstancePayload,
     ObjectStoreInstancesManager,
+    TestModifyInstancePayload,
     UserConcreteObjectStoreModel,
 )
 from galaxy.objectstore import (
@@ -49,8 +50,8 @@ ConcreteObjectStoreIdPathParam: str = Path(
 
 UserObjectStoreIdPathParam: str = Path(
     ...,
-    title="User Object Store Identifier",
-    description="The identifier used to index a persisted UserObjectStore object.",
+    title="User Object Store UUID",
+    description="The UUID used to identify a persisted UserObjectStore object.",
 )
 
 SelectableQueryParam: bool = Query(
@@ -124,7 +125,7 @@ class FastAPIObjectStore:
 
     @router.get(
         "/api/object_store_instances/{user_object_store_id}",
-        summary="Get a persisted object store instances owned by the requesting user.",
+        summary="Get a persisted user object store instance.",
         operation_id="object_stores__instances_get",
     )
     def instances_show(
@@ -133,6 +134,18 @@ class FastAPIObjectStore:
         user_object_store_id: str = UserObjectStoreIdPathParam,
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.show(trans, user_object_store_id)
+
+    @router.get(
+        "/api/object_store_instances/{user_object_store_id}/test",
+        summary="Get a persisted user object store instance.",
+        operation_id="object_stores__instances_test_instance",
+    )
+    def instance_test(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_object_store_id: str = UserObjectStoreIdPathParam,
+    ) -> PluginStatus:
+        return self.object_store_instance_manager.plugin_status_for_instance(trans, user_object_store_id)
 
     @router.get(
         "/api/object_stores/{object_store_id}",
@@ -157,6 +170,19 @@ class FastAPIObjectStore:
         payload: ModifyInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.modify_instance(trans, user_object_store_id, payload)
+
+    @router.post(
+        "/api/object_store_instances/{user_object_store_id}/test",
+        summary="Test updating or upgrading user object source instance.",
+        operation_id="object_stores__test_instances_update",
+    )
+    def test_update_instance(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_file_source_id: str = UserObjectStoreIdPathParam,
+        payload: TestModifyInstancePayload = Body(...),
+    ) -> PluginStatus:
+        return self.object_store_instance_manager.test_modify_instance(trans, user_file_source_id, payload)
 
     @router.delete(
         "/api/object_store_instances/{user_object_store_id}",

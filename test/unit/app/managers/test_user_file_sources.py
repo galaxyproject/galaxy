@@ -3,15 +3,27 @@ from typing import (
     cast,
     List,
     Optional,
+    Type,
 )
 
+from yaml import safe_load
+
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
+)
 from galaxy.files import FileSourcesUserContext
 from galaxy.files.templates import ConfiguredFileSourceTemplates
+from galaxy.files.templates.examples import get_example
 from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
+    ModifyInstancePayload,
+    TestUpdateInstancePayload,
+    TestUpgradeInstancePayload,
     UpdateInstancePayload,
     UpdateInstanceSecretPayload,
+    UpgradeInstancePayload,
     USER_FILE_SOURCES_SCHEME,
     UserDefinedFileSourcesConfig,
     UserDefinedFileSourcesImpl,
@@ -165,6 +177,16 @@ SIMPLE_VAULT_CREATE_PAYLOAD = CreateInstancePayload(
     variables={},
     secrets={"sec1": "foosec"},
 )
+UPGRADE_EXAMPLE = get_example("testing_multi_version_with_secrets.yml")
+UPGRADE_INITIAL_PAYLOAD = CreateInstancePayload(
+    name="My Upgradable Disk",
+    template_id="secure_disk",
+    template_version=0,
+    secrets={
+        "sec1": "moocow",
+    },
+    variables={},
+)
 
 
 class TestFileSourcesTestCase(BaseTestCase):
@@ -206,14 +228,15 @@ class TestFileSourcesTestCase(BaseTestCase):
         user_file_source = self._create_user_file_source()
         assert user_file_source.uri_root in self._uri_roots()
         hide = UpdateInstancePayload(hidden=True)
-        self.manager.modify_instance(self.trans, user_file_source.uuid, hide)
+        self._modify(user_file_source, hide)
+        assert user_file_source.uri_root not in self._uri_roots()
 
     def test_find_best_match_not_filters_hidden(self, tmp_path):
         self.init_user_in_database()
         self._init_managers(tmp_path)
         user_file_source = self._create_user_file_source()
         hide = UpdateInstancePayload(hidden=True)
-        self.manager.modify_instance(self.trans, user_file_source.uuid, hide)
+        self._modify(user_file_source, hide)
         match = self.file_sources.find_best_match(user_file_source.uri_root)
         assert match
 
@@ -221,8 +244,8 @@ class TestFileSourcesTestCase(BaseTestCase):
         self.init_user_in_database()
         self._init_managers(tmp_path)
         user_file_source = self._create_user_file_source()
-        hide = UpdateInstancePayload(active=False)
-        self.manager.modify_instance(self.trans, user_file_source.uuid, hide)
+        deactivate = UpdateInstancePayload(active=False)
+        self._modify(user_file_source, deactivate)
         match = self.file_sources.find_best_match(user_file_source.uri_root)
         assert not match
 
@@ -278,7 +301,6 @@ class TestFileSourcesTestCase(BaseTestCase):
         user_file_source_showed = self.manager.show(self.trans, user_file_source.uuid)
         assert user_file_source_showed
         assert user_file_source_showed.uuid == user_file_source.uuid
-        assert user_file_source_showed.id == user_file_source.id
 
     def test_simple_update(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
@@ -301,7 +323,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         )
 
         # assert response includes updated variable as well as a fresh show()
-        response = self.manager.modify_instance(self.trans, user_file_source.uuid, update)
+        response = self._modify(user_file_source, update)
         assert response.variables
         assert response.variables["var1"] == "newval"
 
@@ -316,7 +338,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert not user_file_source_showed.hidden
 
         hide = UpdateInstancePayload(hidden=True)
-        self.manager.modify_instance(self.trans, user_file_source.uuid, hide)
+        self._modify(user_file_source, hide)
 
         user_file_source_showed = self.manager.show(self.trans, user_file_source.uuid)
         assert user_file_source_showed.hidden
@@ -330,7 +352,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert not user_file_source_showed.purged
 
         deactivate = UpdateInstancePayload(active=False)
-        self.manager.modify_instance(self.trans, user_file_source.uuid, deactivate)
+        self._modify(user_file_source, deactivate)
 
         user_file_source_showed = self.manager.show(self.trans, user_file_source.uuid)
         assert user_file_source_showed.hidden
@@ -341,22 +363,96 @@ class TestFileSourcesTestCase(BaseTestCase):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
         assert "sec1" in user_file_source.secrets
-        user_vault = self.trans.user_vault
-        config_secret_key = f"file_source_config/{user_file_source.uuid}/sec1"
-        assert user_vault.read_secret(config_secret_key) == "foosec"
+        self._assert_secret_is(user_file_source, "sec1", "foosec")
         self.manager.purge_instance(self.trans, user_file_source.uuid)
-        # delete resets it to ''
-        assert user_vault.read_secret(config_secret_key) == ""
+        self._assert_secret_absent(user_file_source, "sec1")
 
     def test_update_secret(self, tmp_path):
         self._init_managers(tmp_path, simple_vault_template(tmp_path))
         user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
-        user_vault = self.trans.user_vault
-        config_secret_key = f"file_source_config/{user_file_source.uuid}/sec1"
-        assert user_vault.read_secret(config_secret_key) == "foosec"
+        self._assert_secret_is(user_file_source, "sec1", "foosec")
         update = UpdateInstanceSecretPayload(secret_name="sec1", secret_value="newvalue")
-        self.manager.modify_instance(self.trans, user_file_source.uuid, update)
-        assert user_vault.read_secret(config_secret_key) == "newvalue"
+        self._modify(user_file_source, update)
+        self._assert_secret_is(user_file_source, "sec1", "newvalue")
+
+    def test_cannot_update_invalid_secret(self, tmp_path):
+        self._init_managers(tmp_path, simple_vault_template(tmp_path))
+        user_file_source = self._create_instance(SIMPLE_VAULT_CREATE_PAYLOAD)
+        update = UpdateInstanceSecretPayload(secret_name="undefinedsec", secret_value="newvalue")
+        self._assert_modify_throws_exception(user_file_source, update, RequestParameterInvalidException)
+
+    def test_upgrade(self, tmp_path):
+        user_file_source = self._init_upgrade_test_case(tmp_path)
+        assert "sec1" in user_file_source.secrets
+        assert "sec2" not in user_file_source.secrets
+        self._assert_secret_is(user_file_source, "sec1", "moocow")
+        self._assert_secret_absent(user_file_source, "foobarxyz")
+        self._assert_secret_absent(user_file_source, "sec2")
+        upgrade_to_1 = UpgradeInstancePayload(
+            template_version=1,
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+            variables={},
+        )
+        user_file_source = self._modify(user_file_source, upgrade_to_1)
+        assert "sec1" in user_file_source.secrets
+        assert "sec2" in user_file_source.secrets
+        self._assert_secret_is(user_file_source, "sec1", "moocow")
+        self._assert_secret_is(user_file_source, "sec2", "aftersec2")
+        upgrade_to_2 = UpgradeInstancePayload(
+            template_version=2,
+            secrets={},
+            variables={},
+        )
+
+        user_file_source = self._modify(user_file_source, upgrade_to_2)
+        assert "sec1" not in user_file_source.secrets
+        assert "sec2" in user_file_source.secrets
+        self._assert_secret_absent(user_file_source, "sec1")
+        self._assert_secret_is(user_file_source, "sec2", "aftersec2")
+
+    def test_upgrade_does_not_allow_extra_variables(self, tmp_path):
+        user_object_store = self._init_upgrade_test_case(tmp_path)
+        upgrade_to_1 = UpgradeInstancePayload(
+            template_version=1,
+            variables={
+                "extra_variable": "moocow",
+            },
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+        )
+
+        self._assert_modify_throws_exception(user_object_store, upgrade_to_1, RequestParameterInvalidException)
+
+    def test_upgrade_does_not_allow_extra_secrets(self, tmp_path):
+        user_object_store = self._init_upgrade_test_case(tmp_path)
+        upgrade_to_1 = UpgradeInstancePayload(
+            template_version=1,
+            variables={},
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+                "extrasec": "moo345",
+            },
+        )
+
+        self._assert_modify_throws_exception(user_object_store, upgrade_to_1, RequestParameterInvalidException)
+
+    def test_upgrade_fails_if_new_secrets_absent(self, tmp_path):
+        user_object_store = self._init_upgrade_test_case(tmp_path)
+        upgrade_to_1 = UpgradeInstancePayload(
+            template_version=1,
+            variables={},
+            secrets={
+                "sec1": "moocow",
+            },
+        )
+
+        self._assert_modify_throws_exception(user_object_store, upgrade_to_1, RequestParameterMissingException)
 
     def test_status_valid(self, tmp_path):
         self.init_user_in_database()
@@ -438,6 +534,108 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert "Input should be a valid boolean" in status.template_settings.message
         assert status.connection is None
 
+    def test_status_existing_valid(self, tmp_path):
+        self.init_user_in_database()
+        self._init_managers(tmp_path)
+        (tmp_path / self.trans.user.username).mkdir()
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="home_directory",
+            template_version=0,
+            variables={},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+        status = self.manager.plugin_status_for_instance(self.trans, user_file_source.uuid)
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+
+    def test_status_update_valid(self, tmp_path):
+        self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="simple_variable",
+            template_version=0,
+            variables={"var1": "originalvarval"},
+            secrets={},
+        )
+        user_file_source = self._create_instance(create_payload)
+
+        update = TestUpdateInstancePayload(
+            variables={
+                "var1": "newval",
+            }
+        )
+
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, update)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_valid(self, tmp_path):
+        user_file_source = self._init_upgrade_test_case(tmp_path)
+        assert "sec1" in user_file_source.secrets
+        assert "sec2" not in user_file_source.secrets
+        self._assert_secret_is(user_file_source, "sec1", "moocow")
+        self._assert_secret_absent(user_file_source, "foobarxyz")
+        self._assert_secret_absent(user_file_source, "sec2")
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={
+                "sec1": "moocow",
+                "sec2": "aftersec2",
+            },
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert not status.template_settings.is_not_ok
+        assert status.connection
+        assert status.connection.is_not_ok
+
+    def test_status_upgrade_invalid(self, tmp_path):
+        user_file_source = self._init_invalid_upgrade_test_case(tmp_path)
+        upgrade_to_1 = TestUpgradeInstancePayload(
+            template_version=1,
+            secrets={},
+            variables={},
+        )
+        status = self.manager.test_modify_instance(self.trans, user_file_source.uuid, upgrade_to_1)
+        assert not status.template_definition.is_not_ok
+        assert status.template_settings
+        assert status.template_settings.is_not_ok
+        assert "Input should be a valid boolean" in status.template_settings.message
+        assert status.connection is None
+
+    def _init_invalid_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
+        version_0 = home_directory_template(tmp_path)
+        version_0["version"] = 0
+        version_1 = invalid_home_directory_template_type_error(tmp_path)
+        version_1["version"] = 1
+        version_1["id"] = version_0["id"]
+        config_dict = [
+            version_0,
+            version_1,
+        ]
+        self._init_managers(tmp_path, config_dict=config_dict)
+        return self._create_user_file_source()
+
+    def _init_upgrade_test_case(self, tmp_path) -> UserFileSourceModel:
+        example_yaml_str = UPGRADE_EXAMPLE
+        example_yaml_str.replace("/data", str(tmp_path))
+        config = safe_load(example_yaml_str)
+        self._init_managers(tmp_path, config)
+        user_file_source = self._create_instance(UPGRADE_INITIAL_PAYLOAD)
+        return user_file_source
+
     def _init_and_create_simple(self, tmp_path) -> UserFileSourceModel:
         self._init_managers(tmp_path)
         user_file_source = self._create_user_file_source()
@@ -454,6 +652,32 @@ class TestFileSourcesTestCase(BaseTestCase):
         )
         return self._create_instance(create_payload)
 
+    def _read_secret(self, user_file_source: UserFileSourceModel, secret_name: str) -> str:
+        user_vault = self.trans.user_vault
+        config_secret_key = f"file_source_config/{user_file_source.uuid}/{secret_name}"
+        return user_vault.read_secret(config_secret_key)
+
+    def _assert_secret_is(self, user_file_source: UserFileSourceModel, secret_name: str, expected_value: str):
+        assert self._read_secret(user_file_source, secret_name) == expected_value
+
+    def _assert_secret_absent(self, user_file_source: UserFileSourceModel, secret_name: str):
+        sec_val = self._read_secret(user_file_source, secret_name)
+        # deleting vs never inserted...
+        assert sec_val in ["", None]
+
+    def _assert_modify_throws_exception(
+        self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload, exception_type: Type
+    ):
+        exception_thrown = False
+        try:
+            self._modify(user_file_source, modify)
+        except exception_type:
+            exception_thrown = True
+        assert exception_thrown
+
+    def _modify(self, user_file_source: UserFileSourceModel, modify: ModifyInstancePayload) -> UserFileSourceModel:
+        return self.manager.modify_instance(self.trans, user_file_source.uuid, modify)
+
     def _create_instance(self, create_payload: CreateInstancePayload) -> UserFileSourceModel:
         user_file_source = self.manager.create_instance(self.trans, create_payload)
         return user_file_source
@@ -467,7 +691,10 @@ class TestFileSourcesTestCase(BaseTestCase):
         self.app.setup_test_vault()
         if config_dict is None:
             config_dict = home_directory_template(tmp_path)
-        templates_config = Config([config_dict])
+        if isinstance(config_dict, dict):
+            templates_config = Config([config_dict])
+        else:
+            templates_config = Config(config_dict)
         templates = ConfiguredFileSourceTemplates.from_app_config(
             templates_config,
             vault_configured=True,

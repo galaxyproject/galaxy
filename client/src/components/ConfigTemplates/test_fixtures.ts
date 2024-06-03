@@ -1,3 +1,4 @@
+import type { PluginStatus } from "@/api/configTemplates";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
@@ -114,9 +115,23 @@ export const OBJECT_STORE_INSTANCE: UserConcreteObjectStore = {
     secrets: ["oldsecret", "droppedsecret"],
     quota: { enabled: false },
     private: false,
-    id: 4,
     uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
     active: true,
     hidden: false,
     purged: false,
+};
+
+export const OK_PLUGIN_STATUS: PluginStatus = {
+    template_definition: {
+        state: "ok",
+        message: "ok",
+    },
+    template_settings: {
+        state: "ok",
+        message: "ok",
+    },
+    connection: {
+        state: "ok",
+        message: "ok",
+    },
 };

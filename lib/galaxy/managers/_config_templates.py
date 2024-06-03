@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import (
+    Any,
     cast,
     Dict,
     List,
@@ -10,6 +11,7 @@ from typing import (
 )
 
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
     ObjectNotFound,
@@ -39,6 +41,7 @@ from galaxy.util.config_templates import (
     TemplateEnvironmentEntry,
     TemplateEnvironmentSecret,
     TemplateEnvironmentVariable,
+    TemplateReference,
     TemplateVariableValueType,
     validate_no_extra_variables_defined,
     validate_specified_datatypes_variables,
@@ -78,7 +81,37 @@ class UpgradeInstancePayload(BaseModel):
     secrets: SuppliedSecrets
 
 
+class TestUpdateInstancePayload(BaseModel):
+    variables: Optional[SuppliedVariables] = None
+
+
+class TestUpgradeInstancePayload(BaseModel):
+    template_version: int
+    variables: SuppliedVariables
+    secrets: SuppliedSecrets
+
+
+class UpgradeTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpgradeInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpgradeInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
+class UpdateTestTarget:
+    instance: HasConfigTemplate
+    payload: TestUpdateInstancePayload
+
+    def __init__(self, instance: HasConfigTemplate, payload: TestUpdateInstancePayload):
+        self.instance = instance
+        self.payload = payload
+
+
 ModifyInstancePayload = Union[UpdateInstanceSecretPayload, UpgradeInstancePayload, UpdateInstancePayload]
+TestModifyInstancePayload = Union[TestUpgradeInstancePayload, TestUpdateInstancePayload]
+CanTestPluginStatus = Union[HasConfigTemplate, CreateInstancePayload, UpgradeTestTarget, UpdateTestTarget]
 
 
 def recover_secrets(
@@ -100,6 +133,69 @@ def recover_secrets(
     return secrets
 
 
+class TemplateParameters(TypedDict):
+    secrets: SuppliedSecrets
+    variables: SuppliedVariables
+    environment: EnvironmentDict
+    user_details: Dict[str, Any]
+
+
+def prepare_template_parameters_for_testing(
+    trans: ProvidesUserContext,
+    template: Template,
+    target: CanTestPluginStatus,
+    vault: Vault,
+    app_config: UsesTemplatesAppConfig,
+) -> TemplateParameters:
+    secrets = _secrets_for_plugin_status_test(target, vault, app_config)
+    variables = _variables_for_plugin_status_test(target)
+    environment = prepare_environment_from_root(template.environment, vault, app_config)
+    user_details = trans.user.config_template_details()
+    return TemplateParameters(
+        {"secrets": secrets, "variables": variables, "environment": environment, "user_details": user_details}
+    )
+
+
+def _variables_for_plugin_status_test(target: CanTestPluginStatus) -> SuppliedVariables:
+    if isinstance(target, CreateInstancePayload):
+        return target.variables
+    elif isinstance(target, UpgradeTestTarget) or isinstance(target, UpdateTestTarget):
+        if target.instance.template_variables:
+            variables = target.instance.template_variables.copy()
+        else:
+            variables = {}
+        new_variables = target.payload.variables or {}
+        for new_variable in new_variables:
+            variables[new_variable] = new_variables[new_variable]
+        return new_variables
+    else:
+        return target.template_variables or {}
+
+
+def _secrets_for_plugin_status_test(
+    target: CanTestPluginStatus, vault: Vault, app_config: UsesTemplatesAppConfig
+) -> SecretsDict:
+    if isinstance(target, CreateInstancePayload):
+        return target.secrets
+    elif isinstance(target, UpgradeTestTarget):
+        secrets = recover_secrets(target.instance, vault, app_config)
+        new_secrets = target.payload.secrets or {}
+        for new_secret in new_secrets:
+            secrets[new_secret] = new_secrets[new_secret]
+        return secrets
+    elif isinstance(target, UpdateTestTarget):
+        secrets = recover_secrets(target.instance, vault, app_config)
+        return secrets
+    else:
+        secrets = recover_secrets(target, vault, app_config)
+        return secrets
+
+
+def to_template_reference(persisted_instance: HasConfigTemplate) -> TemplateReference:
+    # for mypy convert Mapped[X] -> X
+    return cast(TemplateReference, persisted_instance)
+
+
 def prepare_environment(
     configuration_template: HasConfigEnvironment, vault: Vault, app_config: UsesTemplatesAppConfig
 ) -> EnvironmentDict:
@@ -108,7 +204,7 @@ def prepare_environment(
 
 def prepare_environment_from_root(
     root: Optional[List[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
-):
+) -> EnvironmentDict:
     environment: EnvironmentDict = {}
     for environment_entry in root or []:
         e_type = environment_entry.type

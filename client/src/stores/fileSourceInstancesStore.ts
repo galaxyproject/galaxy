@@ -22,7 +22,7 @@ export const useFileSourceInstancesStore = defineStore("fileSourceInstances", {
             return !state.fetched;
         },
         getInstance: (state) => {
-            return (id: number | string) => state.instances.find((i) => i.id.toString() == id.toString());
+            return (uuid: string) => state.instances.find((i) => i.uuid == uuid);
         },
     },
     actions: {
