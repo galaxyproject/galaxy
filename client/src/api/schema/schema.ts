@@ -13374,7 +13374,7 @@ export interface components {
              * Job IDs
              * @description If from_history_id is set, this is an optional list of job IDs to include when extracting a workflow from history.
              */
-            job_ids?: (string | number)[] | null;
+            job_ids?: string[] | null;
             /** New Tool Panel Section Label */
             new_tool_panel_section_label?: string | null;
             /**
