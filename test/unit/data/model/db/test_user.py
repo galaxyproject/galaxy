@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from galaxy.model.db.user import (
     get_user_by_email,
@@ -72,3 +73,10 @@ def test_get_users_for_index(session, make_user):
     u1.deleted = True
     users = get_users_for_index(session, True)
     verify_items(users, [u1])
+
+
+def test_username_is_unique(make_user):
+    # Verify username model definition
+    make_user(username="a")
+    with pytest.raises(IntegrityError):
+        make_user(username="a")
