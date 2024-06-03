@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -225,28 +225,11 @@ function dragSameHistory() {
 
 function getDragData() {
     const eventStore = useEventStore();
-    const multiple = eventStore.multipleDragData;
-    let data: HistoryItemSummary[] | undefined;
-    let historyId: string | undefined;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set historyId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                historyId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                historyId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-    return { data, sameHistory: historyId === props.history.id, multiple };
+    const dragItems = eventStore.getDragItems();
+    // Filter out any non-history items
+    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
+    const historyId = historyItems?.[0]?.history_id;
+    return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
 }
 
 function getHighlight(item: HistoryItemSummary) {
