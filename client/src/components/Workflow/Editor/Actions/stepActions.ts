@@ -423,26 +423,38 @@ export function useStepActions(
         }
     }
 
+    interface ChangeValueOrCreateActionOptions<K extends keyof Step> {
+        step: Step;
+        key: K;
+        value: Step[K];
+        name?: string;
+        actionConstructor?: () => LazyMutateStepAction<K>;
+        keepActionAlive?: boolean;
+        timeout?: number;
+    }
+
     /**
      * Mutates a queued lazy action, if a matching one exists,
      * otherwise creates a new lazy action ans queues it.
      */
     function changeValueOrCreateAction<K extends keyof Step>(
-        step: Step,
-        key: K,
-        value: Step[K],
-        name?: string,
-        actionConstructor?: () => LazyMutateStepAction<K>
+        options: ChangeValueOrCreateActionOptions<K>
     ): InstanceType<typeof LazyMutateStepAction<K>> {
+        const { step, key, value, name, keepActionAlive, timeout } = options;
         const actionForKey = actionForIdAndKey(step.id, key);
 
         if (actionForKey) {
             actionForKey.changeValue(value);
 
+            if (keepActionAlive) {
+                undoRedoStore.setLazyActionTimeout(timeout);
+            }
+
             return actionForKey;
         } else {
-            actionConstructor =
-                actionConstructor ?? (() => new LazyMutateStepAction(stepStore, step.id, key, step[key], value));
+            const actionConstructor =
+                options.actionConstructor ??
+                (() => new LazyMutateStepAction(stepStore, step.id, key, step[key], value));
 
             const action = actionConstructor();
 
@@ -450,7 +462,7 @@ export function useStepActions(
                 action.name = name;
             }
 
-            undoRedoStore.applyLazyAction(action);
+            undoRedoStore.applyLazyAction(action, timeout);
 
             action.onUndoRedo = () => {
                 stateStore.activeNodeId = step.id;
@@ -462,11 +474,11 @@ export function useStepActions(
     }
 
     function setPosition(step: Step, position: NonNullable<Step["position"]>) {
-        changeValueOrCreateAction(step, "position", position, "change step position");
+        changeValueOrCreateAction({ step, key: "position", value: position, name: "change step position" });
     }
 
     function setAnnotation(step: Step, annotation: Step["annotation"]) {
-        changeValueOrCreateAction(step, "annotation", annotation, "modify step annotation");
+        changeValueOrCreateAction({ step, key: "annotation", value: annotation, name: "modify step annotation" });
     }
 
     function setOutputLabel(
@@ -478,18 +490,28 @@ export function useStepActions(
         const actionConstructor = () =>
             new LazySetOutputLabelAction(stepStore, stateStore, step.id, fromLabel, toLabel, workflowOutputs);
 
-        changeValueOrCreateAction(
+        changeValueOrCreateAction({
             step,
-            "workflow_outputs",
-            workflowOutputs,
-            "modify step output label",
-            actionConstructor
-        );
+            key: "workflow_outputs",
+            value: workflowOutputs,
+            name: "modify step output label",
+            actionConstructor,
+            keepActionAlive: true,
+            timeout: 2000,
+        });
     }
 
     function setLabel(step: Step, label: Step["label"]) {
         const actionConstructor = () => new LazySetLabelAction(stepStore, stateStore, step.id, step.label, label);
-        changeValueOrCreateAction(step, "label", label, "modify step label", actionConstructor);
+        changeValueOrCreateAction({
+            step,
+            key: "label",
+            value: label,
+            name: "modify step label",
+            actionConstructor,
+            keepActionAlive: true,
+            timeout: 2000,
+        });
     }
 
     const { refresh } = useRefreshFromStore();
