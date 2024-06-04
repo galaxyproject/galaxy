@@ -4,7 +4,7 @@ import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BModal, BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
-import { computed, ref, set, watch } from "vue";
+import { computed, ref, set } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
