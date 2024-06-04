@@ -176,6 +176,7 @@ config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
 config/plugins/visualizations/h5web/static/script.css
 config/plugins/visualizations/tiffviewer/static/script.css
 config/plugins/visualizations/jqplot/jqplot_bar/static/script.css
+config/plugins/visualizations/scatterplot/static/scatterplot.js
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
