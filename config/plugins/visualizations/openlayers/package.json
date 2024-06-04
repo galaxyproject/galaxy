@@ -1,7 +1,7 @@
 {
     "name": "visualization",
     "version": "0.1.0",
-    "description": "Map visualization usig OpenLayers",
+    "description": "Map visualization using OpenLayers",
     "keywords": [
         "galaxy",
         "visualization"
@@ -25,6 +25,7 @@
         "build": "parcel build src/script.js --dist-dir static --no-source-maps"
     },
     "devDependencies": {
+        "buffer": "^6.0.3",
         "parcel": "^2.12.0",
         "process": "^0.11.10",
         "string_decoder": "^1.3.0"
