@@ -421,6 +421,7 @@ class WorkflowDictStepsBase(Model):
         title="When",
         description="The when expression for the step.",
     )
+    # We should eventually clean this up, `Dict[str, PostJobAction]]` is probably the better form.
     post_job_actions: Optional[Union[List[PostJobAction], Dict[str, PostJobAction]]] = Field(
         None,
         title="Post Job Actions",
@@ -431,11 +432,13 @@ class WorkflowDictStepsBase(Model):
         title="Tool Version",
         description="The version of the tool associated with the step.",
     )
+    # TODO: Formalize an error type
     errors: Optional[Union[List[str], str, Dict[str, Any]]] = Field(
         None,
         title="Errors",
         description="An message indicating possible errors in the step.",
     )
+    # TODO: split step types and make required for tool steps
     tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
         None,
         title="Tool ID",
@@ -446,6 +449,7 @@ class WorkflowDictStepsBase(Model):
         title="Position",
         description="Layout position of this step in the graph",
     )
+    # TODO: model outputs
     outputs: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Outputs",
@@ -527,11 +531,11 @@ class WorkflowDictRunStep(WorkflowDictStepsBase):
 
 
 class WorkflowDictRunToolStep(WorkflowDictRunStep):
+    # TODO: remove everything that can be gotten through the tool store
     model_class: Literal["tool"] = Field(
         ...,
         title="Model Class",
         description="The model class of the tool step.",
-        # description="The model class of the step, given it is a tool.",
     )
     id: str = Field(
         ...,
@@ -928,7 +932,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: Union[TagCollection, Literal[""]] = Field(
+    tags: TagCollection = Field(
         ...,
         title="Tags",
         description="The tags associated with the workflow.",
@@ -938,7 +942,8 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="UUID",
         description="The UUID (Universally Unique Identifier) of the workflow.",
     )
-    comments: List[Dict[str, Any]] = Field(
+    comments: List[WorkflowCommentModel] = Field(
+        # comments: List[Dict[str, Any]] = Field(
         ...,
         title="Comments",
         description="Comments associated with the workflow.",
