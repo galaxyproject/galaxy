@@ -21,10 +21,6 @@ from fastapi import (
     Response,
     status,
 )
-<<<<<<< HEAD
-from gxformat2.yaml import ordered_dump
-=======
->>>>>>> Refactor workflow_dict operation to FastAPI
 from pydantic import (
     UUID1,
     UUID4,
