@@ -90,7 +90,7 @@ function formatRows() {
 
 /** Returns the default url i.e. the url of the current history **/
 function getHistoryUrl() {
-    return `${getAppRoot()}api/histories/${props.history}/contents?deleted=false`;
+    return `${getAppRoot()}api/histories/${props.history}/contents?v=dev&q=state-eq&qv=ok&q=deleted&qv=false`;
 }
 
 /** Called when the modal is hidden */
