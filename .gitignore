@@ -167,15 +167,13 @@ packages/*/*.egg-info
 config/plugins/**/static/dist
 config/plugins/**/static/script.js
 config/plugins/**/static/main.css
+config/plugins/**/static/script.css
 config/plugins/**/static/plugin_build_hash.txt
 config/plugins/**/static/*.map
 
 # Viz-specific build artifacts to ignore (until these are removed from codebase)
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
-config/plugins/visualizations/h5web/static/script.css
-config/plugins/visualizations/tiffviewer/static/script.css
-config/plugins/visualizations/jqplot/jqplot_bar/static/script.css
 config/plugins/visualizations/scatterplot/static/scatterplot.js
 
 # CWL conformance tests
