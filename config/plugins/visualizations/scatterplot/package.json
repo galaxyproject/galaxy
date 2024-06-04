@@ -20,8 +20,8 @@
         "underscore": "^1.8.3"
     },
     "devDependencies": {
-        "babel-core": "^6.26.3",
-        "parcel": "2.12.0"
+        "@babel/core": "^7.24.6",
+        "parcel": "2.11.0"
     },
     "scripts": {
         "build": "parcel build src/scatterplot.js --dist-dir static/"
