@@ -167,7 +167,9 @@ export default {
             this.$router.confirmation = this.confirmation;
         },
         currentHistory() {
-            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+            if (!this.embedded) {
+                this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+            }
         },
     },
     mounted() {
