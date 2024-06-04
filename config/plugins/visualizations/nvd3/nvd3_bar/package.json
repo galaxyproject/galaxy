@@ -22,7 +22,7 @@
         "build": "parcel build src/nvd3.js --dist-dir static"
     },
     "devDependencies": {
-        "babel-core": "^6.26.3",
+        "@babel/core": "^7.24.6",
         "parcel": "2.11.0"
     }
 }
