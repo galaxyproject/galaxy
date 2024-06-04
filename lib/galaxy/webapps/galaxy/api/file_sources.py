@@ -86,7 +86,7 @@ class FastAPIFileSources:
 
     @router.get(
         "/api/file_source_instances/{user_file_source_id}",
-        summary="Get a list of persisted file source instances defined by the requesting user.",
+        summary="Get a persisted user file source instance.",
         operation_id="file_sources__instances_get",
     )
     def instances_show(
