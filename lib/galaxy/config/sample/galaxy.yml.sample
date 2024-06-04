@@ -1283,7 +1283,7 @@ galaxy:
   # defaults to "GLOBAL" if not set or the
   # `geographical_server_location_code` value is invalid or unsupported.
   # To see a full list of supported locations, visit
-  # https://galaxyproject.org/admin/carbon_emissions
+  # https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
   #geographical_server_location_code: GLOBAL
 
   # The estimated power usage effectiveness of the data centre housing
