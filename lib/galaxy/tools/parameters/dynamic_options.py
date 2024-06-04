@@ -23,8 +23,8 @@ from typing_extensions import Literal
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    LibraryDatasetDatasetAssociation,
     MetadataFile,
     User,
 )
