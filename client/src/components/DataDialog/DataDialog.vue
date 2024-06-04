@@ -23,6 +23,7 @@ interface Record {
 interface Props {
     allowUpload?: boolean;
     callback?: (results: Array<Record>) => void;
+    filterOkState?: boolean;
     format?: string;
     library?: boolean;
     modalStatic?: boolean;
@@ -34,6 +35,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     allowUpload: true,
     callback: () => {},
+    filterOkState: false,
     format: "download",
     library: true,
     modalStatic: false,
@@ -90,7 +92,11 @@ function formatRows() {
 
 /** Returns the default url i.e. the url of the current history **/
 function getHistoryUrl() {
-    return `${getAppRoot()}api/histories/${props.history}/contents?v=dev&q=state-eq&qv=ok&q=deleted&qv=false`;
+    let queryString = "&q=deleted&qv=false";
+    if (props.filterOkState) {
+        queryString += "&q=state-eq&qv=ok";
+    }
+    return `${getAppRoot()}api/histories/${props.history}/contents?v=dev${queryString}`;
 }
 
 /** Called when the modal is hidden */
