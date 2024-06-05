@@ -208,6 +208,9 @@ def create_repository(
         dir=app.config.file_path,
         prefix=f"{repository.user.username}-{repository.name}",
     )
+    # Created directory is readable, writable, and searchable only by the creating user ID,
+    # but we need to make it world-readable so non-shed user can serve files (e.g. hgweb run as different user).
+    os.chmod(repository_path, util.RWXR_XR_X)
     # Create the local repository.
     init_repository(repo_path=repository_path)
     # Create a .hg/hgrc file for the local repository.
