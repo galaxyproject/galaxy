@@ -59,15 +59,12 @@ jobs:
         # ffmpeg: ffprobe needed by media datatypes
         run: sudo apt-get update && sudo apt-get -y install conntrack ffmpeg
       - name: Setup Minikube
-        id: minikube
-        uses: CodingNagger/minikube-setup-action@v1.0.6
+        uses: medyagh/setup-minikube@latest
         with:
-          k8s-version: '1.19.16'
-      - name: Launch Minikube
-        run: eval ${{ steps.minikube.outputs.launcher }}
+          driver: none
+          kubernetes-version: '1.23.0'
       - name: Check pods
-        run: |
-          kubectl get pods
+        run: kubectl get pods -A
       - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
