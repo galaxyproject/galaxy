@@ -471,7 +471,7 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
         type=request.type_,
         description=request.synopsis,
         long_description=request.description,
-        user_id=user.id,
+        user=user,
         category_ids=category_ids,
         remote_repository_url=request.remote_repository_url,
         homepage_url=request.homepage_url,

@@ -124,7 +124,7 @@ class FastAPIObjectStore:
 
     @router.get(
         "/api/object_store_instances/{user_object_store_id}",
-        summary="Get a persisted object store instances owned by the requesting user.",
+        summary="Get a persisted user object store instance.",
         operation_id="object_stores__instances_get",
     )
     def instances_show(

@@ -737,7 +737,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     repository_type,
                     description,
                     long_description,
-                    user_id=trans.user.id,
+                    user=trans.user,
                     category_ids=category_ids,
                     remote_repository_url=remote_repository_url,
                     homepage_url=homepage_url,

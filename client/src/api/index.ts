@@ -211,6 +211,10 @@ export function isHistorySummaryExtended(history: AnyHistory): history is Histor
     return "contents_active" in history && "user_id" in history;
 }
 
+export function isHistoryItem(item: object): item is HistoryItemSummary {
+    return item && "history_content_type" in item;
+}
+
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
 /** Represents a registered user.**/

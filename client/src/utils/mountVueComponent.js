@@ -4,7 +4,7 @@
 
 import BootstrapVue from "bootstrap-vue";
 import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
-import { createPinia, PiniaVuePlugin } from "pinia";
+import { getActivePinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
 // Load Pinia
@@ -22,11 +22,9 @@ Vue.use(vueRxShortcutPlugin);
 // font-awesome svg icon registration/loading
 Vue.use(iconPlugin);
 
-// Create Pinia
-const pinia = createPinia();
-
 export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
+    const pinia = getActivePinia();
     return (propsData, el) => new component({ propsData, el, pinia });
 };
 
@@ -34,6 +32,7 @@ export const replaceChildrenWithComponent = (el, ComponentDefinition, propsData 
     const container = document.createElement("div");
     el.replaceChildren(container);
     const component = Vue.extend(ComponentDefinition);
+    const pinia = getActivePinia();
     const mountFn = (propsData, el) => new component({ propsData, el, pinia });
     return mountFn(propsData, container);
 };

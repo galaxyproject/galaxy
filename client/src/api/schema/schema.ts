@@ -315,7 +315,7 @@ export interface paths {
         post: operations["file_sources__test_new_instance_configuration"];
     };
     "/api/file_source_instances/{user_file_source_id}": {
-        /** Get a list of persisted file source instances defined by the requesting user. */
+        /** Get a persisted user file source instance. */
         get: operations["file_sources__instances_get"];
         /** Update or upgrade user file source instance. */
         put: operations["file_sources__instances_update"];
@@ -1266,7 +1266,7 @@ export interface paths {
         post: operations["object_stores__test_new_instance_configuration"];
     };
     "/api/object_store_instances/{user_object_store_id}": {
-        /** Get a persisted object store instances owned by the requesting user. */
+        /** Get a persisted user object store instance. */
         get: operations["object_stores__instances_get"];
         /** Update or upgrade user object store instance. */
         put: operations["object_stores__instances_update"];
@@ -14966,7 +14966,7 @@ export interface operations {
         };
     };
     file_sources__instances_get: {
-        /** Get a list of persisted file source instances defined by the requesting user. */
+        /** Get a persisted user file source instance. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -20890,7 +20890,7 @@ export interface operations {
         };
     };
     object_stores__instances_get: {
-        /** Get a persisted object store instances owned by the requesting user. */
+        /** Get a persisted user object store instance. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

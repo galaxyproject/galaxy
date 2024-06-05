@@ -36,10 +36,11 @@ def community_file_dir():
 
 @pytest.fixture()
 def community_file_structure(community_file_dir):
-    community = namedtuple("community", "file_path hgweb_config_dir dburi")
+    community = namedtuple("community", "file_path hgweb_config_dir hgweb_repo_prefix dburi")
     return community(
         file_path=os.path.join(community_file_dir, "database", "community_files"),
         hgweb_config_dir=community_file_dir,
+        hgweb_repo_prefix="repos/",
         dburi="sqlite:///{}".format(os.path.join(community_file_dir, "database", "community.sqlite")),
     )
 
@@ -49,6 +50,7 @@ def test_build_index(whoosh_index_dir, community_file_structure):
         whoosh_index_dir,
         community_file_structure.file_path,
         community_file_structure.hgweb_config_dir,
+        community_file_structure.hgweb_repo_prefix,
         community_file_structure.dburi,
     )
     assert repos_indexed == 1
@@ -59,6 +61,7 @@ def test_build_index(whoosh_index_dir, community_file_structure):
         whoosh_index_dir,
         community_file_structure.file_path,
         community_file_structure.hgweb_config_dir,
+        community_file_structure.hgweb_repo_prefix,
         community_file_structure.dburi,
     )
     assert repos_indexed == 0
@@ -74,6 +77,7 @@ def test_build_index(whoosh_index_dir, community_file_structure):
         whoosh_index_dir,
         community_file_structure.file_path,
         community_file_structure.hgweb_config_dir,
+        community_file_structure.hgweb_repo_prefix,
         community_file_structure.dburi,
     )
     assert repos_indexed == 1

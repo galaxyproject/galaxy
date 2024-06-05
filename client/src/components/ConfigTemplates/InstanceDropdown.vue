@@ -42,7 +42,7 @@ const emit = defineEmits<{
                 :href="routeUpgrade"
                 @keypress="router.push(routeUpgrade)"
                 @click.prevent="router.push(routeUpgrade)">
-                <FontAwesomeIcon icon="arrowUp" />
+                <FontAwesomeIcon :icon="faArrowUp" />
                 <span v-localize>Upgrade</span>
             </button>
             <button
