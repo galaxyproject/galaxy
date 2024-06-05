@@ -133,7 +133,7 @@ def repository_fixture(app: ToolShedApp, user: User, name: str, category: Option
         type,
         description,
         long_description,
-        user.id,
+        user,
         category_ids=category_ids,
         remote_repository_url=None,
         homepage_url=None,
