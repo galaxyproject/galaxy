@@ -56,6 +56,11 @@ const PATHS = {
     },
 };
 
+const failOnError =
+    process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR && process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR !== "0"
+        ? true
+        : false;
+
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
         ? process.env.GALAXY_PLUGIN_PATH
@@ -186,6 +191,13 @@ function buildPlugins(callback, forceRebuild) {
                 console.error(
                     `Error building ${pluginName}, not saving build state.  Please report this issue to the Galaxy Team.`
                 );
+                if (failOnError) {
+                    // Fail on error.
+                    console.error(
+                        "Failing build due to GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR being set, see error(s) above."
+                    );
+                    process.exit(1);
+                }
             }
         }
     });
