@@ -37,7 +37,7 @@ def _get_or_create_index(whoosh_index_dir):
     return get_or_create_index(whoosh_index_dir, repo_schema), get_or_create_index(tool_index_dir, tool_schema)
 
 
-def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
+def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix, dburi, **kwargs):
     """
     Build two search indexes simultaneously
     One is for repositories and the other for tools.
@@ -55,7 +55,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
 
     execution_timer = ExecutionTimer()
     with repo_index.searcher() as searcher:
-        for repo in get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+        for repo in get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
             tools_list = repo.pop("tools_list")
             repo_id = repo["id"]
             indexed_document = searcher.document(id=repo_id)
@@ -89,7 +89,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
     return repos_indexed, tools_indexed
 
 
-def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
+def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
     """
@@ -120,7 +120,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, **kwargs):
 
         # Load all changesets of the repo for lineage.
         repo_path = os.path.join(
-            hgweb_config_dir, hgwcm.get_entry(os.path.join("repos", repo.user.username, repo.name))
+            hgweb_config_dir, hgwcm.get_entry(os.path.join(hgweb_repo_prefix, repo.user.username, repo.name))
         )
         hg_repo = hg.repository(ui.ui(), repo_path.encode("utf-8"))
         lineage = []
