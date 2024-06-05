@@ -27,16 +27,17 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "msa",
     "mvpapp",
     "ngl",
+    "nora",
     "nvd3/nvd3_bar",
     "openlayers",
     "openseadragon",
     "PCA_3Dplot",
     "phylocanvas",
     "pv",
-    "nora",
-    "venn",
+    "scatterplot",
     "tiffviewer",
     "ts_visjs",
+    "venn",
 ];
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
