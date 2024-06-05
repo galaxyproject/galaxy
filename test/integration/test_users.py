@@ -5,7 +5,7 @@ from galaxy_test.driver import integration_util
 USER_SUMMARY_KEYS = set(["model_class", "id", "email", "username", "deleted", "active", "last_password_change"])
 
 
-class UsersIntegrationTestCase(integration_util.IntegrationTestCase):
+class UsersIntegrationCase(integration_util.IntegrationTestCase):
     expose_user_name: ClassVar[bool]
     expose_user_email: ClassVar[bool]
     expected_regular_user_list_count: ClassVar[int]
@@ -52,7 +52,7 @@ class UsersIntegrationTestCase(integration_util.IntegrationTestCase):
             self._assert_not_has_keys(user, *unexpected_user_keys)
 
 
-class TestExposeUsersIntegration(UsersIntegrationTestCase):
+class TestExposeUsersIntegration(UsersIntegrationCase):
     expose_user_name = True
     expose_user_email = True
 
@@ -61,7 +61,7 @@ class TestExposeUsersIntegration(UsersIntegrationTestCase):
     expected_regular_user_list_count = 3
 
 
-class TestExposeOnlyUserNameIntegration(UsersIntegrationTestCase):
+class TestExposeOnlyUserNameIntegration(UsersIntegrationCase):
     expose_user_name = True
     expose_user_email = False
 
@@ -71,7 +71,7 @@ class TestExposeOnlyUserNameIntegration(UsersIntegrationTestCase):
     expected_regular_user_list_count = 3
 
 
-class TestExposeOnlyUserEmailIntegration(UsersIntegrationTestCase):
+class TestExposeOnlyUserEmailIntegration(UsersIntegrationCase):
     expose_user_name = False
     expose_user_email = True
 
@@ -81,7 +81,7 @@ class TestExposeOnlyUserEmailIntegration(UsersIntegrationTestCase):
     expected_regular_user_list_count = 3
 
 
-class TestUnexposedUsersIntegration(UsersIntegrationTestCase):
+class TestUnexposedUsersIntegration(UsersIntegrationCase):
     expose_user_name = False
     expose_user_email = False
 
