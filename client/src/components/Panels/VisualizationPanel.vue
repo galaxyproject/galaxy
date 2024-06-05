@@ -93,9 +93,10 @@ onMounted(() => {
             <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
         </div>
         <DataDialog
-            v-if="showDataDialog"
+            v-if="currentHistoryId && showDataDialog"
             format=""
             :history="currentHistoryId"
+            :filter-ok-state="true"
             @onOk="createVisualization"
             @onCancel="showDataDialog = false" />
     </ActivityPanel>
