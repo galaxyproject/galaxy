@@ -143,6 +143,11 @@ class User(Base, Dictifiable):
         self.purged = False
         self.new_repo_alert = False
 
+    @property
+    def current_galaxy_session(self):
+        if self.galaxy_sessions:
+            return self.galaxy_sessions[0]
+
     def all_roles(self):
         roles = [ura.role for ura in self.roles]
         for group in [uga.group for uga in self.groups]:
@@ -418,12 +423,13 @@ class Repository(Base, Dictifiable):
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
-    def __init__(self, private=False, times_downloaded=0, deprecated=False, **kwd):
+    def __init__(self, private=False, times_downloaded=0, deprecated=False, user=None, **kwd):
         super().__init__(**kwd)
         self.private = private
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
         self.name = self.name or "Unnamed repository"
+        self.user = user
 
     @property
     def hg_repo(self):
@@ -509,7 +515,9 @@ class Repository(Base, Dictifiable):
 
     def repo_path(self, app=None):
         # Keep app argument for compatibility with tool_shed_install Repository model
-        return hgweb_config_manager.get_entry(os.path.join("repos", self.user.username, self.name))
+        return hgweb_config_manager.get_entry(
+            os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
+        )
 
     def revision(self):
         repo = self.hg_repo
