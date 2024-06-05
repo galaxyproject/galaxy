@@ -55,12 +55,11 @@ from galaxy.schema.schema import (
     FavoriteObjectsSummary,
     FavoriteObjectType,
     FlexibleUserIdType,
-    LimitedUserModel,
+    MaybeLimitedUserModel,
     RemoteUserCreationPayload,
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
-    UserModel,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -202,7 +201,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -634,7 +633,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
