@@ -35,6 +35,7 @@ from galaxy.schema.schema import (
     DetailedUserModel,
     FlexibleUserIdType,
     LimitedUserModel,
+    MaybeLimitedUserModel,
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -204,8 +205,8 @@ class UsersService(ServiceBase):
         f_email: Optional[str],
         f_name: Optional[str],
         f_any: Optional[str],
-    ) -> List[Union[UserModel, LimitedUserModel]]:
-        rval = []
+    ) -> List[MaybeLimitedUserModel]:
+        rval: List[MaybeLimitedUserModel] = []
         stmt = select(User)
 
         if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
@@ -240,13 +241,12 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_email
             ):
                 if trans.user:
-                    item = trans.user.to_dict()
-                    return [item]
+                    return [UserModel(**trans.user.to_dict())]
                 else:
                     return []
             stmt = stmt.filter(User.deleted == false())
         for user in trans.sa_session.scalars(stmt).all():
-            item = user.to_dict()
+            user_dict = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
             if user is not trans.user and not trans.user_is_admin:
@@ -255,12 +255,13 @@ class UsersService(ServiceBase):
                     expose_keys.append("username")
                 if trans.app.config.expose_user_email:
                     expose_keys.append("email")
-                new_item = {}
-                for key, value in item.items():
+                limited_user = {}
+                for key, value in user_dict.items():
                     if key in expose_keys:
-                        new_item[key] = value
-                item = new_item
+                        limited_user[key] = value
+                user = LimitedUserModel(**limited_user)
+            else:
+                user = UserModel(**user_dict)
 
-            # TODO: move into api_values
-            rval.append(item)
+            rval.append(user)
         return rval

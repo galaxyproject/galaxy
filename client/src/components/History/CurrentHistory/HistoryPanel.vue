@@ -509,6 +509,7 @@ function setItemDragstart(
 
                 <FilterMenu
                     v-if="filterable"
+                    :key="props.history.id"
                     class="content-operations-filters mx-3"
                     name="History Items"
                     placeholder="search datasets"
