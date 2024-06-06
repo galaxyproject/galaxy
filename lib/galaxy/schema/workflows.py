@@ -438,12 +438,6 @@ class WorkflowDictStepsBase(Model):
         title="Errors",
         description="An message indicating possible errors in the step.",
     )
-    # TODO: split step types and make required for tool steps
-    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
-        None,
-        title="Tool ID",
-        description="The unique name of the tool associated with this step.",
-    )
     position: Optional[WorkflowStepLayoutPosition] = Field(
         None,
         title="Position",
@@ -506,6 +500,11 @@ class WorkflowDictRunStep(WorkflowDictStepsBase):
         ...,
         title="Step Index",
         description="The order index of the step.",
+    )
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step.",
     )
     output_connections: List[Dict[str, Any]] = Field(
         ...,
@@ -714,6 +713,11 @@ class WorkflowDictRunToolStep(WorkflowDictRunStep):
         title="Target",
         description="The target of the tool step.",
     )
+    tool_id: str = Field(  # Duplicate of `content_id` or viceversa?
+        ...,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step.",
+    )
 
 
 class WorkflowDictPreviewStep(WorkflowDictStepsExtendedBase):
@@ -732,6 +736,11 @@ class WorkflowDictPreviewStep(WorkflowDictStepsExtendedBase):
         ...,
         title="Inputs",
         description="The inputs of the step.",
+    )
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step.",
     )
 
 
@@ -772,6 +781,11 @@ class WorkflowDictEditorStep(WorkflowDictStepsExtendedBase):
         title="Input Connections",
         description="The input connections for the step.",
     )
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step.",
+    )
 
 
 class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
@@ -805,6 +819,11 @@ class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
         None,
         title="Sub Workflow",
         description="Full information about the subworkflow associated with this step.",
+    )
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None,
+        title="Tool ID",
+        description="The unique name of the tool associated with this step.",
     )
     inputs: Optional[List[WorkflowDictExportStepInput]] = Field(
         None,
