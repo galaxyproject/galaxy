@@ -11,6 +11,10 @@
         word-wrap: break-word;
         font-weight: bold;
 
+        .ui-form-title-text {
+            word-break: break-all;
+        }
+
         .ui-form-title-message {
             font-size: $font-size-base * 0.7;
             font-weight: 300;

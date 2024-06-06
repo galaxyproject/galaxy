@@ -99,6 +99,10 @@ button {
     overflow: auto;
 }
 
+.modal-title {
+    word-break: break-all;
+}
+
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {

@@ -96,6 +96,10 @@ const element = computed(() => {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
+.heading {
+    word-break: break-all;
+}
+
 .heading:deep(svg) {
     font-size: 0.75em;
 }
