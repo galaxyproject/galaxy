@@ -1,9 +1,12 @@
 import json
 import logging
-import typing
 from datetime import (
     date,
     datetime,
+)
+from typing import (
+    Dict,
+    Optional,
 )
 
 import sqlalchemy
@@ -108,7 +111,7 @@ class JobManager:
 
     def index_query(
         self, trans: ProvidesUserContext, payload: JobIndexQueryPayload
-    ) -> typing.Optional[sqlalchemy.engine.Result]:
+    ) -> Optional[sqlalchemy.engine.Result]:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -640,7 +643,7 @@ class JobSearch:
         return None
 
 
-def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
+def view_show_job(trans, job: Job, full: bool) -> Dict:
     is_admin = trans.user_is_admin
     job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
