@@ -898,6 +898,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except OSError as exc:
             exc_info = exc.errno != ENOENT
             log.error("Error reading tool configuration file from path '%s': %s", path, exc, exc_info=exc_info)
+        except AssertionError as exc:
+            log.warning("Error reading tool configuration file from path '%s': %s", path, exc)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
