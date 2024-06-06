@@ -13,10 +13,12 @@
         "bootstrap": "^3.3.7",
         "d3": "3",
         "jquery": "^3.5.1",
-        "parcel-bundler": "^1.4.1",
         "underscore": "^1.11.0"
     },
     "scripts": {
-        "build": "parcel build src/script.js -d static/dist"
+        "build": "parcel build src/script.js --dist-dir static/dist"
+    },
+    "devDependencies": {
+        "parcel": "2.11.0"
     }
 }
