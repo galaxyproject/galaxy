@@ -483,6 +483,9 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
         exclude_kind: Optional[Set[PluginKind]] = None,
     ) -> List[FilesSourceProperties]:
         """Write out user file sources as list of config dictionaries."""
+        if user_context.anonymous:
+            return []
+
         as_dicts = []
         for files_source_properties in self._all_user_file_source_properties(user_context):
             plugin_kind = PluginKind.rfs
