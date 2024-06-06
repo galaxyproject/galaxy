@@ -1411,7 +1411,7 @@ class TaskMetricNumeric(BaseJobMetric, RepresentById):
 
 class IoDicts(NamedTuple):
     inp_data: Dict[str, Optional["DatasetInstance"]]
-    inp_collections
+    inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
     out_data: Dict[str, "DatasetInstance"]
     out_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]
 
