@@ -7487,8 +7487,26 @@ export interface components {
              */
             uri: string;
         };
-        /** InputConnection */
-        InputConnection: {
+        /** InputConnectionEditor */
+        InputConnectionEditor: {
+            /**
+             * ID
+             * @description The order index of the step.
+             */
+            id: number;
+            /**
+             * Input Type
+             * @description The input type of the workflow step.
+             */
+            input_type: string;
+            /**
+             * Output Name
+             * @description The output name of the input step that serves as the source for this connection.
+             */
+            output_name: string;
+        };
+        /** InputConnectionExport */
+        InputConnectionExport: {
             /**
              * ID
              * @description The order index of the step.
@@ -13348,7 +13366,14 @@ export interface components {
              * Input Connections
              * @description The input connections for the step.
              */
-            input_connections?: Record<string, never> | null;
+            input_connections?: {
+                [key: string]:
+                    | (
+                          | components["schemas"]["InputConnectionEditor"]
+                          | components["schemas"]["InputConnectionEditor"][]
+                      )
+                    | undefined;
+            } | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -13516,7 +13541,10 @@ export interface components {
              */
             input_connections?: {
                 [key: string]:
-                    | (components["schemas"]["InputConnection"] | components["schemas"]["InputConnection"][])
+                    | (
+                          | components["schemas"]["InputConnectionExport"]
+                          | components["schemas"]["InputConnectionExport"][]
+                      )
                     | undefined;
             } | null;
             /**
@@ -13637,7 +13665,7 @@ export interface components {
              * Comments
              * @description Comments associated with the workflow.
              */
-            comments: Record<string, never>[];
+            comments: components["schemas"]["WorkflowCommentModel"][];
             /**
              * Creator
              * @description Additional information about the creator (or multiple creators) of this workflow.
@@ -13683,7 +13711,7 @@ export interface components {
              * Tags
              * @description The tags associated with the workflow.
              */
-            tags: components["schemas"]["TagCollection"] | "";
+            tags: components["schemas"]["TagCollection"] | ""[];
             /**
              * UUID
              * @description The UUID (Universally Unique Identifier) of the workflow.
@@ -14265,7 +14293,7 @@ export interface components {
              * Tool ID
              * @description The unique name of the tool associated with this step.
              */
-            tool_id?: string | null;
+            tool_id: string;
             /**
              * Tool Shed Repository
              * @description Information about the tool shed repository associated with the tool.
@@ -25353,7 +25381,19 @@ export interface operations {
             /** @description The version of the workflow to fetch. */
             query?: {
                 history_id?: string | null;
-                style?: string | null;
+                style?:
+                    | (
+                          | "export"
+                          | "format2"
+                          | "editor"
+                          | "legacy"
+                          | "instance"
+                          | "run"
+                          | "preview"
+                          | "format2_wrapped_yaml"
+                          | "ga"
+                      )
+                    | null;
                 format?: string | null;
                 version?: number | null;
                 instance?: boolean | null;
@@ -25581,7 +25621,19 @@ export interface operations {
             /** @description The version of the workflow to fetch. */
             query?: {
                 history_id?: string | null;
-                style?: string | null;
+                style?:
+                    | (
+                          | "export"
+                          | "format2"
+                          | "editor"
+                          | "legacy"
+                          | "instance"
+                          | "run"
+                          | "preview"
+                          | "format2_wrapped_yaml"
+                          | "ga"
+                      )
+                    | null;
                 format?: string | null;
                 version?: number | null;
                 instance?: boolean | null;
