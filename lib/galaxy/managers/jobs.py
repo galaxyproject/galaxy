@@ -217,7 +217,7 @@ class JobManager:
             if user_details:
                 stmt = stmt.outerjoin(Job.user)
         else:
-            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None and trans.user:
                 stmt = stmt.where(Job.user_id == trans.user.id)
             # caller better check security
 
