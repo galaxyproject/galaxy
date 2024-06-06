@@ -949,6 +949,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                     self.set_history(history)
                     return history
 
+        # Don't create new history if login required and user is anonymous
+        if self.app.config.require_login and not self.user:
+            return None
+
         # No suitable history found, create a new one.
         return self.new_history()
 
