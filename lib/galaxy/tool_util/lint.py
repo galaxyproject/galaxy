@@ -102,7 +102,7 @@ class Linter(ABC):
         return cls.__name__
 
     @classmethod
-    def list_listers(cls) -> List[str]:
+    def list_linters(cls) -> List[str]:
         """
         list the names of all linter derived from Linter
         """
