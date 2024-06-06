@@ -106,6 +106,7 @@ class Linter(ABC):
         """
         list the names of all linter derived from Linter
         """
+        submodules.import_submodules(galaxy.tool_util.linters)
         return [s.__name__ for s in cls.__subclasses__()]
 
 
