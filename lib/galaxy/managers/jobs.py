@@ -37,6 +37,7 @@ from galaxy.job_metrics import (
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
@@ -105,7 +106,9 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
+    def index_query(
+        self, trans: ProvidesUserContext, payload: JobIndexQueryPayload
+    ) -> typing.Optional[sqlalchemy.engine.Result]:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -120,6 +123,13 @@ class JobManager:
         implicit_collection_jobs_id = payload.implicit_collection_jobs_id
         search = payload.search
         order_by = payload.order_by
+
+        if trans.user is None:
+            # If the user is anonymous we can only return jobs for the current session history
+            if trans.galaxy_session and trans.galaxy_session.current_history_id:
+                history_id = trans.galaxy_session.current_history_id
+            else:
+                return None
 
         def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:

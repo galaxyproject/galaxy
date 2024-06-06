@@ -81,7 +81,9 @@ class JobsService(ServiceBase):
             or payload.history_id is not None
         )
         jobs = self.job_manager.index_query(trans, payload)
-        out = []
+        out: List[Dict[str, Any]] = []
+        if jobs is None:
+            return out
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
             # TODO: optimize if this crucial
             if check_security_of_jobs and not security_check(trans, job.history, check_accessible=True):
