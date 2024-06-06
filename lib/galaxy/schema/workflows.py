@@ -58,16 +58,27 @@ class WorkflowDictExportStepInput(Model):
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
 
 
-class InputConnection(Model):
+class InputConnectionBase(Model):
     id: int = Field(..., title="ID", description="The order index of the step.")
     output_name: str = Field(
         ...,
         title="Output Name",
         description="The output name of the input step that serves as the source for this connection.",
     )
+
+
+class InputConnectionExport(InputConnectionBase):
     input_subworkflow_step_id: Optional[int] = Field(
         None,
         title="Input Subworkflow Step ID",
+    )
+
+
+class InputConnectionEditor(InputConnectionBase):
+    input_type: str = Field(
+        ...,
+        title="Input Type",
+        description="The input type of the workflow step.",
     )
 
 
@@ -776,7 +787,8 @@ class WorkflowDictEditorStep(WorkflowDictStepsExtendedBase):
         title="Tooltip",
         description="The tooltip for the step.",
     )
-    input_connections: Optional[Dict[str, Any]] = Field(
+    input_connections: Optional[Dict[str, Union[InputConnectionEditor, List[InputConnectionEditor]]]] = Field(
+        # input_connections: Optional[Dict[str, Any]] = Field(
         None,
         title="Input Connections",
         description="The input connections for the step.",
@@ -831,7 +843,7 @@ class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
         description="The inputs of the step.",
     )
     in_parameter: Optional[Dict[str, StepIn]] = Field(None, title="In", alias="in")
-    input_connections: Optional[Dict[str, Union[InputConnection, List[InputConnection]]]] = Field(
+    input_connections: Optional[Dict[str, Union[InputConnectionExport, List[InputConnectionExport]]]] = Field(
         None,
         title="Input Connections",
         description="The input connections of the step.",
