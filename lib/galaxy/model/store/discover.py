@@ -292,6 +292,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         root_collection_builder,
         discovered_files,
         name=None,
+        metadata_source_name=None,
         default_format=None,
         final_job_state="ok",
         change_datatype_actions=None,
