@@ -220,7 +220,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     f.seek(-2048, os.SEEK_END)
                     f.readline()
                 for line in f.readlines():
-                    stripped_line = unicodify(line)
+                    stripped_line = unicodify(line.strip())
                     if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
                         return OUT_OF_MEMORY_MSG
                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
