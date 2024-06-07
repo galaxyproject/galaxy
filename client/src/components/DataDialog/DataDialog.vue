@@ -24,6 +24,7 @@ interface Props {
     allowUpload?: boolean;
     callback?: (results: Array<Record>) => void;
     filterOkState?: boolean;
+    filterByTypeIds?: string[];
     format?: string;
     library?: boolean;
     modalStatic?: boolean;
@@ -36,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
     allowUpload: true,
     callback: () => {},
     filterOkState: false,
+    filterByTypeIds: undefined,
     format: "download",
     library: true,
     modalStatic: false,
@@ -95,6 +97,9 @@ function getHistoryUrl() {
     let queryString = "&q=deleted&qv=false";
     if (props.filterOkState) {
         queryString += "&q=state-eq&qv=ok";
+    }
+    if (props.filterByTypeIds.length > 0) {
+        queryString += `&q=type_id-in&qv=${props.filterByTypeIds.join(",")}`;
     }
     return `${getAppRoot()}api/histories/${props.history}/contents?v=dev${queryString}`;
 }
