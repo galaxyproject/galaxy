@@ -179,7 +179,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if name is not None:
             primary_data.name = name
 
-        # log.error(f"create_dataset primary_data.ext {primary_data.ext}")
         if default_format and not primary_data.ext:
             primary_data.change_datatype(default_format)
 

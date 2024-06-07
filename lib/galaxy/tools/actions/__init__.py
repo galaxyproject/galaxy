@@ -179,7 +179,6 @@ class DefaultToolAction(ToolAction):
                         input_datasets.set_legacy_alias(
                             new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
                         )
-                        log.error(f"==> input_datasets {input_datasets}")
                         conversions = []
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
@@ -213,7 +212,6 @@ class DefaultToolAction(ToolAction):
                 else:
                     input_datasets[prefixed_name] = process_dataset(value)
                     input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
-                    log.error(f"==> input_datasets {input_datasets}")
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
@@ -280,7 +278,6 @@ class DefaultToolAction(ToolAction):
                     input_datasets.set_legacy_alias(
                         new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
                     )
-                    log.error(f"==> input_datasets {input_datasets}")
                 if conversion_required:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
@@ -1172,7 +1169,6 @@ def determine_output_format(
                 pass
         ext = random_input_ext
     format_source = output.format_source
-
     if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
