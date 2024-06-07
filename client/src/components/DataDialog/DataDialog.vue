@@ -98,7 +98,7 @@ function getHistoryUrl() {
     if (props.filterOkState) {
         queryString += "&q=state-eq&qv=ok";
     }
-    if (props.filterByTypeIds.length > 0) {
+    if (props.filterByTypeIds && props.filterByTypeIds.length > 0) {
         queryString += `&q=type_id-in&qv=${props.filterByTypeIds.join(",")}`;
     }
     return `${getAppRoot()}api/histories/${props.history}/contents?v=dev${queryString}`;
