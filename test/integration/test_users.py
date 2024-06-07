@@ -1,15 +1,18 @@
-from typing import ClassVar
+from typing import (
+    ClassVar,
+    Set,
+)
 
 from galaxy_test.driver import integration_util
 
-USER_SUMMARY_KEYS = set(["model_class", "id", "email", "username", "deleted", "active", "last_password_change"])
+USER_SUMMARY_KEYS: Set[str] = {"model_class", "id", "email", "username", "deleted", "active", "last_password_change"}
 
 
 class UsersIntegrationCase(integration_util.IntegrationTestCase):
     expose_user_name: ClassVar[bool]
     expose_user_email: ClassVar[bool]
     expected_regular_user_list_count: ClassVar[int]
-    expected_limited_user_keys: ClassVar[set]
+    expected_limited_user_keys: ClassVar[Set[str]]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -57,7 +60,7 @@ class TestExposeUsersIntegration(UsersIntegrationCase):
     expose_user_email = True
 
     # Since we allow to expose user information, all users are returned.
-    expected_limited_user_keys = set(["id", "username", "email"])
+    expected_limited_user_keys = {"id", "username", "email"}
     expected_regular_user_list_count = 3
 
 
@@ -67,7 +70,7 @@ class TestExposeOnlyUserNameIntegration(UsersIntegrationCase):
 
     # When only username is exposed, only that field is returned in the user list.
     # Since we are exposing user information, all users are returned.
-    expected_limited_user_keys = set(["id", "username"])
+    expected_limited_user_keys = {"id", "username"}
     expected_regular_user_list_count = 3
 
 
@@ -77,7 +80,7 @@ class TestExposeOnlyUserEmailIntegration(UsersIntegrationCase):
 
     # When only email is exposed, only that field is returned in the user list.
     # Since we are exposing user information, all users are returned.
-    expected_limited_user_keys = set(["id", "email"])
+    expected_limited_user_keys = {"id", "email"}
     expected_regular_user_list_count = 3
 
 
