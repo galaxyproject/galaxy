@@ -13418,7 +13418,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | string | null;
+            tool_state?: Record<string, never> | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13606,7 +13606,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | string | null;
+            tool_state?: Record<string, never> | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13859,7 +13859,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | string | null;
+            tool_state?: Record<string, never> | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13990,7 +13990,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | string | null;
+            tool_state?: Record<string, never> | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -14303,7 +14303,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | string | null;
+            tool_state?: Record<string, never> | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
