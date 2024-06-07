@@ -1,7 +1,7 @@
 <tool id="collection_creates_pair_from_type_discover" name="collection_creates_pair_from_type" version="0.1.0">
   <command>
-    cat '$input1' > A.fastq;
-    cat '$input1' > B.fastq;
+    echo 'A' > A.fastq;
+    echo 'B' > B.fastq;
   </command>
   <inputs>
     <param name="input1" type="data" label="Input" help="Input to be split." />
@@ -29,7 +29,7 @@
       <discover_datasets pattern="__designation__" visible="false" />
     </collection>
     <!-- test that format from format_source works for refered collections -->
-    <collection name="paired_output_fromcollection" type="list" label="Split Pair" format_source="input_collection">
+    <collection name="paired_output_fromcollection" type="list" label="Split Pair" format_source="conditional_name|input_collection">
       <discover_datasets pattern="__designation__" visible="false" />
     </collection>
   </outputs>
@@ -53,48 +53,48 @@
       <output_collection name="paired_output" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="A" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="B" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_discoveredext" type="list">
         <element name="A" ftype="fastq">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="A" />
           </assert_contents>
         </element>
         <element name="B" ftype="fastq">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="B" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_frommultiple" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="A" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="B" />
           </assert_contents>
         </element>
       </output_collection>
       <output_collection name="paired_output_fromcollection" type="list">
         <element name="A.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="A" />
           </assert_contents>
         </element>
         <element name="B.fastq" ftype="txt">
           <assert_contents>
-            <has_text_matching expression="^@HANNIBAL_1_FC302VTAAXX:2:1:228:167$" />
+            <has_text text="B" />
           </assert_contents>
         </element>
       </output_collection>
