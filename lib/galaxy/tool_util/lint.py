@@ -101,7 +101,6 @@ class Linter(ABC):
         """
         return cls.__name__
 
-    @classmethod
     def list_linters(cls) -> List[str]:
         """
         list the names of all linter derived from Linter
@@ -109,8 +108,10 @@ class Linter(ABC):
         submodules.import_submodules(galaxy.tool_util.linters)
         return [s.__name__ for s in cls.__subclasses__()]
 
-    @classmethod
     list_listers = list_linters  # deprecated alias
+
+
+Linter.list_listers = classmethod(Linter.list_listers)
 
 
 class LintMessage:
