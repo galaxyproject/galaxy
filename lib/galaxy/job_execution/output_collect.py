@@ -11,13 +11,13 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
 from sqlalchemy.orm.scoping import ScopedSession
 
 from galaxy.model import (
-    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -61,6 +61,13 @@ from galaxy.util import (
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionInstance,
+        DatasetInstance,
+    )
+
 DATASET_ID_TOKEN = "DATASET_ID"
 
 log = logging.getLogger(__name__)
@@ -99,41 +106,27 @@ class PermissionProvider(AbstractPermissionProvider):
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
-    def __init__(self, inp_data, inp_collections):
-        if inp_data:
-            self._inp_data = inp_data
-        else:
-            self._inp_data = []
-        if inp_collections:
-            self._inp_collections = inp_collections
-        else:
-            self._inp_collections = []
+    def __init__(self, inp_data: Dict[str, Optional["DatasetInstance"]], inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]):
+        self._inp_data = inp_data or {}
+        self._inp_collections = inp_collections or {}
 
-    def get_metadata_source(self, input_name):
+    def get_metadata_source(self, input_name: str) -> Optional["DatasetInstance"]:
         if input_name in self._inp_data:
             return self._inp_data[input_name]
         elif input_name in self._inp_collections:
-            # TODO maybe skip this test for performance
-            extensions = set()
-            for element in self._inp_collections[input_name].dataset_instances:
-                extensions.add(element.extension)
-            if len(extensions) != 1:
-                log.error(
-                    "cannot determine metadata source for {input_name}: collection contains datasets with different data types"
-                )
-                raise KeyError
             return self._inp_collections[input_name].dataset_instances[0]
         else:
-            raise KeyError
+            raise KeyError(f"Could not find metadata source '{input_name}' in {list(self._inp_data)} or {list(self._inp_collections)}")
 
 
-def evaluate_source(source, output_collection_def, metadata_source_provider):
-
+def evaluate_source(source: str, output_collection_def: ToolOutputCollection, metadata_source_provider: AbstractMetadataSourceProvider) -> Optional[str]:
     source_name = getattr(output_collection_def, source)
     if source_name is None:
         return None
-    source = metadata_source_provider.get_metadata_source(source_name)
-    return source.ext
+    source_dataset = metadata_source_provider.get_metadata_source(source_name)
+    if source_dataset:
+        return source_dataset.ext
+    return None
 
 
 def collect_dynamic_outputs(
@@ -184,7 +177,6 @@ def collect_dynamic_outputs(
 
     for name, has_collection in output_collections.items():
         output_collection_def = job_context.output_collection_def(name)
-        log.error(f"collect_dynamic_outputs output_collection_def {output_collection_def}")
         if not output_collection_def:
             continue
 
@@ -413,7 +405,7 @@ class JobContext(BaseJobContext):
         for history in pending_histories:
             history.add_pending_items()
 
-    def output_collection_def(self, name):
+    def output_collection_def(self, name: str) -> Optional[ToolOutputCollection]:
         tool = self.tool
         if name not in tool.output_collections:
             return None
@@ -462,11 +454,11 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
     def change_datatype_actions(self):
         return self.metadata_params.get("change_datatype_actions", {})
 
-    def output_collection_def(self, name):
+    def output_collection_def(self, name: str) -> Optional[ToolOutputCollection]:
         tool_as_dict = self.metadata_params["tool"]
         output_collection_defs = tool_as_dict["output_collections"]
         if name not in output_collection_defs:
-            return False
+            return None
 
         output_collection_def_dict = output_collection_defs[name]
         output_collection_def = ToolOutputCollection.from_dict(name, output_collection_def_dict)

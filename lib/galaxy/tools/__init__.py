@@ -186,6 +186,11 @@ from .execute import (
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
     from galaxy.managers.jobs import JobSearch
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionInstance,
+        DatasetInstance,
+    )
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
 log = logging.getLogger(__name__)
@@ -2256,8 +2261,8 @@ class Tool(Dictifiable):
         job,
         input_ext,
         input_dbkey,
-        inp_data=None,
-        inp_collections=None,
+        inp_data: Dict[str, Optional["DatasetInstance"]],
+        inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]],
         final_job_state="ok",
     ):
         """

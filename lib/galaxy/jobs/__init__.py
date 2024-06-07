@@ -20,7 +20,9 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 import yaml
@@ -99,6 +101,11 @@ from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.jobs.handler import JobHandlerQueue
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionInstance,
+        DatasetInstance,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -2068,7 +2075,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
         log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
-    def discover_outputs(self, job, inp_data, inp_collections, out_data, out_collections, final_job_state):
+    def discover_outputs(self, job, inp_data: Dict[str, Optional["DatasetInstance"]], inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]], out_data, out_collections, final_job_state):
         """
         Try to just recover input_ext and dbkey from job parameters (used and set in
         galaxy.tools.actions). Old jobs may have not set these in the job parameters
