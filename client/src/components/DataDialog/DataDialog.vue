@@ -197,6 +197,7 @@ watch(
         :disable-ok="!hasValue"
         :fields="fields"
         :items="items"
+        :total-items="items.length"
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
