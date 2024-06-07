@@ -259,9 +259,7 @@ class UsersService(ServiceBase):
                 for key, value in user_dict.items():
                     if key in expose_keys:
                         limited_user[key] = value
-                user = LimitedUserModel(**limited_user)
+                rval.append(LimitedUserModel(**limited_user))
             else:
-                user = UserModel(**user_dict)
-
-            rval.append(user)
+                rval.append(UserModel(**user_dict))
         return rval
