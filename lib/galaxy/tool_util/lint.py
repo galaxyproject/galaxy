@@ -101,6 +101,7 @@ class Linter(ABC):
         """
         return cls.__name__
 
+    @classmethod
     def list_linters(cls) -> List[str]:
         """
         list the names of all linter derived from Linter
@@ -108,10 +109,13 @@ class Linter(ABC):
         submodules.import_submodules(galaxy.tool_util.linters)
         return [s.__name__ for s in cls.__subclasses__()]
 
-    list_listers = list_linters  # deprecated alias
+    list_listers: Callable[[], List[str]]  # deprecated alias
 
 
-Linter.list_listers = classmethod(Linter.list_listers)
+# Define the `list_listers` alias outside of the `Linter` class so that
+# @classmethod's change to `list_linters`s signature has taken effect and mypy
+# doesn't report an [assignment] error
+Linter.list_listers = Linter.list_linters
 
 
 class LintMessage:
