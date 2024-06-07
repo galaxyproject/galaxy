@@ -364,13 +364,15 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
             tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
         return self.tool.discover_outputs(
-            self.outputs,
-            {},
-            tool_provided_metadata,
-            job_working_directory,
+            out_data=self.outputs,
+            out_collections={},
+            tool_provided_metadata=tool_provided_metadata,
+            tool_working_directory=job_working_directory,
             job=self.job,
             input_ext="txt",
             input_dbkey="btau",
+            inp_data={},
+            inp_collections={},
         )
 
     def _replace_output_collectors(self, xml_str):
