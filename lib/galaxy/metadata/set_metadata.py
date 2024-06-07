@@ -96,7 +96,7 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
-    if os.path.getsize(external_filename):
+    if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
 
 
@@ -477,7 +477,7 @@ def set_metadata_portable(
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
