@@ -380,6 +380,13 @@ class BaseJobRunner:
         job_tool = job_wrapper.tool
         for joda, dataset in self._walk_dataset_outputs(job):
             if joda and job_tool:
+                if dataset.dataset.purged:
+                    log.info(
+                        "Output dataset %s for job %s purged before job completed, skipping output collection.",
+                        joda.name,
+                        job.id,
+                    )
+                    continue
                 hda_tool_output = job_tool.find_output_def(joda.name)
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
