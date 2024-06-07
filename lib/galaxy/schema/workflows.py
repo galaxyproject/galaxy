@@ -460,7 +460,7 @@ class WorkflowDictStepsBase(Model):
         title="Outputs",
         description="The outputs of the step.",
     )
-    tool_state: Optional[Union[Dict[str, Any], str]] = Field(
+    tool_state: Optional[Dict[str, Any]] = Field(
         None,
         title="Tool State",
         description="The state of the tool associated with the step",
