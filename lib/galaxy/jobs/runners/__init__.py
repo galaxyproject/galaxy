@@ -625,10 +625,23 @@ class BaseJobRunner:
 
             tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            with open(tool_stdout_path, "rb") as stdout_file:
-                tool_stdout = self._job_io_for_db(stdout_file)
-            with open(tool_stderr_path, "rb") as stderr_file:
-                tool_stderr = self._job_io_for_db(stderr_file)
+            try:
+                with open(tool_stdout_path, "rb") as stdout_file:
+                    tool_stdout = self._job_io_for_db(stdout_file)
+                with open(tool_stderr_path, "rb") as stderr_file:
+                    tool_stderr = self._job_io_for_db(stderr_file)
+            except FileNotFoundError:
+                if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
+                    # We killed the job, so we may not even have the tool stdout / tool stderr
+                    tool_stdout = ""
+                    tool_stderr = "Job cancelled"
+                else:
+                    # Should we instead just move on ?
+                    # In the end the only consequence here is that we won't be able to determine
+                    # if the job failed for known tool reasons (check_tool_output).
+                    # OTOH I don't know if this can even be reached
+                    # Deal with it if we ever get reports about this.
+                    raise
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
