@@ -1,4 +1,4 @@
-<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.3"  profile="22.05"> <!-- hidden="true" -->
+<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.3" hidden="true" profile="22.05"> 
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="455-1">ucsc-bedgraphtobigwig</requirement>
