@@ -360,6 +360,9 @@ class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
     @property
     def app_vault(self) -> Dict[str, Any]: ...
 
+    @property
+    def anonymous(self) -> bool: ...
+
 
 OptionalUserContext = Optional[FileSourcesUserContext]
 
@@ -422,6 +425,10 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     def file_sources(self):
         return self.trans.app.file_sources
 
+    @property
+    def anonymous(self) -> bool:
+        return self.trans.anonymous
+
 
 class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     def __init__(self, **kwd):
@@ -466,3 +473,7 @@ class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     @property
     def file_sources(self):
         return self._kwd.get("file_sources")
+
+    @property
+    def anonymous(self) -> bool:
+        return bool(self._kwd.get("username"))
