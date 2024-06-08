@@ -45,7 +45,7 @@ bedtools genomecov -bg -split -ibam '$input1' | LC_COLLATE=C sort -k1,1 -k2,2n >
             <conditional name="hist_or_builtin">
                 <param name="genosel" value="history"/>
                 <param name="input1" value="srma_out2.bam"/>
-                <param name="chromfile" value="hg17.len"/>
+                <param name="chromfile" value="fasta_tool_compute_length_2.out"/>
             </conditional>
             <output name="output" value="srma_out2.bigwig" compare="sim_size"/>
         </test>
