@@ -1,33 +1,58 @@
-<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.2" hidden="true">
+<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.3"  profile="22.05"> <!-- hidden="true" -->
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="377">ucsc-bedgraphtobigwig</requirement>
-        <requirement type="package" version="2.29.2">bedtools</requirement>
-        <requirement type="package" version="8.25">coreutils</requirement>
+        <requirement type="package" version="455-1">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.31.1">bedtools</requirement>
+        <requirement type="package" version="9.5">coreutils</requirement>
     </requirements>
     <command detect_errors="aggressive"><![CDATA[
-bedtools genomecov -bg -split -ibam '$input'
-| LC_COLLATE=C sort -k1,1 -k2,2n
-
-## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
-## should only be used on systems with large RAM.
-## | wigToBigWig stdin '$chromInfo' '$output'
-
-## This can be used anywhere.
-> temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+bedtools genomecov -bg -split -ibam '$input1' | LC_COLLATE=C sort -k1,1 -k2,2n > temp.bg &&
+#if $hist_or_builtin.genosel == "indexed":
+  bedGraphToBigWig temp.bg '$chromInfo' '$output'
+#else:
+  bedGraphToBigWig temp.bg '$chromfile' '$output'
+#end if
     ]]></command>
     <inputs>
-        <param name="input" type="data" format="bam,unsorted.bam" label="Choose BAM file"/>
+        <conditional name="hist_or_builtin">
+            <param name="genosel" type="select" label="bam aligned to reference genome source" help="Is the bam mapped to a built-in reference or a genome from your history with a chromosome lengths file?">
+                <option selected="True" value="indexed">Input data was made with a built-in genome or already has a custom genome dbkey</option>
+                <option value="history">Input data mapped on a genome from the current history. The chromosome lengths file is also in the history</option>
+            </param>
+            <when value="indexed">
+                <param name="input1" type="data" format="bam,unsorted.bam" label="bam to convert">
+                    <validator type="unspecified_build" />
+                </param>
+            </when>
+            <when value="history">
+                <param format="bam,unsorted.bam" name="input1" type="data" label="bam to convert"/>
+                <param name="chromfile" type="data" format="len,txt,tabular" label="Chromosome length file" help="A file of sequence lengths for the history reference is required to make a bigwig. Compute sequence length tool can make these from fasta files"/>
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <data name="output" format="bigwig"/>
     </outputs>
     <tests>
         <test>
-            <param name="input" ftype="bam" value="srma_out2.bam" dbkey="hg17"/>
-            <output name="output" ftype="bigwig" value="srma_out2.bigwig"/>
+            <conditional name="hist_or_builtin">
+                <param name="genosel" value="indexed"/>
+                <param name="input1" value="srma_out2.bam" dbkey="hg17"/>
+            </conditional>
+            <output name="output" value="srma_out2.bigwig" compare="sim_size"/>
+        </test>
+        <test>
+            <conditional name="hist_or_builtin">
+                <param name="genosel" value="history"/>
+                <param name="input1" value="srma_out2.bam"/>
+                <param name="chromfile" value="hg17.len"/>
+            </conditional>
+            <output name="output" value="srma_out2.bigwig" compare="sim_size"/>
         </test>
     </tests>
     <help>
+
+   Converter for bam to bigwig
+
     </help>
 </tool>
