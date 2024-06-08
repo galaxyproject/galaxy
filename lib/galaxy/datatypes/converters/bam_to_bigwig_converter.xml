@@ -1,9 +1,9 @@
 <tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.3" hidden="true" profile="22.05"> 
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="455-1">ucsc-bedgraphtobigwig</requirement>
-        <requirement type="package" version="2.31.1">bedtools</requirement>
-        <requirement type="package" version="9.5">coreutils</requirement>
+        <requirement type="package" version="377">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.29.2">bedtools</requirement>
+        <requirement type="package" version="8.25">coreutils</requirement>
     </requirements>
     <command detect_errors="aggressive"><![CDATA[
 bedtools genomecov -bg -split -ibam '$input1' | LC_COLLATE=C sort -k1,1 -k2,2n > temp.bg &&
