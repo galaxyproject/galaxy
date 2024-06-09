@@ -1,7 +1,9 @@
 <tool id="all_output_types" name="all_output_types" version="1.0.0" profile="24.0">
     <command><![CDATA[
+        sleep $sleep_param &&
         echo hi > output.txt &&
-        cp output.txt '$static_output' &&
+        echo hi > '$static_output' &&
+        echo hi > '$static_output_2' &&
         cp '$c1' galaxy.json
         ]]>
     </command>
@@ -12,9 +14,13 @@
     "info": "my dynamic info"
   }}
         </configfile>
-      </configfiles>
+    </configfiles>
+    <inputs>
+        <param name="sleep_param" type="integer" value="0" />
+    </inputs>
     <outputs>
         <data name="static_output" format="txt" />
+        <data name="static_output_2" format="txt" />
         <data name="output_workdir" from_work_dir="output.txt" format="txt" />
         <data name="output_tool_supplied_metadata" from_work_dir="output.txt" format="auto" />
         <data format="txt" name="discovered_output">
