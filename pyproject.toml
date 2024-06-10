@@ -126,7 +126,7 @@ uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
-s3fs = "*"
+s3fs = ">=2023.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
