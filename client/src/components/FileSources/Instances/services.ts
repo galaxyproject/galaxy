@@ -7,7 +7,7 @@ export const update = fetcher.path("/api/file_source_instances/{user_file_source
 
 export async function hide(instance: UserFileSourceModel) {
     const payload = { hidden: true };
-    const args = { user_file_source_id: String(instance?.id) };
+    const args = { user_file_source_id: String(instance?.uuid) };
     const { data: fileSource } = await update({ ...args, ...payload });
     return fileSource;
 }

@@ -174,7 +174,7 @@ class TestPerUserObjectStoreIntegration(BaseUserObjectStoreIntegration):
         assert "faster" in badge_types
         assert "more_secure" in badge_types
         assert "no_quota" in badge_types
-        persisted_object_store_id = object_store_json["id"]
+        persisted_object_store_id = object_store_json["uuid"]
 
         payload = {
             "name": "my new name",
@@ -256,7 +256,7 @@ class TestPerUserObjectStoreWithSecretsIntegration(
         }
         object_store_json = self.dataset_populator.create_object_store(body)
         object_store_id = object_store_json["object_store_id"]
-        persisted_object_store_id = object_store_json["id"]
+        persisted_object_store_id = object_store_json["uuid"]
 
         with self.dataset_populator.test_history() as history_id:
             _, output = self._run_tool_with_object_store_id_and_then_revert(history_id, object_store_id)
@@ -317,7 +317,7 @@ class TestPerUserObjectStoreUpgradesIntegration(BaseUserObjectStoreIntegration):
         assert object_store_json["name"] == "My Upgradable Disk"
         assert object_store_json["template_version"] == 0
 
-        id = object_store_json["id"]
+        id = object_store_json["uuid"]
         object_store_id = object_store_json["object_store_id"]
         assert object_store_id.startswith("user_objects://")
 
@@ -339,7 +339,7 @@ class TestPerUserObjectStoreUpgradesIntegration(BaseUserObjectStoreIntegration):
         assert object_store_json["name"] == "My Upgradable Disk"
         new_object_store_id = object_store_json["object_store_id"]
         assert new_object_store_id == object_store_id
-        assert object_store_json["id"] == id
+        assert object_store_json["uuid"] == id
         assert object_store_json["template_version"] == 1
 
 
@@ -367,7 +367,7 @@ class TestPerUserObjectStoreUpgradesWithSecretsIntegration(
         assert "name" in object_store_json
         assert object_store_json["name"] == "My Upgradable Disk"
         assert object_store_json["template_version"] == 0
-        id = object_store_json["id"]
+        id = object_store_json["uuid"]
         object_store_id = object_store_json["object_store_id"]
 
         secrets = object_store_json["secrets"]

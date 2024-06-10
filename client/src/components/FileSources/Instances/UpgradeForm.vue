@@ -31,7 +31,7 @@ const loadingMessage = "Loading file source template and instance information";
 
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
-    const args = { user_file_source_id: String(props.instance.id) };
+    const args = { user_file_source_id: String(props.instance.uuid) };
     try {
         const { data: fileSource } = await update({ ...args, ...payload });
         await onUpgrade(fileSource);
