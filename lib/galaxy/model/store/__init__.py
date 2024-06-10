@@ -183,8 +183,6 @@ class ImportDiscardedDataType(Enum):
 
 class DatasetAttributeImportModel(BaseModel):
     state: Optional[DatasetStateField] = None
-    deleted: Optional[bool] = None
-    purged: Optional[bool] = None
     external_filename: Optional[str] = None
     _extra_files_path: Optional[str] = None
     file_size: Optional[int] = None
