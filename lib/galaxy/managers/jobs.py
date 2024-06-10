@@ -127,16 +127,6 @@ class JobManager:
         search = payload.search
         order_by = payload.order_by
 
-        if (
-            trans.user is None
-            and history_id is None
-            and trans.galaxy_session
-            and trans.galaxy_session.current_history_id
-        ):
-            # If the user is anonymous and no specific history_id was provided
-            # we can only return jobs from the history in the current session
-            history_id = trans.galaxy_session.current_history_id
-
         def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
                 if isinstance(objects, (str, date, datetime)):
@@ -223,9 +213,14 @@ class JobManager:
             if user_details:
                 stmt = stmt.outerjoin(Job.user)
         else:
-            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None and trans.user:
-                stmt = stmt.where(Job.user_id == trans.user.id)
-            # caller better check security
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+                # If we're not filtering on history, invocation or collection we filter the jobs owned by the current user
+                if trans.user:
+                    stmt = stmt.where(Job.user_id == trans.user.id)
+                elif trans.galaxy_session:
+                    stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
+                else:
+                    return None
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
