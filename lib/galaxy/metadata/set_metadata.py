@@ -426,6 +426,10 @@ def set_metadata_portable(
                         # as opposed to perhaps a storage issue.
                         with open(external_filename, "wb"):
                             pass
+                    elif not os.path.exists(dataset_filename_override):
+                        # purged output ?
+                        dataset.purged = True
+                        dataset.dataset.purged = True
                     else:
                         raise Exception(f"Output file '{external_filename}' not found")
 
@@ -485,7 +489,8 @@ def set_metadata_portable(
                         dataset.state = dataset.dataset.state = dataset_state
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
-                    set_meta(dataset, file_dict)
+                    if not dataset.dataset.purged:
+                        set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -512,7 +517,7 @@ def set_metadata_portable(
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
             else:
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
                     set_meta(dataset, file_dict)
