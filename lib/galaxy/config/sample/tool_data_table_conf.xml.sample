@@ -111,7 +111,7 @@
         <file path="tool-data/icn3d_simple_display.loc" />
     </table>
     <table name="sift_db" comment_char="#" allow_duplicate_entries="False">
-        <columns>dbkey, path</columns>
+        <columns>dbkey, value</columns>
         <file path="tool-data/sift_db.loc" />
     </table>
     <!-- Refgenie __dbkeys__ -->
