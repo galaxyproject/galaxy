@@ -7989,8 +7989,8 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self._inputs_by_name = None
         # Injected attributes
         # TODO: code using these should be refactored to not depend on these non-persistent fields
-        self.module: Optional["WorkflowModule"]
-        self.state: Optional["DefaultToolState"]
+        self.module: Optional[WorkflowModule]
+        self.state: Optional[DefaultToolState]
         self.upgrade_messages: Optional[Dict]
 
     @reconstructor
