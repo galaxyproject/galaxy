@@ -8,7 +8,6 @@ from typing import (
     Optional,
     Set,
     Tuple,
-    Union,
 )
 from uuid import uuid4
 
@@ -88,7 +87,6 @@ USER_FILE_SOURCES_SCHEME = "gxuserfiles"
 
 
 class UserFileSourceModel(BaseModel):
-    id: Union[str, int]
     uuid: str
     uri_root: str
     name: str
@@ -104,17 +102,13 @@ class UserFileSourceModel(BaseModel):
 
 
 class UserDefinedFileSourcesConfig(BaseModel):
-    user_config_templates_index_by: Literal["uuid", "id"]
     user_config_templates_use_saved_configuration: Literal["fallback", "preferred", "never"]
 
     @staticmethod
     def from_app_config(config) -> "UserDefinedFileSourcesConfig":
-        user_config_templates_index_by = config.user_config_templates_index_by
-        assert user_config_templates_index_by in ["uuid", "id"]
         user_config_templates_use_saved_configuration = config.user_config_templates_use_saved_configuration
         assert user_config_templates_use_saved_configuration in ["fallback", "preferred", "never"]
         return UserDefinedFileSourcesConfig(
-            user_config_templates_index_by=user_config_templates_index_by,
             user_config_templates_use_saved_configuration=user_config_templates_use_saved_configuration,
         )
 
@@ -148,16 +142,16 @@ class FileSourceInstancesManager:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, id: Union[str, int]) -> UserFileSourceModel:
-        user_file_source = self._get(trans, id)
+    def show(self, trans: ProvidesUserContext, uuid: str) -> UserFileSourceModel:
+        user_file_source = self._get(trans, uuid)
         return self._to_model(trans, user_file_source)
 
-    def purge_instance(self, trans: ProvidesUserContext, id: Union[str, int]) -> None:
-        persisted_file_source = self._get(trans, id)
+    def purge_instance(self, trans: ProvidesUserContext, uuid: str) -> None:
+        persisted_file_source = self._get(trans, uuid)
         purge_template_instance(trans, persisted_file_source, self._app_config)
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
     ) -> UserFileSourceModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -168,7 +162,7 @@ class FileSourceInstancesManager:
             return self._update_instance(trans, id, payload)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source, payload.template_version)
@@ -187,7 +181,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _update_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -195,7 +189,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -306,19 +300,11 @@ class FileSourceInstancesManager:
             exception = e
         return file_source, connection_exception_to_status("file source", exception)
 
-    def _index_filter(self, id: Union[str, int]):
-        index_by = self._app_config.user_config_templates_index_by
-        index_filter: Any
-        if index_by == "id":
-            id_as_int = int(id)
-            index_filter = UserFileSource.__table__.c.id == id_as_int
-        else:
-            id_as_str = str(id)
-            index_filter = UserFileSource.__table__.c.uuid == id_as_str
-        return index_filter
+    def _index_filter(self, uuid: str):
+        return UserFileSource.__table__.c.uuid == uuid
 
-    def _get(self, trans: ProvidesUserContext, id: Union[str, int]) -> UserFileSource:
-        filter = self._index_filter(id)
+    def _get(self, trans: ProvidesUserContext, uuid: str) -> UserFileSource:
+        filter = self._index_filter(uuid)
         user_file_source = self._sa_session.query(UserFileSource).filter(filter).one_or_none()
         if user_file_source is None:
             raise RequestParameterInvalidException(f"Failed to fetch object store for id {id}")
@@ -340,18 +326,10 @@ class FileSourceInstancesManager:
     def _to_model(self, trans, persisted_file_source: UserFileSource) -> UserFileSourceModel:
         file_source_type = persisted_file_source.template.configuration.type
         secrets = persisted_file_source.template_secrets or []
-        index_by = self._app_config.user_config_templates_index_by
-        response_id: Union[str, int]
-        if index_by == "id":
-            ufs_id = str(persisted_file_source.id)
-            response_id = persisted_file_source.id
-        else:
-            ufs_id = str(persisted_file_source.uuid)
-            response_id = ufs_id
-        uri_root = f"{USER_FILE_SOURCES_SCHEME}://{ufs_id}"
+        uuid = str(persisted_file_source.uuid)
+        uri_root = f"{USER_FILE_SOURCES_SCHEME}://{uuid}"
         return UserFileSourceModel(
-            id=response_id,
-            uuid=str(persisted_file_source.uuid),
+            uuid=uuid,
             uri_root=uri_root,
             type=file_source_type,
             template_id=persisted_file_source.template_id,
@@ -399,13 +377,7 @@ class UserDefinedFileSourcesImpl(UserDefinedFileSources):
             uri_root, _ = uri_rest.split("/", 1)
         else:
             uri_root = uri_rest
-        index_by = self._app_config.user_config_templates_index_by
-        index_filter: Any
-        if index_by == "id":
-            index_filter = UserFileSource.__table__.c.id == uri_root
-        else:
-            index_filter = UserFileSource.__table__.c.uuid == uri_root
-
+        index_filter = UserFileSource.__table__.c.uuid == uri_root
         user_object_store: UserFileSource = self._sa_session.query(UserFileSource).filter(index_filter).one()
         return user_object_store
 

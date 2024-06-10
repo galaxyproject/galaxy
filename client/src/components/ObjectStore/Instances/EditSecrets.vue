@@ -20,7 +20,7 @@ async function onUpdate(secretName: string, secretValue: string) {
         secret_name: secretName,
         secret_value: secretValue,
     };
-    const args = { user_object_store_id: String(props.objectStore.id) };
+    const args = { user_object_store_id: String(props.objectStore.uuid) };
     await update({ ...args, ...payload });
 }
 </script>

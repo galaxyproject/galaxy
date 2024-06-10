@@ -9,12 +9,10 @@ To Test:
 
 import logging
 from typing import (
-    Any,
     Dict,
     List,
     Optional,
     Tuple,
-    Union,
 )
 from uuid import uuid4
 
@@ -75,7 +73,6 @@ log = logging.getLogger(__name__)
 
 
 class UserConcreteObjectStoreModel(ConcreteObjectStoreModel):
-    id: Union[int, str]
     uuid: str
     type: ObjectStoreTemplateType
     template_id: str
@@ -109,7 +106,7 @@ class ObjectStoreInstancesManager:
         return self._catalog.summaries
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
     ) -> UserConcreteObjectStoreModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -119,12 +116,12 @@ class ObjectStoreInstancesManager:
             assert isinstance(payload, UpdateInstancePayload)
             return self._update_instance(trans, id, payload)
 
-    def purge_instance(self, trans: ProvidesUserContext, id: Union[str, int]) -> None:
+    def purge_instance(self, trans: ProvidesUserContext, id: str) -> None:
         persisted_object_store = self._get(trans, id)
         purge_template_instance(trans, persisted_object_store, self._app_config)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store, payload.template_version)
@@ -143,7 +140,7 @@ class ObjectStoreInstancesManager:
         return self._to_model(trans, persisted_object_store)
 
     def _update_instance(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -151,7 +148,7 @@ class ObjectStoreInstancesManager:
         return self._to_model(trans, persisted_object_store)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: Union[str, int], payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
     ) -> UserConcreteObjectStoreModel:
         persisted_object_store = self._get(trans, id)
         template = self._get_template(persisted_object_store)
@@ -203,14 +200,14 @@ class ObjectStoreInstancesManager:
         stores = self._sa_session.query(UserObjectStore).filter(UserObjectStore.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, id: Union[str, int]) -> UserConcreteObjectStoreModel:
+    def show(self, trans: ProvidesUserContext, id: str) -> UserConcreteObjectStoreModel:
         user_object_store = self._get(trans, id)
         return self._to_model(trans, user_object_store)
 
     def _save(self, persisted_object_store: UserObjectStore) -> None:
         save_template_instance(self._sa_session, persisted_object_store)
 
-    def _get(self, trans: ProvidesUserContext, id: Union[str, int]) -> UserObjectStore:
+    def _get(self, trans: ProvidesUserContext, id: str) -> UserObjectStore:
         filter = self._index_filter(id)
         user_object_store = self._sa_session.query(UserObjectStore).filter(filter).one_or_none()
         if user_object_store is None:
@@ -277,16 +274,8 @@ class ObjectStoreInstancesManager:
             exception = e
         return object_store, connection_exception_to_status("storage location", exception)
 
-    def _index_filter(self, id: Union[str, int]):
-        index_by = self._app_config.user_config_templates_index_by
-        index_filter: Any
-        if index_by == "id":
-            id_as_int = int(id)
-            index_filter = UserObjectStore.__table__.c.id == id_as_int
-        else:
-            id_as_str = str(id)
-            index_filter = UserObjectStore.__table__.c.uuid == id_as_str
-        return index_filter
+    def _index_filter(self, uuid: str):
+        return UserObjectStore.__table__.c.uuid == uuid
 
     def _get_template(
         self, persisted_object_store: UserObjectStore, template_version: Optional[int] = None
@@ -308,19 +297,11 @@ class ObjectStoreInstancesManager:
             object_store_type in ["azure_blob", "s3"],
         )
         secrets = persisted_object_store.template_secrets or []
-        uos_id: str
-        response_id: Union[int, str]
-        if self._app_config.user_config_templates_index_by == "id":
-            uos_id = str(persisted_object_store.id)
-            response_id = persisted_object_store.id
-        else:
-            uos_id = str(persisted_object_store.uuid)
-            response_id = uos_id
-        object_store_id = f"user_objects://{uos_id}"
+        uuid = str(persisted_object_store.uuid)
+        object_store_id = f"user_objects://{uuid}"
 
         return UserConcreteObjectStoreModel(
-            id=response_id,
-            uuid=str(persisted_object_store.uuid),
+            uuid=uuid,
             type=object_store_type,
             template_id=persisted_object_store.template_id,
             template_version=persisted_object_store.template_version,
@@ -353,12 +334,7 @@ class UserObjectStoreResolverImpl(BaseUserObjectStoreResolver):
 
     def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
         user_object_store_id = uri.split("://", 1)[1]
-        index_by = self._app_config.user_config_templates_index_by
-        index_filter: Any
-        if index_by == "id":
-            index_filter = UserObjectStore.__table__.c.id == user_object_store_id
-        else:
-            index_filter = UserObjectStore.__table__.c.uuid == user_object_store_id
+        index_filter = UserObjectStore.__table__.c.uuid == user_object_store_id
         user_object_store: UserObjectStore = self._sa_session.query(UserObjectStore).filter(index_filter).one()
         secrets = recover_secrets(user_object_store, self._vault, self._app_config)
         environment = prepare_environment(user_object_store, self._vault, self._app_config)

@@ -299,7 +299,6 @@ class TestFileSourcesTestCase(BaseTestCase):
         user_file_source_showed = self.manager.show(self.trans, user_file_source.uuid)
         assert user_file_source_showed
         assert user_file_source_showed.uuid == user_file_source.uuid
-        assert user_file_source_showed.id == user_file_source.id
 
     def test_simple_update(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))

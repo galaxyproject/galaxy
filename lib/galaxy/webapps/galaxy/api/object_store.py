@@ -49,8 +49,8 @@ ConcreteObjectStoreIdPathParam: str = Path(
 
 UserObjectStoreIdPathParam: str = Path(
     ...,
-    title="User Object Store Identifier",
-    description="The identifier used to index a persisted UserObjectStore object.",
+    title="User Object Store UUID",
+    description="The UUID used to identify a persisted UserObjectStore object.",
 )
 
 SelectableQueryParam: bool = Query(

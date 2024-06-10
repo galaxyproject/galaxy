@@ -19,7 +19,7 @@ async function onUpdate(secretName: string, secretValue: string) {
         secret_name: secretName,
         secret_value: secretValue,
     };
-    const args = { user_file_source_id: String(props.fileSource.id) };
+    const args = { user_file_source_id: String(props.fileSource.uuid) };
     await update({ ...args, ...payload });
 }
 </script>
