@@ -4,6 +4,7 @@ import { useObjectStoreInstancesStore } from "@/stores/objectStoreInstancesStore
 import { setupTestPinia } from "./testUtils";
 
 const type = "aws_s3" as ObjectStoreTemplateType;
+const UUID = "112f889f-72d7-4619-a8e8-510a8c685aa7";
 const TEST_INSTANCE = {
     type: type,
     name: "moo",
@@ -15,8 +16,7 @@ const TEST_INSTANCE = {
     secrets: [],
     quota: { enabled: false },
     private: false,
-    id: 4,
-    uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
+    uuid: UUID,
     active: true,
     hidden: false,
     purged: false,
@@ -45,13 +45,7 @@ describe("Object Store Instances Store", () => {
     it("should allow finding an instance by instance id", () => {
         const objectStoreInstancesStore = useObjectStoreInstancesStore();
         objectStoreInstancesStore.handleInit([TEST_INSTANCE]);
-        expect(objectStoreInstancesStore.getInstance(4)?.name).toBe("moo");
-    });
-
-    it("should allow finding an instance by instance id as string (for props)", () => {
-        const objectStoreInstancesStore = useObjectStoreInstancesStore();
-        objectStoreInstancesStore.handleInit([TEST_INSTANCE]);
-        expect(objectStoreInstancesStore.getInstance("4")?.name).toBe("moo");
+        expect(objectStoreInstancesStore.getInstance(UUID)?.name).toBe("moo");
     });
 
     it("should populate an error with handleError", () => {

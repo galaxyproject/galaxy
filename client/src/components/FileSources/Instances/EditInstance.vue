@@ -13,7 +13,7 @@ import EditSecrets from "./EditSecrets.vue";
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
 interface Props {
-    instanceId: number | string;
+    instanceId: string;
 }
 
 const props = defineProps<Props>();
@@ -36,7 +36,7 @@ const loadingMessage = "Loading file source template and instance information";
 async function onSubmit(formData: any) {
     if (template.value) {
         const payload = editFormDataToPayload(template.value, formData);
-        const args = { user_file_source_id: String(instance?.value?.id) };
+        const args = { user_file_source_id: String(instance?.value?.uuid) };
         const { data: fileSource } = await update({ ...args, ...payload });
         await onUpdate(fileSource);
     }

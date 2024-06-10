@@ -114,7 +114,6 @@ export const OBJECT_STORE_INSTANCE: UserConcreteObjectStore = {
     secrets: ["oldsecret", "droppedsecret"],
     quota: { enabled: false },
     private: false,
-    id: 4,
     uuid: "112f889f-72d7-4619-a8e8-510a8c685aa7",
     active: true,
     hidden: false,

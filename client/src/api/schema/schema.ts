@@ -12651,8 +12651,6 @@ export interface components {
             device?: string | null;
             /** Hidden */
             hidden: boolean;
-            /** Id */
-            id: number | string;
             /** Name */
             name?: string | null;
             /** Object Store Id */
@@ -12730,8 +12728,6 @@ export interface components {
             description: string | null;
             /** Hidden */
             hidden: boolean;
-            /** Id */
-            id: string | number;
             /** Name */
             name: string;
             /** Purged */
@@ -14972,7 +14968,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The index for a persisted UserFileSourceStore object. */
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
                 user_file_source_id: string;
             };
@@ -14999,7 +14995,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The index for a persisted UserFileSourceStore object. */
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
                 user_file_source_id: string;
             };
@@ -15034,7 +15030,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The index for a persisted UserFileSourceStore object. */
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
                 user_file_source_id: string;
             };
@@ -20896,7 +20892,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The identifier used to index a persisted UserObjectStore object. */
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
                 user_object_store_id: string;
             };
@@ -20923,7 +20919,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The identifier used to index a persisted UserObjectStore object. */
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
                 user_object_store_id: string;
             };
@@ -20958,7 +20954,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The identifier used to index a persisted UserObjectStore object. */
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
                 user_object_store_id: string;
             };
