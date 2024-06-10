@@ -9,7 +9,6 @@ require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.a
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.event.hover");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.event.drag");
 // TODO: replace mousewheel events
-require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.rating");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/select2");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery-ui");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/farbtastic");
