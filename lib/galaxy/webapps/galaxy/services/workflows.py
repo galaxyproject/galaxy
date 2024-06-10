@@ -100,7 +100,7 @@ class WorkflowsService(ServiceBase):
             )
             trans.response.set_content_type("application/galaxy-archive")
         if style == "export":
-            style = style = self._workflow_contents_manager.app.config.default_workflow_export_format
+            style = self._workflow_contents_manager.app.config.default_workflow_export_format
         if style == "format2" and format != "json-download":
             return PlainTextResponse(ordered_dump(ret_dict))
         elif style == "editor":
