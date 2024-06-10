@@ -476,6 +476,17 @@ class WorkflowDictStepsBase(Model):
         description="Workflow outputs associated with this step.",
     )
 
+    @field_validator(
+        "tool_state",
+        mode="before",
+        check_fields=False,
+    )
+    @classmethod
+    def inputs_string_to_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
+
 
 class WorkflowDictStepsExtendedBase(WorkflowDictStepsBase):
     type: str = Field(
