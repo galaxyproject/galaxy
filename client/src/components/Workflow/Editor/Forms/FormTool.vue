@@ -1,17 +1,18 @@
 <template>
     <ToolCard
-        v-if="hasData"
-        :id="configForm.id"
-        :version="configForm.version"
-        :title="configForm.name"
-        :description="configForm.description"
+        :id="configForm?.id || ''"
+        :version="configForm?.version"
+        :title="configForm?.name || step.name"
+        :description="configForm?.description"
         :options="configForm"
         :message-text="messageText"
         :message-variant="messageVariant"
+        :step-error="step.errors"
         @onChangeVersion="onChangeVersion"
         @onUpdateFavorites="onUpdateFavorites">
         <template v-slot:body>
             <FormElement
+                v-if="hasData"
                 id="__label"
                 :value="label"
                 title="Label"
@@ -19,14 +20,18 @@
                 :error="uniqueErrorLabel"
                 @input="onLabel" />
             <FormElement
+                v-if="hasData"
                 id="__annotation"
                 :value="annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
-            <div class="mt-2 mb-4">
+            <FormConditional
+                v-if="hasData"
+                :step="step"
+                @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
+            <div v-if="inputs.length" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="id"
@@ -38,7 +43,7 @@
                     :workflow-building-mode="true"
                     @onChange="onChange" />
             </div>
-            <div class="mt-2 mb-4">
+            <div v-if="stepOutputs.length" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Additional Options </Heading>
                 <FormSection
                     :id="stepId"
@@ -141,7 +146,12 @@ export default {
             return !!this.configForm?.id;
         },
         inputs() {
-            const inputs = this.configForm.inputs;
+            const inputs = this.configForm?.inputs;
+
+            if (!inputs) {
+                return [];
+            }
+
             Utils.deepEach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
@@ -169,7 +179,7 @@ export default {
             return inputs;
         },
         errors() {
-            return this.configForm.errors;
+            return this.configForm?.errors || { ...this.step.errors };
         },
     },
     methods: {
