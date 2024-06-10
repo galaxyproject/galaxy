@@ -9,7 +9,7 @@ from sqlalchemy import (
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
-from galaxy.managers.users import (
+from galaxy.model.db.user import (
     get_user_by_email,
     get_user_by_username,
 )
