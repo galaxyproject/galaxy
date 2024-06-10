@@ -476,4 +476,4 @@ class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
 
     @property
     def anonymous(self) -> bool:
-        return bool(self._kwd.get("username"))
+        return not bool(self._kwd.get("username"))
