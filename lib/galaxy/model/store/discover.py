@@ -221,6 +221,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
         if primary_data.dataset.purged:
             # metadata won't be set, maybe we should do that, then purge ?
+            primary_data.dataset.file_size = 0
+            primary_data.dataset.total_size = 0
             return
         # Move data from temp location to dataset location
         if not link_data:
