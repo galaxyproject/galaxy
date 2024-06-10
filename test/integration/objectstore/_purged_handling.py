@@ -1,3 +1,4 @@
+import os
 import time
 
 from galaxy_test.base.populators import DatasetPopulator
@@ -16,10 +17,13 @@ def purge_while_job_running(dataset_populator: DatasetPopulator, sleep_before_pu
         # Sleep a second to make sure we template command before purging output
         time.sleep(sleep_before_purge)
         hda_ids = []
+        hda_filenames = []
         for output_name, output in job["outputs"].items():
             if output_name == "static_output_2":
                 # We need to keep one output so the job doesn't get cancelled
                 continue
+            details = dataset_populator.get_history_dataset_details(history_id=history_id, dataset_id=output["id"])
+            hda_filenames.append(details["file_name"])
             dataset_populator.delete_dataset(
                 history_id=history_id, content_id=output["id"], purge=True, wait_for_purge=True
             )
@@ -43,3 +47,9 @@ def purge_while_job_running(dataset_populator: DatasetPopulator, sleep_before_pu
             except AssertionError as e:
                 exception = e
             assert exception and "The dataset you are attempting to view has been purged" in str(exception)
+            output_details = dataset_populator.get_history_dataset_details(history_id=history_id, dataset_id=hda_id)
+            # Make sure that we don't revert state while finishing job
+            assert output_details["purged"]
+        for file_name in hda_filenames:
+            # Make sure job didn't push to object store
+            assert not os.path.exists(file_name), f"Expected {file_name} to be purged."
