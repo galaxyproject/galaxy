@@ -4,10 +4,7 @@ from datetime import (
     date,
     datetime,
 )
-from typing import (
-    Dict,
-    Optional,
-)
+from typing import Dict
 
 import sqlalchemy
 from boltons.iterutils import remap
@@ -34,6 +31,7 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.job_metrics import (
     RawMetric,
@@ -109,9 +107,7 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(
-        self, trans: ProvidesUserContext, payload: JobIndexQueryPayload
-    ) -> Optional[sqlalchemy.engine.Result]:
+    def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -220,7 +216,7 @@ class JobManager:
                 elif trans.galaxy_session:
                     stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
                 else:
-                    return None
+                    raise RequestParameterMissingException("A session is required to list jobs for anonymous users")
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
