@@ -10,7 +10,6 @@ import "libs/jquery/jquery-ui";
 import "libs/jquery/select2";
 import "libs/farbtastic";
 import "libs/jquery/jquery.form";
-import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
 import { getGalaxyInstance } from "app";

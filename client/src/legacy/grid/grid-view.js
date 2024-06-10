@@ -238,9 +238,6 @@ export default Backbone.View.extend({
             update_checked();
         });
 
-        // Initialize ratings.
-        if (this.$el.find(".community_rating_star").length !== 0) this.$el.find(".community_rating_star").rating({});
-
         // get options
         var options = this.grid.attributes;
         var self = this;
