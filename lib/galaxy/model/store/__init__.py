@@ -468,6 +468,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 for attribute, value in dataset_attributes.items():
                     setattr(dataset_instance.dataset, attribute, value)
+                if dataset_instance.dataset.purged:
+                    dataset_instance.dataset.full_delete()
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
