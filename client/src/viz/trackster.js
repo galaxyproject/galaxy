@@ -9,7 +9,6 @@ import "jquery-mousewheel";
 import "libs/jquery/jquery-ui";
 import "libs/jquery/select2";
 import "libs/farbtastic";
-import "libs/jquery/jquery.form";
 import "ui/editable-text";
 
 import { getGalaxyInstance } from "app";
