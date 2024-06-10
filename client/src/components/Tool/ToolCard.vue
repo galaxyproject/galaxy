@@ -1,4 +1,7 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Heading from "components/Common/Heading";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
@@ -19,6 +22,8 @@ import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
+
+library.add(faWrench);
 
 const props = defineProps({
     id: {
@@ -63,6 +68,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    stepError: {
+        type: String,
+        default: "Tool is not available",
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
@@ -88,8 +97,8 @@ const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
-const versions = computed(() => props.options.versions);
-const showVersions = computed(() => props.options.versions?.length > 1);
+const versions = computed(() => props.options?.versions);
+const showVersions = computed(() => props.options?.versions?.length > 1);
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -119,27 +128,45 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 <template>
     <div class="position-relative">
         <div class="underlay sticky-top" />
-        <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
+
+        <div v-if="!props.options && !props.id" class="sticky-top">
+            <BAlert variant="danger" class="tool-header px-2 py-1" show>
+                <span class="tool-header-name">
+                    <FontAwesomeIcon :icon="faWrench" fixed-width />
+                    {{ props.title }}
+                </span>
+
+                <span>
+                    {{ props.stepError }}
+                </span>
+            </BAlert>
+        </div>
+        <div v-else class="sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
-                        <icon icon="wrench" class="fa-fw" />
-                        <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
+                        <FontAwesomeIcon :icon="faWrench" fixed-width />
+
+                        <Heading h1 inline bold size="text" itemprop="name">
+                            {{ props.title || props.options?.name }}
+                        </Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>
                     <span>(Galaxy Version {{ props.version }})</span>
                 </div>
+
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                     <b-button-group class="tool-card-buttons">
-                        <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
+                        <ToolFavoriteButton v-if="props.id && hasUser" :id="props.id" @onSetError="onSetError" />
                         <ToolVersionsButton
                             v-if="showVersions"
                             :version="props.version"
                             :versions="versions"
                             @onChangeVersion="onChangeVersion" />
                         <ToolOptionsButton
+                            v-if="props.id"
                             :id="props.id"
-                            :sharable-url="props.options.sharable_url"
+                            :sharable-url="props.options?.sharable_url"
                             :options="props.options" />
                         <b-button
                             v-if="allowObjectStoreSelection"
@@ -183,7 +210,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 
         <slot name="buttons" />
 
-        <div>
+        <div v-if="props.options">
             <div v-if="props.options.help" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Help </Heading>
                 <ToolHelp :content="props.options.help" />
@@ -195,10 +222,10 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
 
-            <ToolHelpForum v-if="showHelpForum" :tool-id="props.id" :tool-name="props.title" />
+            <ToolHelpForum v-if="showHelpForum" :tool-id="props.options.id" :tool-name="props.title" />
 
             <ToolFooter
-                :id="props.id"
+                :id="props.options.id"
                 :has-citations="props.options.citations"
                 :xrefs="props.options.xrefs"
                 :license="props.options.license"
@@ -210,6 +237,17 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
+
+.tool-header {
+    display: flex;
+    flex-direction: column;
+
+    word-break: break-all;
+
+    .tool-header-name {
+        font-weight: bold;
+    }
+}
 
 .underlay::after {
     content: "";
