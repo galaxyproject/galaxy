@@ -82,6 +82,19 @@ class TestEmbeddedMessageQueuePulsarPurge(integration_util.IntegrationTestCase):
         purge_while_job_running(self.dataset_populator)
 
 
+class TestEmbeddedMessageQueuePulsarExtendedMetadataPurge(TestEmbeddedMessageQueuePulsarPurge):
+    """Describe a Galaxy test instance with embedded pulsar and extended metadata configured.
+
+    $ Setup RabbitMQ (e.g. https://www.rabbitmq.com/install-homebrew.html)
+    $ GALAXY_TEST_AMQP_URL='amqp://guest:guest@localhost:5672//' pytest -s test/integration/test_pulsar_embedded_mq.py
+    """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["metadata_strategy"] = "extended"
+        _handle_galaxy_config_kwds(cls, config)
+
+
 class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.IntegrationInstance):
     """Describe a Galaxy test instance with embedded pulsar configured.
 
