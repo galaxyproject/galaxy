@@ -127,12 +127,15 @@ class JobManager:
         search = payload.search
         order_by = payload.order_by
 
-        if trans.user is None:
-            # If the user is anonymous we can only return jobs for the current session history
-            if trans.galaxy_session and trans.galaxy_session.current_history_id:
-                history_id = trans.galaxy_session.current_history_id
-            else:
-                return None
+        if (
+            trans.user is None
+            and history_id is None
+            and trans.galaxy_session
+            and trans.galaxy_session.current_history_id
+        ):
+            # If the user is anonymous and no specific history_id was provided
+            # we can only return jobs from the history in the current session
+            history_id = trans.galaxy_session.current_history_id
 
         def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
