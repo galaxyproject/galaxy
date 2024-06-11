@@ -54,12 +54,9 @@ const PATHS = {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
-        backbone: ["backbone.js", "backbone.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
-        requirejs: ["require.js", "require.js"],
-        underscore: ["underscore.js", "underscore.js"],
     },
 };
 
