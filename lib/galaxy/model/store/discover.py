@@ -91,6 +91,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         creating_job_id=None,
         output_name=None,
         storage_callbacks=None,
+        purged=False,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -190,7 +191,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if info is not None:
             primary_data.info = info
-        if filename:
+
+        if purged:
+            primary_data.dataset.purged = True
+            primary_data.purged = True
+        if filename and not purged:
             if storage_callbacks is None:
                 self.finalize_storage(
                     primary_data=primary_data,
@@ -214,6 +219,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         return primary_data
 
     def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
+        if primary_data.dataset.purged:
+            # metadata won't be set, maybe we should do that, then purge ?
+            primary_data.dataset.file_size = 0
+            primary_data.dataset.total_size = 0
+            return
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset

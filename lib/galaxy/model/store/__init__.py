@@ -183,8 +183,6 @@ class ImportDiscardedDataType(Enum):
 
 class DatasetAttributeImportModel(BaseModel):
     state: Optional[DatasetStateField] = None
-    deleted: Optional[bool] = None
-    purged: Optional[bool] = None
     external_filename: Optional[str] = None
     _extra_files_path: Optional[str] = None
     file_size: Optional[int] = None
@@ -470,6 +468,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 for attribute, value in dataset_attributes.items():
                     setattr(dataset_instance.dataset, attribute, value)
+                if dataset_instance.dataset.purged:
+                    dataset_instance.dataset.full_delete()
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
@@ -654,17 +654,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.state = dataset_state
                         if not self.object_store:
                             raise Exception(f"self.object_store is missing from {self}.")
-                        self.object_store.update_from_file(
-                            dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
-                        )
+                        if not dataset_instance.dataset.purged:
+                            self.object_store.update_from_file(
+                                dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
+                            )
 
-                        # Import additional files if present. Histories exported previously might not have this attribute set.
-                        dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
-                        if dataset_extra_files_path:
-                            assert file_source_root
-                            dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
-                            persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
-                        # Don't trust serialized file size
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
+                            if dataset_extra_files_path:
+                                assert file_source_root
+                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
+                            # Don't trust serialized file size
                         dataset_instance.dataset.file_size = None
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 

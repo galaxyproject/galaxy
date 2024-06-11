@@ -1670,7 +1670,7 @@ def persist_extra_files(
     primary_data: "DatasetInstance",
     extra_files_path_name: Optional[str] = None,
 ) -> None:
-    if os.path.exists(src_extra_files_path):
+    if not primary_data.dataset.purged and os.path.exists(src_extra_files_path):
         assert primary_data.dataset
         if not extra_files_path_name:
             extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)
