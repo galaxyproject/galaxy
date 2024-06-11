@@ -7,7 +7,7 @@
                     or send the results to a new one using the run settings ⚙️
                 </span>
             </BAlert>
-            <b>Workflow: {{ model.name }}</b>
+            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <ButtonSpinner
                 id="run-workflow"
                 :wait="waitingForRequest"
@@ -200,6 +200,7 @@ export default {
                 batch: true,
                 use_cached_job: this.useCachedJobs,
                 require_exact_tool_versions: false,
+                version: this.model.runData.version,
             };
             if (this.sendToNewHistory) {
                 data.new_history_name = this.model.name;

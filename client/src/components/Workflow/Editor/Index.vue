@@ -774,7 +774,9 @@ export default {
             this.report.markdown = markdown;
         },
         onRun() {
-            const runUrl = `/workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}${
+                this.version !== undefined ? `&version=${this.version}` : ""
+            }`;
             this.onNavigate(runUrl);
         },
         async onNavigate(url, forceSave = false, ignoreChanges = false) {
