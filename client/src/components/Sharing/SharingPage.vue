@@ -9,6 +9,7 @@ import { getGalaxyInstance } from "@/app";
 import { useToast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { getFullAppUrl } from "@/utils/utils";
 
 import type { Item, ShareOption } from "./item";
 
@@ -52,11 +53,6 @@ const item = ref<Item>({
     extra: defaultExtra(),
 });
 
-const itemRoot = computed(() => {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
-});
-
 const itemUrl = reactive({
     prefix: "",
     slug: "",
@@ -68,7 +64,7 @@ watch(
         if (value) {
             const index = value.lastIndexOf("/");
 
-            itemUrl.prefix = itemRoot.value + value.substring(0, index + 1);
+            itemUrl.prefix = getFullAppUrl(value.substring(0, index + 1));
             itemUrl.slug = value.substring(index + 1);
         }
     },
