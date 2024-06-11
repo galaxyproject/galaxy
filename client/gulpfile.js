@@ -11,7 +11,7 @@ const buildIcons = require("./icons/build_icons");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const STATIC_PLUGIN_BUILD_IDS = [
+const PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
     "cytoscape",
@@ -39,9 +39,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
     "venn",
 ];
-const DIST_PLUGIN_BUILD_IDS = ["new_user"];
-const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
-
 const PATHS = {
     nodeModules: "./node_modules",
     stagedLibraries: {
@@ -114,11 +111,7 @@ function buildPlugins(callback, forceRebuild) {
         const pluginDir = path.dirname(file);
         const pluginName = pluginDir.split(path.sep).pop();
 
-        const hashFilePath = path.join(
-            pluginDir,
-            DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
-            "plugin_build_hash.txt"
-        );
+        const hashFilePath = path.join(pluginDir, "static", "plugin_build_hash.txt");
 
         if (forceRebuild) {
             skipBuild = false;
