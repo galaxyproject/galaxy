@@ -9,10 +9,10 @@ import { computed } from "vue";
 import { copyWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
-import { getAppRoot } from "@/onload/loadConfig";
 import { useUserStore } from "@/stores/userStore";
 import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
+import { getFullAppUrl } from "@/utils/utils";
 
 library.add(faCopy, faDownload, faLink, faShareAlt, faTrashRestore);
 
@@ -66,17 +66,12 @@ async function onRestore() {
     }
 }
 
-const root = computed(() => {
-    const port = window.location.port ? `:${window.location.port}` : "";
-    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
-});
-
 const relativeLink = computed(() => {
     return `/published/workflow?id=${props.workflow.id}`;
 });
 
 const fullLink = computed(() => {
-    return `${root.value}${relativeLink.value.substring(1)}`;
+    return getFullAppUrl(relativeLink.value.substring(1));
 });
 
 function onCopyPublicLink() {
