@@ -8,7 +8,6 @@ from typing import (
     cast,
     Dict,
     List,
-    Optional,
 )
 
 import sqlalchemy
@@ -33,6 +32,7 @@ from galaxy.exceptions import (
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.job_metrics import (
     RawMetric,
@@ -108,9 +108,7 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(
-        self, trans: ProvidesUserContext, payload: JobIndexQueryPayload
-    ) -> Optional[sqlalchemy.engine.ScalarResult]:
+    def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.ScalarResult:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -125,13 +123,6 @@ class JobManager:
         implicit_collection_jobs_id = payload.implicit_collection_jobs_id
         search = payload.search
         order_by = payload.order_by
-
-        if trans.user is None:
-            # If the user is anonymous we can only return jobs for the current session history
-            if trans.galaxy_session and trans.galaxy_session.current_history_id:
-                history_id = trans.galaxy_session.current_history_id
-            else:
-                return None
 
         def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
@@ -219,9 +210,14 @@ class JobManager:
             if user_details:
                 stmt = stmt.outerjoin(Job.user)
         else:
-            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None and trans.user:
-                stmt = stmt.where(Job.user_id == trans.user.id)
-            # caller better check security
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+                # If we're not filtering on history, invocation or collection we filter the jobs owned by the current user
+                if trans.user:
+                    stmt = stmt.where(Job.user_id == trans.user.id)
+                elif trans.galaxy_session:
+                    stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
+                else:
+                    raise RequestParameterMissingException("A session is required to list jobs for anonymous users")
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
