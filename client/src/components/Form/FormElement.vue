@@ -3,8 +3,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
+
+import { linkify } from "@/utils/utils";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
@@ -181,7 +184,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
         <div v-if="hasAlert" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="props.error || props.warning" />
+            <span
+                class="ui-form-error-text"
+                v-html="linkify(sanitize(props.error || props.warning, { USE_PROFILES: { html: true } }))" />
         </div>
 
         <div class="ui-form-title">
