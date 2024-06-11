@@ -919,6 +919,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
             wf_dict["version"] = version
+            # If returning a run-form workflow for a specific version, use that version's name
+            if style == "run":
+                wf_dict["name"] = workflow.name
         else:
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
