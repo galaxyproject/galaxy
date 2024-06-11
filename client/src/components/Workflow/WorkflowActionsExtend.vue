@@ -84,7 +84,7 @@ function onCopyPublicLink() {
     <div class="workflow-actions-extend flex-gapx-1">
         <BButtonGroup>
             <BButton
-                v-if="!isAnonymous && workflow.published && !workflow.deleted"
+                v-if="workflow.published && !workflow.deleted"
                 id="workflow-copy-public-button"
                 v-b-tooltip.hover.noninteractive
                 :size="buttonSize"
