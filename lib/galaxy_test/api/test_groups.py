@@ -76,10 +76,15 @@ class TestGroupsApi(ApiTestCase):
 
         group_id = group["id"]
         updated_name = f"group-test-updated-{self.dataset_populator.get_random_name()}"
-        update_payload = {
-            "name": updated_name,
-        }
-        update_response = self._put(f"groups/{group_id}", data=update_payload, admin=True, json=True)
+        update_response = self._put(f"groups/{group_id}", data={"name": updated_name}, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
+
+        # Update with another user
+        another_user_id = None
+        with self._different_user():
+            another_user_id = self.dataset_populator.user_id()
+        assert another_user_id is not None
+        update_response = self._put(f"groups/{group_id}", data={"user_ids": [another_user_id]}, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
 
     def test_update_only_admin(self):
