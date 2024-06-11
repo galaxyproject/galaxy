@@ -460,7 +460,7 @@ class WorkflowDictStepsBase(Model):
         title="Outputs",
         description="The outputs of the step.",
     )
-    tool_state: Optional[Dict[str, Any]] = Field(
+    tool_state: Optional[Union[Dict[str, Any], str]] = Field(
         None,
         title="Tool State",
         description="The state of the tool associated with the step",
@@ -476,16 +476,16 @@ class WorkflowDictStepsBase(Model):
         description="Workflow outputs associated with this step.",
     )
 
-    @field_validator(
-        "tool_state",
-        mode="before",
-        check_fields=False,
-    )
-    @classmethod
-    def inputs_string_to_json(cls, v):
-        if isinstance(v, str):
-            return json.loads(v)
-        return v
+    # @field_validator(
+    #     "tool_state",
+    #     mode="before",
+    #     check_fields=False,
+    # )
+    # @classmethod
+    # def inputs_string_to_json(cls, v):
+    #     if isinstance(v, str):
+    #         return json.loads(v)
+    #     return v
 
 
 class WorkflowDictStepsExtendedBase(WorkflowDictStepsBase):
