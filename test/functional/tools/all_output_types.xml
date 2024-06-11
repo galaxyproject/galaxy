@@ -1,0 +1,90 @@
+<tool id="all_output_types" name="all_output_types" version="1.0.0" profile="24.0">
+    <command><![CDATA[
+        sleep $sleep_param &&
+        echo hi > output.txt &&
+        echo hi > '$static_output' &&
+        echo hi > '$static_output_2' &&
+        cp '$c1' galaxy.json
+        ]]>
+    </command>
+    <configfiles>
+        <configfile name="c1">{"output_tool_supplied_metadata": {
+    "name": "my dynamic name",
+    "ext": "txt",
+    "info": "my dynamic info"
+  }}
+        </configfile>
+    </configfiles>
+    <inputs>
+        <param name="sleep_param" type="integer" value="0" />
+    </inputs>
+    <outputs>
+        <data name="static_output" format="txt" />
+        <data name="static_output_2" format="txt" />
+        <data name="output_workdir" from_work_dir="output.txt" format="txt" />
+        <data name="output_tool_supplied_metadata" from_work_dir="output.txt" format="auto" />
+        <data format="txt" name="discovered_output">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.txt" ext="txt" visible="true"/>
+        </data>
+        <data format="txt" name="discovered_output_replaced">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.txt" ext="txt" visible="true" assign_primary_output="true" />
+        </data>
+        <collection type="paired" name="static_pair" format="txt">
+            <data name="forward" from_work_dir="output.txt"></data>
+            <data name="reverse" from_work_dir="output.txt"></data>
+        </collection>
+        <collection type="list" name="discovered_list" format="txt">
+            <discover_datasets pattern="(?P&lt;designation&gt;.+)\.txt" ext="txt" visible="true" />
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <output name="static_output">
+                <assert_contents>
+                    <has_text text="hi"/>
+                </assert_contents>
+            </output>
+            <output name="output_workdir">
+                <assert_contents>
+                    <has_text text="hi"/>
+                </assert_contents>
+            </output>
+            <output name="output_tool_supplied_metadata">
+                <assert_contents>
+                    <has_text text="hi"/>
+                </assert_contents>
+            </output>
+            <output name="discovered_output">
+                <discovered_dataset designation="output" ftype="txt">
+                    <assert_contents>
+                        <has_text text="hi"/>
+                    </assert_contents>
+                  </discovered_dataset>
+            </output>
+            <output name="discovered_output_replaced" count="1">
+                <assert_contents>
+                    <has_text text="hi"/>
+                </assert_contents>
+            </output>
+            <output_collection name="static_pair" type="paired">
+                <element name="forward" ftype="txt">
+                    <assert_contents>
+                        <has_text text="hi"></has_text>
+                    </assert_contents>
+                </element>
+                <element name="reverse" ftype="txt">
+                    <assert_contents>
+                        <has_text text="hi"></has_text>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="discovered_list">
+                <element name="output" ftype="txt">
+                    <assert_contents>
+                        <has_text text="hi"></has_text>
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+</tool>

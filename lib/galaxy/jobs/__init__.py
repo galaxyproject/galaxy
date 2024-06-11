@@ -2004,10 +2004,14 @@ class MinimalJobWrapper(HasResourceParameters):
         quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            if not dataset_assoc.dataset.dataset.purged:
+            dataset = dataset_assoc.dataset.dataset
+            if not dataset.purged:
                 # assume all datasets in a job get written to the same objectstore
-                quota_source_info = dataset_assoc.dataset.dataset.quota_source_info
-                collected_bytes += dataset_assoc.dataset.set_total_size()
+                quota_source_info = dataset.quota_source_info
+                collected_bytes += dataset.set_total_size()
+            else:
+                # Purge, in case job wrote directly to object store
+                dataset.full_delete()
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:

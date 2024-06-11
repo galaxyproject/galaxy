@@ -287,7 +287,11 @@ def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
     if "?" in source_file or "*" in source_file:
         source_file = source_file.replace("*", '"*"').replace("?", '"?"')
-    return f'\nif [ -f "{source_file}" ] ; then cp "{source_file}" "{destination}" ; fi'
+    # Check if source and destination exist.
+    # Users can purge outputs before the job completes,
+    # in that case we don't want to copy the output to a purged path.
+    # Static, non work_dir_output files are handled in job_finish code.
+    return f'\nif [ -f "{source_file}" -a -f "{destination}" ] ; then cp "{source_file}" "{destination}" ; fi'
 
 
 class CommandsBuilder:

@@ -4377,6 +4377,8 @@ class Dataset(Base, StorableObject, Serializable):
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
+        self.file_size = 0
+        self.total_size = 0
 
     def get_access_roles(self, security_agent):
         roles = []
@@ -9665,13 +9667,14 @@ class MetadataFile(Base, StorableObject, Serializable):
     def update_from_file(self, file_name):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
-        self.dataset.object_store.update_from_file(
-            self,
-            file_name=file_name,
-            extra_dir="_metadata_files",
-            extra_dir_at_root=True,
-            alt_name=os.path.basename(self.get_file_name()),
-        )
+        if not self.dataset.purged:
+            self.dataset.object_store.update_from_file(
+                self,
+                file_name=file_name,
+                extra_dir="_metadata_files",
+                extra_dir_at_root=True,
+                alt_name=os.path.basename(self.get_file_name()),
+            )
 
     def get_file_name(self, sync_cache=True):
         # Ensure the directory structure and the metadata file object exist
