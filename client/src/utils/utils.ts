@@ -475,4 +475,5 @@ export default {
     waitForElementToBePresent,
     wait,
     mergeObjectListsById,
+    getFullAppUrl,
 };
