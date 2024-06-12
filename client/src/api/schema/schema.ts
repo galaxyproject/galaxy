@@ -8394,6 +8394,11 @@ export interface components {
              * @default false
              */
             use_cached_job?: boolean | null;
+            /**
+             * Version
+             * @description The version of the workflow to invoke.
+             */
+            version?: number | null;
         };
         /**
          * ItemTagsCreatePayload

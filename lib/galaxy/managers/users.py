@@ -200,7 +200,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         private_role = self.app.security_agent.get_private_user_role(user)
         if private_role is None:
             raise exceptions.InconsistentDatabase(
-                "User '%s' private role is missing while attempting to purge deleted user." % user.email
+                f"User {user.email} private role is missing while attempting to purge deleted user."
             )
         # Delete History
         for active_history in user.active_histories:
@@ -667,23 +667,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     self.app.security_agent.user_set_default_permissions(user)
                     self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
         elif user is None:
-            username = remote_user_email.split("@", 1)[0].lower()
             random.seed()
             user = self.app.model.User(email=remote_user_email)
             user.set_random_password(length=12)
             user.external = True
-            # Replace invalid characters in the username
-            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
-                username = username.replace(char, "-")
-            # Find a unique username - user can change it later
-            stmt = select(self.app.model.User).filter_by(username=username).limit(1)
-            if self.session().scalars(stmt).first():
-                i = 1
-                stmt = select(self.app.model.User).filter_by(username=f"{username}-{str(i)}").limit(1)
-                while self.session().scalars(stmt).first():
-                    i += 1
-                username += f"-{str(i)}"
-            user.username = username
+            user.username = username_from_email(self.session(), remote_user_email, self.app.model.User)
             self.session().add(user)
             with transaction(self.session()):
                 self.session().commit()
@@ -877,3 +865,31 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         )
 
         self.fn_filter_parsers.update({})
+
+
+def username_from_email(session, email, model_class=User):
+    """Get next available username generated based on email"""
+    username = email.split("@", 1)[0].lower()
+    username = filter_out_invalid_username_characters(username)
+    if username_exists(session, username, model_class):
+        username = generate_next_available_username(session, username, model_class)
+    return username
+
+
+def filter_out_invalid_username_characters(username):
+    """Replace invalid characters in username"""
+    for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
+        username = username.replace(char, "-")
+    return username
+
+
+def username_exists(session, username: str, model_class=User):
+    return bool(get_user_by_username(session, username, model_class))
+
+
+def generate_next_available_username(session, username, model_class=User):
+    """Generate unique username; user can change it later"""
+    i = 1
+    while session.execute(select(model_class).where(model_class.username == f"{username}-{i}")).first():
+        i += 1
+    return f"{username}-{i}"
