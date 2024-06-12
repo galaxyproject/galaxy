@@ -206,7 +206,7 @@ function getWorkflowName() {
                         size="sm"
                         variant="secondary"
                         :disabled="isDeletedWorkflow"
-                        :to="`/workflows/edit?id=${getWorkflowId()}`">
+                        :to="`/workflows/edit?id=${getWorkflowId()}&version=${workflowVersion}`">
                         <FontAwesomeIcon :icon="faEdit" />
                         <span v-localize>Edit</span>
                     </BButton>
@@ -218,7 +218,8 @@ function getWorkflowName() {
                                 : 'This workflow has been deleted.'
                         "
                         :disabled="isDeletedWorkflow"
-                        full />
+                        full
+                        :version="workflowVersion" />
                 </BButtonGroup>
             </div>
         </div>
