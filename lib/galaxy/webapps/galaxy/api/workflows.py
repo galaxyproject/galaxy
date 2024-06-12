@@ -22,7 +22,6 @@ from fastapi import (
     status,
 )
 from gxformat2._yaml import ordered_dump
-from markupsafe import escape
 from pydantic import (
     UUID1,
     UUID4,
@@ -86,7 +85,6 @@ from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryMan
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     expose_api,
     expose_api_raw_anonymous_and_sessionless,
@@ -268,7 +266,7 @@ class WorkflowsAPIController(
                         )
                         import_source = "URL"
                     except Exception:
-                        raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
+                        raise exceptions.MessageException(f"Failed to open URL '{archive_source}'.")
             elif hasattr(archive_file, "file"):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -448,7 +446,7 @@ class WorkflowsAPIController(
             name_updated = new_workflow_name and new_workflow_name != stored_workflow.name
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
-                sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                sanitized_name = new_workflow_name or old_workflow.name
                 if not sanitized_name:
                     raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
@@ -472,7 +470,7 @@ class WorkflowsAPIController(
                 require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
-                newAnnotation = sanitize_html(workflow_dict["annotation"])
+                newAnnotation = workflow_dict["annotation"]
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
                 require_flush = True
 
@@ -599,7 +597,7 @@ class WorkflowsAPIController(
         workflow = workflow.latest_workflow
 
         response = {
-            "message": f"Workflow '{escape(workflow.name)}' imported successfully.",
+            "message": f"Workflow '{workflow.name}' imported successfully.",
             "status": "success",
             "id": trans.security.encode_id(workflow_id),
         }
