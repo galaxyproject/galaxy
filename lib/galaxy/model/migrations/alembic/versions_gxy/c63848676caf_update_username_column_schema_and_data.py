@@ -49,5 +49,5 @@ def _generate_missing_usernames():
     users = connection.execute(stmt).all()
     for id, email in users:
         new_username = username_from_email_with_connection(connection, email)
-        stmt = update(User).where(User.id == id).values(username=new_username)
-        connection.execute(stmt)
+        update_stmt = update(User).where(User.id == id).values(username=new_username)
+        connection.execute(update_stmt)
