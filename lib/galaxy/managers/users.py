@@ -133,7 +133,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Create a new user.
         """
         self._error_on_duplicate_email(email)
-        user = User(email=email)
+        user = self.model_class(email=email)
         if password:
             user.set_password_cleartext(password)
         else:
@@ -148,7 +148,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         session.add(user)
         try:
             # Creating a private role will commit the session
-            user.attempt_create_private_role()
+            self.app.security_agent.create_user_role(user, self.app)
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
         return user
