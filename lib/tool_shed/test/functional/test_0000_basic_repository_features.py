@@ -434,3 +434,29 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
         )
         self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])
+
+    def test_0145_api_browse_repositories_in_category(self):
+        """
+        Test Browse Categories code path.
+            1. Go to '/repository/browse_categories' and assert that url links to those categories are present
+            2. Go to the url link for a category with more than one page and assert properly rendered.
+        """
+        # Assert browse_categories.
+        browse_categories_url = "/repository/browse_categories"
+        categories = []
+        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 1"))
+        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 2"))
+        self.visit_url(browse_categories_url)
+        self.check_for_strings(strings_displayed=[categories[0].name, categories[1].name])
+
+        # Browse category 0, assert nothing from category 1 is present.
+        expected_category_id = categories[0].id
+        browse_one_category_url = (
+            f"/browse_categories?sort=name&operation=repositories_by_category&id={expected_category_id}"
+        )
+        self.visit_url(browse_one_category_url)
+        expected_strings_displayed = [categories[0].name]
+        expected_strings_not_displayed = [categories[1].name]
+        self.check_for_strings(
+            strings_displayed=expected_strings_displayed, strings_not_displayed=expected_strings_not_displayed
+        )
