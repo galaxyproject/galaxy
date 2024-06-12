@@ -11,13 +11,13 @@ from typing import (
     Dict,
     List,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
 from sqlalchemy.orm.scoping import ScopedSession
 
 from galaxy.model import (
-    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -61,6 +61,13 @@ from galaxy.util import (
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionInstance,
+        DatasetInstance,
+    )
+
 DATASET_ID_TOKEN = "DATASET_ID"
 
 log = logging.getLogger(__name__)
@@ -99,11 +106,35 @@ class PermissionProvider(AbstractPermissionProvider):
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
-    def __init__(self, inp_data):
-        self._inp_data = inp_data
+    def __init__(
+        self,
+        inp_data: Dict[str, Optional["DatasetInstance"]],
+        inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]],
+    ):
+        self._inp_data = inp_data or {}
+        self._inp_collections = inp_collections or {}
 
-    def get_metadata_source(self, input_name):
-        return self._inp_data[input_name]
+    def get_metadata_source(self, input_name: str) -> Optional["DatasetInstance"]:
+        if input_name in self._inp_data:
+            return self._inp_data[input_name]
+        elif input_name in self._inp_collections:
+            return self._inp_collections[input_name].dataset_instances[0]
+        else:
+            raise KeyError(
+                f"Could not find metadata source '{input_name}' in {list(self._inp_data)} or {list(self._inp_collections)}"
+            )
+
+
+def evaluate_source(
+    source: str, output_collection_def: ToolOutputCollection, metadata_source_provider: AbstractMetadataSourceProvider
+) -> Optional[str]:
+    source_name = getattr(output_collection_def, source)
+    if source_name is None:
+        return None
+    source_dataset = metadata_source_provider.get_metadata_source(source_name)
+    if source_dataset:
+        return source_dataset.ext
+    return None
 
 
 def collect_dynamic_outputs(
@@ -160,6 +191,8 @@ def collect_dynamic_outputs(
         if not output_collection_def.dynamic_structure:
             continue
 
+        default_ext = evaluate_source("format_source", output_collection_def, job_context.metadata_source_provider)
+
         # Could be HDCA for normal jobs or a DC for mapping
         # jobs.
         if hasattr(has_collection, "collection"):
@@ -183,6 +216,7 @@ def collect_dynamic_outputs(
                 filenames,
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
+                default_format=default_ext,
                 final_job_state=job_context.final_job_state,
                 change_datatype_actions=job_context.change_datatype_actions,
             )
@@ -379,7 +413,7 @@ class JobContext(BaseJobContext):
         for history in pending_histories:
             history.add_pending_items()
 
-    def output_collection_def(self, name):
+    def output_collection_def(self, name: str) -> Optional[ToolOutputCollection]:
         tool = self.tool
         if name not in tool.output_collections:
             return None
@@ -428,11 +462,11 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
     def change_datatype_actions(self):
         return self.metadata_params.get("change_datatype_actions", {})
 
-    def output_collection_def(self, name):
+    def output_collection_def(self, name: str) -> Optional[ToolOutputCollection]:
         tool_as_dict = self.metadata_params["tool"]
         output_collection_defs = tool_as_dict["output_collections"]
         if name not in output_collection_defs:
-            return False
+            return None
 
         output_collection_def_dict = output_collection_defs[name]
         output_collection_def = ToolOutputCollection.from_dict(name, output_collection_def_dict)

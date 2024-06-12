@@ -38,6 +38,7 @@ from galaxy.util import (
 from galaxy.util.hash_util import HASH_NAME_MAP
 
 if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
     from galaxy.model.store import ModelExportStore
 
 log = logging.getLogger(__name__)
@@ -77,6 +78,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         filename=None,
         extra_files=None,
         metadata_source_name=None,
+        default_format: Optional[str] = None,
         info=None,
         library_folder=None,
         link_data=False,
@@ -176,6 +178,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         # designation.
         if name is not None:
             primary_data.name = name
+
+        if default_format and not primary_data.ext:
+            primary_data.change_datatype(default_format)
 
         # Copy metadata from one of the inputs if requested.
         if metadata_source_name:
@@ -288,6 +293,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         discovered_files,
         name=None,
         metadata_source_name=None,
+        default_format: Optional[str] = None,
         final_job_state="ok",
         change_datatype_actions=None,
     ):
@@ -307,6 +313,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     name=name,
                     root_collection_builder=root_collection_builder,
                     metadata_source_name=metadata_source_name,
+                    default_format=default_format,
                     final_job_state=final_job_state,
                     change_datatype_actions=change_datatype_actions,
                 )
@@ -321,12 +328,20 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 name=name,
                 root_collection_builder=root_collection_builder,
                 metadata_source_name=metadata_source_name,
+                default_format=default_format,
                 final_job_state=final_job_state,
                 change_datatype_actions=change_datatype_actions,
             )
 
     def _populate_elements(
-        self, chunk, name, root_collection_builder, metadata_source_name, final_job_state, change_datatype_actions
+        self,
+        chunk,
+        name,
+        root_collection_builder,
+        metadata_source_name,
+        default_format: Optional[str],
+        final_job_state,
+        change_datatype_actions,
     ):
         element_datasets: Dict[str, List[Any]] = {
             "element_identifiers": [],
@@ -370,6 +385,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 dbkey=dbkey,
                 name=dataset_name,
                 metadata_source_name=metadata_source_name,
+                default_format=default_format,
                 link_data=link_data,
                 sources=sources,
                 hashes=hashes,
@@ -572,12 +588,12 @@ class MetadataSourceProvider(metaclass=abc.ABCMeta):
     """Interface for working with fetching input dataset metadata with ModelPersistenceContext."""
 
     @abc.abstractmethod
-    def get_metadata_source(self, input_name):
+    def get_metadata_source(self, input_name: str) -> Optional["DatasetInstance"]:
         """Get metadata for supplied input_name."""
 
 
 class UnusedMetadataSourceProvider(MetadataSourceProvider):
-    def get_metadata_source(self, input_name):
+    def get_metadata_source(self, input_name: str) -> Optional["DatasetInstance"]:
         """Throws NotImplementedError.
 
         This should only be called as part of job output collection where

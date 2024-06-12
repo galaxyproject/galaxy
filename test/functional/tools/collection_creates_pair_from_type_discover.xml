@@ -1,0 +1,103 @@
+<tool id="collection_creates_pair_from_type_discover" name="collection_creates_pair_from_type" version="0.1.0">
+  <command>
+    echo 'A' > A.fastq;
+    echo 'B' > B.fastq;
+  </command>
+  <inputs>
+    <param name="input1" type="data" label="Input" help="Input to be split." />
+    <param name="input_multiple" type="data" multiple="true" label="multiple input" help="Input to be split." />
+    <conditional name="conditional_name">
+      <param name="cond_selector" type="select" label="Select">
+        <option value="blah" selected="true">Blah</option>
+      </param>
+      <when value="blah">
+        <param name="input_collection" type="data_collection" collection_type="list:list" label="input_collection"/>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <!-- test that format from format_source is used -->
+    <collection name="paired_output" type="list" label="Split Pair" format_source="input1">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+    <!-- test that default format from format_source is overwritten by discovered ext -->
+    <collection name="paired_output_discoveredext" type="list" label="Split Pair" format_source="input1">
+      <discover_datasets pattern="__name_and_ext__" visible="false" />
+    </collection>
+    <!-- test that format from format_source works for multiple="true" inputs -->
+    <collection name="paired_output_frommultiple" type="list" label="Split Pair" format_source="input_multiple">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+    <!-- test that format from format_source works for refered collections -->
+    <collection name="paired_output_fromcollection" type="list" label="Split Pair" format_source="conditional_name|input_collection">
+      <discover_datasets pattern="__designation__" visible="false" />
+    </collection>
+  </outputs>
+  <tests>
+    <!-- test uses fastq files as input but uses the txt datatype for them.
+         if format_source would not work then autodetect should make the
+         outputs fastq -->
+    <test>
+      <param name="input1" value="1.fastq" ftype="txt" />
+      <param name="input_multiple" value="1.fastq,2.fastq" ftype="txt" />
+      <param name="input_collection">
+        <collection type="list:list">
+          <element name="i1">
+            <collection type="list">
+              <element name="1" value="1.fastq" ftype="txt"/>
+              <element name="2" value="2.fastq" ftype="txt" />
+            </collection>
+          </element>
+        </collection>
+      </param>
+      <output_collection name="paired_output" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_discoveredext" type="list">
+        <element name="A" ftype="fastq">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B" ftype="fastq">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_frommultiple" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+      <output_collection name="paired_output_fromcollection" type="list">
+        <element name="A.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="A" />
+          </assert_contents>
+        </element>
+        <element name="B.fastq" ftype="txt">
+          <assert_contents>
+            <has_text text="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

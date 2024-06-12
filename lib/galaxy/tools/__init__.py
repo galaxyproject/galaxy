@@ -186,6 +186,11 @@ from .execute import (
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication
     from galaxy.managers.jobs import JobSearch
+    from galaxy.model import (
+        DatasetCollection,
+        DatasetCollectionInstance,
+        DatasetInstance,
+    )
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
 log = logging.getLogger(__name__)
@@ -2256,7 +2261,8 @@ class Tool(Dictifiable):
         job,
         input_ext,
         input_dbkey,
-        inp_data=None,
+        inp_data: Dict[str, Optional["DatasetInstance"]],
+        inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]],
         final_job_state="ok",
     ):
         """
@@ -2267,7 +2273,7 @@ class Tool(Dictifiable):
         # into job_wrapper.
         tool = self
         permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
-        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
+        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data, inp_collections)
         job_context = output_collect.JobContext(
             tool,
             tool_provided_metadata,

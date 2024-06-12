@@ -142,7 +142,7 @@ class ToolEvaluator:
         self._validate_incoming(incoming)
 
         # Restore input / output data lists
-        inp_data, out_data, out_collections = job.io_dicts()
+        inp_data, inp_collections, out_data, out_collections = job.io_dicts()
 
         # collect deferred datasets and collections.
         deferred_objects = self._deferred_objects(inp_data, incoming)
