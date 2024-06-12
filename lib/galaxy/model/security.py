@@ -758,6 +758,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
+        if auto_create and user.id is None:
+            # New user, directly create private role
+            return self.create_private_user_role(user)
         role = get_private_user_role(user, self.sa_session)
         if not role and auto_create:
             role = self.create_private_user_role(user)

@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
-import {
-    faCaretDown,
-    faCopy,
-    faDownload,
-    faFileExport,
-    faShareAlt,
-    faStar,
-    faTrashRestore,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faDownload, faLink, faShareAlt, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -19,9 +10,11 @@ import { copyWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
+import { getFullAppUrl } from "@/utils/utils";
 
-library.add(faCaretDown, faCopy, faDownload, faFileExport, faShareAlt, farStar, faStar, faTrashRestore);
+library.add(faCopy, faDownload, faLink, faShareAlt, faTrashRestore);
 
 interface Props {
     workflow: any;
@@ -72,11 +65,36 @@ async function onRestore() {
         Toast.info("Workflow restored");
     }
 }
+
+const relativeLink = computed(() => {
+    return `/published/workflow?id=${props.workflow.id}`;
+});
+
+const fullLink = computed(() => {
+    return getFullAppUrl(relativeLink.value.substring(1));
+});
+
+function onCopyPublicLink() {
+    copy(fullLink.value);
+    Toast.success("Link to workflow copied");
+}
 </script>
 
 <template>
     <div class="workflow-actions-extend flex-gapx-1">
         <BButtonGroup>
+            <BButton
+                v-if="workflow.published && !workflow.deleted"
+                id="workflow-copy-public-button"
+                v-b-tooltip.hover.noninteractive
+                :size="buttonSize"
+                title="Copy link to workflow"
+                variant="outline-primary"
+                @click="onCopyPublicLink">
+                <FontAwesomeIcon :icon="faLink" fixed-width />
+                <span class="compact-view">Link to Workflow</span>
+            </BButton>
+
             <BButton
                 v-if="!isAnonymous && !shared && !workflow.deleted"
                 id="workflow-copy-button"

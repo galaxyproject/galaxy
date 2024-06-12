@@ -147,15 +147,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             # Activation is off, every new user is active by default.
             user.active = True
-        self.session().add(user)
+        session = self.session()
+        session.add(user)
         try:
-            session = self.session()
-            with transaction(session):
-                session.commit()
-            # TODO:?? flush needed for permissions below? If not, make optional
+            # Creating a private role will commit the session
+            self.app.security_agent.create_user_role(user, self.app)
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-        self.app.security_agent.create_user_role(user, self.app)
         return user
 
     def delete(self, user, flush=True):
@@ -200,6 +198,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if not user.deleted:
             raise exceptions.MessageException(f"User '{user.email}' has not been deleted, so they cannot be purged.")
         private_role = self.app.security_agent.get_private_user_role(user)
+        if private_role is None:
+            raise exceptions.InconsistentDatabase(
+                "User '%s' private role is missing while attempting to purge deleted user." % user.email
+            )
         # Delete History
         for active_history in user.active_histories:
             self.session().refresh(active_history)
