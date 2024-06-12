@@ -85,7 +85,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
     def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[List[str]] = None) -> int:
-        return sum(1 for _ in fs.filterdir(path, namespaces=["details"], files=filter, dirs=filter))
+        return sum(1 for _ in fs.filterdir(path, namespaces=["basic"], files=filter, dirs=filter))
 
     def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
         if limit is None and offset is None:
