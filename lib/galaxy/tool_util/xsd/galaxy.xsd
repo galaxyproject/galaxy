@@ -5650,7 +5650,7 @@ elements. Note that the format specified here is ignored for discovered data set
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input. For output collections this works since release 21.05 and serves as default format that might be overwritten by discovered extensions.</xs:documentation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input. For output collections this works since release 24.1 and serves as default format that might be overwritten by discovered extensions.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="label" type="xs:string">
