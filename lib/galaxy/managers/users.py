@@ -133,7 +133,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Create a new user.
         """
         self._error_on_duplicate_email(email)
-        user = self.model_class(email=email)
+        user = User(email=email)
         if password:
             user.set_password_cleartext(password)
         else:
@@ -144,15 +144,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             # Activation is off, every new user is active by default.
             user.active = True
-        self.session().add(user)
+        session = self.session()
+        session.add(user)
         try:
-            session = self.session()
-            with transaction(session):
-                session.commit()
-            # TODO:?? flush needed for permissions below? If not, make optional
+            # Creating a private role will commit the session
+            user.attempt_create_private_role()
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-        self.app.security_agent.create_user_role(user, self.app)
         return user
 
     def delete(self, user, flush=True):
