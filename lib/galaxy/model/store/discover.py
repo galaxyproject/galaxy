@@ -334,7 +334,14 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             )
 
     def _populate_elements(
-        self, chunk, name, root_collection_builder, metadata_source_name, default_format: Optional[str], final_job_state, change_datatype_actions
+        self,
+        chunk,
+        name,
+        root_collection_builder,
+        metadata_source_name,
+        default_format: Optional[str],
+        final_job_state,
+        change_datatype_actions,
     ):
         element_datasets: Dict[str, List[Any]] = {
             "element_identifiers": [],

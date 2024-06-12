@@ -106,7 +106,11 @@ class PermissionProvider(AbstractPermissionProvider):
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
-    def __init__(self, inp_data: Dict[str, Optional["DatasetInstance"]], inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]]):
+    def __init__(
+        self,
+        inp_data: Dict[str, Optional["DatasetInstance"]],
+        inp_collections: Dict[str, Union["DatasetCollectionInstance", "DatasetCollection"]],
+    ):
         self._inp_data = inp_data or {}
         self._inp_collections = inp_collections or {}
 
@@ -116,10 +120,14 @@ class MetadataSourceProvider(AbstractMetadataSourceProvider):
         elif input_name in self._inp_collections:
             return self._inp_collections[input_name].dataset_instances[0]
         else:
-            raise KeyError(f"Could not find metadata source '{input_name}' in {list(self._inp_data)} or {list(self._inp_collections)}")
+            raise KeyError(
+                f"Could not find metadata source '{input_name}' in {list(self._inp_data)} or {list(self._inp_collections)}"
+            )
 
 
-def evaluate_source(source: str, output_collection_def: ToolOutputCollection, metadata_source_provider: AbstractMetadataSourceProvider) -> Optional[str]:
+def evaluate_source(
+    source: str, output_collection_def: ToolOutputCollection, metadata_source_provider: AbstractMetadataSourceProvider
+) -> Optional[str]:
     source_name = getattr(output_collection_def, source)
     if source_name is None:
         return None

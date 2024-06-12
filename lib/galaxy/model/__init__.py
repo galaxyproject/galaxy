@@ -1560,7 +1560,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
-        inp_collections: Dict[str, Optional[HistoryDatasetCollectionAssociation]] = {obj.name: obj.dataset_collection for obj in self.input_dataset_collections}
+        inp_collections: Dict[str, Optional[HistoryDatasetCollectionAssociation]] = {
+            obj.name: obj.dataset_collection for obj in self.input_dataset_collections
+        }
 
         out_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
@@ -5979,7 +5981,6 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
-
     def __init__(
         self,
         library_dataset=None,
