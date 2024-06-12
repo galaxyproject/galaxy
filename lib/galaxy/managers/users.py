@@ -888,17 +888,10 @@ def get_user_by_username(session, username: str, model_class=User):
 
 def username_from_email(session, email, model_class=User):
     """Get next available username generated based on email"""
-    engine = session.bind
-    with engine.connect() as connection:
-        return username_from_email_with_connection(connection, email, model_class)
-
-
-def username_from_email_with_connection(connection, email, model_class=User):
-    # This function is also called from database revision scripts, which do not provide a session.
     username = email.split("@", 1)[0].lower()
     username = filter_out_invalid_username_characters(username)
-    if username_exists(connection, username, model_class):
-        username = generate_next_available_username(connection, username, model_class)
+    if username_exists(session, username, model_class):
+        username = generate_next_available_username(session, username, model_class)
     return username
 
 
@@ -909,14 +902,13 @@ def filter_out_invalid_username_characters(username):
     return username
 
 
-def username_exists(connection, username: str, model_class=User):
-    stmt = select(model_class).filter(model_class.username == username).limit(1)
-    return bool(connection.execute(stmt).first())
+def username_exists(session, username: str, model_class=User):
+    return bool(get_user_by_username(session, username, model_class))
 
 
-def generate_next_available_username(connection, username, model_class=User):
+def generate_next_available_username(session, username, model_class=User):
     """Generate unique username; user can change it later"""
     i = 1
-    while connection.execute(select(model_class).where(model_class.username == f"{username}-{i}")).first():
+    while session.execute(select(model_class).where(model_class.username == f"{username}-{i}")).first():
         i += 1
     return f"{username}-{i}"
