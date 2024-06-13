@@ -1,6 +1,6 @@
 <template>
     <ToolCard
-        :id="configForm?.id || ''"
+        :id="configForm?.id || step.content_id"
         :version="configForm?.version"
         :title="configForm?.name || step.name"
         :description="configForm?.description"
@@ -12,25 +12,22 @@
         @onUpdateFavorites="onUpdateFavorites">
         <template v-slot:body>
             <FormElement
-                v-if="hasData"
                 id="__label"
+                :disabled="!hasData"
                 :value="label"
                 title="Label"
                 help="Add a step label."
                 :error="uniqueErrorLabel"
                 @input="onLabel" />
             <FormElement
-                v-if="hasData"
                 id="__annotation"
+                :disabled="!hasData"
                 :value="annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional
-                v-if="hasData"
-                :step="step"
-                @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
+            <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
             <div v-if="inputs.length" class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
