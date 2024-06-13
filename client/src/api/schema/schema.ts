@@ -13356,7 +13356,22 @@ export interface components {
              * Errors
              * @description An message indicating possible errors in the step.
              */
-            errors?: string[] | string | Record<string, never> | null;
+            errors?:
+                | {
+                      [key: string]:
+                          | (
+                                | (
+                                      | "The number of repeat elements is outside the range specified by the tool."
+                                      | "The selected case is unavailable/invalid."
+                                  )
+                                | string
+                            )
+                          | undefined;
+                  }
+                | "Tool is not installed"
+                | string
+                | ("Tool is not installed" | string)[]
+                | null;
             /**
              * ID
              * @description The identifier of the step. It matches the index order of the step inside the workflow.
@@ -13418,7 +13433,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13525,7 +13540,22 @@ export interface components {
              * Errors
              * @description An message indicating possible errors in the step.
              */
-            errors?: string[] | string | Record<string, never> | null;
+            errors?:
+                | {
+                      [key: string]:
+                          | (
+                                | (
+                                      | "The number of repeat elements is outside the range specified by the tool."
+                                      | "The selected case is unavailable/invalid."
+                                  )
+                                | string
+                            )
+                          | undefined;
+                  }
+                | "Tool is not installed"
+                | string
+                | ("Tool is not installed" | string)[]
+                | null;
             /**
              * ID
              * @description The identifier of the step. It matches the index order of the step inside the workflow.
@@ -13606,7 +13636,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13814,7 +13844,22 @@ export interface components {
              * Errors
              * @description An message indicating possible errors in the step.
              */
-            errors?: string[] | string | Record<string, never> | null;
+            errors?:
+                | {
+                      [key: string]:
+                          | (
+                                | (
+                                      | "The number of repeat elements is outside the range specified by the tool."
+                                      | "The selected case is unavailable/invalid."
+                                  )
+                                | string
+                            )
+                          | undefined;
+                  }
+                | "Tool is not installed"
+                | string
+                | ("Tool is not installed" | string)[]
+                | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -13859,7 +13904,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -13915,7 +13960,22 @@ export interface components {
              * Errors
              * @description An message indicating possible errors in the step.
              */
-            errors?: string[] | string | Record<string, never> | null;
+            errors?:
+                | {
+                      [key: string]:
+                          | (
+                                | (
+                                      | "The number of repeat elements is outside the range specified by the tool."
+                                      | "The selected case is unavailable/invalid."
+                                  )
+                                | string
+                            )
+                          | undefined;
+                  }
+                | "Tool is not installed"
+                | string
+                | ("Tool is not installed" | string)[]
+                | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -13990,7 +14050,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
@@ -14106,7 +14166,22 @@ export interface components {
              * Errors
              * @description An message indicating possible errors in the step.
              */
-            errors?: string[] | string | Record<string, never> | null;
+            errors?:
+                | {
+                      [key: string]:
+                          | (
+                                | (
+                                      | "The number of repeat elements is outside the range specified by the tool."
+                                      | "The selected case is unavailable/invalid."
+                                  )
+                                | string
+                            )
+                          | undefined;
+                  }
+                | "Tool is not installed"
+                | string
+                | ("Tool is not installed" | string)[]
+                | null;
             /**
              * Form Style
              * @description The form style of the tool step.
@@ -14303,7 +14378,7 @@ export interface components {
              * Tool State
              * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
