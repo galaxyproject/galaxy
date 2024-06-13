@@ -1,0 +1,7 @@
+##track type: linked segments
+###seqid	start	end	id	edges
+chr1	123	256	a	b=0.123,2.163;c=0.234,1.948
+chr1	324	462	b	.
+chr1	678	876	c	d=0.513,0.929
+chr2	355	534	d	e=0.445,1.657
+chr2	674	784	e	a=0.938,1.567

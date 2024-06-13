@@ -2,8 +2,12 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
-from typing import Optional
+from io import StringIO
+from typing import Optional, NamedTuple, Generator, io
+from urllib.parse import urlparse
 
+from galaxy.datatypes import sniff
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_test_fname
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import md5_hash_file
@@ -85,3 +89,38 @@ def get_input_files(*args):
             assert old_hash == new_hash, f"Unexpected change of content for file {f}"
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+class InputFileInfo(NamedTuple):
+    dataset: DatasetProtocol
+    file_prefix: sniff.FilePrefix
+    contents: Optional[bytes]
+
+
+@contextmanager
+def get_input_file_info(file_name: str, dataset_id: int, read_contents: bool) -> Generator[InputFileInfo, None, None]:
+    with get_input_files(file_name) as input_files:
+        input_file_path = input_files[0]
+
+        dataset = MockDataset(dataset_id)
+        dataset.file_name = input_file_path
+        dataset.dataset = MockDatasetDataset(dataset.file_name)
+        dataset.metadata = MockMetadata()
+
+        file_prefix = sniff.FilePrefix(input_file_path)
+
+        if read_contents:
+            with open(input_file_path, "rb") as input_file:
+                contents = input_file.read()
+        else:
+            contents = None
+
+        yield InputFileInfo(dataset=dataset, file_prefix=file_prefix, contents=contents)  # type:ignore
+
+
+def mock_urlopen(url: str) -> str:
+    url_filename = urlparse(url).path.split("/")[-1]
+    input_file = get_input_file_info(url_filename, 10, read_contents=True)
+    with input_file as input_file_info:
+        assert isinstance(input_file_info, InputFileInfo)
+        return StringIO(input_file_info.contents.decode("utf8"))

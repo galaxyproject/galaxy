@@ -1,0 +1,7 @@
+#
+# GTrack example file 1
+#
+# A GTrack file without headers is handled as three-column BED
+#
+chr1	121	201
+chr2	486	1240
