@@ -162,6 +162,6 @@ class RoleManager(base.ModelManager[model.Role]):
         return role
 
 
-def get_roles_by_ids(session: Session, role_ids):
+def get_roles_by_ids(session: Session, role_ids: List[int]) -> List[Role]:
     stmt = select(Role).where(Role.id.in_(role_ids))
     return session.scalars(stmt).all()

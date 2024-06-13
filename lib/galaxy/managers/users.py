@@ -874,7 +874,7 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         self.fn_filter_parsers.update({})
 
 
-def get_users_by_ids(session: Session, user_ids):
+def get_users_by_ids(session: Session, user_ids: List[int]) -> List[User]:
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
 
