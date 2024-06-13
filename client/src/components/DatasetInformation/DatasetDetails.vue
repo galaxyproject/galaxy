@@ -124,9 +124,7 @@ onUnmounted(() => {
 
                 <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
 
-                <JobDependencies
-                    v-if="!jobLoading && jobDetails.dependencies"
-                    :dependencies="jobDetails.dependencies" />
+                <JobDependencies v-if="jobDetails?.dependencies" :dependencies="jobDetails.dependencies" />
 
                 <div v-if="dataset.peek">
                     <h2 class="h-md">Dataset Peek</h2>
