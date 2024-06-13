@@ -200,7 +200,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         private_role = self.app.security_agent.get_private_user_role(user)
         if private_role is None:
             raise exceptions.InconsistentDatabase(
-                "User '%s' private role is missing while attempting to purge deleted user." % user.email
+                f"User '{user.email}' private role is missing while attempting to purge deleted user."
             )
         # Delete History
         for active_history in user.active_histories:
