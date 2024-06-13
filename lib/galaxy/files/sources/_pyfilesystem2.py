@@ -85,22 +85,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
             raise MessageException(f"Problem listing file source path {path}. Reason: {e}") from e
 
     def _get_total_matches_count(self, fs: FS, path: str, filter: Optional[List[str]] = None) -> int:
-        # For some reason, using "*" as glob does not return all files and directories, only files.
-        # So we need to count files and directories "*/" separately.
-        # Also, some filesystems do not properly support directories count (like Google Cloud Storage),
-        # so we need to catch TypeError exceptions and fallback to 0.
-        files_glob_pattern = f"{path}/{filter[0] if filter else '*'}"
-        try:
-            files_count = fs.glob(files_glob_pattern).count().files
-        except TypeError:
-            files_count = 0
-
-        directory_glob_pattern = f"{files_glob_pattern}/"
-        try:
-            directories_count = fs.glob(directory_glob_pattern).count().directories
-        except TypeError:
-            directories_count = 0
-        return files_count + directories_count
+        return sum(1 for _ in fs.filterdir(path, namespaces=["basic"], files=filter, dirs=filter))
 
     def _to_page(self, limit: Optional[int] = None, offset: Optional[int] = None) -> Optional[Tuple[int, int]]:
         if limit is None and offset is None:
