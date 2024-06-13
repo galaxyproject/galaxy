@@ -86,7 +86,7 @@
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
-                <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                     <div v-if="!initialLoading">
                         <FormTool
                             v-if="hasActiveNodeTool"
@@ -168,7 +168,7 @@
 <script>
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
-import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
+import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
@@ -252,6 +252,22 @@ export default {
 
         const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id);
 
+        watch(
+            () => stateStore.activeNodeId,
+            () => {
+                scrollToTop();
+            }
+        );
+
+        const rightPanelElement = ref(null);
+
+        function scrollToTop() {
+            rightPanelElement.value?.scrollTo({
+                top: 0,
+                behavior: "instant",
+            });
+        }
+
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const { activeNodeId } = storeToRefs(stateStore);
@@ -294,6 +310,8 @@ export default {
 
         return {
             id,
+            rightPanelElement,
+            scrollToTop,
             connectionStore,
             hasChanges,
             hasInvalidConnections,
@@ -817,9 +835,6 @@ export default {
                 this.hasChanges = true;
                 this.creator = creator;
             }
-        },
-        onActiveNode(nodeId) {
-            this.$refs["right-panel"].scrollTop = 0;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
