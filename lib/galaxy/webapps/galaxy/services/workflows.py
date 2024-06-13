@@ -130,7 +130,8 @@ class WorkflowsService(ServiceBase):
         # Get workflow + accessibility check.
         by_stored_id = not payload.instance
         stored_workflow = self._workflows_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id)
-        workflow = stored_workflow.latest_workflow
+        version = payload.version
+        workflow = stored_workflow.get_internal_version(version)
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:

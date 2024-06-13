@@ -653,7 +653,10 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                         props: (route) => ({
                             config: Galaxy.config,
-                            query: { workflow_id: route.query.id },
+                            query: {
+                                workflow_id: route.query.id,
+                                version: route.query.version,
+                            },
                         }),
                     },
                     {
