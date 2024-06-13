@@ -129,7 +129,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
     <div class="position-relative">
         <div class="underlay sticky-top" />
 
-        <div v-if="!props.options && !props.id" class="sticky-top">
+        <div v-if="!props.options?.id" class="sticky-top">
             <BAlert variant="danger" class="tool-header px-2 py-1" show>
                 <span class="tool-header-name">
                     <FontAwesomeIcon :icon="faWrench" fixed-width />
