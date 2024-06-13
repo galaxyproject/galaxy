@@ -33,7 +33,6 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const loading = ref(false);
-const jobLoading = ref(true);
 const jobTimeOut = ref<any>(null);
 const jobDetails = ref<JobDetails>();
 const dataset = ref<HDADetailed | null>(null);
@@ -57,8 +56,6 @@ async function getDatasetDetails() {
 }
 
 async function loadJobDetails() {
-    jobLoading.value = true;
-
     try {
         const { data } = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
 
@@ -73,8 +70,6 @@ async function loadJobDetails() {
         const error = e as AxiosError<{ err_msg?: string }>;
 
         jobLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
-    } finally {
-        jobLoading.value = false;
     }
 }
 
