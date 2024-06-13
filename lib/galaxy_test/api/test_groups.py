@@ -101,8 +101,9 @@ class TestGroupsApi(ApiTestCase):
         )
 
         # Add another user to the group
+        another_user_email = f"user-{self.dataset_populator.get_random_name()}@example.com"
         another_user_id = None
-        with self._different_user():
+        with self._different_user(another_user_email):
             another_user_id = self.dataset_populator.user_id()
             another_role_id = self.dataset_populator.user_private_role_id()
         assert another_user_id is not None
