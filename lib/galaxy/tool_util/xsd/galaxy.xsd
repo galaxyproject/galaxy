@@ -5360,11 +5360,13 @@ The default is ``galaxy.json``.
   <xs:attributeGroup name="OutputCommon">
     <xs:attribute name="format" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
+        <xs:documentation xml:lang="en"><![CDATA[
+The short name for the output datatype. The valid values for format can be found in
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default format for all included
-elements. Note that the format specified here is ignored for discovered data sets.</xs:documentation>
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default
+format for all included elements. Note that the format specified here is ignored for
+discovered data sets on Galaxy versions prior to 24.0 and should be specified using the ``<discovered_data>`` tag set.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
