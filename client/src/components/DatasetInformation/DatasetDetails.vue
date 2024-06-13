@@ -102,7 +102,7 @@ onUnmounted(() => {
             {{ datasetLoadingError }}
         </BAlert>
         <div v-else-if="dataset">
-            <div v-if="dataset.creating_job && !jobLoading" class="details">
+            <div v-if="dataset.creating_job" class="details">
                 <DatasetInformation :dataset="dataset" />
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
@@ -124,7 +124,9 @@ onUnmounted(() => {
 
                 <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
 
-                <JobDependencies v-if="jobDetails.dependencies" :dependencies="jobDetails.dependencies" />
+                <JobDependencies
+                    v-if="!jobLoading && jobDetails.dependencies"
+                    :dependencies="jobDetails.dependencies" />
 
                 <div v-if="dataset.peek">
                     <h2 class="h-md">Dataset Peek</h2>
