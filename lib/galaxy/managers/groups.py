@@ -90,13 +90,18 @@ class GroupsManager:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.add(group)
-        user_ids = payload.user_ids or []
-        users = get_users_by_ids(sa_session, user_ids)
-        role_ids = payload.role_ids or []
-        roles = get_roles_by_ids(sa_session, role_ids)
-        self._app.security_agent.set_entity_group_associations(
-            groups=[group], roles=roles, users=users, delete_existing_assocs=False
-        )
+
+        users = None
+        if payload.user_ids is not None:
+            users = get_users_by_ids(sa_session, payload.user_ids)
+
+        roles = None
+        if payload.role_ids is not None:
+            roles = get_roles_by_ids(sa_session, payload.role_ids)
+
+        if payload.user_ids is not None or payload.role_ids is not None:
+            self._app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
+
         with transaction(sa_session):
             sa_session.commit()
 
