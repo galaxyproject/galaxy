@@ -543,7 +543,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
                 storage_callbacks=storage_callbacks,
             )
             # Associate new dataset with job
-            job_context.add_output_dataset_association(f"__new_primary_file_{name}|{designation}__", primary_data)
+            job_context.add_output_dataset_association(f"__new_primary_file_{name}|{filename_index}__", primary_data)
             job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
