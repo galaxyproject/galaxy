@@ -79,13 +79,30 @@ class TestGroupsApi(ApiTestCase):
         update_response = self._put(f"groups/{group_id}", data={"name": updated_name}, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
 
-        # Update with another user
+        # Update replace with another user
         another_user_id = None
         with self._different_user():
             another_user_id = self.dataset_populator.user_id()
         assert another_user_id is not None
         update_response = self._put(f"groups/{group_id}", data={"user_ids": [another_user_id]}, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
+
+        # get group and check if it was updated
+        response = self._get(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(response)
+        users = self._get(f"groups/{group_id}/users", admin=True).json()
+        assert len(users) == 1
+        assert users[0]["id"] == another_user_id
+
+        # Remove private role from group
+        update_response = self._put(f"groups/{group_id}", data={"role_ids": []}, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
+
+        # get group and check if it was updated
+        response = self._get(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(response)
+        roles = self._get(f"groups/{group_id}/roles", admin=True).json()
+        assert len(roles) == 0
 
     def test_update_only_admin(self):
         group = self.test_create_valid()
