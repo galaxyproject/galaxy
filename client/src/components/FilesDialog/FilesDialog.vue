@@ -272,7 +272,11 @@ function load(record?: SelectionItem) {
         }
 
         if (shouldUseItemsProvider()) {
-            itemsProvider.value = provideItems;
+            itemsProvider.value = (ctx) => provideItems(ctx, currentDirectory.value?.url);
+            optionsShow.value = true;
+            showTime.value = true;
+            showDetails.value = false;
+            return;
         }
 
         browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
@@ -295,7 +299,10 @@ function load(record?: SelectionItem) {
  * If it does, we will use the items provider to fetch items.
  */
 function shouldUseItemsProvider(): boolean {
-    const fileSource = filesSources.getFileSourceById(currentDirectory.value?.id!);
+    if (!currentDirectory.value) {
+        return false;
+    }
+    const fileSource = filesSources.getFileSourceByUri(currentDirectory.value.url);
     const supportsPagination = fileSource?.supports?.pagination;
     return Boolean(supportsPagination);
 }
@@ -303,23 +310,16 @@ function shouldUseItemsProvider(): boolean {
 /**
  *  Fetches items from the server using server-side pagination and filtering.
  **/
-async function provideItems(ctx: ItemsProviderContext): Promise<SelectionItem[]> {
+async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
     isBusy.value = true;
     try {
-        if (!currentDirectory.value) {
+        if (!url) {
             return [];
         }
         const limit = ctx.perPage;
         const offset = (ctx.currentPage - 1) * ctx.perPage;
         const query = ctx.filter;
-        const response = await browseRemoteFiles(
-            currentDirectory.value?.url,
-            false,
-            props.requireWritable,
-            limit,
-            offset,
-            query
-        );
+        const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
         const result = response.entries.map(entryToRecord);
         totalItems.value = response.totalMatches;
         items.value = result;
