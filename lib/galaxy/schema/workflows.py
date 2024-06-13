@@ -426,6 +426,38 @@ class SetWorkflowMenuSummary(Model):
     )
 
 
+# see lib/galaxy/tools/parameters/__init__.py - def populate_state
+RunStepLiteralError = Literal[
+    "The number of repeat elements is outside the range specified by the tool.",
+    "The selected case is unavailable/invalid.",
+]
+
+# see lib/galaxy/tools/parameters/__init__.py - def check_param
+RunStepValueError = Union[
+    # ValueError,
+    str,  # unicodify(ValueError)
+]
+
+# see lib/galaxy/tools/__init__.py - def to_json
+RunStepError = Union[
+    RunStepLiteralError,
+    RunStepValueError,
+]
+
+# see lib/galaxy/workflow/modules.py - def get_errors
+GeneralStepError = Union[
+    Literal["Tool is not installed"],
+    str,  # f"{self.tool_id} is not installed"
+]
+
+# see lib/galaxy/managers/workflows.py - _workflow_to_dict_*
+StepError = Union[
+    Dict[str, RunStepError],
+    GeneralStepError,
+    List[GeneralStepError],
+]
+
+
 class WorkflowDictStepsBase(Model):
     when: Optional[str] = Field(
         None,
@@ -444,7 +476,7 @@ class WorkflowDictStepsBase(Model):
         description="The version of the tool associated with the step.",
     )
     # TODO: Formalize an error type
-    errors: Optional[Union[List[str], str, Dict[str, Any]]] = Field(
+    errors: Optional[StepError] = Field(
         None,
         title="Errors",
         description="An message indicating possible errors in the step.",
