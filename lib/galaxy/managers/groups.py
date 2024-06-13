@@ -99,8 +99,9 @@ class GroupsManager:
         if payload.role_ids is not None:
             roles = get_roles_by_ids(sa_session, payload.role_ids)
 
-        if payload.user_ids is not None or payload.role_ids is not None:
-            self._app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
+        self._app.security_agent.set_entity_group_associations(
+            groups=[group], roles=roles, users=users, delete_existing_assocs=False
+        )
 
         with transaction(sa_session):
             sa_session.commit()
