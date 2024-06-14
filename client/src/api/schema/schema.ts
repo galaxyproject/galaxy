@@ -1085,7 +1085,7 @@ export interface paths {
     "/api/jobs/{job_id}/console_output": {
         /**
          * Returns STDOUT and STDERR from the tool running in a specific job.
-         * @description Get the stdout and/or stderr of a tool running in a specific job. The position parameters are the index
+         * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
          * of where to start reading stdout/stderr. The length parameters control how much
          * stdout/stderr is read.
          */
@@ -8478,12 +8478,12 @@ export interface components {
             state?: components["schemas"]["JobState"] | null;
             /**
              * STDERR
-             * @description Tool STDERR text from the tool running in a specific job
+             * @description Tool STDERR from job.
              */
             stderr?: string | null;
             /**
              * STDOUT
-             * @description Tool STDOUT text from the tool running in a specific job
+             * @description Tool STDOUT from job.
              */
             stdout?: string | null;
         };
@@ -19437,7 +19437,7 @@ export interface operations {
         /**
          * Returns STDOUT and STDERR from the tool running in a specific job.
          * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
-         * of where to start reading stdout/stderr. The length parameterscontrol how much
+         * of where to start reading stdout/stderr. The length parameters control how much
          * stdout/stderr is read.
          */
         parameters: {
