@@ -260,15 +260,15 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id) -> Job:
+    def get_accessible_job(self, trans: ProvidesUserContext, decoded_job_id) -> Job:
         job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (
-            (job.user_id == trans.user.id)
-            if job.user_id and trans.user
-            else (job.session_id == trans.get_galaxy_session().id)
-        )
+        belongs_to_user = False
+        if trans.user:
+            belongs_to_user = job.user_id == trans.user.id
+        elif trans.galaxy_session:
+            belongs_to_user = job.session_id == trans.galaxy_session.id
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
