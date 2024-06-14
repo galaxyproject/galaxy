@@ -30,6 +30,7 @@ from sqlalchemy.sql import select
 
 from galaxy import model
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -69,6 +70,7 @@ from galaxy.util import (
     defaultdict,
     ExecutionTimer,
     listify,
+    string_as_bool_or_none,
 )
 from galaxy.util.search import (
     FilteredTerm,
@@ -283,6 +285,11 @@ class JobManager:
     ):
         if job is None:
             raise ObjectNotFound()
+
+        # Check job destination params to see if stdout reporting is enabled
+        dest_params = job.destination_params
+        if not string_as_bool_or_none(dest_params.get("live_tool_output_reporting", False)):
+            raise ConfigDoesNotAllowException()
 
         # If stdout_length and stdout_position are good values, then load standard out and add it to status
         console_output = {}
