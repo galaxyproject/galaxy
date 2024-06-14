@@ -409,6 +409,7 @@ onMounted(() => {
         :is-busy="isBusy"
         :items="items"
         :items-provider="itemsProvider"
+        :provider-url="currentDirectory?.url"
         :total-items="totalItems"
         :modal-show="modalShow"
         :modal-static="modalStatic"
