@@ -832,10 +832,10 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
             "id": jobs_source.id,
             "populated_state": populated_state,
             "model": "ImplicitCollectionJobs",
+            "states": {},
         }
         if populated_state == "ok":
             # produce state summary...
-            states = {}
             join = model.ImplicitCollectionJobs.table.join(
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
@@ -846,8 +846,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 .group_by(model.Job.state)
             )
             for row in sa_session.execute(statement):
-                states[row[0]] = row[1]
-            rval["states"] = states
+                rval["states"][row[0]] = row[1]
     return rval
 
 
