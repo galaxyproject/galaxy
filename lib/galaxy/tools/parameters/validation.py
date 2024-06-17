@@ -165,7 +165,7 @@ class InRangeValidator(ExpressionValidator):
             op1 = "<"
         if self.exclude_max:
             op2 = "<"
-        expression = f"float('{self.min}') {op1} value {op2} float('{self.max}')"
+        expression = f"float('{self.min}') {op1} float(value) {op2} float('{self.max}')"
         if message is None:
             message = f"Value ('%s') must {'not ' if negate == 'true' else ''}fulfill {expression}"
         super().__init__(message, expression, negate)
