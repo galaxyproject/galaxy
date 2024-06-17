@@ -8,6 +8,7 @@ from typing import (
     cast,
     Dict,
     List,
+    Optional,
 )
 
 import sqlalchemy
@@ -26,6 +27,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
+from typing_extensions import TypedDict
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -824,7 +826,14 @@ def summarize_invocation_jobs(
     return rval
 
 
-def summarize_jobs_to_dict(sa_session, jobs_source):
+class JobsSummary(TypedDict):
+    populated_state: str
+    states: Dict[str, int]
+    model: str
+    id: int
+
+
+def summarize_jobs_to_dict(sa_session, jobs_source) -> Optional[JobsSummary]:
     """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
@@ -833,7 +842,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     :rtype:     dict
     :returns:   dictionary containing job summary information
     """
-    rval = None
+    rval: Optional[JobsSummary] = None
     if jobs_source is None:
         pass
     elif isinstance(jobs_source, model.Job):
