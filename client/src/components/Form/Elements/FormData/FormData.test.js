@@ -3,6 +3,8 @@ import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
 import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
 
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
@@ -15,6 +17,8 @@ let eventStore;
 function createTarget(propsData) {
     const pinia = createTestingPinia({ stubActions: false });
     eventStore = useEventStore();
+    const datatypesStore = useDatatypesMapperStore();
+    datatypesStore.datatypesMapper = testDatatypesMapper;
     return mount(MountTarget, {
         localVue,
         propsData,

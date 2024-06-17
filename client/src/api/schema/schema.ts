@@ -5512,6 +5512,15 @@ export interface components {
              */
             url: string;
         };
+        /** GroupUpdatePayload */
+        GroupUpdatePayload: {
+            /** name of the group */
+            name?: string | null;
+            /** role IDs */
+            role_ids?: string[] | null;
+            /** user IDs */
+            user_ids?: string[] | null;
+        };
         /** GroupUserListResponse */
         GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
         /** GroupUserResponse */
@@ -15744,7 +15753,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GroupCreatePayload"];
+                "application/json": components["schemas"]["GroupUpdatePayload"];
             };
         };
         responses: {

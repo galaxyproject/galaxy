@@ -27,6 +27,7 @@ interface Props {
     isEncoded?: boolean;
     items?: SelectionItem[];
     itemsProvider?: ItemsProvider;
+    providerUrl?: string;
     totalItems?: number;
     leafIcon?: string;
     modalShow?: boolean;
@@ -48,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     isEncoded: false,
     items: () => [],
     itemsProvider: undefined,
+    providerUrl: undefined,
     totalItems: 0,
     leafIcon: "fa fa-file-o",
     modalShow: true,
@@ -125,6 +127,16 @@ watch(
     () => props.items,
     () => {
         filtered(props.items);
+    }
+);
+
+watch(
+    () => props.providerUrl,
+    () => {
+        // We need to reset the current page when drilling down sub-folders
+        if (props.itemsProvider !== undefined) {
+            currentPage.value = 1;
+        }
     }
 );
 </script>

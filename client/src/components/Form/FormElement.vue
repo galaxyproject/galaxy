@@ -127,7 +127,7 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
-const hasAlert = computed(() => Boolean(props.error || props.warning));
+const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
 
@@ -174,6 +174,16 @@ const isEmpty = computed(() => {
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
 const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
+const formAlert = ref<string>();
+const alerts = computed(() => {
+    return [formAlert.value, props.error, props.warning]
+        .filter((v) => v !== undefined && v !== null)
+        .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
+});
+
+function onAlert(value: string | undefined) {
+    formAlert.value = value;
+}
 </script>
 
 <template>
@@ -182,11 +192,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         :id="elementId"
         class="ui-form-element section-row"
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
-        <div v-if="hasAlert" class="ui-form-error">
+        <div v-for="(alert, index) in alerts" :key="index" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span
-                class="ui-form-error-text"
-                v-html="linkify(sanitize(props.error || props.warning, { USE_PROFILES: { html: true } }))" />
+            <span class="ui-form-error-text" v-html="alert" />
         </div>
 
         <div class="ui-form-title">
@@ -288,7 +296,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :optional="attrs.optional"
                 :options="attrs.options"
                 :tag="attrs.tag"
-                :type="props.type" />
+                :type="props.type"
+                :collection-types="attrs.collection_types"
+                @alert="onAlert" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
