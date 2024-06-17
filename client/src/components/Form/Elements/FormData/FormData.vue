@@ -7,6 +7,7 @@ import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } fro
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 import { orList } from "@/utils/strings";
@@ -51,8 +52,9 @@ const props = withDefaults(
 );
 
 const eventStore = useEventStore();
+const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input"]);
+const $emit = defineEmits(["input", "alert"]);
 
 // Determines wether values should be processed as linked or unlinked
 const currentLinked = ref(true);
@@ -302,6 +304,10 @@ function getSourceType(val: DataOption) {
 function handleIncoming(incoming: Record<string, unknown>, partial = true) {
     if (incoming) {
         const values = Array.isArray(incoming) ? incoming : [incoming];
+        const extensions = values.map((v) => v.extension || v.elements_datatypes).filter((v) => (v ? true : false));
+        if (!canAcceptDatatype(extensions)) {
+            return false;
+        }
         if (values.length > 0) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
@@ -349,6 +355,7 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
             }
         }
     }
+    return true;
 }
 
 /**
@@ -372,10 +379,36 @@ function onBrowse() {
     }
 }
 
+function canAcceptDatatype(itemDatatypes: string | Array<string>) {
+    if (!(props.extensions?.length > 0)) {
+        return true;
+    }
+    let datatypes: Array<string>;
+    if (!Array.isArray(itemDatatypes)) {
+        datatypes = [itemDatatypes];
+    } else {
+        datatypes = itemDatatypes;
+    }
+    const incompatibleItem = datatypes.find(
+        (extension) => !datatypesMapper.value?.isSubTypeOfAny(extension, props.extensions)
+    );
+    if (incompatibleItem) {
+        return false;
+    }
+    return true;
+}
+
 // Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
+        const extensions = (eventData.extension as string) || (eventData.elements_datatypes as Array<string>);
+        if (!canAcceptDatatype(extensions)) {
+            currentHighlighting.value = "warning";
+            $emit("alert", `${extensions} is not an acceptable format for this parameter.`);
+        } else {
+            currentHighlighting.value = "success";
+        }
         dragTarget.value = evt.target;
         dragData.value = eventData;
     }
@@ -384,23 +417,24 @@ function onDragEnter(evt: MouseEvent) {
 function onDragLeave(evt: MouseEvent) {
     if (dragTarget.value === evt.target) {
         currentHighlighting.value = null;
-    }
-}
-
-function onDragOver() {
-    if (dragData.value !== null) {
-        currentHighlighting.value = "warning";
+        $emit("alert", undefined);
     }
 }
 
 function onDrop() {
     if (dragData.value) {
+        let accept = false;
         if (eventStore.multipleDragData) {
-            handleIncoming(Object.values(dragData.value) as any, false);
+            accept = handleIncoming(Object.values(dragData.value) as any, false);
         } else {
-            handleIncoming(dragData.value);
+            accept = handleIncoming(dragData.value);
         }
-        currentHighlighting.value = "success";
+        if (accept) {
+            currentHighlighting.value = "success";
+        } else {
+            currentHighlighting.value = "warning";
+        }
+        $emit("alert", undefined);
         dragData.value = null;
         clearHighlighting();
     }
@@ -468,7 +502,7 @@ const noOptionsWarningMessage = computed(() => {
         :class="currentHighlighting && `ui-dragover-${currentHighlighting}`"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave"
-        @dragover.prevent="onDragOver"
+        @dragover.prevent
         @drop.prevent="onDrop">
         <div class="d-flex flex-column">
             <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start">
