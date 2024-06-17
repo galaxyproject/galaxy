@@ -14,6 +14,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
 )
 
 from markupsafe import escape
@@ -864,7 +865,7 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         self.fn_filter_parsers.update({})
 
 
-def get_users_by_ids(session: galaxy_scoped_session, user_ids):
+def get_users_by_ids(session: galaxy_scoped_session, user_ids: List[int]) -> Sequence[User]:
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
 

@@ -3,7 +3,10 @@ Manager and Serializer for Roles.
 """
 
 import logging
-from typing import List
+from typing import (
+    List,
+    Sequence,
+)
 
 from sqlalchemy import (
     false,
@@ -164,6 +167,6 @@ class RoleManager(base.ModelManager[model.Role]):
         return role
 
 
-def get_roles_by_ids(session: galaxy_scoped_session, role_ids):
+def get_roles_by_ids(session: galaxy_scoped_session, role_ids: List[int]) -> Sequence[Role]:
     stmt = select(Role).where(Role.id.in_(role_ids))
     return session.scalars(stmt).all()

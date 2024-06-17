@@ -36,6 +36,7 @@ const props = withDefaults(
         };
         extensions?: Array<string>;
         type?: string;
+        collectionTypes?: Array<string>;
         flavor?: string;
         tag?: string;
     }>(),
@@ -46,6 +47,7 @@ const props = withDefaults(
         value: undefined,
         extensions: () => [],
         type: "data",
+        collectionTypes: undefined,
         flavor: undefined,
         tag: undefined,
     }
@@ -317,14 +319,28 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 const newName = v.name ? v.name : newId;
                 const newSrc =
                     v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
-                const newValue = {
+                const newValue: DataOption = {
                     id: newId,
                     src: newSrc,
+                    batch: false,
+                    map_over_type: undefined,
                     hid: newHid,
                     name: newName,
                     keep: true,
                     tags: [],
                 };
+                if (v.collection_type && props.collectionTypes?.length > 0) {
+                    if (!props.collectionTypes.includes(v.collection_type)) {
+                        const mapOverType = props.collectionTypes.find((collectionType) =>
+                            v.collection_type.endsWith(collectionType)
+                        );
+                        if (!mapOverType) {
+                            return false;
+                        }
+                        newValue["batch"] = true;
+                        newValue["map_over_type"] = mapOverType;
+                    }
+                }
                 // Verify that new value has corresponding option
                 const keepKey = `${newId}_${newSrc}`;
                 const existingOptions = props.options && props.options[newSrc];
