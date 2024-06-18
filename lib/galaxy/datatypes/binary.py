@@ -3761,12 +3761,16 @@ class Fast5ArchiveBz2(Fast5Archive):
 
 class Pod5(Binary):
     """
-    Class describing a Pod5 file
+    Class describing a POD5 file. The POD5 Format Specification is at
+    https://pod5-file-format.readthedocs.io/en/latest/SPECIFICATION.html
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.pod5')
     >>> Pod5().sniff(fname)
     True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Pod5().sniff(fname)
+    False
     """
 
     file_ext = "pod5"
