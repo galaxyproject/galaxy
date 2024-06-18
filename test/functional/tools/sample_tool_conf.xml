@@ -206,6 +206,7 @@
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="discover_sort_by.xml" />
+  <tool file="discover_default_ext.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />
   <tool file="expression_parse_int.xml" />
