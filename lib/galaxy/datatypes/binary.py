@@ -3759,6 +3759,35 @@ class Fast5ArchiveBz2(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
+class Pod5(Binary):
+    """
+    Class describing a Pod5 file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pod5')
+    >>> Pod5().sniff(fname)
+    True
+    """
+
+    file_ext = "pod5"
+
+    def sniff(self, filename: str) -> bool:
+        expected_signature = bytes(
+            [0x8B, 0x50, 0x4F, 0x44, 0x0D, 0x0A, 0x1A, 0x0A]
+        )
+        try:
+            with open(filename, "rb") as f:
+                first_8_bytes = f.read(8)
+                f.seek(-8, 2)
+                last_8_bytes = f.read(8)
+                return (
+                    first_8_bytes == expected_signature
+                    and last_8_bytes == expected_signature
+                )
+        except Exception:
+            return False
+
+
 class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive"""
 
