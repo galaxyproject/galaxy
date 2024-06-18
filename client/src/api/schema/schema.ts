@@ -6289,6 +6289,8 @@ export interface components {
              * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
+            /** Purged */
+            purged: boolean;
             /**
              * State
              * @description The current state of this dataset.

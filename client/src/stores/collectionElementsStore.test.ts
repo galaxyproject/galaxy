@@ -151,6 +151,7 @@ function mockElement(collectionId: string, i: number): DCESummary {
             history_id: "1",
             tags: [],
             accessible: true,
+            purged: false,
         },
     };
 }

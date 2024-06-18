@@ -950,6 +950,7 @@ class HDAObject(Model, WithModelClass):
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
     accessible: Optional[bool] = None
+    purged: bool
     model_config = ConfigDict(extra="allow")
 
 
