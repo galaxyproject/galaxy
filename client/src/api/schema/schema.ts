@@ -6119,6 +6119,8 @@ export interface components {
              * @constant
              */
             model_class: "HistoryDatasetAssociation";
+            /** Purged */
+            purged: boolean;
             /**
              * State
              * @description The current state of this dataset.
