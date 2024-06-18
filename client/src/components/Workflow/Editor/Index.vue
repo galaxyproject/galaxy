@@ -355,6 +355,15 @@ export default {
         }
 
         const tags = ref([]);
+
+        watch(
+            () => props.workflowTags,
+            (newTags) => {
+                tags.value = [...newTags];
+            },
+            { immediate: true }
+        );
+
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
