@@ -96,6 +96,18 @@ Visualizations
 ===========================================================
 
 .. visualizations
+* Check various preconditions in FeatureLocationIndexDataProvider
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18283`_
+* Add pinia to manually mounted vue components
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18299`_
+* Update parcel-built visualizations to use parcel v2
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18311`_
+* Fix visualizations compatible dataset filtering
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18343`_
 * Fix pca 3d rendering of tabular files and visualization error handling in general
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 18211`_
@@ -104,10 +116,16 @@ Datatypes
 ===========================================================
 
 .. datatypes
+* Tighten axt sniffer
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18204`_
+* Don't set dataset peek for errored jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18231`_
 * Better display of estimated line numbers and add number of columns for tabular
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 17492`_
-* add colabfold tar file datatype
+* Add colabfold tar file datatype
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 17567`_
 * Set minimal metadata also for empty bed datasets
@@ -142,6 +160,15 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Raise exception when extracting dataset from collection without datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18249`_
+* Backport Qiskit Jupyter Notebook update to 24.1
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 18310`_
+* Fix null inputs in database operation tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18385`_
 * Code cleanups from ruff and pyupgrade
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 17654`_
