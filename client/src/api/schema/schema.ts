@@ -4831,6 +4831,13 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
+        /** ExportDictStepToolOutput */
+        ExportDictStepToolOutput: {
+            /** Export step output name */
+            name: string;
+            /** Export step output type */
+            type: string;
+        };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
@@ -7520,6 +7527,27 @@ export interface components {
              */
             output_name: string;
         };
+        /** InputDataCollectionModuleStepOutput */
+        InputDataCollectionModuleStepOutput: {
+            /**
+             * Is collection
+             * @constant
+             * @enum {boolean}
+             */
+            collection: true;
+            /** Input data collection module step output collection type */
+            collection_type: string;
+            /** Input data collection module step output extensions */
+            extensions: string | string[];
+            /**
+             * Input data collection module step output name
+             * @constant
+             * @enum {string}
+             */
+            name: "output";
+            /** Is optional */
+            optional: boolean;
+        };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
             /**
@@ -7563,6 +7591,19 @@ export interface components {
             /** When */
             when: string | null;
         };
+        /** InputDataModuleStepOutput */
+        InputDataModuleStepOutput: {
+            /** Input data module step output extensions */
+            extensions: string | string[];
+            /**
+             * Input data module step output name
+             * @constant
+             * @enum {string}
+             */
+            name: "output";
+            /** Is optional */
+            optional: boolean;
+        };
         /** InputDataStep */
         InputDataStep: {
             /**
@@ -7605,6 +7646,27 @@ export interface components {
             type: "data_input";
             /** When */
             when: string | null;
+        };
+        /** InputParameterModuleStepOutput */
+        InputParameterModuleStepOutput: {
+            /** Input data module step output label */
+            label: string;
+            /**
+             * Input data module step output name
+             * @constant
+             * @enum {string}
+             */
+            name: "output";
+            /** Is optional */
+            optional: boolean;
+            /**
+             * Is parameter
+             * @constant
+             * @enum {boolean}
+             */
+            parameter: true;
+            /** Input data module step output parameter type */
+            type: string;
         };
         /** InputParameterStep */
         InputParameterStep: {
@@ -10513,6 +10575,23 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
+        /** PauseModuleStepOutput */
+        PauseModuleStepOutput: {
+            /** Extension */
+            extension: "input"[];
+            /**
+             * Pause module step output label
+             * @constant
+             * @enum {string}
+             */
+            label: "Reviewed Dataset";
+            /**
+             * Pause module step output name
+             * @constant
+             * @enum {string}
+             */
+            name: "output";
+        };
         /** PauseStep */
         PauseStep: {
             /**
@@ -11178,6 +11257,37 @@ export interface components {
         /** RootModel[Dict[str, int]] */
         RootModel_Dict_str__int__: {
             [key: string]: number | undefined;
+        };
+        /** RunStepToolOutput */
+        RunStepToolOutput: {
+            /** Count */
+            count: number;
+            /** Default Identifier Source */
+            default_identifier_source: string;
+            /** Discover Datasets */
+            discover_datasets: Record<string, never>[];
+            /** Edam Data */
+            edam_data: string;
+            /** Edam Format */
+            edam_format: string;
+            /** Format */
+            format: string;
+            /** Format Source */
+            format_source: string | null;
+            /** From Work Dir */
+            from_work_dir: boolean | null;
+            /** Hidden */
+            hidden: boolean;
+            /** Label */
+            label: string;
+            /** Metadata Source */
+            metadata_source: string;
+            /** Name */
+            name: string;
+            /** Output Type */
+            output_type: string;
+            /** Parent */
+            parent: string | null;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -12342,6 +12452,39 @@ export interface components {
              */
             values: string;
         };
+        /** ToolModuleStepOutput */
+        ToolModuleStepOutput: {
+            /**
+             * Is collection
+             * @constant
+             * @enum {boolean}
+             */
+            collection: true;
+            /** Tool module step output collection type */
+            collection_type: string;
+            /** Collection Type Source */
+            collection_type_source: string;
+            /** Tool module step output extensions */
+            extensions: string[];
+            /** Tool module step output label */
+            label: Record<string, never>;
+            /** Tool module step output name */
+            name: string;
+            /**
+             * Is optional
+             * @constant
+             * @enum {boolean}
+             */
+            optional: false;
+            /**
+             * Is parameter
+             * @constant
+             * @enum {boolean}
+             */
+            parameter: true;
+            /** Tool module step output type */
+            type: string;
+        };
         /** ToolShedRepositorySummary */
         ToolShedRepositorySummary: {
             /** Changeset Revision */
@@ -13408,7 +13551,15 @@ export interface components {
              * Outputs
              * @description The outputs of the step.
              */
-            outputs?: Record<string, never>[] | null;
+            outputs?:
+                | (
+                      | components["schemas"]["InputDataModuleStepOutput"]
+                      | components["schemas"]["InputDataCollectionModuleStepOutput"]
+                      | components["schemas"]["InputParameterModuleStepOutput"]
+                      | components["schemas"]["PauseModuleStepOutput"]
+                      | components["schemas"]["ToolModuleStepOutput"]
+                  )[]
+                | null;
             /**
              * Position
              * @description Layout position of this step in the graph
@@ -13596,7 +13747,7 @@ export interface components {
              * Outputs
              * @description The outputs of the step.
              */
-            outputs?: Record<string, never>[] | null;
+            outputs?: components["schemas"]["ExportDictStepToolOutput"][] | null;
             /**
              * Position
              * @description Layout position of this step in the graph
@@ -13876,11 +14027,6 @@ export interface components {
              */
             order_index: number;
             /**
-             * Outputs
-             * @description The outputs of the step.
-             */
-            outputs?: Record<string, never>[] | null;
-            /**
              * Position
              * @description Layout position of this step in the graph
              */
@@ -13991,11 +14137,6 @@ export interface components {
              * @description The output connections of the step.
              */
             output_connections: Record<string, never>[];
-            /**
-             * Outputs
-             * @description The outputs of the step.
-             */
-            outputs?: Record<string, never>[] | null;
             /**
              * Position
              * @description Layout position of this step in the graph
@@ -14283,7 +14424,7 @@ export interface components {
              * Outputs
              * @description The outputs of the step.
              */
-            outputs?: Record<string, never>[] | null;
+            outputs: components["schemas"]["RunStepToolOutput"][];
             /**
              * Panel Section ID
              * @description The panel section ID of the tool step.
