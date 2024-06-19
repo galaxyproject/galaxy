@@ -22,10 +22,10 @@ class OnedataFilesSource(PyFilesystem2FilesSource):
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
-        onezone_domain = props.pop("onezoneDomain", "") or ""
+        onezone_domain = props.pop("onezone_domain", "") or ""
         onezone_domain = remove_prefix("http://", remove_prefix("https://", onezone_domain))
-        access_token = props.pop("accessToken", "") or ""
-        disable_tls_certificate_validation = props.pop("disableTlsCertificateValidation", False) or False
+        access_token = props.pop("access_token", "") or ""
+        disable_tls_certificate_validation = props.pop("disable_tls_certificate_validation", False) or False
         handle = OnedataRESTFS(onezone_domain, access_token, verify_ssl=not disable_tls_certificate_validation)
         return handle
 

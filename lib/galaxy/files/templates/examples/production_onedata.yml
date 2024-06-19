@@ -1,0 +1,30 @@
+- id: onedata
+  version: 0
+  name: Onedata Storage
+  description: |
+    This template allows connecting to Onedata servers.
+
+    Onedata is a global data management system providing a unified data access
+    interface across different storage providers. More information on Onedata
+    can be found in [Onedata's website](https://onedata.org/#/home).
+  variables:
+    onezone_domain:
+      label: Onezone domain
+      type: string
+      help: Domain of the Onezone service (e.g. datahub.egi.eu) to connect to.
+    disable_tls_certificate_validation:
+      label: Disable tls certificate validation?
+      type: boolean
+      help: |
+        Allows connection to Onedata servers that do not present trusted SSL certificates.
+        SHOULD NOT be used unless you really know what you are doing.
+      default: False
+  secrets:
+    access_token:
+      label: REST Access Token
+      help: Your access token, suitable for REST API access in a Oneprovider service.
+  configuration:
+    type: onedata
+    access_token: "{{ secrets.access_token }}"
+    onezone_domain: "{{ variables.onezone_domain }}"
+    disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
