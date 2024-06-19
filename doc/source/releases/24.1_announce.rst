@@ -8,20 +8,21 @@ June 2024 Galaxy Release (v 24.1)
 Highlights
 ===========================================================
 
-Feature1
---------
+**Visualizing workflow runs with an invocation graph view.** A graph view has been added to the workflow invocation summary. This feature uses the original workflow structure to display job states for each step on the workflow editor canvas.
 
-Feature description.
+**Workflow editor undo/redo.** Undo/redo functionality has been added to the workflow editor, enhancing the user experience and workflow management.
 
-Feature2
---------
+**Select multiple items in workflow editor.** New selection features have been added to the Workflow Editor that simplify the process of selecting and managing multiple elements.
 
-Feature description.
+**All-vs-all collection analysis patterns.** Galaxy now matches corresponding datasets when multiple collections are used to map over a tool, akin to a dot product pattern.
 
-Feature3
---------
+**Pagination support added to files source plugins.** To improve navigation of remote file sources potentially containing vast numbers of files, server-side pagination support has been added to file source plugins.
 
-Feature description.
+**Zenodo integration.** A new Zenodo file source plugin based on Invenio has been added.
+
+**Document Object Identifiers displayed in archived histories.** Histories that have been archived and preserved in an external repository like Zenodo will now display their Document Object Identifier (DOI).
+
+**Activity bar** is now enabled by default.
 
 Also check out the `24.1 user release notes <24.1_announce_user.html>`__.
 Are you an admin? Check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.1+is%3Aclosed+is%3Apr>`__.
