@@ -199,7 +199,7 @@ exclude = [
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
 # flake8-comprehensions (C4), flake8-logging-format (G),
 # flake8-implicit-str-concat (ISC) and pyupgrade (UP)
-select = ["E", "F", "B", "C4", "G", "ISC", "UP"]
+select = ["E", "F", "B", "C4", "G", "ISC", "NPY", "UP"]
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
