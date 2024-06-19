@@ -253,9 +253,6 @@ config/galaxy.yml.sample:galaxy
     If this is null (the default), a simple configuration containing
     just Dockstore will be used.
 
-Deprecation Notices
-===========================================================
-Add content or drop section.
 
 Release Notes
 ===========================================================
