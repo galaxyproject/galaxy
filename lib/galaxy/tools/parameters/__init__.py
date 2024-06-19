@@ -16,7 +16,6 @@ from galaxy.util.json import safe_loads
 from .basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    ParameterValueError,
     SelectToolParameter,
     ToolParameter,
 )
@@ -291,10 +290,8 @@ def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_va
             # This would resolve a lot of back and forth in the various to/from methods.
             value = safe_loads(value)
         if param:
-            try:
-                value = param.value_from_basic(value, app, ignore_errors)
-            except ParameterValueError:
-                continue
+            # if ignore_error is true we return the value unmodified
+            value = param.value_from_basic(value, app, ignore_errors)
         rval[key] = value
     return rval
 
