@@ -64,3 +64,21 @@ Release Notes
 
 .. include:: _thanks.rst
 
+Release Team
+===========================================================
+
+Release manager:  `John Davis <https://github.com/jdavcs>`__
+
+Release testing:
+* `Alireza Heidari <https://github.com/itisAliRH>`__
+* `Arash Kadkhodaei <https://github.com/arash77>`__
+* `Delphine Lariviere <https://github.com/Delphine-L>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `Marius van den Beek <https://github.com/mvdbeek>`__
+* `Saim Momin <https://github.com/SaimMomin12>`__
+* `Sebastian Schaaf <https://github.com/sebastian-schaaf>`__
+
+Communications:
+* `Natalie Whitaker-Allen <https://github.com/natwhitaker>`__
+
+A special thank you goes to everyone who helped test the new release after its deployment on usegalaxy.org.
