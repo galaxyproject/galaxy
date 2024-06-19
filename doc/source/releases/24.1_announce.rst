@@ -46,7 +46,20 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 
 Administration Notes
 ===========================================================
-Add content or drop section.
+
+* Empowerinig users to bring their own storage and file sources [`#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`__]
+
+* Enabling storage management by object store [`#17500 <https://github.com/galaxyproject/galaxy/pull/17500>`__]
+
+* Email notifications channel [`#17914 <https://github.com/galaxyproject/galaxy/pull/17914>`__]
+
+* Urgent notifications are now mandatory [`#17975 <https://github.com/galaxyproject/galaxy/pull/17975>`__]
+
+* Major update to Galaxy's data access layer: SQLAlchemy 2.0 [`#17778 <https://github.com/galaxyproject/galaxy/pull/17778>`__]
+
+* Script for deleting userless histories from the database [`#18079 <https://github.com/galaxyproject/galaxy/pull/18079>`__]
+
+* New admin facing documentation on data tables [`#17585 <https://github.com/galaxyproject/galaxy/pull/17585>`__]
 
 Configuration Changes
 =====================
