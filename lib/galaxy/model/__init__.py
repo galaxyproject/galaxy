@@ -8922,7 +8922,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for input_step_parameter in self.input_step_parameters:
                 label = input_step_parameter.workflow_step.label
                 if not label:
-                    continue
+                    label = f"{input_step_parameter.workflow_step.order_index + 1}: Unnamed parameter"
                 input_parameters[label] = {
                     "parameter_value": input_step_parameter.parameter_value,
                     "label": label,

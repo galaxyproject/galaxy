@@ -24,7 +24,7 @@ const busy = ref(false);
 
 const emit = defineEmits<{
     /** Proceed with or without saving the changes */
-    (e: "on-proceed", url: string, forceSave: boolean, ignoreChanges: boolean): void;
+    (e: "on-proceed", url: string, forceSave: boolean, ignoreChanges: boolean, appendVersion: boolean): void;
     /** Update the nav URL prop */
     (e: "update:nav-url", url: string): void;
     /** Update the show modal boolean prop */
@@ -49,13 +49,13 @@ function closeModal() {
 
 function dontSave() {
     busy.value = true;
-    emit("on-proceed", props.navUrl, false, true);
+    emit("on-proceed", props.navUrl, false, true, true);
 }
 
 function saveChanges() {
     busy.value = true;
     closeModal();
-    emit("on-proceed", props.navUrl, true, false);
+    emit("on-proceed", props.navUrl, true, false, true);
 }
 </script>
 
