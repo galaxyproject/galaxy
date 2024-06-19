@@ -234,7 +234,7 @@ space:
   name: demo-space
   # the relative directory path in the space under which the Galaxy data will be stored.
   # Optional, if not provided, the data will be stored in the root of space.
-  path: galaxy-data
+  galaxy_root_dir: galaxy-data
 cache:
   path: database/object_store_cache_s3
   size: 1000
