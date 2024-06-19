@@ -458,6 +458,196 @@ StepError = Union[
 ]
 
 
+# TODO control typing
+# see lib/galaxy/managers/workflows.py - line 1555
+class ExportDictStepToolOutput(Model):
+    name: str = Field(
+        ...,
+        title="Export step output name",
+    )
+    type: str = Field(
+        ...,
+        title="Export step output type",
+    )
+
+
+# see lib/galaxy/tools/__init__.py - line 2404/2444
+# lib/galaxy/tool_util/parser/output_objects.py - line 123
+class RunStepToolOutput(Model):
+    name: str = Field(
+        ...,
+    )
+    format: str = Field(
+        ...,
+    )
+    label: str = Field(
+        ...,
+    )
+    hidden: bool = Field(
+        ...,
+    )
+    output_type: str = Field(
+        ...,
+    )
+    format_source: Optional[str] = Field(
+        ...,
+    )
+    default_identifier_source: str = Field(
+        ...,
+    )
+    metadata_source: str = Field(
+        ...,
+    )
+    parent: Optional[str] = Field(
+        ...,
+    )
+    count: int = Field(
+        ...,
+    )
+    from_work_dir: Optional[bool] = Field(
+        ...,
+    )
+    edam_format: str = Field(
+        ...,
+    )
+    edam_data: str = Field(
+        ...,
+    )
+    # see lib/galaxy/tool_util/parser/output_collection_def.py - line 78
+    discover_datasets: List[Any] = Field(
+        ...,
+    )
+
+
+# There is no need to model a class for the output of SubworkflowModule
+# as it is equal to the output of one of the other modules
+
+
+# see lib/galaxy/workflow/modules.py - line 1022
+class InputDataModuleStepOutput(Model):
+    name: Literal["output"] = Field(
+        ...,
+        title="Input data module step output name",
+    )
+    extensions: Union[str, List[str]] = Field(
+        ...,
+        title="Input data module step output extensions",
+    )
+    optional: bool = Field(
+        ...,
+        title="Is optional",
+    )
+
+
+# see lib/galaxy/workflow/modules.py - line 1136
+class InputDataCollectionModuleStepOutput(Model):
+    name: Literal["output"] = Field(
+        ...,
+        title="Input data collection module step output name",
+    )
+    extensions: Union[str, List[str]] = Field(
+        ...,
+        title="Input data collection module step output extensions",
+    )
+    collection: Literal[True] = Field(
+        ...,
+        title="Is collection",
+    )
+    collection_type: str = Field(
+        ...,
+        title="Input data collection module step output collection type",
+    )
+    optional: bool = Field(
+        ...,
+        title="Is optional",
+    )
+
+
+# see lib/galaxy/workflow/modules.py - line 1519
+class InputParameterModuleStepOutput(Model):
+    name: Literal["output"] = Field(
+        ...,
+        title="Input data module step output name",
+    )
+    label: str = Field(
+        ...,
+        title="Input data module step output label",
+    )
+    type: str = Field(
+        ...,
+        title="Input data module step output parameter type",
+    )
+    optional: bool = Field(
+        ...,
+        title="Is optional",
+    )
+    parameter: Literal[True] = Field(
+        ...,
+        title="Is parameter",
+    )
+
+
+# see lib/galaxy/workflow/modules.py - line 1673
+class PauseModuleStepOutput(Model):
+    name: Literal["output"] = Field(
+        ...,
+        title="Pause module step output name",
+    )
+    label: Literal["Reviewed Dataset"] = Field(
+        ...,
+        title="Pause module step output label",
+    )
+    extension: List[Literal["input"]] = Field(
+        ...,
+    )
+
+
+# see lib/galaxy/workflow/modules.py - line 1932
+class ToolModuleStepOutput(Model):
+    name: str = Field(
+        ...,
+        title="Tool module step output name",
+    )
+    extensions: List[str] = Field(
+        ...,
+        title="Tool module step output extensions",
+    )
+    type: str = Field(
+        ...,
+        title="Tool module step output type",
+    )
+    optional: Literal[False] = Field(..., title="Is optional")
+    parameter: Literal[True] = Field(
+        ...,
+        title="Is parameter",
+    )
+    collection: Literal[True] = Field(
+        ...,
+        title="Is collection",
+    )
+    collection_type: str = Field(
+        ...,
+        title="Tool module step output collection type",
+    )
+    collection_type_source: str = Field(
+        ...,
+    )
+    label: Any = Field(
+        ...,
+        title="Tool module step output label",
+    )
+
+
+# used by: WorkflowDictEditorStep
+ModulesStepOutput = Union[
+    InputDataModuleStepOutput,
+    InputDataCollectionModuleStepOutput,
+    InputParameterModuleStepOutput,
+    PauseModuleStepOutput,
+    ToolModuleStepOutput,
+]
+
+
 class WorkflowDictStepsBase(Model):
     when: Optional[str] = Field(
         None,
@@ -475,7 +665,6 @@ class WorkflowDictStepsBase(Model):
         title="Tool Version",
         description="The version of the tool associated with the step.",
     )
-    # TODO: Formalize an error type
     errors: Optional[StepError] = Field(
         None,
         title="Errors",
@@ -487,11 +676,11 @@ class WorkflowDictStepsBase(Model):
         description="Layout position of this step in the graph",
     )
     # TODO: model outputs
-    outputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Outputs",
-        description="The outputs of the step.",
-    )
+    # # outputs: Optional[List[Dict[str, Any]]] = Field(
+    #     None,
+    #     title="Outputs",
+    #     description="The outputs of the step.",
+    # )
     tool_state: Optional[Union[Dict[str, Any], str]] = Field(
         None,
         title="Tool State",
@@ -585,6 +774,11 @@ class WorkflowDictRunStep(WorkflowDictStepsBase):
 
 class WorkflowDictRunToolStep(WorkflowDictRunStep):
     # TODO: remove everything that can be gotten through the tool store
+    outputs: List[RunStepToolOutput] = Field(
+        ...,
+        title="Outputs",
+        description="The outputs of the step.",
+    )
     model_class: Literal["tool"] = Field(
         ...,
         title="Model Class",
@@ -841,6 +1035,11 @@ class WorkflowDictEditorStep(WorkflowDictStepsExtendedBase):
         title="Tool ID",
         description="The unique name of the tool associated with this step.",
     )
+    outputs: Optional[List[ModulesStepOutput]] = Field(
+        None,
+        title="Outputs",
+        description="The outputs of the step.",
+    )
 
 
 class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
@@ -884,6 +1083,11 @@ class WorkflowDictExportStep(WorkflowDictStepsExtendedBase):
         None,
         title="Inputs",
         description="The inputs of the step.",
+    )
+    outputs: Optional[List[ExportDictStepToolOutput]] = Field(
+        None,
+        title="Outputs",
+        description="The outputs of the step.",
     )
     in_parameter: Optional[Dict[str, StepIn]] = Field(None, title="In", alias="in")
     input_connections: Optional[Dict[str, Union[InputConnectionExport, List[InputConnectionExport]]]] = Field(
