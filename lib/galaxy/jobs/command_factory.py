@@ -111,15 +111,9 @@ def build_command(
         f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
     )
 
-    # Don't need to create a separate tool working directory for Pulsar
-    # jobs - that is handled by Pulsar.
-    if create_tool_working_directory:
-        # usually working will already exist, but it will not for task
-        # split jobs.
-
-        # Copy working and outputs before job submission so that these can be restored on resubmission
-        # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command(PREPARE_DIRS)
+    # Copy working and outputs before job submission so that these can be restored on resubmission
+    # xref https://github.com/galaxyproject/galaxy/issues/3289
+    commands_builder.prepend_command(PREPARE_DIRS)
 
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
