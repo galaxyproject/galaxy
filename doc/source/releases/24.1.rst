@@ -14,6 +14,9 @@ Enhancements
 
 .. feature
 
+* Release notes
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18218`_
 * Implement a page object accessibility dialog
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 17225`_
@@ -549,6 +552,9 @@ Fixes
   `Pull Request 18208`_
 .. bug
 
+* Pin pydantic to >=2.7.4
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18423`_
 * do not expand datasets that are known to be inaccessible
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 17818`_
