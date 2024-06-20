@@ -53,7 +53,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             title = ""
             slug = ""
             content = ""
-            content_hide = True
             if "invocation_id" in kwd:
                 invocation_id = kwd.get("invocation_id")
                 form_title = f"{form_title} from Invocation Report"
@@ -63,7 +62,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 )
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")
-                content_hide = False
             return {
                 "title": form_title,
                 "inputs": [
@@ -94,7 +92,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                         "label": "Content",
                         "area": True,
                         "value": content,
-                        "hidden": content_hide,
+                        "hidden": True,
                     },
                 ],
             }
