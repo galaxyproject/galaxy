@@ -3776,18 +3776,13 @@ class Pod5(Binary):
     file_ext = "pod5"
 
     def sniff(self, filename: str) -> bool:
-        expected_signature = bytes(
-            [0x8B, 0x50, 0x4F, 0x44, 0x0D, 0x0A, 0x1A, 0x0A]
-        )
+        expected_signature = bytes([0x8B, 0x50, 0x4F, 0x44, 0x0D, 0x0A, 0x1A, 0x0A])
         try:
             with open(filename, "rb") as f:
                 first_8_bytes = f.read(8)
                 f.seek(-8, 2)
                 last_8_bytes = f.read(8)
-                return (
-                    first_8_bytes == expected_signature
-                    and last_8_bytes == expected_signature
-                )
+                return first_8_bytes == expected_signature and last_8_bytes == expected_signature
         except Exception:
             return False
 
