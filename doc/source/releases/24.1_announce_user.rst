@@ -19,7 +19,7 @@ A graph view has been added to the workflow invocation summary. This feature use
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="https://www.youtube.com/embed/TODO" title="Galaxy 24.1 - Workflow invocation graph view" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/TlDnoZxWh5E" title="Galaxy 24.1 - Workflow invocation graph view" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Workflow editor undo/redo
 -----------------------------------------------------------
@@ -35,7 +35,7 @@ This system provides users with more control over their workflow editing process
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="https://www.youtube.com/embed/TODO" title="Galaxy 24.1 - Worfklow editor undo/redo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/G_X7nJ73Fos" title="Galaxy 24.1 - Worfklow editor undo/redo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Select multiple items in workflow editor
 -----------------------------------------------------------
