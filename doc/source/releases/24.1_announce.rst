@@ -48,6 +48,9 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Administration Notes
 ===========================================================
 
+* ``fastapi`` dependency has been replaced with ``fastapi-slim`` [`#18095 <https://github.com/galaxyproject/galaxy/pull/18095>`__]. To ensure a smooth upgrade, you should uninstall ``fastapi`` before upgrading.
+  If you have upgraded without uninstalling ``fastapi``, you should uninstall ``fastapi``, then install ``fastapi-slim``.
+
 * Empowerinig users to bring their own storage and file sources [`#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`__]
 
 * Enabling storage management by object store [`#17500 <https://github.com/galaxyproject/galaxy/pull/17500>`__]
