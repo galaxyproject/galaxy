@@ -26,7 +26,7 @@ function getOrCreatePinia() {
     // We sometimes use this utility mounting function in a context where there
     // is no existing vue application or pinia store (e.g. individual charts
     // displayed in an iframe).
-    // To support both use cases, we will a new pinia store and attach it to the
+    // To support both use cases, we will create a new pinia store and attach it to the
     // vue application that is created for the component.
     let pinia = getActivePinia();
     if (!pinia) {
