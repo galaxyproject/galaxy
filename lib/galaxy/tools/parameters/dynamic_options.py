@@ -57,6 +57,7 @@ class Filter:
 
     def __init__(self, d_option, elem):
         self.dynamic_option = d_option
+        # TODO unused could be removed?
         self.elem = elem
 
     def get_dependency_name(self):
@@ -139,6 +140,42 @@ class RegexpFilter(Filter):
             if self.keep == (filter_pattern.match(fields[self.column]) is not None):
                 rval.append(fields)
         return rval
+
+
+class ValidatorFilter(Filter):
+    """
+
+    Type: TODO
+
+    Required Attributes:
+    Optional Attributes:
+    """
+
+    def __init__(self, d_option, elem):
+        if elem.get("type") == "regexp":
+            elem["expression"] = elem.get("value")
+        self.validator = validation.Validator.from_element(elem)
+
+        Filter.__init__(self, d_option, elem)
+
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter, when loading from file"
+        self.column = d_option.column_spec_to_index(column)
+        # TODO keep keep?
+        self.keep = string_as_bool(elem.get("keep", "True"))
+
+    def filter_options(self, options, trans, other_values):
+        rval = []
+        for fields in options:
+            try:
+                self.validator.validate(fields[self.column])
+                validates = True
+            except ValueError:
+                validates = False
+            if self.keep == validates:
+                rval.append(fields)
+        return rval
+
 
 
 class DataMetaFilter(Filter):
@@ -543,7 +580,7 @@ filter_types = dict(
     data_meta=DataMetaFilter,
     param_value=ParamValueFilter,
     static_value=StaticValueFilter,
-    regexp=RegexpFilter,
+    regexp=ValidatorFilter,
     unique_value=UniqueValueFilter,
     multiple_splitter=MultipleSplitterFilter,
     attribute_value_splitter=AttributeValueSplitterFilter,
