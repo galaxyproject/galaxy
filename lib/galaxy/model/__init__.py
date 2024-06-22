@@ -805,6 +805,8 @@ class User(Base, Dictifiable, RepresentById):
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
+    # TODO: Fixme, this rebase predates sqlalchemy2.0 and needs an update.
+    chat_exchanges: Mapped[List["ChatExchange"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
     histories: Mapped[List["History"]] = relationship(
@@ -2976,19 +2978,30 @@ class ChatExchange(Base, RepresentById):
 
     __tablename__ = "chat_exchange"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User", back_populates="chat_exchanges")
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+
+    user: Mapped["User"] = relationship()
+    messages: Mapped[List["ChatExchangeMessage"]] = relationship(
+        back_populates="chat_exchange", cascade_backrefs=False
+    )
+
+    def __init__(self, user, message, **kwargs):
+        self.user = user
+        self.messages = [ChatExchangeMessage(message=message)]
+
+    def add_message(self, message):
+        self.messages.append(ChatExchangeMessage(message=message))
 
 
 class ChatExchangeMessage(Base, RepresentById):
     __tablename__ = "chat_exchange_message"
 
-    id = Column(Integer, primary_key=True)
-    chat_exchange_id = Column(Integer, ForeignKey("chat_exchange.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    message = Column(Text)
-    exchange = relationship("ChatExchange", back_populates="messages")
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chat_exchange_id: Mapped[int] = mapped_column(Integer, ForeignKey("chat_exchange.id"), index=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=func.now)
+    message: Mapped[str] = mapped_column(Text)
+    chat_exchange: Mapped["ChatExchange"] = relationship("ChatExchange", back_populates="messages")
 
 
 class Group(Base, Dictifiable, RepresentById):
