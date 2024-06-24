@@ -6,7 +6,7 @@
 
     Onedata is a global data management system providing a unified data access
     interface across different storage providers. More information on Onedata
-    can be found in [Onedata's website](https://onedata.org/#/home).
+    can be found on [Onedata's website](https://onedata.org/#/home).
   variables:
     onezone_domain:
       label: Onezone Domain
@@ -22,18 +22,26 @@
     space_name:
       label: Space Name
       type: string
-      help: The name of the Onedata space where the Galaxy data will be stored.
+      help: |
+        The name of the Onedata space where the Galaxy data will be stored.
+        If there is more than one space with the same name, you can explicitly
+        specify which one to select by using the format <space_name>@<space_id>
+        (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
     galaxy_root_dir:
       label: Galaxy root directory
       type: string
       help: |
-        The relative directory path in the space under which the Galaxy data
-        will be stored.
+        The relative directory path in the space at which the Galaxy data
+        will be stored. If empty, the data will be stored in the space's
+        root directory.
       default: ""
   secrets:
     access_token:
-      label: REST Access Token
-      help: Your access token, suitable for REST API access in a Oneprovider service.
+      label: Access Token
+      help: |
+        Your [access token](https://onedata.org/#/home/documentation/topic/stable/tokens),
+        suitable for REST API access in a Oneprovider service. Must allow both
+        read and write data access.
   configuration:
     type: onedata
     auth:

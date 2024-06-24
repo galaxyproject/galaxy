@@ -6,7 +6,7 @@
 
     Onedata is a global data management system providing a unified data access
     interface across different storage providers. More information on Onedata
-    can be found in [Onedata's website](https://onedata.org/#/home).
+    can be found on [Onedata's website](https://onedata.org/#/home).
   variables:
     onezone_domain:
       label: Onezone domain
@@ -21,8 +21,11 @@
       default: False
   secrets:
     access_token:
-      label: REST Access Token
-      help: Your access token, suitable for REST API access in a Oneprovider service.
+      label: Access Token
+      help: |
+        Your [access token](https://onedata.org/#/home/documentation/topic/stable/tokens),
+        suitable for REST API access in a Oneprovider service. May be confined
+        to read-only data access.
   configuration:
     type: onedata
     access_token: "{{ secrets.access_token }}"
