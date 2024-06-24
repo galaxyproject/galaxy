@@ -19,6 +19,13 @@
         Allows connection to Onedata servers that do not present trusted SSL certificates.
         SHOULD NOT be used unless you really know what you are doing.
       default: False
+    writable:
+      label: Writable?
+      type: boolean
+      help: |
+        Allow Galaxy to write data to this Onedata storage.
+        Requires access token with write data access.
+      default: False
   secrets:
     access_token:
       label: Access Token
@@ -31,3 +38,4 @@
     access_token: "{{ secrets.access_token }}"
     onezone_domain: "{{ variables.onezone_domain }}"
     disable_tls_certificate_validation: "{{ variables.disable_tls_certificate_validation }}"
+    writable: "{{ variables.writable }}"
