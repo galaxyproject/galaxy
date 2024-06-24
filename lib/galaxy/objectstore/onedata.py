@@ -44,7 +44,7 @@ def _parse_config_xml(config_xml):
 
         space_xml = _get_config_xml_elements(config_xml, "space")[0]
         space_name = space_xml.get("name")
-        galaxy_root_dir = space_xml.get("path", "")
+        galaxy_root_dir = space_xml.get("galaxy_root_dir", "")
 
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 

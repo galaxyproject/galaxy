@@ -231,8 +231,11 @@ connection:
   disable_tls_certificate_validation: false
 space:
   # the name of the Onedata space where the Galaxy data will be stored.
+  # If there is more than one space with the same name, you can explicitly
+  # specify which one to select by using the format <space_name>@<space_id>
+  # (e.g. demo@7285220ecc636075ae5759aec7ad65d3cha8f9).
   name: demo-space
-  # the relative directory path in the space under which the Galaxy data will be stored.
+  # the relative directory path in the space at which the Galaxy data will be stored.
   # Optional, if not provided, the data will be stored in the root of space.
   galaxy_root_dir: galaxy-data
 cache:
