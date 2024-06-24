@@ -21,7 +21,7 @@ from fastapi import (
     Response,
     status,
 )
-from gxformat2._yaml import ordered_dump
+from gxformat2.yaml import ordered_dump
 from pydantic import (
     UUID1,
     UUID4,
