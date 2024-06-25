@@ -15,7 +15,10 @@ try:
 except ImportError:
     OnedataFileRESTClient = None
 
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    mapped_chars,
+    string_as_bool,
+)
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
@@ -125,8 +128,14 @@ class OnedataObjectStore(CachingConcreteObjectStore):
             f"(disable_tls_certificate_validation={self.disable_tls_certificate_validation})"
         )
 
+        alt_space_fqn_separators = [mapped_chars["@"]] if "@" in mapped_chars else None
         verify_ssl = not self.disable_tls_certificate_validation
-        self._client = OnedataFileRESTClient(self.onezone_domain, self.access_token, verify_ssl=verify_ssl)
+        self._client = OnedataFileRESTClient(
+            self.onezone_domain,
+            self.access_token,
+            alt_space_fqn_separators=alt_space_fqn_separators,
+            verify_ssl=verify_ssl,
+        )
 
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
