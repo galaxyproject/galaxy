@@ -1,6 +1,7 @@
 """
 API Controller providing Chat functionality
 """
+
 import logging
 
 try:
@@ -38,8 +39,9 @@ class ChatAPI:
 
         if openai is None or self.config.openai_api_key is None:
             raise ConfigurationError("OpenAI is not configured for this instance.")
-        else:
-            openai.api_key = self.config.openai_api_key
+        client = openai.OpenAI(
+            api_key=self.config.openai_api_key,
+        )
 
         messages = [
             {"role": "system", "content": PROMPT},
@@ -50,16 +52,10 @@ class ChatAPI:
             msg = "The user will provide you a Galaxy tool error, and you will try to explain the error and provide a solution."
             messages.append({"role": "system", "content": msg})
 
-        client = OpenAI(
-            organization='org-gO14XNCI5fwciPOYeic5Kq14',
-            project='$PROJECT_ID',
-        )
-
-
-        response = client.create_chat(
+        completion = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
             temperature=0,
         )
-        answer = response["choices"][0]["message"]["content"]
+        answer = completion.choices[0].message.content
         return answer
