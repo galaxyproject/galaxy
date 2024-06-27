@@ -864,7 +864,7 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
-        accepted_datatypes: List["Data"] = []
+        accepted_datatypes: List[Data] = []
         for accepted_format in accepted_formats:
             if isinstance(accepted_format, str):
                 accepted_datatype = self.get_datatype_by_extension(accepted_format)

@@ -33,6 +33,7 @@ class ToolsController(BaseShedAPIController):
             trans.app.config.whoosh_index_dir,
             trans.app.config.file_path,
             trans.app.config.hgweb_config_dir,
+            trans.app.config.hgweb_repo_prefix,
             trans.app.config.database_connection,
         )
         return {

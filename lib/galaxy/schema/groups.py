@@ -9,6 +9,7 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
+from galaxy.schema import partial_model
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -69,3 +70,8 @@ class GroupCreatePayload(Model):
         [],
         title="role IDs",
     )
+
+
+@partial_model()
+class GroupUpdatePayload(GroupCreatePayload):
+    pass

@@ -22,7 +22,7 @@
         </div>
 
         <b-alert :show="copySuccess">
-            History imported and is now your active history. <b-link to="/histories/list">View here</b-link>.
+            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
         </b-alert>
 
         <CollectionPanel
@@ -40,6 +40,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { isAnonymousUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -88,6 +89,9 @@ export default {
         },
         canImportHistory() {
             return !this.userOwnsHistory && !this.history.purged;
+        },
+        importedHistoryLink() {
+            return isAnonymousUser(this.currentUser) ? "/" : "/histories/list";
         },
     },
     created() {

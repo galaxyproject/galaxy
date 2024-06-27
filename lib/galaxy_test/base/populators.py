@@ -1523,7 +1523,7 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
-    def upgrade_object_store_raw(self, id: Union[str, int], payload: Dict[str, Any]) -> Response:
+    def upgrade_object_store_raw(self, id: str, payload: Dict[str, Any]) -> Response:
         response = self._put(
             f"/api/object_store_instances/{id}",
             payload,
@@ -1531,7 +1531,7 @@ class BaseDatasetPopulator(BasePopulator):
         )
         return response
 
-    def upgrade_object_store(self, id: Union[str, int], payload: Dict[str, Any]) -> Dict[str, Any]:
+    def upgrade_object_store(self, id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         response = self.upgrade_object_store_raw(id, payload)
         api_asserts.assert_status_code_is_ok(response)
         return response.json()

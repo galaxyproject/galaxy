@@ -423,7 +423,7 @@ class WorkflowProgress:
             modules.NoReplacement,
             model.DatasetCollectionInstance,
             List[model.DatasetCollectionInstance],
-            "HistoryItem",
+            HistoryItem,
         ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]

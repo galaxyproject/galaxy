@@ -1,13 +1,14 @@
 import json
 import logging
-import typing
 from datetime import (
     date,
     datetime,
 )
 from typing import (
     cast,
+    Dict,
     List,
+    Optional,
 )
 
 import sqlalchemy
@@ -26,18 +27,21 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
+from typing_extensions import TypedDict
 
 from galaxy import model
 from galaxy.exceptions import (
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
 from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
@@ -106,7 +110,7 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
+    def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.ScalarResult:
         """The caller is responsible for security checks on the resulting job if
         history_id, invocation_id, or implicit_collection_jobs_id is set.
         Otherwise this will only return the user's jobs or all jobs if the requesting
@@ -209,8 +213,13 @@ class JobManager:
                 stmt = stmt.outerjoin(Job.user)
         else:
             if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
-                stmt = stmt.where(Job.user_id == trans.user.id)
-            # caller better check security
+                # If we're not filtering on history, invocation or collection we filter the jobs owned by the current user
+                if trans.user:
+                    stmt = stmt.where(Job.user_id == trans.user.id)
+                elif trans.galaxy_session:
+                    stmt = stmt.where(Job.session_id == trans.galaxy_session.id)
+                else:
+                    raise RequestParameterMissingException("A session is required to list jobs for anonymous users")
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
@@ -254,15 +263,15 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id) -> Job:
+    def get_accessible_job(self, trans: ProvidesUserContext, decoded_job_id) -> Job:
         job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
-        belongs_to_user = (
-            (job.user_id == trans.user.id)
-            if job.user_id and trans.user
-            else (job.session_id == trans.get_galaxy_session().id)
-        )
+        belongs_to_user = False
+        if trans.user:
+            belongs_to_user = job.user_id == trans.user.id
+        elif trans.galaxy_session:
+            belongs_to_user = job.session_id == trans.galaxy_session.id
         if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
@@ -647,7 +656,7 @@ class JobSearch:
         return stmt
 
 
-def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
+def view_show_job(trans, job: Job, full: bool) -> Dict:
     is_admin = trans.user_is_admin
     job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
@@ -817,7 +826,14 @@ def summarize_invocation_jobs(
     return rval
 
 
-def summarize_jobs_to_dict(sa_session, jobs_source):
+class JobsSummary(TypedDict):
+    populated_state: str
+    states: Dict[str, int]
+    model: str
+    id: int
+
+
+def summarize_jobs_to_dict(sa_session, jobs_source) -> Optional[JobsSummary]:
     """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
@@ -826,7 +842,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     :rtype:     dict
     :returns:   dictionary containing job summary information
     """
-    rval = None
+    rval: Optional[JobsSummary] = None
     if jobs_source is None:
         pass
     elif isinstance(jobs_source, model.Job):
@@ -842,10 +858,10 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
             "id": jobs_source.id,
             "populated_state": populated_state,
             "model": "ImplicitCollectionJobs",
+            "states": {},
         }
         if populated_state == "ok":
             # produce state summary...
-            states = {}
             join = model.ImplicitCollectionJobs.table.join(
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
@@ -856,8 +872,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 .group_by(model.Job.state)
             )
             for row in sa_session.execute(statement):
-                states[row[0]] = row[1]
-            rval["states"] = states
+                rval["states"][row[0]] = row[1]
     return rval
 
 

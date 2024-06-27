@@ -6,7 +6,7 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import { HistoryItemSummary } from "@/api";
+import { HistoryItemSummary, isHistoryItem } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
@@ -75,29 +75,13 @@ async function onDrop(evt: any) {
     }
     processingDrop.value = true;
     showDropZone.value = false;
-    let data: HistoryItemSummary[] | undefined;
-    let originalHistoryId: string | undefined;
-    const multiple = eventStore.multipleDragData;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set originalHistoryId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                originalHistoryId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                originalHistoryId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
+    const dragItems = eventStore.getDragItems();
+    // Filter out any non-history items
+    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
+    const multiple = historyItems.length > 1;
+    const originalHistoryId = historyItems?.[0]?.history_id;
 
-    if (data && originalHistoryId) {
+    if (historyItems && originalHistoryId) {
         await historyStore.createNewHistory();
         const currentHistoryId = historyStore.currentHistoryId;
 
@@ -105,7 +89,7 @@ async function onDrop(evt: any) {
         let collectionCount = 0;
         if (currentHistoryId) {
             // iterate over the data array and copy each item to the new history
-            for (const item of data) {
+            for (const item of historyItems) {
                 const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
                 await copyDataset(item.id, currentHistoryId, item.history_content_type, dataSource)
                     .then(() => {

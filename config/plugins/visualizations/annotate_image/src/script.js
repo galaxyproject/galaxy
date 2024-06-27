@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $ from "./jq-loader";
 import "jquery-contextmenu";
 import "jquery.ui.position";
 import _ from "underscore";
@@ -11,7 +11,7 @@ function prefixedDownloadUrl(root, path) {
     return `${root}/${path}`.replace(slashCleanup, "/");
 }
 
-const CommandManager = (function() {
+const CommandManager = (function () {
     function CommandManager() {}
 
     CommandManager.executed = [];
@@ -50,9 +50,9 @@ const CommandManager = (function() {
     return CommandManager;
 })();
 
-const generateUUID = function() {
+const generateUUID = function () {
     let d = new Date().getTime();
-    const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+    const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
         const r = (d + Math.random() * 16) % 16 | 0;
         d = Math.floor(d / 16);
         return (c == "x" ? r : (r & 0x7) | 0x8).toString(16);
@@ -65,29 +65,29 @@ window.bundleEntries.load = function (opt) {
     const chart = opt.chart;
     const dataset = opt.dataset;
     const defaults = { color: "red", width: 4, opacity: 0.5 };
-    $.fn.createCanvas = function(options) {
+    $.fn.createCanvas = function (options) {
         let settings = $.extend({}, defaults, options || {});
         const self = this;
 
-        this.setOptions = function(options) {
+        this.setOptions = function (options) {
             settings = $.extend(settings, options);
         };
 
-        $(document).ready(function() {
-            $(self).each(function(eachIndex, eachItem) {
+        $(document).ready(function () {
+            $(self).each(function (eachIndex, eachItem) {
                 self.paths = [];
                 const img = eachItem;
                 // Get a reference to the canvas object
                 const canvas = $("<canvas>")
                     .attr({
                         width: options.img_width + "px",
-                        height: options.img_height + "px"
+                        height: options.img_height + "px",
                     })
                     .addClass("image-canvas")
                     .css({
                         position: "absolute",
                         top: "0px",
-                        left: "0px"
+                        left: "0px",
                     });
                 $(img).after(canvas);
                 $(img).data("paths", []);
@@ -96,13 +96,13 @@ window.bundleEntries.load = function (opt) {
                 canvas[0].width = options.img_width;
                 canvas[0].height = options.img_height;
 
-                $(canvas).mouseenter(function() {
+                $(canvas).mouseenter(function () {
                     paper.projects[eachIndex].activate();
                 });
                 // Create a simple drawing tool:
                 const tool = new paper.Tool();
 
-                tool.onMouseMove = function(event) {
+                tool.onMouseMove = function (event) {
                     if (!$(".context-menu-list").is(":visible")) {
                         paper.project.activeLayer.selected = false;
                         self.setPenColor(settings.color);
@@ -116,7 +116,7 @@ window.bundleEntries.load = function (opt) {
                     }
                 };
 
-                tool.onMouseDown = function(event) {
+                tool.onMouseDown = function (event) {
                     switch (event.event.button) {
                         // leftclick
                         case 0:
@@ -137,7 +137,7 @@ window.bundleEntries.load = function (opt) {
                     }
                 };
 
-                tool.onMouseDrag = function(event) {
+                tool.onMouseDrag = function (event) {
                     switch (event.event.button) {
                         // leftclick
                         case 0:
@@ -162,7 +162,7 @@ window.bundleEntries.load = function (opt) {
                     }
                 };
 
-                tool.onMouseUp = function(event) {
+                tool.onMouseUp = function (event) {
                     switch (event.event.button) {
                         // leftclick
                         case 0:
@@ -171,11 +171,11 @@ window.bundleEntries.load = function (opt) {
                                     const selectedItemId = selectedItem.id;
                                     const draggingStartPoint = { x: mouseDownPoint.x, y: mouseDownPoint.y };
                                     CommandManager.execute({
-                                        execute: function() {
+                                        execute: function () {
                                             //item was already moved, so do nothing
                                         },
-                                        unexecute: function() {
-                                            $(paper.project.activeLayer.children).each(function(index, item) {
+                                        unexecute: function () {
+                                            $(paper.project.activeLayer.children).each(function (index, item) {
                                                 if (item.id == selectedItemId) {
                                                     if (item.segments) {
                                                         new paper.Point(
@@ -196,7 +196,7 @@ window.bundleEntries.load = function (opt) {
                                                     return false;
                                                 }
                                             });
-                                        }
+                                        },
                                     });
                                     mouseDownPoint = null;
                                 }
@@ -207,20 +207,20 @@ window.bundleEntries.load = function (opt) {
                                 const strPath = path.exportJSON({ asString: true });
                                 const uid = generateUUID();
                                 CommandManager.execute({
-                                    execute: function() {
+                                    execute: function () {
                                         path = new paper.Path();
                                         path.importJSON(strPath);
                                         path.data.uid = uid;
                                     },
-                                    unexecute: function() {
-                                        $(paper.project.activeLayer.children).each(function(index, item) {
+                                    unexecute: function () {
+                                        $(paper.project.activeLayer.children).each(function (index, item) {
                                             if (item.data && item.data.uid) {
                                                 if (item.data.uid == uid) {
                                                     item.remove();
                                                 }
                                             }
                                         });
-                                    }
+                                    },
                                 });
                             }
                             break;
@@ -233,7 +233,7 @@ window.bundleEntries.load = function (opt) {
                     }
                 };
 
-                tool.onKeyUp = function(event) {
+                tool.onKeyUp = function (event) {
                     if (selectedItem) {
                         // When a key is released, set the content of the text item:
                         if (selectedItem.content) {
@@ -254,7 +254,7 @@ window.bundleEntries.load = function (opt) {
         //let contextSelectedItemId;
         let selectedItem;
         let mouseDownPoint;
-        this.downloadCanvas = function(canvas, filename) {
+        this.downloadCanvas = function (canvas, filename) {
             /// create an "off-screen" anchor tag
             const lnk = document.createElement("a");
 
@@ -276,12 +276,12 @@ window.bundleEntries.load = function (opt) {
             }
         };
 
-        this.download = function() {
+        this.download = function () {
             const canvas = paper.project.activeLayer.view.element;
             const img = $(canvas)[0];
             const mergeCanvas = $("<canvas>").attr({
                 width: img.width,
-                height: img.height
+                height: img.height,
             });
             const mergedContext = mergeCanvas[0].getContext("2d");
             mergedContext.clearRect(0, 0, img.width, img.height);
@@ -290,12 +290,10 @@ window.bundleEntries.load = function (opt) {
             self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
 
             // create canvas for original and annotations
-            const annotated_img = $(canvas)
-                .parent()
-                .find("img")[0];
+            const annotated_img = $(canvas).parent().find("img")[0];
             const mergeCanvasAnnotated = $("<canvas>").attr({
                 width: $(annotated_img).width(),
-                height: $(annotated_img).height()
+                height: $(annotated_img).height(),
             });
             const mergedContextAnnotated = mergeCanvasAnnotated[0].getContext("2d");
             mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
@@ -304,11 +302,11 @@ window.bundleEntries.load = function (opt) {
             self.downloadCanvas(mergeCanvasAnnotated[0], "original-with-annotations.png");
         };
 
-        this.setText = function() {
+        this.setText = function () {
             const uid = generateUUID();
             const pos = contextPoint;
             CommandManager.execute({
-                execute: function() {
+                execute: function () {
                     const TXT_DBL_CLICK = "<<double click to edit>>";
                     const txt = TXT_DBL_CLICK;
                     const text = new paper.PointText(pos);
@@ -318,26 +316,26 @@ window.bundleEntries.load = function (opt) {
                     text.fontFamily = "sans-serif";
                     text.data.uid = uid;
                     text.opacity = settings.opacity;
-                    text.onDoubleClick = function(event) {
+                    text.onDoubleClick = function (event) {
                         if (this.className == "PointText") {
                             const txt = window.prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
                             if (txt.length > 0) this.content = txt;
                         }
                     };
                 },
-                unexecute: function() {
-                    $(paper.project.activeLayer.children).each(function(index, item) {
+                unexecute: function () {
+                    $(paper.project.activeLayer.children).each(function (index, item) {
                         if (item.data && item.data.uid) {
                             if (item.data.uid == uid) {
                                 item.remove();
                             }
                         }
                     });
-                }
+                },
             });
         };
 
-        this.setPenColor = function(color) {
+        this.setPenColor = function (color) {
             self.setOptions({ color: color });
             $(".image-canvas").css(
                 "cursor",
@@ -345,14 +343,14 @@ window.bundleEntries.load = function (opt) {
             );
         };
 
-        this.setCursorHandOpen = function() {
+        this.setCursorHandOpen = function () {
             $(".image-canvas").css(
                 "cursor",
                 "url(/static/plugins/visualizations/annotate_image/static/images/hand-open.png) 25 25, auto"
             );
         };
 
-        this.setCursorHandClose = function() {
+        this.setCursorHandClose = function () {
             $(".image-canvas").css(
                 "cursor",
                 "url(/static/plugins/visualizations/annotate_image/static/images/hand-close.png) 25 25, auto"
@@ -361,7 +359,7 @@ window.bundleEntries.load = function (opt) {
 
         $.contextMenu({
             selector: ".image-canvas",
-            callback: function(key, options) {
+            callback: function (key, options) {
                 switch (key) {
                     //COMMANDS
                     case "undo":
@@ -406,53 +404,60 @@ window.bundleEntries.load = function (opt) {
                 redPen: { name: "Red Pen", icon: "redpen" },
                 greenPen: { name: "Green Pen", icon: "greenpen" },
                 bluePen: { name: "Blue Pen", icon: "bluepen" },
-                yellowPen: { name: "Yellow Pen", icon: "yellowpen" }
-            }
+                yellowPen: { name: "Yellow Pen", icon: "yellowpen" },
+            },
         });
 
         const $menuList = $(".context-menu-list");
         $menuList.find(".context-menu-icon-text").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/text.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 96% bottom 45%"
+            "background-position": "right 96% bottom 45%",
         });
         $menuList.find(".context-menu-icon-blackpen").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 97% bottom 48%"
+            "background-position": "right 97% bottom 48%",
         });
         $menuList.find(".context-menu-icon-redpen").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 97% bottom 48%"
+            "background-position": "right 97% bottom 48%",
         });
         $menuList.find(".context-menu-icon-greenpen").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 97% bottom 48%"
+            "background-position": "right 97% bottom 48%",
         });
         $menuList.find(".context-menu-icon-bluepen").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 97% bottom 48%"
+            "background-position": "right 97% bottom 48%",
         });
         $menuList.find(".context-menu-icon-yellowpen").css({
             "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)",
             "background-repeat": "no-repeat",
-            "background-position": "right 97% bottom 48%"
+            "background-position": "right 97% bottom 48%",
         });
     };
 
     const downloadUrl = prefixedDownloadUrl(opt.root, dataset.download_url);
-    $.ajax({
-        url: downloadUrl,
-        success: function(content) {
+
+    fetch(downloadUrl)
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error("Failed to access dataset.");
+            }
+            return response.text();
+        })
+        .then((content) => {
             const $chartViewer = $("#" + opt.target);
             $chartViewer.html("<img id='image-annotate' src='" + downloadUrl + "' />");
             $chartViewer.css("overflow", "auto");
             $chartViewer.css("position", "relative");
+
             const $image = $chartViewer.find("img");
-            $image.on("load", function() {
+            $image.on("load", function () {
                 const width = $(this).width();
                 const height = $(this).height();
                 $image.width(width);
@@ -462,15 +467,15 @@ window.bundleEntries.load = function (opt) {
                     width: 2,
                     opacity: 0.5,
                     img_width: width,
-                    img_height: height
+                    img_height: height,
                 });
             });
+
             chart.state("ok", "Chart drawn.");
             opt.process.resolve();
-        },
-        error: function() {
-            chart.state("failed", "Failed to access dataset.");
+        })
+        .catch((error) => {
+            chart.state("failed", error.message);
             opt.process.resolve();
-        }
-    });
-}
+        });
+};

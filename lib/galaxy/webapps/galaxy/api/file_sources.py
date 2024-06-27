@@ -29,7 +29,7 @@ router = Router(tags=["file_sources"])
 
 
 UserFileSourceIdPathParam: str = Path(
-    ..., title="User File Source ID", description="The index for a persisted UserFileSourceStore object."
+    ..., title="User File Source UUID", description="The UUID index for a persisted UserFileSourceStore object."
 )
 
 
@@ -86,7 +86,7 @@ class FastAPIFileSources:
 
     @router.get(
         "/api/file_source_instances/{user_file_source_id}",
-        summary="Get a list of persisted file source instances defined by the requesting user.",
+        summary="Get a persisted user file source instance.",
         operation_id="file_sources__instances_get",
     )
     def instances_show(

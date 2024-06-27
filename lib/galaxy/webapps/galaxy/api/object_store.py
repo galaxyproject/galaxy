@@ -49,8 +49,8 @@ ConcreteObjectStoreIdPathParam: str = Path(
 
 UserObjectStoreIdPathParam: str = Path(
     ...,
-    title="User Object Store Identifier",
-    description="The identifier used to index a persisted UserObjectStore object.",
+    title="User Object Store UUID",
+    description="The UUID used to identify a persisted UserObjectStore object.",
 )
 
 SelectableQueryParam: bool = Query(
@@ -124,7 +124,7 @@ class FastAPIObjectStore:
 
     @router.get(
         "/api/object_store_instances/{user_object_store_id}",
-        summary="Get a persisted object store instances owned by the requesting user.",
+        summary="Get a persisted user object store instance.",
         operation_id="object_stores__instances_get",
     )
     def instances_show(

@@ -120,7 +120,6 @@ class TestUserObjectStoreTestCase(BaseTestCase):
         user_object_store_showed = self.manager.show(self.trans, user_object_store.uuid)
         assert user_object_store_showed
         assert user_object_store_showed.uuid == user_object_store.uuid
-        assert user_object_store_showed.id == user_object_store.id
 
     def test_simple_update(self, tmp_path):
         self._init_managers(tmp_path, config_dict=simple_variable_template(tmp_path))

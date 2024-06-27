@@ -274,6 +274,18 @@ def test_to_cwl_nested_collection():
     assert result["outer"][0]["basename"] == "inner"
 
 
+def test_to_cwl_dataset_collection_element():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    dc_inner = model.DatasetCollection(collection_type="list")
+    model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
+    dc_outer = model.DatasetCollection(collection_type="list:list")
+    dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
+    result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
+    assert result[0]["class"] == "File"
+    assert result[0]["basename"] == "inner"
+
+
 class MapOverTestCase(NamedTuple):
     data_input: str
     step_input_def: Union[str, List[str]]

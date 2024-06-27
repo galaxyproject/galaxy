@@ -32,7 +32,7 @@ const loadingMessage = "Loading storage location template and instance informati
 
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
-    const args = { user_object_store_id: String(props.instance.id) };
+    const args = { user_object_store_id: String(props.instance.uuid) };
     try {
         const { data: objectStore } = await update({ ...args, ...payload });
         await onUpgrade(objectStore);

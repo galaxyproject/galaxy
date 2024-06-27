@@ -53,6 +53,11 @@ class GetTargetHistoryPayload(Model):
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
     # TODO - Are the descriptions correct?
+    version: Optional[int] = Field(
+        None,
+        title="Version",
+        description="The version of the workflow to invoke.",
+    )
     instance: Optional[bool] = Field(
         False,
         title="Is instance",

@@ -11,8 +11,8 @@ from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model import Quota
+from galaxy.model.db.user import get_user_by_email
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.quota._schema import (
     CreateQuotaParams,

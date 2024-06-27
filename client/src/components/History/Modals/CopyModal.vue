@@ -78,7 +78,7 @@ async function copy(close: () => void) {
         <transition name="fade">
             <BAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you log in or register, you will lose your current history after copying
-                this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
+                this history. You can <a href="/login/start">log in or register here</a>.
             </BAlert>
         </transition>
 

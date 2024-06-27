@@ -290,7 +290,7 @@ function makeAccessible(item: ItemInterface) {
 
 <template>
     <div>
-        <b-table :items="tableItems" :fields="tableFields">
+        <b-table :items="tableItems" show-empty :fields="tableFields">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading objects" />
                 <b-alert v-else variant="info" show>

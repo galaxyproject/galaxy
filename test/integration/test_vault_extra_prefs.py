@@ -10,7 +10,7 @@ from requests import (
     put,
 )
 
-from galaxy.managers.users import get_user_by_email
+from galaxy.model.db.user import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"

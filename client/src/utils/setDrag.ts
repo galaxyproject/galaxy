@@ -1,9 +1,9 @@
 /**
  * Helper to configure datatransfer for drag & drop operations
  */
-import { useEventStore } from "@/stores/eventStore";
+import { type EventData, useEventStore } from "@/stores/eventStore";
 
-export function setDrag(evt: DragEvent, data = null, multiple = false) {
+export function setDrag(evt: DragEvent, data?: EventData, multiple = false) {
     const eventStore = useEventStore();
     if (data) {
         evt.dataTransfer?.setData("text", JSON.stringify([data]));

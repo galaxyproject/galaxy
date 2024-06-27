@@ -8,7 +8,7 @@ export const update = fetcher.path("/api/object_store_instances/{user_object_sto
 
 export async function hide(instance: UserConcreteObjectStore) {
     const payload = { hidden: true };
-    const args = { user_object_store_id: String(instance?.id) };
+    const args = { user_object_store_id: String(instance?.uuid) };
     const { data: objectStore } = await update({ ...args, ...payload });
     return objectStore;
 }

@@ -349,6 +349,9 @@ class LimitedUserModel(Model):
     email: Optional[str] = None
 
 
+MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
+
+
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
     nice_total_disk_usage: str = NiceTotalDiskUsageField
@@ -947,6 +950,7 @@ class HDAObject(Model, WithModelClass):
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
     accessible: Optional[bool] = None
+    purged: bool
     model_config = ConfigDict(extra="allow")
 
 

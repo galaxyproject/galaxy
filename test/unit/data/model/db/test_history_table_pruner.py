@@ -4,7 +4,6 @@ import pytest
 from sqlalchemy import (
     func,
     select,
-    text,
 )
 
 from galaxy import model as m
@@ -69,10 +68,6 @@ def setup_db(
     make_data_manager_history_association(history=histories[32])
     make_cleanup_event_history_association(history_id=histories[33].id)
     make_galaxy_session_to_history_association(history=histories[34])
-    # HistoryAudit is not instantiable, so created association manually.
-    stmt = text("insert into history_audit values(:history_id, :update_time)")
-    params = {"history_id": histories[35].id, "update_time": datetime.date.today()}
-    session.execute(stmt, params)
 
     # 6. Create a galaxy_session record referring to a history.
     # This cannot be deleted, but the history reference can be set to null.
@@ -86,7 +81,8 @@ def setup_db(
 
 
 def test_run(setup_db, session, db_url, engine):
-
+    # In this test we do not verify counts of rows in the HistoryAudit table since those rows are created
+    # automatically via db trigger.
     def verify_counts(model, expected):
         assert session.scalar(select(func.count()).select_from(model)) == expected
 
@@ -122,7 +118,6 @@ def test_run(setup_db, session, db_url, engine):
         m.DataManagerHistoryAssociation,
         m.CleanupEventHistoryAssociation,
         m.GalaxySessionToHistoryAssociation,
-        m.HistoryAudit,
     ]:
         verify_counts(model, 1)
     verify_counts(
@@ -162,6 +157,5 @@ def test_run(setup_db, session, db_url, engine):
         m.DataManagerHistoryAssociation,
         m.CleanupEventHistoryAssociation,
         m.GalaxySessionToHistoryAssociation,
-        m.HistoryAudit,
     ]:
         verify_counts(model, 0)

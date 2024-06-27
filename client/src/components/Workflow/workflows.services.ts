@@ -45,8 +45,12 @@ export async function updateWorkflow(id: string, changes: object): Promise<Workf
     return data;
 }
 
-export async function copyWorkflow(id: string, currentOwner: string): Promise<Workflow> {
-    const { data: workflowData } = await axios.get(withPrefix(`/api/workflows/${id}/download`));
+export async function copyWorkflow(id: string, currentOwner: string, version?: string): Promise<Workflow> {
+    let path = `/api/workflows/${id}/download`;
+    if (version) {
+        path += `?version=${version}`;
+    }
+    const { data: workflowData } = await axios.get(withPrefix(path));
 
     workflowData.name = `Copy of ${workflowData.name}`;
     const currentUsername = useUserStore().currentUser?.username;

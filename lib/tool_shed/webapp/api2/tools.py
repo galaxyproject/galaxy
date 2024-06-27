@@ -74,6 +74,7 @@ class FastAPITools:
             config.whoosh_index_dir,
             config.file_path,
             config.hgweb_config_dir,
+            config.hgweb_repo_prefix,
             config.database_connection,
         )
         return BuildSearchIndexResponse(

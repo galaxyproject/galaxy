@@ -99,6 +99,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         job = self.__authorize_job_access(trans, job_id, **payload)
         path = payload.get("path")
+        if not path:
+            raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
         self.__check_job_can_write_to_path(trans, job, path)
 
         # Is this writing an unneeded file? Should this just copy in Python?

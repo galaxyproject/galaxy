@@ -34,7 +34,6 @@ from urllib.parse import urlparse
 
 import yaml
 
-from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -700,7 +699,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     allowed_origin_hostnames: List[str]
     builds_file_path: str
-    carbon_intensity: float
     container_resolvers_config_file: str
     database_connection: str
     drmaa_external_runjob_script: str
@@ -708,7 +706,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     enable_tool_shed_check: bool
     galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
-    geographical_server_location_name: str
     hours_between_check: int
     integrated_tool_panel_config: str
     involucro_path: str
@@ -813,11 +810,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
-
-        # Carbon emissions configuration
-        carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
-        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
-        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))

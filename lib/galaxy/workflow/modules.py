@@ -131,9 +131,9 @@ def to_cwl(value, hda_references, step):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
-    if isinstance(value, model.DatasetCollectionElement) and value.hda:
+    if isinstance(value, model.DatasetCollectionElement):
         element_identifier = value.element_identifier
-        value = value.hda
+        value = value.element_object
     if isinstance(value, model.HistoryDatasetAssociation):
         # I think the following two checks are needed but they may
         # not be needed.

@@ -1,11 +1,7 @@
 {
     "name": "galaxy-scatterplot",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "Scatterplot visualization plugin for the Galaxy informatics framework",
-    "main": " ",
-    "scripts": {
-        "build": "parcel build src/scatterplot.js -d static/"
-    },
     "keywords": [
         "galaxy",
         "visualization",
@@ -14,17 +10,17 @@
     "author": "Carl Eberhard",
     "license": "0BSD",
     "dependencies": {
-        "babel-plugin-auto-import": "^0.7.1",
-        "babel-preset-env": "^1.6.1",
         "backbone": "^1.3.3",
         "bootstrap": "^3.3.7",
         "d3": "^3.5.17",
         "jquery": "^3.2.1",
         "jquery-ui-bundle": "^1.12.1-migrate",
-        "parcel-bundler": "^1.6.2",
         "underscore": "^1.8.3"
     },
     "devDependencies": {
-        "babel-core": "^6.26.3"
+        "parcel": "2.11.0"
+    },
+    "scripts": {
+        "build": "parcel build src/scatterplot.js --dist-dir static"
     }
 }

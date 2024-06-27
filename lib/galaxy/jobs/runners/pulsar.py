@@ -322,7 +322,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
-        if pulsar_status in ["complete", "cancelled"] or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+        if pulsar_status in ["complete", "cancelled"]:
+            self.mark_as_finished(job_state)
+            return None
+        if job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+            client = self.get_client_from_state(job_state)
+            client.kill()
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:

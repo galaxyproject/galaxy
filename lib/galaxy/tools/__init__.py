@@ -3236,7 +3236,9 @@ class DatabaseOperationTool(Tool):
                     )
 
         for input_dataset in input_datasets.values():
-            check_dataset_state(input_dataset.state)
+            if input_dataset:
+                # None is a possible input for optional inputs
+                check_dataset_state(input_dataset.state)
 
         for input_dataset_collection_pairs in input_dataset_collections.values():
             for input_dataset_collection, _ in input_dataset_collection_pairs:

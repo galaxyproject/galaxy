@@ -23,6 +23,7 @@ export default {
         return {
             storedWorkflowId: null,
             workflowId: null,
+            version: null,
             editorConfig: null,
             editorReloadKey: 0,
         };
@@ -46,6 +47,7 @@ export default {
 
             this.storedWorkflowId = Query.get("id");
             this.workflowId = Query.get("workflow_id");
+            this.version = Query.get("version");
 
             const params = {};
 
@@ -53,6 +55,9 @@ export default {
                 params.workflow_id = this.workflowId;
             } else if (this.storedWorkflowId) {
                 params.id = this.storedWorkflowId;
+            }
+            if (this.version) {
+                params.version = this.version;
             }
 
             this.editorConfig = await urlData({ url: "/workflow/editor", params });

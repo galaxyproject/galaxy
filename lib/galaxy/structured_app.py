@@ -101,8 +101,10 @@ class MinimalApp(BasicSharedApp):
 
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
+    carbon_intensity: float
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
+    geographical_server_location_name: str
     dataset_collection_manager: "DatasetCollectionManager"
     tool_data_tables: "ToolDataTableManager"
     history_manager: "HistoryManager"

@@ -625,18 +625,19 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         hda = item
         display_apps: List[Dict[str, Any]] = []
-        for display_app in hda.get_display_applications(trans).values():
-            app_links = []
-            for link_app in display_app.links.values():
-                app_links.append(
-                    {
-                        "target": link_app.url.get("target_frame", "_blank"),
-                        "href": link_app.get_display_url(hda, trans),
-                        "text": gettext.gettext(link_app.name),
-                    }
-                )
-            if app_links:
-                display_apps.append(dict(label=display_app.name, links=app_links))
+        if hda.state == model.HistoryDatasetAssociation.states.OK and not hda.deleted:
+            for display_app in hda.get_display_applications(trans).values():
+                app_links = []
+                for link_app in display_app.links.values():
+                    app_links.append(
+                        {
+                            "target": link_app.url.get("target_frame", "_blank"),
+                            "href": link_app.get_display_url(hda, trans),
+                            "text": gettext.gettext(link_app.name),
+                        }
+                    )
+                if app_links:
+                    display_apps.append(dict(label=display_app.name, links=app_links))
 
         return display_apps
 
@@ -646,28 +647,30 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         hda = item
         display_apps: List[Dict[str, Any]] = []
-        if not self.app.config.enable_old_display_applications:
-            return display_apps
+        if (
+            self.app.config.enable_old_display_applications
+            and hda.state == model.HistoryDatasetAssociation.states.OK
+            and not hda.deleted
+        ):
+            display_link_fn = hda.datatype.get_display_links
+            for display_app in hda.datatype.get_display_types():
+                target_frame, display_links = display_link_fn(
+                    hda,
+                    display_app,
+                    self.app,
+                    trans.request.base,
+                )
 
-        display_link_fn = hda.datatype.get_display_links
-        for display_app in hda.datatype.get_display_types():
-            target_frame, display_links = display_link_fn(
-                hda,
-                display_app,
-                self.app,
-                trans.request.base,
-            )
+                if len(display_links) > 0:
+                    display_label = hda.datatype.get_display_label(display_app)
 
-            if len(display_links) > 0:
-                display_label = hda.datatype.get_display_label(display_app)
-
-                app_links = []
-                for display_name, display_link in display_links:
-                    app_links.append(
-                        {"target": target_frame, "href": display_link, "text": gettext.gettext(display_name)}
-                    )
-                if app_links:
-                    display_apps.append(dict(label=display_label, links=app_links))
+                    app_links = []
+                    for display_name, display_link in display_links:
+                        app_links.append(
+                            {"target": target_frame, "href": display_link, "text": gettext.gettext(display_name)}
+                        )
+                    if app_links:
+                        display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
 

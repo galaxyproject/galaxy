@@ -152,7 +152,7 @@ class DoiCitation(BaseCitation):
             try:
                 self.raw_bibtex = self.doi_cache.get_bibtex(self.__doi)
             except Exception:
-                log.exception("Failed to fetch bibtex for DOI %s", self.__doi)
+                log.debug("Failed to fetch bibtex for DOI %s", self.__doi)
 
         if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
             return f"""@MISC{{{self.__doi},

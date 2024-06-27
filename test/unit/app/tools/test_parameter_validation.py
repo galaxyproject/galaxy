@@ -219,11 +219,13 @@ class TestParameterValidation(BaseParameterTestCase):
         )
         p.validate(10)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter blah: Value \('15'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(15)
         with self.assertRaisesRegex(
-            ValueError, r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < value <= float\('20'\)"
+            ValueError,
+            r"Parameter blah: Value \('20'\) must not fulfill float\('10'\) < float\(value\) <= float\('20'\)",
         ):
             p.validate(20)
         p.validate(21)

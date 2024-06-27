@@ -13,10 +13,12 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell $(IN_VENV) command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+# Default to not fail on error, set to 1 to fail client builds on a plugin error.
+GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR?=0
 # Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
 # compatibility with smaller machines.
 NODE_OPTIONS ?= --max-old-space-size=3072
-NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS)
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS) GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR=$(GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR)	
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \

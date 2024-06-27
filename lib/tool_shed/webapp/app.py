@@ -104,6 +104,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.
         self.hgweb_config_manager = hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
+        self.hgweb_config_manager.hgweb_repo_prefix = self.config.hgweb_repo_prefix
         # Initialize the repository registry.
         self.repository_registry = tool_shed.repository_registry.Registry(self)
         # Configure Sentry client if configured

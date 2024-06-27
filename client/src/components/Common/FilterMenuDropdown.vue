@@ -31,6 +31,7 @@ interface Props {
         [k: string]: FilterValue;
     };
     identifier: string;
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -76,7 +77,9 @@ const helpToggle = ref(false);
 const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
-    localValue.value = value;
+    if (!props.disabled) {
+        localValue.value = value;
+    }
 }
 
 // Quota Source refs and operations
@@ -140,6 +143,7 @@ function setValue(val: string | QuotaUsage | undefined) {
                 menu-class="w-100"
                 size="sm"
                 boundary="window"
+                :disabled="props.disabled"
                 :toggle-class="props.error ? 'text-danger' : ''">
                 <BDropdownItem href="#" @click="setValue(undefined)"><i>(any)</i></BDropdownItem>
 

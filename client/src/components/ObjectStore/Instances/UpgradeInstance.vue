@@ -9,7 +9,7 @@ import UpgradeForm from "./UpgradeForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
-    instanceId: number | string;
+    instanceId: string;
 }
 
 const props = defineProps<Props>();

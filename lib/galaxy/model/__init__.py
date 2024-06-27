@@ -4376,6 +4376,8 @@ class Dataset(Base, StorableObject, Serializable):
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
+        self.file_size = 0
+        self.total_size = 0
 
     def get_access_roles(self, security_agent):
         roles = []
@@ -7989,8 +7991,8 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self._inputs_by_name = None
         # Injected attributes
         # TODO: code using these should be refactored to not depend on these non-persistent fields
-        self.module: Optional["WorkflowModule"]
-        self.state: Optional["DefaultToolState"]
+        self.module: Optional[WorkflowModule]
+        self.state: Optional[DefaultToolState]
         self.upgrade_messages: Optional[Dict]
 
     @reconstructor
@@ -8920,7 +8922,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for input_step_parameter in self.input_step_parameters:
                 label = input_step_parameter.workflow_step.label
                 if not label:
-                    continue
+                    label = f"{input_step_parameter.workflow_step.order_index + 1}: Unnamed parameter"
                 input_parameters[label] = {
                     "parameter_value": input_step_parameter.parameter_value,
                     "label": label,
@@ -9664,13 +9666,14 @@ class MetadataFile(Base, StorableObject, Serializable):
     def update_from_file(self, file_name):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
-        self.dataset.object_store.update_from_file(
-            self,
-            file_name=file_name,
-            extra_dir="_metadata_files",
-            extra_dir_at_root=True,
-            alt_name=os.path.basename(self.get_file_name()),
-        )
+        if not self.dataset.purged:
+            self.dataset.object_store.update_from_file(
+                self,
+                file_name=file_name,
+                extra_dir="_metadata_files",
+                extra_dir_at_root=True,
+                alt_name=os.path.basename(self.get_file_name()),
+            )
 
     def get_file_name(self, sync_cache=True):
         # Ensure the directory structure and the metadata file object exist
@@ -10943,7 +10946,8 @@ class UserPreference(Base, RepresentById):
 
 
 class UsesTemplatesAppConfig(Protocol):
-    user_config_templates_index_by: Literal["uuid", "id"]
+    # TODO: delete this config protocol def and uses in dev
+    pass
 
 
 class HasConfigSecrets(RepresentById):
@@ -10953,10 +10957,7 @@ class HasConfigSecrets(RepresentById):
     user: Mapped["User"]
 
     def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
-        if app_config.user_config_templates_index_by == "id":
-            id_str = str(self.id)
-        else:
-            id_str = str(self.uuid)
+        id_str = str(self.uuid)
         user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
         return user_vault_id_prefix
 

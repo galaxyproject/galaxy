@@ -44,7 +44,7 @@ Description
 
 This tool combines individual datasets or collections into a new collection. The simplest scenario is building a new colection from individual datasets (case **A** in the image below). You can merge a collection with individual dataset(s). In this case (see **B** in the image below) the individual dataset(s) will be merged with each element of the input collection to create a nested collection. Finally, two or more collection can be merged together creating a nested collection (case **C** in the image below).
 
-.. class:: warningmark 
+.. class:: warningmark
 
 **Note**: When merging collections (e.g., case **C** below) the input collection **must** have equal number of elements.
 
@@ -77,6 +77,7 @@ This tool will create a new collection from your history datasets but your quota
     </test>
     <test>
       <repeat name="datasets">
+        <param name="input" value_json="null"/>
       </repeat>
       <output_collection name="output" type="list" count="0">
       </output_collection>

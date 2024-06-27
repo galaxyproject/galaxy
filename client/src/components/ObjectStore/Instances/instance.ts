@@ -6,7 +6,7 @@ import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore
 
 import type { UserConcreteObjectStore } from "./types";
 
-export function useInstanceAndTemplate(instanceIdRef: Ref<string | number>) {
+export function useInstanceAndTemplate(instanceIdRef: Ref<string>) {
     const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
     const objectStoreInstancesStore = useObjectStoreInstancesStore();
     objectStoreInstancesStore.fetchInstances();

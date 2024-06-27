@@ -1,0 +1,965 @@
+
+.. to_doc
+
+24.1
+===============================
+
+.. announce_start
+
+Enhancements
+-------------------------------
+
+.. major_feature
+
+
+.. feature
+
+* Release notes
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18218`_
+* Implement a page object accessibility dialog
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17225`_
+* Enable all-vs-all collection analysis patterns
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17366`_
+* Visualizing workflow runs with an invocation graph view
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 17413`_
+* Enables activity bar by default
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17531`_
+* Add onedata objectstore
+  (thanks to `@bwalkowi <https://github.com/bwalkowi>`__).
+  `Pull Request 17540`_
+* Add content assertion XML tags for test output verification using images
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17581`_
+* Workflow editor item selection
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17615`_
+* Workflow editor undo/redo
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17774`_
+* Enable managing object store usage within a history.
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17853`_
+* Add `email` notifications channel
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17914`_
+* Script for deleting userless histories from database + testing + drop unused model testing code
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18079`_
+* Add Net datatype
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18080`_
+* Overhaul Azure storage infrastructure
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18087`_
+* Empower users to bring their own storage and file sources
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18127`_
+* More unit testing for object store stuff
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18136`_
+* Add an Invocations Panel for the Invocations activity
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18137`_
+.. enhancement_tag_viz
+
+* Update parcel-built visualizations to use parcel v2
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18311`_
+.. enhancement_tag_datatypes
+
+* Tighten axt sniffer
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18204`_
+* Better display of estimated line numbers and add number of columns for tabular
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17492`_
+* Add colabfold tar file datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 17567`_
+* Set minimal metadata also for empty bed datasets
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 17586`_
+* Add support for additional media types
+  (thanks to `@arash77 <https://github.com/arash77>`__).
+  `Pull Request 18054`_
+.. enhancement_tag_tools
+
+* Backport Qiskit Jupyter Notebook update to 24.1
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 18310`_
+* Rename JupyTool to something more searchable (i.e. JupyterLab which includes the substring Jupyter)
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 17849`_
+.. enhancement_tag_workflows
+
+* Allow running and editing workflows for specific versions
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18378`_
+* Update labels in Markdown editor when workflow labels change
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17863`_
+* Add galaxy to user agent
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18003`_
+.. enhancement_tag_ui
+
+* Add vue sentry integration
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18120`_
+.. enhancement_tag_jobs
+
+* Only include tool stdout/stderr in HDA info
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 16730`_
+* Fix boto3-stubs typecheck dependency
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18173`_
+.. enhancement_tag_admin
+
+* Add some admin facing docs on data tables
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17585`_
+* Make urgent notifications mandatory
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17975`_
+* Add middleware for logging start and end of request
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18046`_
+.. enhancement
+
+* Backport `#18197 <https://github.com/galaxyproject/galaxy/issues/18197>`__
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18212`_
+* Drop restriction to switch to immutable histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18234`_
+* Allow bookmarking public workflows
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18247`_
+* More structured indexing for user data objects
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18291`_
+* Display error message if not an image in reports
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18309`_
+* Add copy link to published workflow in `WorkflowCard`
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18370`_
+* Onedada object store and files source stability fixes
+  (thanks to `@bwalkowi <https://github.com/bwalkowi>`__).
+  `Pull Request 18372`_
+* Persistent toggle sections of job info
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16983`_
+* Enable storage management by object store
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17500`_
+* Automatically bind `galaxy_data_manager_data_path` in containers
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17596`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17653`_
+* Tool linter: check for valid bio.tools entries
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17655`_
+* Tool linter: check for leaf nodes with unstripped text content
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17656`_
+* Addition of release process doc
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17680`_
+* Issue `#17631 <https://github.com/galaxyproject/galaxy/issues/17631>`__: Make it possible to use custom invfile.lua if needed
+  (thanks to `@martin-g <https://github.com/martin-g>`__).
+  `Pull Request 17693`_
+* Add browser and operating system info to issue template
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17696`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17764`_
+* SQLAlchemy 2.0
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17778`_
+* Add support for floating point TIFF files in verification of image-based tool outputs
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17797`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17819`_
+* Add tool linting for valid EDAM terms
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17839`_
+* Add `pin_labels` attribute for `image_diff` comparison method
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17866`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17870`_
+* Add admin activity to activity bar
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17877`_
+* Disable published item copy button when editing slug
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17888`_
+* Outline use of type_annotation_map to fix mypy issues
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17902`_
+* Do not save workflow on Run without user confirmation
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 17907`_
+* Update config docs about Celery
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17918`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17923`_
+* Adds pages to the activity bar
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17925`_
+* Revises visualizations activity
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17931`_
+* Error reporting unit tests
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17968`_
+* Update _thanks.rst in the User Release Notes to include new socials and remove inactive ones
+  (thanks to `@natwhitaker <https://github.com/natwhitaker>`__).
+  `Pull Request 17971`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 17982`_
+* Add tags to data dialog display, restores update_time and extension columns
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17992`_
+* Reduce notifications polling frequency
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18010`_
+* Consolidate Visualization container, avoid using default iframe
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18016`_
+* Document syntax for accessing nested parameters in `change_format` - `when` tags
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18018`_
+* Add Zenodo integration
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18022`_
+* Add a button that filters out a tool section in the tool panel
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18034`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18035`_
+* Add datasets/collections filter to history panel filters
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18039`_
+* Add pagination support to Files Source plugins
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18059`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18063`_
+* Add Attributes section to Edit Collection view as well
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18071`_
+* Enhance form drilldown
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 18074`_
+* Change `InvocationsList` into a grid using `GridList`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18088`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18095`_
+* Workflow preview improvements
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18108`_
+* Drop "?" (Help) from DatasetActions list
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18124`_
+* Update Python dependencies
+  (thanks to `@galaxybot <https://github.com/galaxybot>`__).
+  `Pull Request 18125`_
+* Revises handling of warnings in the workflow run form
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18126`_
+* Display DOIs in Archived Histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18134`_
+* Update s3fs dependency
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18135`_
+* Harden User Object Store and File Source Creation
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18172`_
+* Move activity panel go to button to top
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18182`_
+* Update db revision 24.1 release tags
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18183`_
+* Play nice with password managers
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18206`_
+.. small_enhancement
+
+* Remove deprecated BCO export endpoint
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 16645`_
+* Login components refactors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 17564`_
+* Collections common refactors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 17571`_
+* Modernization and cleanup of job state related client code
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17593`_
+* Type annotation improvements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17601`_
+* Type annotation and CWL-related improvements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17630`_
+* Collection components refactors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 17647`_
+* Code cleanups from ruff and pyupgrade
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17654`_
+* Activity bar preference handling fixes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17701`_
+* Datasets refactors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 17799`_
+* Consolidates data dialog components
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17802`_
+* Dataset information refactors
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 17804`_
+* Mailing list wording tweaks
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17867`_
+* Model edits and bug fixes
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17922`_
+* Fix client types around history items
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17924`_
+* Model typing and SA2.0 follow-up
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17958`_
+* Use typed API client for reporting job errors
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17969`_
+* Drop unused workflow controller methods
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17974`_
+* Enable ``warn_unused_ignores`` mypy option
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17991`_
+* Refactor convert HistoryExport component to Typescript
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18028`_
+* More typing in galaxy.files
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18037`_
+* Refactor galaxy.files plugin loading + config handling
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18049`_
+* Add stronger type annotations in file sources + refactoring
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18050`_
+* Enable flake8-implicit-str-concat ruff rules
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18067`_
+* Ensure history `update_time` is set when exporting
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18086`_
+* De-duplication of onedata objectstore code
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18174`_
+
+
+Fixes
+-------------------------------
+
+.. major_bug
+
+
+.. bug_tag_viz
+
+* Check various preconditions in FeatureLocationIndexDataProvider
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18283`_
+* Adds pinia to manually mounted vue components
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18299`_
+* Fix visualizations compatible dataset filtering
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18343`_
+* Fix pca 3d rendering of tabular files and visualization error handling in general
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18211`_
+.. bug_tag_datatypes
+
+* Don't set dataset peek for errored jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18231`_
+* Npz sniffing: do not read the whole file
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17672`_
+* Never fail dataset serialization if display_peek fails
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17937`_
+.. bug_tag_tools
+
+* Raise exception when extracting dataset from collection without datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18249`_
+* Fix null inputs in database operation tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18385`_
+.. bug_tag_workflows
+
+* Drop unnecessary escaping for workflow name and annotation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18376`_
+* Fix invocation step_job_summary for new collections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18402`_
+* Fix `input_step_parameters` missing values that don't have a label
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18405`_
+* Fixes for mapping workflow labels to markdown dialogs
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17424`_
+* Fix workflow run form failing on certain histories
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17869`_
+* Make sure step removal also resets mapOver state
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17915`_
+* Fix workflow run form for workflows with null rename PJA
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17929`_
+* Fix missing implicit conversion for mapped over jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17952`_
+* Fix `LengthValidator` if no value passed
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17983`_
+* Use or copy StoredWorkflow when copying step
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17988`_
+* Don't commit in ``DeleteIntermediatesAction``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18131`_
+* Fix submitted value in workflow run form if data is constrained by tag filter
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18193`_
+.. bug_tag_ui
+
+* Bump es5-ext from 0.10.62 to 0.10.63 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 17555`_
+* Bump webpack-dev-middleware from 5.3.3 to 5.3.4 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 17820`_
+* Bump express from 4.18.1 to 4.19.2 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 17840`_
+* Bump undici from 5.28.3 to 5.28.4 in /client
+  (thanks to `@dependabot[bot] <https://github.com/dependabot[bot]>`__).
+  `Pull Request 17905`_
+* Update prebuilt client
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18000`_
+* Fix tag regex pattern
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18025`_
+.. bug_tag_jobs
+
+* Restrict job_files access to jobs that are not terminal
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18217`_
+* Raise appropriate exception if accessing deleted input file
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18223`_
+* Fix seek in slurm memory check
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18338`_
+* Do not copy purged outputs to object store
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18342`_
+* Kill pulsar job if job stopped on galaxy side
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18348`_
+* Always discard session after __handle_waiting_jobs is done
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17913`_
+* Fix tool form building if select filters from unavailable dataset metadata
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17930`_
+* Fix ``InvalidRequestError: Can't operate on closed transaction inside context manager.  Please complete the context manager before emitting further
+  commands.``
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17932`_
+* Downgrade missing output file in working directory to warning for failed jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18123`_
+* Drop redundant error message
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18156`_
+* Don't fail metadata if we only have an extra output files dir
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18179`_
+* Avoid object store path lookup when constructing JobState object
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18190`_
+.. bug_tag_admin
+
+* Only log error if deleting directory really failed
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18236`_
+* Rebuild Galaxy config
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 18325`_
+* Downgrade doi fetch error to debug
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18330`_
+* Include exception info when something goes wrong while refreshing tokens
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18008`_
+* Don't log exception if cancelled slurm job doesn't have stderr file
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18121`_
+* Downgrade count lines error to warning
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18175`_
+* Emit warning when user-cancelled job already complete
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18178`_
+* Include stack when reporting delete error
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18208`_
+.. bug
+
+* Pin pydantic to >=2.7.4
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18423`_
+* do not expand datasets that are known to be inaccessible
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17818`_
+* Prevent anonymous and inactive users from running workflows
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18192`_
+* Revert some requests import changes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18199`_
+* Check dataset state when attempting to acces dataset contents
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18214`_
+* Raise ``RequestParameterInvalidException`` if url can't be verified
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18230`_
+* Reset content-length for unhandled exceptions
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18233`_
+* Fix element serialization for collections that aren't populated yet
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18235`_
+* Fix userOwnsHistory conditions
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18243`_
+* Small bug fixes for user data plugins
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18246`_
+* Transparently open compressed files in DatasetDataProvider
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18248`_
+* Skip tests if toolshed, dx.doi not responding
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18250`_
+* Fix history export error handling
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18251`_
+* Remove linter for unstripped text content for tool xml leaves
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18252`_
+* Fix Invenio credentials handling
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18255`_
+* Set page importable to false when serializing
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18263`_
+* Add missing TS migration
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18267`_
+* Format with black
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18273`_
+* Fix handler: access to result row items changed in SA2.0
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18274`_
+* Don't attempt to download purged datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18278`_
+* Fix first_dataset_element type hint
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18284`_
+* Redirect anonymous users to home when importing public histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18286`_
+* Use correct link for log in or register in Copy Modal
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18289`_
+* Add TS db revision tags for 24.0
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18294`_
+* Move tool shed specific driver function to tool_shed.test
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18296`_
+* Fix various packages' issues
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18301`_
+* Fix "label updated" popup triggers too often
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 18303`_
+* Adapt Tool prediction API to Transformer-based deep learning architecture
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 18305`_
+* Fix word bleeding in modals, sharing page and history rename
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18306`_
+* Don't serialize display application links for deleted datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18307`_
+* Fix non-history items drag&drop into histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18308`_
+* Filter data dialog entries by dataset state, only display `ok` state
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18313`_
+* Fix pinia in manually mounted components
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18315`_
+* Disable state filter for collections in `HistoryFilters`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18324`_
+* Fix users API serialization when listing users
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18329`_
+* Fix authentication error for anonymous users querying jobs
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18333`_
+* Make sure that all Linter subclasses are imported for listing them
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18339`_
+* Fix anonymous user job retrieval logic
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18358`_
+* Fix check for anonymous
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18364`_
+* Fix update group API payload model
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18374`_
+* Sanitize FormElement error messages
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18377`_
+* Fix empty usernames in database + bug in username generation
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18379`_
+* Fix user's private role can be missing
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18381`_
+* Fix duplicated requests when browsing files sources with pagination
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18387`_
+* Fix dataset details polling re-render
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18388`_
+* Assign default ``data`` extension on discovered collection output
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18389`_
+* Fix workflow editor tool form scroll memory
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 18390`_
+* Reset current page when browsing sub-folders in FilesSources
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18395`_
+* Fix workflow tags initialisation in workflow editor
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18396`_
+* Fix ``get_accessible_job`` if called without session
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18400`_
+* Allow in_range validator for selects
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18403`_
+* Ensure datatypes match on dragging elements into FormData
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18410`_
+* Really allow in-range validator for txt
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 18411`_
+* Fix collection map over status for dragged collections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18416`_
+* Add TypedDict for JobsSummary
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18418`_
+* Serialize purged flag for datasets in collections
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18420`_
+* Unpin social-auth-core dependency
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17607`_
+* remove reference to a non-existent component
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17686`_
+* Add carbon_intensity.csv to package
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 17748`_
+* Fix bug in image_util.py
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17749`_
+* Fix bug in galaxy.xsd
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17752`_
+* Fix bug in `assert_has_image_n_labels`
+  (thanks to `@kostrykin <https://github.com/kostrykin>`__).
+  `Pull Request 17754`_
+* Fix odd object store exception
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17810`_
+* Fix permissions for temporary upload file for API uploads
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17850`_
+* Fix tool version switch in editor
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17858`_
+* Remove duplicate tool panel insertion, rely on activity bar
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17872`_
+* Fix hasOwner function for histories in client
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 17886`_
+* Always serialize element_count and populated when listing contents
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17890`_
+* Make `wait_for_history_jobs` look at jobs, not datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17892`_
+* Fix release notes
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17894`_
+* Fix deadlock that can occur when changing job state
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17896`_
+* Fix search and version menu in docs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17898`_
+* Fix conditional Image imports
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17899`_
+* Fix lost reports when switching workflow versions
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17904`_
+* Fix saving user preferences crashes tab
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17917`_
+* Ensures that the activity bar is not shown when use_panels is set to false
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17926`_
+* Replace sample Celery result_backend in config
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17949`_
+* Show dataset image in workflow_outputs display listing
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17964`_
+* Fix get_content_as_text for compressed text datatypes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17976`_
+* History import - show user feedback on completion
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17980`_
+* Backport: Fix bug: call unique() on result, not select stmt
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17981`_
+* Raise ``RequestParameterInvalidException`` if collection element has unknown extension
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17985`_
+* Don't attempt to commit in dry_run mode
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17987`_
+* Don't fail if reporting invalid parameter values
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18002`_
+* Preserve surrounding whitespace when localizing complex nodes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18005`_
+* Add section divider to activity bar, fix click handler
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 18007`_
+* Raise ``MessageException`` when report references invalid workflow output
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18009`_
+* Avoid exception when opening apply rules tool and no collection in history
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18011`_
+* Don't commit without having set a hid
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18014`_
+* Make celery fixture available in framework tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18020`_
+* Add a link to histories list in history import message for situations…
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18021`_
+* Raise appropriate exception if user forces a collection that is not populated with elements as input
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18023`_
+* Fix ``test_get_tags_histories_content`` test
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18026`_
+* Clarify the object store relocate functionality
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 18033`_
+* Fix History Dataset Association creation so that hid is always set
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18036`_
+* Change wrong quota_source value from KeyError to ValueError
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18040`_
+* Ensure that offset and limit are never negative
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18044`_
+* Fix comments lost on import
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 18060`_
+* Fix (I think) a transiently failing selenium error
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18065`_
+* Check database connection to issue a rollback if no connection
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18070`_
+* Fix toolbar header z-index
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18084`_
+* Dynamic tool fixes
+  (thanks to `@dcore94 <https://github.com/dcore94>`__).
+  `Pull Request 18085`_
+* Raise exception if collection elements missing during download
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18094`_
+* Tests and bugfixes for cloudbridge object store
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18099`_
+* Fix AWS object store for us-east-2
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18100`_
+* Hide bookmark toggle on deleted workflows
+  (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
+  `Pull Request 18103`_
+* Fix for unexpected OIDC XML validation error
+  (thanks to `@Edmontosaurus <https://github.com/Edmontosaurus>`__).
+  `Pull Request 18106`_
+* Fix vanishing connections on workflow upgrade
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 18107`_
+* Fix activity bar touch events on iOS devices
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18109`_
+* Fairly critical fix for `#18087 <https://github.com/galaxyproject/galaxy/issues/18087>`__
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 18110`_
+* Fix and unify axios error handling
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18112`_
+* Fix switching between nested collection elements
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18115`_
+* Ignore AdminRequired and RegisteredUserRequired Sentry events
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18118`_
+* Fix deprecated `deprecated` argument
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18119`_
+* Include traceback when logging email PJA exception
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18122`_
+* Fix listing possibly untitled records in Invenio Plugin
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18130`_
+* Fix data default values not getting added to history
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18132`_
+* Fix undefined `reading 'produces_entry_points'` TypeError
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18141`_
+* Fix config access in StorageManager
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 18143`_
+* Fix Legacy HTML page view
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18145`_
+* Delay tool form rendering until config is loaded
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18151`_
+* Raise ``RequestParameterInvalidException`` when url is invalid
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18155`_
+* Fix error message when accessing restricted Zenodo records
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18169`_
+* Small refinements and fixes to new release process doc
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 18170`_
+* Add message to Invocations panel for no invocations
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18180`_
+* Fix typos in create release documentation page
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18181`_
+* Change default milestone to target 24.2
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18186`_
+* Fix Edit Dataset UI when there is an error retrieving the dataset
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18188`_
+* Fix file source search query with empty string value
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18191`_
+* Replace `Multiselect` `selectLabel` with icons in `FormSelect`
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18194`_
+* Fix `make all histories private` with immutable histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18200`_
+* Fix selection highlight in Files Dialog when using items provider
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 18201`_
+* Remove legacy code, reference to sqlalchemy migrate
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18202`_
+* Add `GenericItem` error handling
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 18203`_
+* Add string cast for dbkey / genome_build
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 18207`_
+* Use config_section to distinguish between galaxy and ts or other apps
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 18215`_
+
+.. include:: 24.1_prs.rst
+

@@ -8,10 +8,12 @@
     "license": "AFL-3.0",
     "dependencies": {
         "babel-plugin-transform-export-extensions": "^6.22.0",
-        "babel-preset-env": "^1.6.1",
-        "parcel-bundler": "^1.4.1"
+        "babel-preset-env": "^1.6.1"
     },
     "scripts": {
-        "build": "parcel build src/script.js -d static"
+        "build": "parcel build src/script.js --dist-dir static"
+    },
+    "devDependencies": {
+        "parcel": "^2.12.0"
     }
 }

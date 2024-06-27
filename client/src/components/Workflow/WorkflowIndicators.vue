@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGlobe, faLink, faShieldAlt, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faFileImport, faGlobe, faShieldAlt, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton } from "bootstrap-vue";
 import { computed } from "vue";
@@ -12,7 +12,7 @@ import { copy } from "@/utils/clipboard";
 
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faShieldAlt, faLink, faGlobe, faUsers, faUser);
+library.add(faFileImport, faGlobe, faShieldAlt, faUsers, faUser);
 
 interface Props {
     workflow: any;
@@ -116,7 +116,7 @@ function onViewUserPublished() {
             size="sm"
             class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
-            <FontAwesomeIcon :icon="faLink" fixed-width @click="onCopyLink" />
+            <FontAwesomeIcon :icon="faFileImport" fixed-width @click="onCopyLink" />
         </BButton>
 
         <span class="mr-1">

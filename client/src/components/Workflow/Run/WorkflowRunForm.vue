@@ -7,7 +7,7 @@
             </span>
         </BAlert>
         <div class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b>
+            <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <ButtonSpinner
                 id="run-workflow"
                 class="float-right"
@@ -231,6 +231,7 @@ export default {
                 // the user is already warned if tool versions are wrong,
                 // they can still choose to invoke the workflow anyway.
                 require_exact_tool_versions: false,
+                version: this.model.runData.version,
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);

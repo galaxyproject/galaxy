@@ -697,7 +697,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         self._validate_bulk_operation_params(payload, trans.user, trans)
-        contents: List["HistoryItem"]
+        contents: List[HistoryItem]
         if payload.items:
             contents = self._get_contents_by_item_list(
                 trans,
@@ -1366,7 +1366,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def _get_contents_by_item_list(
         self, trans, history: History, items: List[HistoryContentItem]
     ) -> List["HistoryItem"]:
-        contents: List["HistoryItem"] = []
+        contents: List[HistoryItem] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
         datasets_ids = (dataset.id for dataset in dataset_items)

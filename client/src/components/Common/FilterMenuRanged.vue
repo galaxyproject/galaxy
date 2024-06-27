@@ -14,6 +14,7 @@ interface Props {
     filters: {
         [k: string]: FilterType;
     };
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -93,11 +94,12 @@ watch(
                 size="sm"
                 :state="hasError(localNameGt) ? false : null"
                 :placeholder="localPlaceholder('gt')"
+                :disabled="props.disabled"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
             <BInputGroupAppend v-if="isDateType">
-                <BFormDatepicker v-model="localValueGt" reset-button button-only size="sm" />
+                <BFormDatepicker v-model="localValueGt" reset-button button-only size="sm" :disabled="props.disabled" />
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
 
@@ -109,11 +111,12 @@ watch(
                 size="sm"
                 :state="hasError(localNameLt) ? false : null"
                 :placeholder="localPlaceholder('lt')"
+                :disabled="props.disabled"
                 @keyup.enter="emit('on-enter')"
                 @keyup.esc="emit('on-esc')" />
 
             <BInputGroupAppend v-if="isDateType">
-                <BFormDatepicker v-model="localValueLt" reset-button button-only size="sm" />
+                <BFormDatepicker v-model="localValueLt" reset-button button-only size="sm" :disabled="props.disabled" />
             </BInputGroupAppend>
             <!--------------------------------------------------------------------->
         </BInputGroup>

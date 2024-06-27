@@ -71,14 +71,13 @@ def get_hgrc_path(repo_path):
     return os.path.join(repo_path, ".hg", "hgrc")
 
 
-def create_hgrc_file(app, repository):
+def create_hgrc_file(app, repository, repo_path):
     # Since we support both http and https, we set `push_ssl` to False to
     # override the default (which is True) in the Mercurial API.
     # The hg purge extension purges all files and directories not being tracked
     # by Mercurial in the current repository. It will remove unknown files and
     # empty directories. This is not currently used because it is not supported
     # in the Mercurial API.
-    repo_path = repository.repo_path(app)
     hgrc_path = get_hgrc_path(repo_path)
     with open(hgrc_path, "w") as fp:
         fp.write("[paths]\n")

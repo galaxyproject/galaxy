@@ -108,7 +108,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         }
     }
 
-    function setLazyActionTimeout(timeout: number) {
+    function setLazyActionTimeout(timeout = 1000) {
         clearTimeout(lazyActionTimeout);
         lazyActionTimeout = setTimeout(() => flushLazyAction(), timeout);
     }

@@ -74,7 +74,7 @@
                                 </details>
                                 <ParameterStep
                                     v-else-if="workflowStepType == 'parameter_input'"
-                                    :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]" />
+                                    :parameters="[getParamInput(stepDetails)]" />
                                 <GenericHistoryItem
                                     v-else-if="
                                         isDataStep &&
@@ -208,6 +208,11 @@ export default {
             if (this.workflowStep.workflow_id) {
                 this.fetchWorkflowForInstanceId(this.workflowStep.workflow_id);
             }
+        },
+        getParamInput(stepDetails) {
+            return Object.values(this.invocation.input_step_parameters).find(
+                (param) => param.workflow_step_id === stepDetails.workflow_step_id
+            );
         },
         showJob(id) {
             this.$emit("show-job", id);

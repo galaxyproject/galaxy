@@ -27,12 +27,14 @@ const router = useRouter();
 
 interface Props {
     workflowId: string;
+    version?: string;
     preferSimpleForm?: boolean;
     simpleFormTargetHistory?: string;
     simpleFormUseJobCache?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    version: undefined,
     preferSimpleForm: false,
     simpleFormTargetHistory: "current",
     simpleFormUseJobCache: false,
@@ -49,7 +51,9 @@ const workflowName = ref("");
 const workflowModel: any = ref(null);
 
 const currentHistoryId = computed(() => historyStore.currentHistoryId);
-const editorLink = computed(() => `/workflows/edit?id=${props.workflowId}`);
+const editorLink = computed(
+    () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
+);
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
 const isOwner = computed(() => currentUser.value?.username === workflowModel.value.runData.owner);
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
@@ -74,7 +78,7 @@ function handleSubmissionError(error: string) {
 }
 
 function loadRun() {
-    getRunData(props.workflowId)
+    getRunData(props.workflowId, props.version || undefined)
         .then((runData) => {
             const incomingModel = new WorkflowRunModel(runData);
             simpleForm.value = props.preferSimpleForm;
@@ -116,7 +120,7 @@ function loadRun() {
 }
 
 async function onImport() {
-    const response = await copyWorkflow(props.workflowId, workflowModel.value.runData.owner);
+    const response = await copyWorkflow(props.workflowId, workflowModel.value.runData.owner, props.version);
     router.push(`/workflows/edit?id=${response.id}`);
 }
 
