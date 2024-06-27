@@ -3134,6 +3134,24 @@ mapping:
           When false, the most recently added compatible item in the history will
           be used for each "Set at Runtime" input, independent of others in the workflow.
 
+      client_mode:
+        type: str
+        default: 'full'
+        enum: ['full', 'minimal_workflow']
+        required: false
+        per_host: true
+        desc: |
+          Set this to 'minimal_workflow' to turn on the simplified Galaxy workflow
+          UI.
+
+      simplified_workflow_landing_initial_tags:
+        type: str
+        default: null
+        required: false
+        per_host: true
+        desc: |
+          I will write this in later.
+
       simplified_workflow_run_ui:
         type: str
         default: 'prefer'

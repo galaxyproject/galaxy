@@ -3,6 +3,9 @@
         <ToolForm v-if="isTool && !isUpload" v-bind="toolParams" />
         <WorkflowRun v-else-if="isWorkflow" v-bind="workflowParams" />
         <div v-else-if="isController" :src="controllerParams" />
+        <div v-else-if="isWorkflowLanding">
+            <WorkflowLanding initial-filter-text="config.simplified_workflow_landing_initial_tags" />
+        </div>
         <CenterFrame v-else src="/welcome" />
     </div>
 </template>
@@ -10,6 +13,7 @@
 <script>
 import ToolForm from "components/Tool/ToolForm";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
+import WorkflowLanding from "./WorkflowLanding";
 import decodeUriComponent from "decode-uri-component";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 
@@ -18,6 +22,7 @@ export default {
         CenterFrame,
         ToolForm,
         WorkflowRun,
+        WorkflowLanding,
     },
     props: {
         config: {
@@ -30,6 +35,9 @@ export default {
         },
     },
     computed: {
+        isWorkflowLanding() {
+            return this.config.client_mode == "minimal_workflow";
+        },
         isController() {
             return this.query.m_c && this.query.m_a;
         },

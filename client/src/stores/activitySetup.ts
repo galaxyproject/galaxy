@@ -1,22 +1,30 @@
 /**
  * List of built-in activities
  */
-import { type Activity } from "@/stores/activityStore";
+import { type ClientMode, type Activity, type RawActivity } from "@/stores/activityStore";
 import { type EventData } from "@/stores/eventStore";
 
-export const Activities = [
+function unlessMinimalWorkflow(clientMode: ClientMode): boolean {
+    return !(clientMode == "minimal_workflow");
+}
+
+function ifMinimalWorkflow(clientMode: ClientMode): boolean {
+    return !(clientMode == "minimal_workflow");
+}
+
+export const ActivitiesRaw: RawActivity[] = [
     {
         anonymous: false,
         description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
         icon: "fa-laptop",
         id: "interactivetools",
         mutable: false,
-        optional: false,
+        optional: ifMinimalWorkflow,
         panel: false,
         title: "Interactive Tools",
         tooltip: "Show active interactive tools",
         to: "/interactivetool_entry_points/list",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: true,
@@ -24,12 +32,12 @@ export const Activities = [
         icon: "upload",
         id: "upload",
         mutable: false,
-        optional: false,
+        optional: ifMinimalWorkflow,
         panel: false,
         title: "Upload",
         to: null,
         tooltip: "Download from URL or upload files from disk",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: true,
@@ -37,12 +45,12 @@ export const Activities = [
         icon: "wrench",
         id: "tools",
         mutable: false,
-        optional: false,
+        optional: ifMinimalWorkflow,
         panel: true,
         title: "Tools",
-        to: null,
+        to: "/tools",
         tooltip: "Search and run tools",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: true,
@@ -81,7 +89,7 @@ export const Activities = [
         title: "Visualization",
         to: null,
         tooltip: "Visualize datasets",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: true,
@@ -94,7 +102,7 @@ export const Activities = [
         title: "Histories",
         tooltip: "Show all histories",
         to: "/histories/list",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: false,
@@ -107,7 +115,7 @@ export const Activities = [
         title: "History Multiview",
         tooltip: "Select histories to show in History Multiview",
         to: "/histories/view_multiple",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: false,
@@ -120,7 +128,7 @@ export const Activities = [
         title: "Datasets",
         tooltip: "Show all datasets",
         to: "/datasets/list",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: true,
@@ -133,7 +141,7 @@ export const Activities = [
         title: "Pages",
         tooltip: "Show all pages",
         to: "/pages/list",
-        visible: true,
+        visible: unlessMinimalWorkflow,
     },
     {
         anonymous: false,
@@ -149,6 +157,25 @@ export const Activities = [
         visible: true,
     },
 ];
+
+function resolveActivity(activity: RawActivity, clientMode: ClientMode) : Activity {
+    let optional = activity.optional;
+    let visible = activity.visible;
+    if (typeof optional === 'function') {
+        optional = optional(clientMode);
+    }
+    if (typeof visible === 'function') {
+        visible = visible(clientMode);
+    }
+    return { ...activity, optional, visible};
+}
+
+export function getActivities(clientMode: ClientMode) {
+    const resolve = (activity: RawActivity) => {
+        return resolveActivity(activity, clientMode);
+    }
+    return ActivitiesRaw.map(resolve);
+}
 
 export function convertDropData(data: EventData): Activity | null {
     if (data.history_content_type === "dataset") {

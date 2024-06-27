@@ -6,8 +6,9 @@ import { defineStore } from "pinia";
 import { type Ref } from "vue";
 
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useConfig } from "@/composables/config";
 
-import { Activities } from "./activitySetup";
+import { getActivities } from "./activitySetup";
 
 export interface Activity {
     // determine wether an anonymous user can access this activity
@@ -34,6 +35,34 @@ export interface Activity {
     visible: boolean;
 }
 
+export type ClientMode = "full" | "minimal_workflow";
+
+// config materializes a RawActivity into an Activity
+export interface RawActivity {
+    // determine wether an anonymous user can access this activity
+    anonymous: boolean;
+    // description of the activity
+    description: string;
+    // unique identifier
+    id: string;
+    // icon to be displayed in activity bar
+    icon: string;
+    // indicate if this activity can be modified and/or deleted
+    mutable: boolean;
+    // indicate wether this activity can be disabled by the user
+    optional: boolean | ((mode: ClientMode) => boolean);
+    // specifiy wether this activity utilizes the side panel
+    panel: boolean;
+    // title to be displayed in the activity bar
+    title: string;
+    // route to be executed upon selecting the activity
+    to: string | null;
+    // tooltip to be displayed when hovering above the icon
+    tooltip: string;
+    // indicate wether the activity should be visible by default
+    visible: boolean | ((mode: ClientMode) => boolean);
+}
+
 export const useActivityStore = defineStore("activityStore", () => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage("activity-store-activities", []);
 
@@ -50,11 +79,18 @@ export const useActivityStore = defineStore("activityStore", () => {
      * to the user stored activities which are persisted in local cache.
      */
     function sync() {
+        const { config, isConfigLoaded } = useConfig();
+        if (!isConfigLoaded.value) {
+            return;
+        }
+
         // create a map of built-in activities
         const activitiesMap: Record<string, Activity> = {};
-        Activities.forEach((a) => {
+        let activityDefs = getActivities(config.value.client_mode);
+        activityDefs.forEach((a) => {
             activitiesMap[a.id] = a;
         });
+
         // create an updated array of activities
         const newActivities: Array<Activity> = [];
         const foundActivity = new Set();
@@ -76,7 +112,7 @@ export const useActivityStore = defineStore("activityStore", () => {
             }
         });
         // add new built-in activities
-        Activities.forEach((a) => {
+        activityDefs.forEach((a) => {
             if (!foundActivity.has(a.id)) {
                 newActivities.push({ ...a });
             }
