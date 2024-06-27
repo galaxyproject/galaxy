@@ -27,11 +27,13 @@ interface Props {
     workflow: any;
     gridView?: boolean;
     publishedView?: boolean;
+    allowWorkflowManagement?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    allowWorkflowManagement: true,
 });
 
 const emit = defineEmits<{
@@ -136,6 +138,7 @@ async function onTagClick(tag: string) {
                     <WorkflowActions
                         :workflow="workflow"
                         :published="publishedView"
+                        :allow-workflow-management="allowWorkflowManagement"
                         @refreshList="emit('refreshList', true)"
                         @toggleShowPreview="toggleShowPreview" />
                 </div>
@@ -181,7 +184,7 @@ async function onTagClick(tag: string) {
 
                     <div class="workflow-edit-run-buttons">
                         <BButton
-                            v-if="!isAnonymous && !shared"
+                            v-if="!isAnonymous && !shared && allowWorkflowManagement"
                             v-b-tooltip.hover.noninteractive
                             :disabled="workflow.deleted"
                             size="sm"
@@ -194,7 +197,7 @@ async function onTagClick(tag: string) {
                         </BButton>
 
                         <AsyncButton
-                            v-else
+                            v-else-if="allowWorkflowManagement"
                             v-b-tooltip.hover.noninteractive
                             size="sm"
                             :disabled="isAnonymous"

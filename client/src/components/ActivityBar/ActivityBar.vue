@@ -134,7 +134,7 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
 
 const syncActivities = () => {
     activityStore.sync();
-    if (config.value && config.value.client_mode == "minimal_workflow") {
+    if (config.value && ["workflow_centric", "workflow_runner"].indexOf(config.value.client_mode) >= 0) {
         userStore.untoggleToolbarIfNeeded();
     }
 };
