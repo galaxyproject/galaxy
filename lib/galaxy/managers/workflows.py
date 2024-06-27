@@ -1856,10 +1856,14 @@ class WorkflowContentsManager(UsesAnnotations):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
-            raise Exception("Subworkflow step defines both subworkflow and content_id, only one may be specified.")
+            raise exceptions.RequestParameterInvalidException(
+                "Subworkflow step defines both subworkflow and content_id, only one may be specified."
+            )
 
         if not embedded_subworkflow and not subworkflow_id:
-            raise Exception("Subworkflow step must define either subworkflow or content_id.")
+            raise exceptions.RequestParameterInvalidException(
+                "Subworkflow step must define either subworkflow or content_id."
+            )
 
         if embedded_subworkflow:
             assert not dry_run
