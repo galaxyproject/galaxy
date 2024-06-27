@@ -8,11 +8,20 @@ from typing import (
     Union,
 )
 
+from fastapi.responses import PlainTextResponse
+from gxformat2._yaml import ordered_dump
+
 from galaxy import (
     exceptions,
+    model,
+    util,
     web,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.workflows import (
     RefactorResponse,
     WorkflowContentsManager,
@@ -28,7 +37,15 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
+    SetWorkflowMenuPayload,
+    SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
+    WorkflowDictEditorSummary,
+    WorkflowDictExportSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictFormat2WrappedYamlSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictRunSummary,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -52,12 +69,56 @@ class WorkflowsService(ServiceBase):
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
         notification_service: NotificationService,
+        history_manager: HistoryManager,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
+        self._history_manager = history_manager
+
+    def download_workflow(self, trans, workflow_id, history_id, style, format, version, instance):
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        history = None
+        if history_id:
+            history = self._history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        ret_dict = self._workflow_contents_manager.workflow_to_dict(
+            trans, stored_workflow, style=style, version=version, history=history
+        )
+        if format == "json-download":
+            sname = stored_workflow.name
+            sname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
+            if ret_dict.get("format-version", None) == "0.1":
+                extension = "ga"
+            else:
+                extension = "gxwf.json"
+            trans.response.headers["Content-Disposition"] = (
+                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            )
+            trans.response.set_content_type("application/galaxy-archive")
+        if style == "export":
+            style = self._workflow_contents_manager.app.config.default_workflow_export_format
+        if style == "format2" and format != "json-download":
+            return PlainTextResponse(ordered_dump(ret_dict))
+        elif style == "editor":
+            return WorkflowDictEditorSummary(**ret_dict)
+        elif style == ("legacy" or "instance"):
+            return StoredWorkflowDetailed(**ret_dict)
+        elif style == "run":
+            return WorkflowDictRunSummary(**ret_dict)
+        elif style == "preview":
+            return WorkflowDictPreviewSummary(**ret_dict)
+        elif style == "format2":
+            return WorkflowDictFormat2Summary(**ret_dict)
+        elif style == "format2_wrapped_yaml":
+            return WorkflowDictFormat2WrappedYamlSummary(**ret_dict)
+        elif style == "ga":
+            return WorkflowDictExportSummary(**ret_dict)
+        else:
+            raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
 
     def index(
         self,
@@ -220,6 +281,42 @@ class WorkflowsService(ServiceBase):
     ) -> RefactorResponse:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
         return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
+
+    def set_workflow_menu(
+        self,
+        payload: Optional[SetWorkflowMenuPayload],
+        trans: ProvidesHistoryContext,
+    ) -> SetWorkflowMenuSummary:
+        user = trans.user
+        if payload:
+            workflow_ids = payload.workflow_ids
+            if not isinstance(workflow_ids, list):
+                workflow_ids = [workflow_ids]
+        else:
+            workflow_ids = []
+        session = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            session.delete(m)
+        user.stored_workflow_menu_entries = []
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for wf_id in workflow_ids:
+            if wf_id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add(wf_id)
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
+            user.stored_workflow_menu_entries.append(m)
+        with transaction(session):
+            session.commit()
+        message = "Menu updated."
+        # TODO - It seems like this populates a mako template, is it necessary?
+        # trans.set_message(message)
+        return SetWorkflowMenuSummary(message=message, status="done")
 
     def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
