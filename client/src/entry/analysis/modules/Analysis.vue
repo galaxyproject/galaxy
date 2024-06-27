@@ -1,7 +1,8 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { useConfig } from "@/composables/config";
 import { usePanels } from "@/composables/usePanels";
 
 import CenterFrame from "./CenterFrame.vue";
@@ -13,6 +14,11 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
+const { config } = useConfig();
+
+const showHistoryPanel = computed(() => {
+    return showPanels.value && config.value && config.value.client_mode == "full";
+});
 
 // methods
 function hideCenter() {
@@ -44,7 +50,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" side="right">
+        <FlexPanel v-if="showHistoryPanel" side="right">
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />

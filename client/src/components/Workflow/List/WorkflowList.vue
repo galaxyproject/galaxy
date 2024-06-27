@@ -28,10 +28,14 @@ type WorkflowsList = Record<string, never>[];
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
+    clientMode?: "full" | "workflow_centric" | "workflow_runner";
+    initialFilterText?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    clientMode: "full",
+    initialFilterText: "",
 });
 
 const router = useRouter();
@@ -85,6 +89,7 @@ const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFil
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
 const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
+const allowWorkflowManagement = computed(() => props.clientMode == "full");
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -183,6 +188,16 @@ watch([filterText, sortBy, sortDesc], async () => {
     await load(true);
 });
 
+watch(
+    props,
+    () => {
+        if (props.initialFilterText && filterText.value == "") {
+            filterText.value = props.initialFilterText;
+        }
+    },
+    { immediate: true }
+);
+
 onMounted(() => {
     if (router.currentRoute.query.owner) {
         updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
@@ -197,10 +212,10 @@ onMounted(() => {
             <div class="d-flex flex-gapx-1">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
-                <WorkflowListActions />
+                <WorkflowListActions v-if="allowWorkflowManagement" />
             </div>
 
-            <BNav pills justified class="mb-2">
+            <BNav v-if="allowWorkflowManagement" pills justified class="mb-2">
                 <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
                     My workflows
                     <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
@@ -236,7 +251,7 @@ onMounted(() => {
                 </template>
             </FilterMenu>
 
-            <ListHeader ref="listHeader" show-view-toggle>
+            <ListHeader ref="listHeader" :show-view-toggle="allowWorkflowManagement">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:
@@ -319,6 +334,7 @@ onMounted(() => {
                 :published-view="published"
                 :grid-view="view === 'grid'"
                 :class="view === 'grid' ? 'grid-view' : 'list-view'"
+                :allow-workflow-management="allowWorkflowManagement"
                 @refreshList="load"
                 @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
                 @update-filter="updateFilterValue" />
