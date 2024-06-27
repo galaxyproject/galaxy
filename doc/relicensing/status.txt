@@ -138,6 +138,18 @@ Lain-inrae, lain.pavot@inrae.fr, https://github.com/galaxyproject/galaxy/pull/15
 abueg, labueg@rockefeller.edu, https://github.com/galaxyproject/galaxy/pull/15096
 lldelisle, lucille.delisle@epfl.ch, https://github.com/galaxyproject/galaxy/pull/13411
 luke-c-sargent, luke.c.sargent@gmail.com, https://github.com/galaxyproject/galaxy/pull/12902
+Mahendra Paipuri, mahendra.paipuri@gmail.com, https://github.com/galaxyproject/galaxy/pull/16119
+Maiken Pedersen, maikenp@uio.no, https://github.com/galaxyproject/galaxy/pull/12097
+Mason Houtz, nerdinacan@gmail.com, https://github.com/galaxyproject/galaxy/pull/12351
+Matej Troják, trojak@mail.muni.cz, https://github.com/galaxyproject/galaxy/pull/14766
+Max Skoryk, 37554442+maximskorik@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12077
+Mehmet Tekman, mtekman89@gmail.com, https://github.com/galaxyproject/galaxy/pull/12336
+Melissa Black, 16723182+melibleq@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12384
+Michael R. Crusoe, michael.crusoe@gmail.com, https://github.com/galaxyproject/galaxy/pull/16963
+Michael Schatz, mschatz@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/15123
+Michelle Savage, <michelle.savage.1@gmail.com, https://github.com/galaxyproject/galaxy/pull/18074
+Minh Vu, minh@biocommons.org.au, https://github.com/galaxyproject/galaxy/pull/15998
+Mira Kuntz, mira.kuntz@yahoo.com, https://github.com/galaxyproject/galaxy/pull/17510
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -215,6 +227,33 @@ Léo Biscassi <leo.biscassi@gmail.com>  # GH user: leobiscassi
 linnil1 <linnil1.886@gmail.com>  # GH user: linnil1
 Loraine Brillet-Guéguen <loraine-gueguen@users.noreply.github.com>  # GH user: loraine-gueguen
 Luca Pireddu <pireddu@gmail.com>  # GH user: ilveroluca
+Manabu ISHII <manabu.ishii.rb@gmail.com> # GH user: manabuishii
+Marcel Bargull <marcel.bargull@udo.edu>  # GH user: mbargull
+Marcus Christie <marc.christie@gmail.com>  # GH user: machristie
+Marek Vavruša <marek@vavrusa.com>  # GH user: vavrusa
+Maria Doyle <maria.doyle@petermac.org>  # GH user: mblue9
+Maria Bernard <maria.bernard@jouy.inra.fr>  # GH user: mariabernard
+Marie Gramm <mariegramm@192-168-1-109.tpgi.com.au>  # GH user: dlal-group
+Mark Einon <mark.einon@gmail.com>  # GH user: einonm
+Mark Esler <eslerm@umn.edu>  # GH user: eslerm
+Mark Iskander <motiontracker@gmail.com>  # GH user: markiskander
+Martijn Vermaat <m.vermaat.hg@lumc.nl>  # GH user: martijnvermaattest
+Victor Mataigne <victor.mataigne@wanadoo.fr>  # GH user: Mataivic
+Matthias Desmet <matthias.desmet@ugent.be>  # GH user: matthdsm
+Matthew Dillon <matthewrdillon@gmail.com>  # GH user: thermokarst
+Matt Ralston <mrals89@gmail.com>  # GH user: MatthewRalston
+Matt Shirley <mdshw5@gmail.com>  # GH user: mdshw5
+Tamsen Spelchak <tamsen.spelchak@phac-aspc.gc.ca>  # GH user: tizzir
+Maximilian Friedersdorff <max@friedersdorff.com>  # GH user: maxf130
+Max Schaefer <max@semmle.com>  # GH User: xiemaisi
+mgehring <mgehrin@emory.edu>  # GH user: ???
+Michael Cotterell <mepcotterell@gmail.com>  # GH user: mepcotterell
+Michael Sauria <crockopotamus@gmail.com>  # GH user: msauria
+Miguel Julia <migueljuliamolina@gmail.com>  # GH user: MiguelJulia
+Milad Miladi <miladim@cs.uni-freiburg.de>  # GH user: mmiladi
+MONJEAUD Cyril <Cyril.Monjeaud@irisa.fr>  # GH user: cmonjeau
+MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
+Marco Tangaro <ma.tangaro@gmail.com>  # GH user: mtangaro
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
