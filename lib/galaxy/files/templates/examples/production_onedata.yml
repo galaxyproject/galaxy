@@ -2,11 +2,13 @@
   version: 0
   name: Onedata Storage
   description: |
-    This template allows connecting to Onedata servers.
+    If you have an account in Onedata, you can use such a file source to upload
+    your data directly from Onedata to Galaxy. You can also perform
+    an "Export datasets to remote files source" of a dataset from Galaxy to
+    Onedata.
 
-    Onedata is a global data management system providing a unified data access
-    interface across different storage providers. More information on Onedata
-    can be found on [Onedata's website](https://onedata.org/#/home).
+    The minimal supported Onezone version is 21.02.4.
+    More information on Onedata can be found on [Onedata's website](https://onedata.org/#/home).
   variables:
     onezone_domain:
       label: Onezone domain
@@ -24,7 +26,7 @@
       type: boolean
       help: |
         Allow Galaxy to write data to this Onedata storage.
-        Requires access token with write data access.
+        Requires an access token with write data access.
       default: False
   secrets:
     access_token:
@@ -32,7 +34,8 @@
       help: |
         Your [access token](https://onedata.org/#/home/documentation/topic/stable/tokens),
         suitable for REST API access in a Oneprovider service. May be confined
-        to read-only data access.
+        to read-only data access, unless you wish to use the
+        "Export datasets to remote files source" tool (write permissions are needed then).
   configuration:
     type: onedata
     access_token: "{{ secrets.access_token }}"

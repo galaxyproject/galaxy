@@ -2,11 +2,12 @@
   name: Onedata Storage
   version: 0
   description: |
-    This template allows using Onedata storage.
+    If you have an account in Onedata, you can use such an object store as
+    a storage location for your Galaxy datasets; they will be stored in
+    the Onedata space of your choice.
 
-    Onedata is a global data management system providing a unified data access
-    interface across different storage providers. More information on Onedata
-    can be found on [Onedata's website](https://onedata.org/#/home).
+    The minimal supported Onezone version is 21.02.4.
+    More information on Onedata can be found on [Onedata's website](https://onedata.org/#/home).
   variables:
     onezone_domain:
       label: Onezone Domain

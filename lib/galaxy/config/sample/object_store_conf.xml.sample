@@ -166,7 +166,7 @@
 
     //connection/@onezone_domain -
         the domain of the Onezone service (e.g. datahub.egi.eu), or its IP address for
-        devel instances (see above).
+        devel instances (see above). The minimal supported Onezone version is 21.02.4.
 
     //connection/@disable_tls_certificate_validation - 
         Allows connection to Onedata servers that do not present trusted SSL certificates. 
