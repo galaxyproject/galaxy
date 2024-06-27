@@ -548,9 +548,11 @@ steps:
   the_step:
     tool_id: multiple_versions
     tool_version: '0.1'
+    in:
+      when: the_bool
     state:
       inttest: 0
-    when: $inputs.the_bool
+    when: $(inputs.when)
 """
         )
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
