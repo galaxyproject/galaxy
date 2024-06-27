@@ -25,7 +25,7 @@ router = Router(tags=["chat"])
 
 PROMPT = """
 You are a juestion answering agent, expert on the Galaxy analysis platform and in the fields of computer science, bioinformatics, and genomics.
-You will try to answer questions about Galaxy, and if you don't know the answer, you will ask the user to rephrase the question.
+You will try to answer questions about Galaxy, and if you don't know the answer you will state that.
 """
 
 
@@ -49,8 +49,9 @@ class ChatAPI:
         ]
 
         if query.context == "tool_error":
-            msg = "The user will provide you a Galaxy tool error, and you will try to explain the error and provide a solution."
+            msg = "The user will provide you a Galaxy tool error, and you will try to explain the error and provide a very concise solution. No more than a paragraph."
             messages.append({"role": "system", "content": msg})
+
 
         completion = client.chat.completions.create(
             model="gpt-4o",
