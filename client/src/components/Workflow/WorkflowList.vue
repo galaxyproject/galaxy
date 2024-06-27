@@ -28,10 +28,14 @@ type WorkflowsList = Record<string, never>[];
 
 interface Props {
     activeList?: "my" | "shared_with_me" | "published";
+    advancedOptions?: boolean;
+    initialFilterText?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    advancedOptions: true,
+    initialFilterText: "",
 });
 
 const router = useRouter();
@@ -186,6 +190,16 @@ watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
     await load(true);
 });
 
+watch(
+    props,
+    () => {
+        if(props.initialFilterText && filterText.value == "") {
+            filterText.value = props.initialFilterText;
+        }
+    },
+    { immediate: true },
+);
+
 onMounted(() => {
     if (router.currentRoute.query.owner) {
         updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
@@ -200,7 +214,7 @@ onMounted(() => {
             <div class="d-flex flex-gapx-1">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
-                <WorkflowListActions />
+                <WorkflowListActions :advanced-options="advancedOptions" />
             </div>
 
             <BNav pills justified class="mb-2">
@@ -211,6 +225,7 @@ onMounted(() => {
 
                 <BNavItem
                     id="shared-with-me"
+                    v-if="advancedOptions"
                     :active="sharedWithMe"
                     :disabled="userStore.isAnonymous"
                     to="/workflows/list_shared_with_me">
@@ -239,7 +254,7 @@ onMounted(() => {
                 </template>
             </FilterMenu>
 
-            <ListHeader ref="listHeader" show-view-toggle>
+            <ListHeader ref="listHeader" :show-view-toggle="advancedOptions">
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:

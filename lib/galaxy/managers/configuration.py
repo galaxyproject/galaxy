@@ -164,6 +164,8 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
             "enable_beacon_integration": _use_config,
+            "client_mode": _use_config,
+            "simplified_workflow_landing_initial_tags": _use_config,
             "simplified_workflow_run_ui": _use_config,
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,

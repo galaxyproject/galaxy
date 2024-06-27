@@ -132,11 +132,21 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
     userStore.toggleSideBar(toggle);
 }
 
+const syncActivities = () => {
+    activityStore.sync();
+    if (config.value && config.value.client_mode == "minimal_workflow") {
+        userStore.untoggleToolbarIfNeeded();
+    }
+};
+
 watch(
     () => hashedUserId.value,
-    () => {
-        activityStore.sync();
-    }
+    syncActivities,
+);
+
+watch(
+    isConfigLoaded,
+    syncActivities,
 );
 </script>
 

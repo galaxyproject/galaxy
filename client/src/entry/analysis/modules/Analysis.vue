@@ -1,10 +1,12 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
+import { useConfig } from "@/composables/config";
 
 import CenterFrame from "./CenterFrame.vue";
+import WorkflowLanding from "./WorkflowLanding.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
@@ -13,6 +15,16 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
+const { config, isConfigLoaded } = useConfig();
+
+const showHistoryPanel = computed(() => {
+    return showPanels.value && config.value && config.value.client_mode == "full";
+});
+
+const showWorkflowCenter = computed(() => {
+    console.log(config.value && config.value.client_mode);
+    return config.value && config.value.client_mode == "minimal_workflow";
+});
 
 // methods
 function hideCenter() {
@@ -44,7 +56,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" side="right">
+        <FlexPanel v-if="showHistoryPanel" side="right">
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />

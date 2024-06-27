@@ -122,6 +122,12 @@ export const useUserStore = defineStore("userStore", () => {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
 
+    function untoggleToolbarIfNeeded() {
+        if (toggledSideBar.value == "tools") {
+            toggledSideBar.value = "";
+        }
+    }
+
     return {
         currentUser,
         currentPreferences,
@@ -138,6 +144,7 @@ export const useUserStore = defineStore("userStore", () => {
         addFavoriteTool,
         removeFavoriteTool,
         toggleSideBar,
+        untoggleToolbarIfNeeded,
         $reset,
     };
 });
