@@ -7,19 +7,18 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-
-import { helpHtml, WorkflowFilters } from "./WorkflowFilters";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
-import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
+import WorkflowCard from "@/components/Workflow/List/WorkflowCard.vue";
+import WorkflowListActions from "@/components/Workflow/List/WorkflowListActions.vue";
 
 library.add(faStar, faTrash);
 
