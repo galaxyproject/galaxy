@@ -24,7 +24,6 @@ python '$__tool_directory__/export_remote.py'
 		#set $fileconfig = json.dumps($export_type.infiles.serialize(invalid_chars=tuple(str($invalid_chars))))
 	#end if
 #else if $export_type.export_type_selector == "collection_auto":
-	#set $fileconfig = json.dumps($export_type.incollection.serialize(invalid_chars=tuple(str($invalid_chars)), include_collection_name=bool($export_type.include_collection_name)))
 
 	#if $invalid_chars=="space":
 		#set $fileconfig = json.dumps($export_type.incollection.serialize(invalid_chars=tuple(str(" ")), include_collection_name=bool($export_type.include_collection_name)))
