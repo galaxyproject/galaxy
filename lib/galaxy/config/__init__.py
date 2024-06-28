@@ -1103,9 +1103,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
-        # InteractiveTools propagator mapping file
-        self.interactivetools_map = self._in_root_dir(
+        # InteractiveTools propagator mapping
+        interactivetools_map = urlparse(
             kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+        )
+        self.interactivetools_map = (
+            interactivetools_map.geturl()
+            if interactivetools_map.scheme
+            else "sqlite:///" + self._in_root_dir(interactivetools_map.geturl())
         )
 
         # Compliance/Policy variables

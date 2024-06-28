@@ -1,14 +1,15 @@
 import json
 import logging
-import sqlite3
 from urllib.parse import (
     urlsplit,
     urlunsplit,
 )
 
 from sqlalchemy import (
+    create_engine,
     or_,
     select,
+    text,
 )
 
 from galaxy import exceptions
@@ -18,94 +19,108 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
-from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
 
 DATABASE_TABLE_NAME = "gxitproxy"
 
 
-class InteractiveToolSqlite:
-    def __init__(self, sqlite_filename, encode_id):
-        self.sqlite_filename = sqlite_filename
-        self.encode_id = encode_id
+class InteractiveToolPropagatorSQLAlchemy:
+    """
+    Propagator for InteractiveToolManager implemented using SQLAlchemy.
+    """
+
+    def __init__(self, database_url, encode_id):
+        """
+        Constructor that sets up the propagator using a SQLAlchemy database URL.
+
+        :param database_url: SQLAlchemy database URL, read more on the SQLAlchemy documentation
+                             https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls.
+        :param encode_id: A helper class that can encode ids as lowercase alphanumeric strings and vice versa.
+        """
+        self._engine = create_engine(database_url)
+        self._encode_id = encode_id
 
     def get(self, key, key_type):
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                select = f"""SELECT token, host, port, info
-                            FROM {DATABASE_TABLE_NAME}
-                            WHERE key=? and key_type=?"""
-                c.execute(
-                    select,
-                    (
-                        key,
-                        key_type,
-                    ),
-                )
-                try:
-                    token, host, port, info = c.fetchone()
-                except TypeError:
-                    log.warning("get(): invalid key: %s key_type %s", key, key_type)
-                    return None
-                return dict(key=key, key_type=key_type, token=token, host=host, port=port, info=info)
-            finally:
-                conn.close()
+        with self._engine.connect() as conn:
+            query = text(
+                f"""
+            SELECT token, host, port, info
+            FROM {DATABASE_TABLE_NAME} WHERE key=:key AND key_type=:key_type
+            """
+            )
+            parameters = dict(
+                key=key,
+                key_type=key_type,
+            )
+            result = conn.execute(query, parameters).fetchone()
+        return (
+            None
+            if result is None
+            else dict(
+                key=key,
+                key_type=key_type,
+                token=result[0],
+                host=result[1],
+                port=result[2],
+                info=result[3],
+            )
+        )
 
     def save(self, key, key_type, token, host, port, info=None):
         """
-        Writeout a key, key_type, token, value store that is can be used for coordinating
-        with external resources.
+        Write out a key, key_type, token, value store that is can be used for coordinating with external resources.
         """
         assert key, ValueError("A non-zero length key is required.")
         assert key_type, ValueError("A non-zero length key_type is required.")
         assert token, ValueError("A non-zero length token is required.")
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                try:
-                    # Create table
-                    c.execute(
-                        f"""CREATE TABLE {DATABASE_TABLE_NAME}
-                                 (key text,
-                                  key_type text,
-                                  token text,
-                                  host text,
-                                  port integer,
-                                  info text,
-                                  PRIMARY KEY (key, key_type)
-                                  )"""
-                    )
-                except Exception:
-                    pass
-                delete = f"""DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?"""
-                c.execute(
-                    delete,
-                    (
-                        key,
-                        key_type,
-                    ),
-                )
-                insert = f"""INSERT INTO {DATABASE_TABLE_NAME}
-                            (key, key_type, token, host, port, info)
-                            VALUES (?, ?, ?, ?, ?, ?)"""
-                c.execute(
-                    insert,
-                    (
-                        key,
-                        key_type,
-                        token,
-                        host,
-                        port,
-                        info,
-                    ),
-                )
-                conn.commit()
-            finally:
-                conn.close()
+        with self._engine.connect() as conn:
+            # create gx-it-proxy table if not exists
+            query = text(
+                f"""
+            CREATE TABLE IF NOT EXISTS {DATABASE_TABLE_NAME} (
+                key TEXT,
+                key_type TEXT,
+                token TEXT,
+                host TEXT,
+                port INTEGER,
+                info TEXT,
+                PRIMARY KEY (key, key_type)
+            )
+            """
+            )
+            conn.execute(query)
+
+            # delete existing data with same key
+            query = text(
+                f"""
+                DELETE FROM {DATABASE_TABLE_NAME} WHERE key=:key AND key_type=:key_type
+            """
+            )
+            parameters = dict(
+                key=key,
+                key_type=key_type,
+            )
+            conn.execute(query, parameters)
+
+            # save data
+            query = text(
+                f"""
+                INSERT INTO {DATABASE_TABLE_NAME} (key, key_type, token, host, port, info)
+                VALUES (:key, :key_type, :token, :host, :port, :info)
+            """
+            )
+            parameters = dict(
+                key=key,
+                key_type=key_type,
+                token=token,
+                host=host,
+                port=port,
+                info=info,
+            )
+            conn.execute(query, parameters)
+
+            conn.commit()
 
     def remove(self, **kwd):
         """
@@ -113,30 +128,24 @@ class InteractiveToolSqlite:
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = f"DELETE FROM {DATABASE_TABLE_NAME} WHERE"
-        value_list = []
-        for i, (key, value) in enumerate(kwd.items()):
-            if i != 0:
-                delete += " and"
-            delete += f" {key}=?"
-            value_list.append(value)
-        with FileLock(self.sqlite_filename):
-            conn = sqlite3.connect(self.sqlite_filename)
-            try:
-                c = conn.cursor()
-                try:
-                    # Delete entry
-                    c.execute(delete, tuple(value_list))
-                except Exception as e:
-                    log.debug("Error removing entry (%s): %s", delete, e)
-                conn.commit()
-            finally:
-                conn.close()
+        with self._engine.connect() as conn:
+            query_template = f"DELETE FROM {DATABASE_TABLE_NAME} WHERE {{conditions}}"
+            conditions = (
+                "{key}=:{value}".format(
+                    key=key,
+                    value=f"value_{i}",
+                )
+                for i, key in enumerate(kwd)
+            )
+            query = text(query_template.format(conditions=" AND ".join(conditions)))
+            parameters = {f"value_{i}": value for i, value in enumerate(kwd.values())}
+            conn.execute(query, parameters)
+            conn.commit()
 
     def save_entry_point(self, entry_point):
         """Convenience method to easily save an entry_point."""
         return self.save(
-            self.encode_id(entry_point.id),
+            self._encode_id(entry_point.id),
             entry_point.__class__.__name__.lower(),
             entry_point.token,
             entry_point.host,
@@ -151,7 +160,7 @@ class InteractiveToolSqlite:
 
     def remove_entry_point(self, entry_point):
         """Convenience method to easily remove an entry_point."""
-        return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
+        return self.remove(key=self._encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
 class InteractiveToolManager:
@@ -166,7 +175,7 @@ class InteractiveToolManager:
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
         self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
-        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, self.encoder.encode_id)
+        self.propagator = InteractiveToolPropagatorSQLAlchemy(app.config.interactivetools_map, self.encoder.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
