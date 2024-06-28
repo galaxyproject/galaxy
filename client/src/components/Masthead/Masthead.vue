@@ -81,7 +81,7 @@ onMounted(() => {
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
             </BNavbarBrand>
-            <span v-if="brand" class="navbar-text px-2">
+            <span v-if="brand" class="navbar-text py-0 px-2">
                 {{ brand }}
             </span>
         </BNavbarNav>
