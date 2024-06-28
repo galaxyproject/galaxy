@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Tuple,
 )
 
 from packaging.version import Version
@@ -1252,7 +1253,7 @@ class XmlInputSource(InputSource):
         options_elem = self.input_elem.find("options")
         return options_elem
 
-    def parse_static_options(self):
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """
         >>> from galaxy.util import parse_xml_string_to_etree
         >>> xml = '<param><option value="a">A</option><option value="b">B</option></param>'
