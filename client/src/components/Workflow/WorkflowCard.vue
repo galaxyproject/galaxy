@@ -144,9 +144,9 @@ async function onTagClick(tag: string) {
                     <BLink
                         v-b-tooltip.hover.noninteractive
                         title="Preview Workflow"
-                        @click.stop.prevent="toggleShowPreview(true)">
-                        {{ workflow.name }}
-                    </BLink>
+                        @click.stop.prevent="toggleShowPreview(true)"
+                        >{{ workflow.name }}</BLink
+                    >
                     <BButton
                         v-if="!shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
