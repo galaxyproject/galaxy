@@ -45,6 +45,7 @@ import Analysis from "entry/analysis/modules/Analysis";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
 import Login from "entry/analysis/modules/Login";
+import ResetPassword from "entry/analysis/modules/ResetPassword";
 import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
@@ -123,6 +124,12 @@ export function getRouter(Galaxy) {
             {
                 path: "/login/start",
                 component: Login,
+                redirect: redirectLoggedIn(),
+            },
+            /** Login entry route */
+            {
+                path: "/login/reset_password",
+                component: ResetPassword,
                 redirect: redirectLoggedIn(),
             },
             /** Page editor */
