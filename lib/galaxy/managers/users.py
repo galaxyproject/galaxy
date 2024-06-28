@@ -613,7 +613,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
-        if reset_user.deleted:
+        if reset_user and reset_user.deleted:
             return None, None
         if not reset_user and email != email.lower():
             reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
