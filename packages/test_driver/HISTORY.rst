@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-24.0.3.dev0
------------
+-------------------
+24.0.3 (2024-06-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Skip tests if toolshed, dx.doi not responding by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18250 <https://github.com/galaxyproject/galaxy/pull/18250>`_
+* Move tool shed specific driver function to tool_shed.test by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18296 <https://github.com/galaxyproject/galaxy/pull/18296>`_
 
 -------------------
 24.0.2 (2024-05-07)

@@ -3,11 +3,30 @@ History
 
 .. to_doc
 
------------
-24.0.3.dev0
------------
+-------------------
+24.0.3 (2024-06-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Downgrade count lines error to warning by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18175 <https://github.com/galaxyproject/galaxy/pull/18175>`_
+* Don't set dataset peek for errored jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18231 <https://github.com/galaxyproject/galaxy/pull/18231>`_
+* Transparently open compressed files in DatasetDataProvider by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18248 <https://github.com/galaxyproject/galaxy/pull/18248>`_
+* Raise exception when extracting dataset from collection without datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18249 <https://github.com/galaxyproject/galaxy/pull/18249>`_
+* Set page importable to false when serializing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18263 <https://github.com/galaxyproject/galaxy/pull/18263>`_
+* Fix first_dataset_element type hint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18284 <https://github.com/galaxyproject/galaxy/pull/18284>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
+* Fix user's private role can be missing by `@davelopez <https://github.com/davelopez>`_ in `#18381 <https://github.com/galaxyproject/galaxy/pull/18381>`_
+* Assign default ``data`` extension on discovered collection output  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18389 <https://github.com/galaxyproject/galaxy/pull/18389>`_
+
+=============
+Other changes
+=============
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
 
 -------------------
 24.0.2 (2024-05-07)

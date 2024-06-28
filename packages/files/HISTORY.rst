@@ -3,11 +3,20 @@ History
 
 .. to_doc
 
------------
-24.0.3.dev0
------------
+-------------------
+24.0.3 (2024-06-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix listing possibly untitled records in Invenio Plugin by `@davelopez <https://github.com/davelopez>`_ in `#18130 <https://github.com/galaxyproject/galaxy/pull/18130>`_
+* Raise ``RequestParameterInvalidException`` when url is invalid by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18155 <https://github.com/galaxyproject/galaxy/pull/18155>`_
+* Fix error message when accessing restricted Zenodo records by `@davelopez <https://github.com/davelopez>`_ in `#18169 <https://github.com/galaxyproject/galaxy/pull/18169>`_
+* Raise ``RequestParameterInvalidException`` if url can't be verified by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18230 <https://github.com/galaxyproject/galaxy/pull/18230>`_
+* Fix Invenio credentials handling by `@davelopez <https://github.com/davelopez>`_ in `#18255 <https://github.com/galaxyproject/galaxy/pull/18255>`_
 
 -------------------
 24.0.2 (2024-05-07)

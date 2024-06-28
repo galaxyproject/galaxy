@@ -3,11 +3,20 @@ History
 
 .. to_doc
 
------------
-24.0.3.dev0
------------
+-------------------
+24.0.3 (2024-06-28)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Include traceback when logging email PJA exception by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18122 <https://github.com/galaxyproject/galaxy/pull/18122>`_
+* Don't commit in ``DeleteIntermediatesAction`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18131 <https://github.com/galaxyproject/galaxy/pull/18131>`_
+* Don't fail metadata if we only have an extra output files dir by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18179 <https://github.com/galaxyproject/galaxy/pull/18179>`_
+* Don't set dataset peek for errored jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18231 <https://github.com/galaxyproject/galaxy/pull/18231>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
 
 -------------------
 24.0.2 (2024-05-07)
