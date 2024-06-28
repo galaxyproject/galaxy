@@ -36,7 +36,7 @@ and that you have configured your remotes so that you can push to the configured
 The script should abort gracefully if that is not the case.
 
 Follow these steps:
-    0. Enable the push URL of the galaxyproject remote if you have disable it and disable pre-commit hooks
+    0. Enable the push URL of the galaxyproject remote if you have disabled it and disable pre-commit hooks
     1. Check out the branch from which you want to create a release, e.g. release_23.0: `git checkout release_23.0`
     2. Activate your local virtualenv with Galaxy's dev requirements: `. .venv/bin/activate`
     3. Update Galaxy's dev dependencies (if you haven't done this in a while): `pip install -r lib/galaxy/dependencies/dev-requirements.txt`
