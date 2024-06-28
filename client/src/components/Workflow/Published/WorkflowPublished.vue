@@ -55,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
     showMinimap: true,
     showButtons: true,
     showZoomControls: true,
+    ignoreErrors: false,
 });
 
 const userStore = useUserStore();
