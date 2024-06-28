@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 import packaging.version
@@ -360,7 +361,7 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
-    def parse_static_options(self):
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         static_options = []
         input_dict = self.input_dict
         for option in input_dict.get("options", {}):

@@ -145,6 +145,10 @@ class ToolProxy(metaclass=ABCMeta):
         return tool_id
 
     @abstractmethod
+    def input_fields(self) -> list:
+        """Return InputInstance objects describing mapping to Galaxy inputs."""
+
+    @abstractmethod
     def input_instances(self):
         """Return InputInstance objects describing mapping to Galaxy inputs."""
 
@@ -236,7 +240,7 @@ class CommandLineToolProxy(ToolProxy):
         else:
             return ""
 
-    def input_fields(self):
+    def input_fields(self) -> list:
         input_records_schema = self._eval_schema(self._tool.inputs_record_schema)
         if input_records_schema["type"] != "record":
             raise Exception("Unhandled CWL tool input structure")

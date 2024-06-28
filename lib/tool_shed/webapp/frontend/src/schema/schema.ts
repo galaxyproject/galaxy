@@ -168,6 +168,17 @@ export interface paths {
          */
         put: operations["tools__build_search_index"]
     }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_model": {
+        /** Return Galaxy's meta model description of the tool's inputs */
+        get: operations["tools__parameter_model"]
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
+        /**
+         * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+         * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+         */
+        get: operations["tools__parameter_request_model"]
+    }
     "/api/users": {
         /**
          * Index
@@ -259,6 +270,53 @@ export interface components {
             /** Files */
             files?: string[] | null
         }
+        /** BooleanParameterModel */
+        BooleanParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Falsevalue */
+            falsevalue?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_boolean"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Truevalue */
+            truevalue?: string | null
+            /**
+             * Value
+             * @default false
+             */
+            value?: boolean | null
+        }
         /** BuildSearchIndexResponse */
         BuildSearchIndexResponse: {
             /** Repositories Indexed */
@@ -294,6 +352,121 @@ export interface components {
              * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
              */
             type: string
+        }
+        /** ColorParameterModel */
+        ColorParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_color
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_color"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Value */
+            value?: string | null
+        }
+        /** ConditionalParameterModel */
+        ConditionalParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_conditional"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen"][]
+        }
+        /** ConditionalWhen */
+        ConditionalWhen: {
+            /** Discriminator */
+            discriminator: boolean | string
+            /** Is Default When */
+            is_default_when: boolean
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+            )[]
         }
         /** CreateCategoryRequest */
         CreateCategoryRequest: {
@@ -331,6 +504,266 @@ export interface components {
             password: string
             /** Username */
             username: string
+        }
+        /** CwlBooleanParameterModel */
+        CwlBooleanParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_boolean"
+        }
+        /** CwlDirectoryParameterModel */
+        CwlDirectoryParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default cwl_directory
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_directory"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+        }
+        /** CwlFileParameterModel */
+        CwlFileParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default cwl_file
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_file"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+        }
+        /** CwlFloatParameterModel */
+        CwlFloatParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_float"
+        }
+        /** CwlIntegerParameterModel */
+        CwlIntegerParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_integer"
+        }
+        /** CwlNullParameterModel */
+        CwlNullParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_null
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_null"
+        }
+        /** CwlStringParameterModel */
+        CwlStringParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_string
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_string"
+        }
+        /** CwlUnionParameterModel */
+        CwlUnionParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_union"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+            )[]
+        }
+        /** DataCollectionParameterModel */
+        DataCollectionParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Collection Type */
+            collection_type?: string | null
+            /**
+             * Extensions
+             * @default [
+             *   "data"
+             * ]
+             */
+            extensions?: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_data_collection
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_data_collection"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+        }
+        /** DataParameterModel */
+        DataParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /**
+             * Extensions
+             * @default [
+             *   "data"
+             * ]
+             */
+            extensions?: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple?: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_data
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_data"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
         }
         /**
          * DescriptorType
@@ -375,15 +808,136 @@ export interface components {
             /** User Id */
             user_id: string
         }
+        /** DirectoryUriParameterModel */
+        DirectoryUriParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_directory_uri"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Value */
+            value: string | null
+        }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
             /** Err Msg */
             err_msg: string
         }
+        /** FloatParameterModel */
+        FloatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_float"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Value */
+            value?: number | null
+        }
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][]
+        }
+        /** HiddenParameterModel */
+        HiddenParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_hidden
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_hidden"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
         }
         /** ImageData */
         ImageData: {
@@ -424,6 +978,56 @@ export interface components {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
             repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
         }
+        /** IntegerParameterModel */
+        IntegerParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /** Optional */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_integer"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Value */
+            value?: number | null
+        }
+        /** LabelValue */
+        LabelValue: {
+            /** Label */
+            label: string
+            /** Selected */
+            selected: boolean
+            /** Value */
+            value: string
+        }
         /** Organization */
         Organization: {
             /**
@@ -437,6 +1041,68 @@ export interface components {
              * @description URL of the website of the organization (RFC 3986 format)
              */
             url: string
+        }
+        /** RepeatParameterModel */
+        RepeatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_repeat"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+            )[]
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -693,6 +1359,86 @@ export interface components {
             /** Stop Time */
             stop_time: string
         }
+        /** RulesParameterModel */
+        RulesParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_rules
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_rules"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+        }
+        /** SelectParameterModel */
+        SelectParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /** Options */
+            options?: components["schemas"]["LabelValue"][] | null
+            /**
+             * Parameter Type
+             * @default gx_select
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_select"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+        }
         /** Service */
         Service: {
             /**
@@ -761,6 +1507,56 @@ export interface components {
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
              */
             version: string
+        }
+        /** TextParameterModel */
+        TextParameterModel: {
+            /**
+             * Area
+             * @default false
+             */
+            area?: boolean
+            /** Argument */
+            argument?: string | null
+            /**
+             * Default Options
+             * @default []
+             */
+            default_options?: components["schemas"]["LabelValue"][]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_text
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_text"
+            /**
+             * Refresh On Change
+             * @default false
+             */
+            refresh_on_change?: boolean
+            /** Value */
+            value?: string | null
         }
         /** Tool */
         Tool: {
@@ -836,6 +1632,33 @@ export interface components {
              * @description A short friendly name for the class.
              */
             name?: string | null
+        }
+        /** ToolParameterBundleModel */
+        ToolParameterBundleModel: {
+            /** Input Models */
+            input_models: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+            )[]
         }
         /** ToolVersion */
         ToolVersion: {
@@ -1764,6 +2587,59 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
+                }
+            }
+        }
+    }
+    tools__parameter_model: {
+        /** Return Galaxy's meta model description of the tool's inputs */
+        parameters: {
+            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+            /** @description The full version string defined on the Galaxy tool wrapper. */
+            path: {
+                tool_id: string
+                tool_version: string
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ToolParameterBundleModel"]
+                }
+            }
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
+    tools__parameter_request_model: {
+        /**
+         * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+         * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+         */
+        parameters: {
+            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+            /** @description The full version string defined on the Galaxy tool wrapper. */
+            path: {
+                tool_id: string
+                tool_version: string
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>
+                }
+            }
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"]
                 }
             }
         }
