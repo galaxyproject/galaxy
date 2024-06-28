@@ -183,6 +183,8 @@ Mataivic, victor.mataigne@wanadoo.fr, https://github.com/galaxyproject/galaxy/pu
 Delphine-L, lariviere.delphine@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147329464
 nekrut, anton@nekrut.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147347824
 mtangaro, ma.tangaro@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147366950
+pcm32, pablo.a.moreno@gmail.com, https://github.com/galaxyproject/galaxy/pull/15238
+pvanheus, pvh@sanbi.ac.za, https://github.com/galaxyproject/galaxy/pull/14389
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -259,6 +261,7 @@ Michael Sauria <crockopotamus@gmail.com>  # GH user: msauria
 MONJEAUD Cyril <Cyril.Monjeaud@irisa.fr>  # GH user: cmonjeau
 MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
 
+# below, haven't been notified on GitHub yet
 Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
 Norbert Eichner <norbert.eichner@ur.de>  # GH user: NCEichner
 Nic Herndon <nic.herndon@uconn.edu>  # GH user: NicHerndon
@@ -271,6 +274,12 @@ Oleksandr Moskalenko <om@rc.ufl.edu>  # GH user: moskalenko
 Olivia Doppelt-Azeroual <olivia.doppelt@pasteur.fr>  # GH user: odoppelt
 Olivier Sallou <olivier.sallou@gmail.com>  # GH user: osallou
 Ott Oopkaup <ott.oopkaup@gmail.com>  # GH user: ooobik
+Pavankumar Videm <videmp@informatik.uni-freiburg.de>  # GH user: pavanvidem
+Peter van 't Hof <pjrvanthof@gmail.com>  # GH user: ffinfo
+Petraea <Petraea@users.noreply.github.com>  # GH user: Petraea
+Philip Mabon <philipmabon@gmail.com>  # GH user: Takadonet
+Pierre Lindenbaum <plindenbaum@yahoo.fr>  # GH user: lindenb
+Pierrick Roger Mele <pierrick.rogermele@icloud.com>  # GH user: pkrog
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton

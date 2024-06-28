@@ -99,6 +99,16 @@ Thanks goes to these wonderful people. We still need them to approve https://git
       <td align="center" valign="top" width="20%"><a href="https://github.com/claresloggett"><img src="https://avatars.githubusercontent.com/u/1815107?v=4?s=150" width="150px;" alt="claresloggett"/><br /><sub><b>claresloggett</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=claresloggett" title="Code">💻</a></td>
       <td align="center" valign="top" width="20%"><a href="https://dan-blanchard.github.io/"><img src="https://avatars.githubusercontent.com/u/976345?v=4?s=150" width="150px;" alt="Dan Blanchard"/><br /><sub><b>Dan Blanchard</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=dan-blanchard" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/pavanvidem"><img src="https://avatars.githubusercontent.com/u/5268277?v=4?s=150" width="150px;" alt="Pavankumar Videm"/><br /><sub><b>Pavankumar Videm</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=pavanvidem" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/ffinfo"><img src="https://avatars.githubusercontent.com/u/2419555?v=4?s=150" width="150px;" alt="Peter van 't Hof"/><br /><sub><b>Peter van 't Hof</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=ffinfo" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/Petraea"><img src="https://avatars.githubusercontent.com/u/5269432?v=4?s=150" width="150px;" alt="Petraea"/><br /><sub><b>Petraea</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=Petraea" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/Takadonet"><img src="https://avatars.githubusercontent.com/u/64732?v=4?s=150" width="150px;" alt="Philip Mabon"/><br /><sub><b>Philip Mabon</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=Takadonet" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://genomic.social/web/@yokofakun"><img src="https://avatars.githubusercontent.com/u/33838?v=4?s=150" width="150px;" alt="Pierre Lindenbaum"/><br /><sub><b>Pierre Lindenbaum</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=lindenb" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://fr.linkedin.com/in/pkrog"><img src="https://avatars.githubusercontent.com/u/15377906?v=4?s=150" width="150px;" alt="Pierrick Roger"/><br /><sub><b>Pierrick Roger</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=pkrog" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 

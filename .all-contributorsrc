@@ -594,6 +594,60 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "pavanvidem",
+      "name": "Pavankumar Videm",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5268277?v=4",
+      "profile": "https://github.com/pavanvidem",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ffinfo",
+      "name": "Peter van 't Hof",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2419555?v=4",
+      "profile": "https://github.com/ffinfo",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Petraea",
+      "name": "Petraea",
+      "avatar_url": "https://avatars.githubusercontent.com/u/5269432?v=4",
+      "profile": "https://github.com/Petraea",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Takadonet",
+      "name": "Philip Mabon",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64732?v=4",
+      "profile": "https://github.com/Takadonet",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "lindenb",
+      "name": "Pierre Lindenbaum",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33838?v=4",
+      "profile": "https://genomic.social/web/@yokofakun",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "pkrog",
+      "name": "Pierrick Roger",
+      "avatar_url": "https://avatars.githubusercontent.com/u/15377906?v=4",
+      "profile": "https://fr.linkedin.com/in/pkrog",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 5,
