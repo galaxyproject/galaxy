@@ -774,6 +774,60 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "sszakony",
+      "name": "Scott Szakonyi",
+      "avatar_url": "https://avatars.githubusercontent.com/u/9634629?v=4",
+      "profile": "https://github.com/sszakony",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "shano",
+      "name": "Shane Dowling",
+      "avatar_url": "https://avatars.githubusercontent.com/u/167567?v=4",
+      "profile": "https://shanedowling.com/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "souravsingh",
+      "name": "Sourav Singh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4314261?v=4",
+      "profile": "https://github.com/souravsingh",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "saxtouri",
+      "name": "Stavros Sachtouris",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3098971?v=4",
+      "profile": "https://github.com/saxtouri",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "sneumann",
+      "name": "Steffen Neumann",
+      "avatar_url": "https://avatars.githubusercontent.com/u/195385?v=4",
+      "profile": "https://github.com/sneumann",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "stevecassidy",
+      "name": "Steve Cassidy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4685447?v=4",
+      "profile": "http://stevecassidy.net/",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 5,

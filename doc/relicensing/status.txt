@@ -188,6 +188,7 @@ pvanheus, pvh@sanbi.ac.za, https://github.com/galaxyproject/galaxy/pull/14389
 qiagu, guqiang01@gmail.com, https://github.com/galaxyproject/galaxy/pull/14992
 rhpvorderman, r.h.p.vorderman@lumc.nl, https://github.com/galaxyproject/galaxy/pull/13179
 richard-burhans, burhans@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/17565
+shenweiyan, weiyanshum@gmail.com, https://github.com/galaxyproject/galaxy/pull/13323
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -302,6 +303,15 @@ Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
 Rory Kirchner <roryk@mit.edu>  # GH user: ???
 Roy Storey <kiwiroy@gmail.com>  # GH user: kiwiroy
 Rupert Nash <r.nash@epcc.ed.ac.uk>  # GH user: rupertnash
+Ryan Golhar <ngsbioinformatics@gmail.com> # GH user: golharam
+Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
+Shane Dowling <shane@shanedowling.com>  # GH user: shano
+Simone Leo <simone.leo@gmail.com>  # GH user: simleo
+Simon Guest <simon.guest@agresearch.co.nz>  # GH user: ???
+Sourav Singh <souravsingh@users.noreply.github.com>  # GH user: souravsingh
+Stavros Sachtouris <saxtouri@admin.grnet.gr>  # GH user: saxtouri
+Steffen Neumann <sneumann@ipb-halle.de>  # GH user: sneumann
+Steve Cassidy <steve.cassidy@mq.edu.au>  # GH user: stevecassidy
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
