@@ -186,6 +186,8 @@ mtangaro, ma.tangaro@gmail.com, https://github.com/galaxyproject/galaxy/pull/169
 pcm32, pablo.a.moreno@gmail.com, https://github.com/galaxyproject/galaxy/pull/15238
 pvanheus, pvh@sanbi.ac.za, https://github.com/galaxyproject/galaxy/pull/14389
 qiagu, guqiang01@gmail.com, https://github.com/galaxyproject/galaxy/pull/14992
+rhpvorderman, r.h.p.vorderman@lumc.nl, https://github.com/galaxyproject/galaxy/pull/13179
+richard-burhans, burhans@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/17565
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -281,6 +283,25 @@ Petraea <Petraea@users.noreply.github.com>  # GH user: Petraea
 Philip Mabon <philipmabon@gmail.com>  # GH user: Takadonet
 Pierre Lindenbaum <plindenbaum@yahoo.fr>  # GH user: lindenb
 Pierrick Roger Mele <pierrick.rogermele@icloud.com>  # GH user: pkrog
+Radhesh Kamath <radhesh@bx.psu.edu>  # GH user: ???
+Raj Ayyampalayam <raj76@uga.edu>  # GH user: ???
+Ralf Weber <RJMW@users.noreply.github.com>  # GH user: RJMW
+Ramez Alrawas <ramezrawas@gmail.com>  # GH user: ramezrawas
+Ramkrishna Chakrabarty <rc@bx.psu.edu>  # GH user: ???
+Rossano Atzeni <rossano.atzeni@crs4.it>  # GH user: ratzeni
+Ryan Velazquez <ryan.velazquez0001@temple.edu>  # GH user: rdvelazquez
+Rémi Marenco <remi.marenco@gmail.com>  # GH user: remimarenco
+remy_d1 <remy.d1@gmail.com>  # GH user: ???
+Renato Alves <alves.rjc@gmail.com>  # GH user: unode
+Richard James Acton <racton@uni-koeln.de>  # GH user: RichardJActon
+Richard Park <rpark@bu.edu>  # GH user: rpark37
+rikeshi <rikeshi@users.noreply.github.com>  # GH user: rikeshi
+Ralonso <roalva1@gmail.com>  # GH user: roalva1
+Rob Hooft <rob.hooft@nbic.nl>  # GH user: rwwh
+Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
+Rory Kirchner <roryk@mit.edu>  # GH user: ???
+Roy Storey <kiwiroy@gmail.com>  # GH user: kiwiroy
+Rupert Nash <r.nash@epcc.ed.ac.uk>  # GH user: rupertnash
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
