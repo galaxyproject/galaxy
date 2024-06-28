@@ -6,13 +6,14 @@ import {
     faExternalLinkAlt,
     faEye,
     faFileExport,
+    faSpinner,
     faStar,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef } from "vue";
+import { computed, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
@@ -20,45 +21,15 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
-import type { ColorVariant } from "../Common";
-
-import AsyncButton from "@/components/Common/AsyncButton.vue";
-
-library.add(faCaretDown, faExternalLinkAlt, faEye, faFileExport, farStar, faStar, faTrash);
+library.add(farStar, faCaretDown, faExternalLinkAlt, faEye, faFileExport, faSpinner, faStar, faTrash);
 
 interface Props {
     workflow: any;
-    menu?: boolean;
     published?: boolean;
-    buttonSize?: "sm" | "md" | "lg";
-}
-
-type BaseAction = {
-    condition?: boolean;
-    class?: string;
-    title: string;
-    tooltip?: string;
-    icon: any;
-    href?: string;
-    target?: "_blank";
-    size: "sm" | "md" | "lg";
-    component: "async" | "button";
-    variant: ColorVariant | "link";
-    onClick?: (e?: MouseEvent | KeyboardEvent) => void;
-};
-
-interface AAction extends BaseAction {
-    component: "async";
-    action: () => Promise<void>;
-}
-
-interface BAction extends BaseAction {
-    component: "button";
-    to?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    buttonSize: "sm",
+    published: false,
 });
 
 const emit = defineEmits<{
@@ -67,7 +38,10 @@ const emit = defineEmits<{
 
 const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
+
 const { confirm } = useConfirmDialog();
+
+const bookmarkLoading = ref(false);
 
 const shared = computed(() => {
     if (userStore.currentUser) {
@@ -87,24 +61,31 @@ const sourceType = computed(() => {
 });
 
 async function onToggleBookmark(checked: boolean) {
-    await updateWorkflow(props.workflow.id, {
-        show_in_tool_panel: checked,
-    });
+    try {
+        bookmarkLoading.value = true;
 
-    emit("refreshList", true);
-
-    Toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
-
-    if (checked) {
-        getGalaxyInstance().config.stored_workflow_menu_entries.push({
-            id: props.workflow.id,
-            name: props.workflow.name,
+        await updateWorkflow(props.workflow.id, {
+            show_in_tool_panel: checked,
         });
-    } else {
-        const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
-            (w: any) => w.id === props.workflow.id
-        );
-        getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
+
+        Toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
+
+        if (checked) {
+            getGalaxyInstance().config.stored_workflow_menu_entries.push({
+                id: props.workflow.id,
+                name: props.workflow.name,
+            });
+        } else {
+            const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
+                (w: any) => w.id === props.workflow.id
+            );
+            getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
+        }
+    } catch (error) {
+        Toast.error("Failed to update workflow bookmark status");
+    } finally {
+        emit("refreshList", true);
+        bookmarkLoading.value = false;
     }
 }
 
@@ -121,138 +102,95 @@ async function onDelete() {
         Toast.info("Workflow deleted");
     }
 }
-
-const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
-    return [
-        {
-            condition: !props.workflow.deleted && !props.workflow.show_in_tool_panel,
-            class: "workflow-bookmark-button-add",
-            component: "async",
-            title: "Add bookmarks",
-            tooltip: "Add to bookmarks. This workflow will appear in the left tool panel.",
-            icon: farStar,
-            size: props.buttonSize,
-            variant: "link",
-            action: () => onToggleBookmark(true),
-        },
-        {
-            condition: !props.workflow.deleted && props.workflow.show_in_tool_panel,
-            class: "workflow-bookmark-button-remove",
-            component: "async",
-            title: "Remove bookmark",
-            tooltip: "Remove bookmark",
-            icon: faStar,
-            size: props.buttonSize,
-            variant: "link",
-            action: () => onToggleBookmark(false),
-        },
-    ];
-});
-
-const menuActions: ComputedRef<BAction[]> = computed(() => {
-    return [
-        {
-            condition: !isAnonymous.value && !shared.value && !props.workflow.deleted,
-            class: "workflow-delete-button",
-            component: "button",
-            title: "Delete workflow",
-            tooltip: "Delete workflow",
-            icon: faTrash,
-            size: props.buttonSize,
-            variant: "link",
-            onClick: () => onDelete(),
-        },
-        {
-            condition: sourceType.value.includes("trs"),
-            class: "source-trs-button",
-            component: "button",
-            title: `View on ${props.workflow.source_metadata?.trs_server}`,
-            href: `https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`,
-            target: "_blank",
-            icon: faExternalLinkAlt,
-            size: props.buttonSize,
-            variant: "link",
-        },
-        {
-            condition: sourceType.value == "url",
-            class: "workflow-view-external-link-button",
-            component: "button",
-            title: "View external link",
-            href: props.workflow.source_metadata?.url,
-            target: "_blank",
-            icon: faExternalLinkAlt,
-            size: props.buttonSize,
-            variant: "link",
-        },
-        {
-            condition: !props.workflow.deleted,
-            class: "workflow-export-button",
-            component: "button",
-            title: "Export",
-            icon: faFileExport,
-            size: props.buttonSize,
-            variant: "link",
-            to: `/workflows/export?id=${props.workflow.id}`,
-        },
-    ];
-});
 </script>
 
 <template>
     <div class="workflow-actions">
-        <div v-for="action in actions" :key="action.class">
-            <AsyncButton
-                v-if="action.condition && action.component === 'async'"
-                v-b-tooltip.hover.noninteractive
-                :class="action.class"
-                class="inline-icon-button mr-1"
-                :variant="action.variant"
-                :size="action.size"
-                :title="action.tooltip"
-                :icon="action.icon"
-                :action="action.action" />
-
+        <BButtonGroup>
             <BButton
-                v-else-if="action.condition && action.component === 'button'"
+                v-if="!props.workflow.deleted && !props.workflow.show_in_tool_panel"
                 v-b-tooltip.hover.noninteractive
-                :class="action.class"
-                class="inline-icon-button mr-1"
-                :variant="action.variant"
-                :size="action.size"
-                :title="action.tooltip"
-                :href="action.href"
-                :to="action.to"
-                @click="action.onClick">
-                <FontAwesomeIcon :icon="action.icon" fixed-width />
+                class="workflow-bookmark-button-add inline-icon-button"
+                variant="link"
+                title="Add to bookmarks"
+                tooltip="Add to bookmarks. This workflow will appear in the left tool panel."
+                size="sm"
+                @click="onToggleBookmark(true)">
+                <FontAwesomeIcon v-if="!bookmarkLoading" :icon="farStar" fixed-width />
+                <FontAwesomeIcon v-else :icon="faSpinner" spin fixed-width />
             </BButton>
-        </div>
+            <BButton
+                v-else-if="!props.workflow.deleted && props.workflow.show_in_tool_panel"
+                v-b-tooltip.hover.noninteractive
+                class="workflow-bookmark-button-remove inline-icon-button"
+                variant="link"
+                title="Remove bookmark"
+                size="sm"
+                @click="onToggleBookmark(false)">
+                <FontAwesomeIcon v-if="!bookmarkLoading" :icon="faStar" fixed-width />
+                <FontAwesomeIcon v-else :icon="faSpinner" spin fixed-width />
+            </BButton>
 
-        <BDropdown
-            v-b-tooltip.top.noninteractive
-            :data-workflow-actions-dropdown="workflow.id"
-            right
-            no-caret
-            class="workflow-actions-dropdown"
-            toggle-class="inline-icon-button"
-            title="Workflow actions"
-            variant="link">
-            <template v-slot:button-content>
-                <FontAwesomeIcon :icon="faCaretDown" fixed-width />
-            </template>
+            <BDropdown
+                v-b-tooltip.top.noninteractive
+                :data-workflow-actions-dropdown="workflow.id"
+                right
+                no-caret
+                class="workflow-actions-dropdown"
+                title="Workflow actions"
+                toggle-class="inline-icon-button"
+                variant="link">
+                <template v-slot:button-content>
+                    <FontAwesomeIcon :icon="faCaretDown" fixed-width />
+                </template>
 
-            <BDropdownItem
-                v-for="action in menuActions.filter((a) => a.condition).reverse()"
-                :key="action.class"
-                :class="action.class"
-                :href="action.href"
-                :title="action.title"
-                :target="action.target"
-                :to="action.to"
-                @click="action.onClick?.()">
-                <FontAwesomeIcon :icon="action.icon" fixed-width />
-                <span>{{ action.title }}</span>
-            </BDropdownItem>
-        </BDropdown>
+                <BDropdownItem
+                    v-if="!isAnonymous && !shared && !props.workflow.deleted"
+                    class="workflow-delete-button"
+                    title="Delete workflow"
+                    size="sm"
+                    variant="link"
+                    @click="onDelete">
+                    <FontAwesomeIcon :icon="faTrash" fixed-width />
+                    <span>Delete</span>
+                </BDropdownItem>
+
+                <BDropdownItem
+                    v-if="sourceType.includes('trs')"
+                    class="source-trs-button"
+                    :title="`View on ${props.workflow.source_metadata?.trs_server}`"
+                    size="sm"
+                    variant="link"
+                    :href="`https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`"
+                    target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                    <span>View on Dockstore</span>
+                </BDropdownItem>
+
+                <BDropdownItem
+                    v-if="sourceType == 'url'"
+                    class="workflow-view-external-link-button"
+                    title="View external link"
+                    size="sm"
+                    variant="link"
+                    :href="props.workflow.source_metadata?.url"
+                    target="_blank">
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                    <span>View external link</span>
+                </BDropdownItem>
+
+                <BDropdownItem
+                    v-if="!props.workflow.deleted"
+                    class="workflow-export-button"
+                    title="Export"
+                    size="sm"
+                    variant="link"
+                    :to="`/workflows/export?id=${props.workflow.id}`">
+                    <FontAwesomeIcon :icon="faFileExport" fixed-width />
+                    <span>Export</span>
+                </BDropdownItem>
+            </BDropdown>
+        </BButtonGroup>
     </div>
 </template>
 
