@@ -33,56 +33,56 @@ const versionUserDocumentationUrl = computed(() => {
             <Heading h2 separator size="md">Support</Heading>
             <div v-if="config.wiki_url">
                 <ExternalLink :href="config.wiki_url">
-                    <strong>Community Hub</strong>
+                    <strong v-localize>Community Hub</strong>
                 </ExternalLink>
-                <p>
-                    Interact with the our community, learn how to use Galaxy through tutorials or publish your own ones.
-                </p>
+                <p v-localize>Join our community and explore tutorials on using Galaxy and enhance your skills.</p>
             </div>
             <div v-if="config.helpsite_url">
                 <ExternalLink :href="config.helpsite_url">
-                    <strong>Ask Questions & Find Answers</strong>
+                    <strong v-localize>Ask Questions & Find Answers</strong>
                 </ExternalLink>
-                <p>Access the Galaxy Q&A website.</p>
+                <p v-localize>
+                    Visit the Galaxy Q&A website to find answers to your questions and connect with other users.
+                </p>
             </div>
             <div v-if="config.support_url">
                 <ExternalLink :href="config.support_url">
-                    <strong>Reach Out</strong>
+                    <strong v-localize>Reach Out</strong>
                 </ExternalLink>
-                <p>Do you need help? Do you want to teach or learn more about Galaxy? Feel free to reach out.</p>
+                <p v-localize>Need help or want to teach and learn more about Galaxy? Feel free to reach out to us.</p>
             </div>
-            <Heading h2 separator size="md">Help</Heading>
+            <Heading v-localize h2 separator size="md">Help</Heading>
             <div>
                 <RouterLink to="tours">
-                    <strong>Interactive Tours</strong>
+                    <strong v-localize>Interactive Tours</strong>
                 </RouterLink>
-                <p>Explore and learn about Galaxy through interactive tours.</p>
+                <p v-localize>Discover and learn about Galaxy with our interactive tours.</p>
             </div>
             <div v-if="config.screencasts_url">
                 <ExternalLink :href="config.screencasts_url">
-                    <strong>Videos and Screencasts</strong>
+                    <strong v-localize>Videos and Screencasts</strong>
                 </ExternalLink>
-                <p>Learn more about Galaxy by watching videos and screencasts.</p>
+                <p v-localize>Learn more about Galaxy by watching videos and screencasts.</p>
             </div>
             <div v-if="config.citation_url">
                 <ExternalLink :href="config.citation_url">
-                    <strong>How to Cite Us</strong>
+                    <strong v-localize>How to Cite Us</strong>
                 </ExternalLink>
-                <p>View details on how to properly cite Galaxy.</p>
+                <p v-localize>View details on how to properly cite Galaxy.</p>
             </div>
             <Heading h2 separator size="md">Technical Details</Heading>
             <div>
                 <!-- Galaxy version (detailed), with a link to the release notes -->
                 <ExternalLink :href="versionUserDocumentationUrl">
-                    <strong>Release Notes</strong>
+                    <strong v-localize>Release Notes</strong>
                 </ExternalLink>
-                <p>
+                <p v-localize>
                     This Galaxy server version is <strong>{{ config.version_major }}.{{ config.version_minor }}</strong
                     >, and the web client was built on
                     <strong><UtcDate :date="clientBuildDate" mode="pretty" /></strong>.
                 </p>
                 <template v-if="config.version_extra">
-                    <p>The server also provides the following extra version information</p>
+                    <p v-localize>The server also provides the following extra version information</p>
                     <ul>
                         <li v-for="(value, name, index) in config.version_extra" :key="index">
                             <strong>{{ name }}</strong>
@@ -93,20 +93,22 @@ const versionUserDocumentationUrl = computed(() => {
             </div>
             <div>
                 <ExternalLink :href="apiDocsLink">
-                    <strong>API Documentation</strong>
+                    <strong v-localize>API Documentation</strong>
                 </ExternalLink>
-                <p>Explore the Galaxy API.</p>
+                <p v-localize>Explore the Galaxy API.</p>
             </div>
             <div>
                 <License class="font-weight-bold" :license-id="galaxyLicense" />
-                <p>The Galaxy Software is licensed under the MIT License.</p>
+                <p v-localize>The Galaxy Software is licensed under the MIT License.</p>
             </div>
             <div v-if="config.terms_url">
                 <!-- Terms, if available.-->
                 <ExternalLink :href="config.terms_url">
-                    <strong>Terms and Conditions</strong>
+                    <strong v-localize>Terms and Conditions</strong>
                 </ExternalLink>
-                <p>This Galaxy Server has specified Terms and Conditions that apply to use of the service.</p>
+                <p v-localize>
+                    This Galaxy Server has specified Terms and Conditions that apply to use of the service.
+                </p>
             </div>
         </div>
     </div>
