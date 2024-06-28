@@ -29,69 +29,57 @@ const versionUserDocumentationUrl = computed(() => {
 
 <template>
     <div v-if="isConfigLoaded" class="about-galaxy">
-        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="xl">Help and Support</Heading>
-        <div class="py-4">
+        <div class="p-2">
+            <Heading h2 separator size="md">Support</Heading>
             <div v-if="config.wiki_url">
-                <Heading h2 separator size="md">Community Hub</Heading>
+                <ExternalLink :href="config.wiki_url">
+                    <strong>Community Hub</strong>
+                </ExternalLink>
                 <p>
-                    Interact with the our community, explore and publish tutorials at
-                    <ExternalLink :href="config.wiki_url">
-                        {{ config.wiki_url }}
-                    </ExternalLink>
-                </p>
-            </div>
-            <div v-if="config.citation_url">
-                <Heading h2 separator size="md">How to Cite Us</Heading>
-                <p>
-                    Find more details on how to properly cite Galaxy at
-                    <ExternalLink :href="config.citation_url">
-                        {{ config.citation_url }}
-                    </ExternalLink>
-                </p>
-            </div>
-            <div>
-                <Heading h2 separator size="md">Interactive Tours</Heading>
-                <p>
-                    Explore and learn about Galaxy through interactive
-                    <RouterLink to="tours">tours</RouterLink>.
-                </p>
-            </div>
-            <div v-if="config.screencasts_url">
-                <Heading h2 separator size="md">Videos and Screencasts</Heading>
-                <p>
-                    Learn more about Galaxy by watching videos and screencasts at
-                    <ExternalLink :href="config.screencasts_url">
-                        {{ config.screencasts_url }}
-                    </ExternalLink>
+                    Interact with the our community, learn how to use Galaxy through tutorials or publish your own ones.
                 </p>
             </div>
             <div v-if="config.helpsite_url">
-                <Heading h2 separator size="md">User Documentation</Heading>
-                <p>
-                    Learn more about Galaxy at
-                    <ExternalLink :href="config.helpsite_url">
-                        {{ config.helpsite_url }}
-                    </ExternalLink>
-                </p>
+                <ExternalLink :href="config.helpsite_url">
+                    <strong>Ask Questions & Find Answers</strong>
+                </ExternalLink>
+                <p>Access the Galaxy Q&A website.</p>
             </div>
+            <div v-if="config.support_url">
+                <ExternalLink :href="config.support_url">
+                    <strong>Reach Out</strong>
+                </ExternalLink>
+                <p>Do you need help? Do you want to teach or learn more about Galaxy? Feel free to reach out.</p>
+            </div>
+            <Heading h2 separator size="md">Help</Heading>
             <div>
-                <Heading h2 separator size="md">API Documentation</Heading>
-                <!-- API documentation link -->
-                <p>
-                    The Galaxy API is available, and explorable, at
-                    <ExternalLink :href="apiDocsLink">
-                        {{ apiDocsLink }}
-                    </ExternalLink>
-                </p>
+                <RouterLink to="tours">
+                    <strong>Interactive Tours</strong>
+                </RouterLink>
+                <p>Explore and learn about Galaxy through interactive tours.</p>
             </div>
+            <div v-if="config.screencasts_url">
+                <ExternalLink :href="config.screencasts_url">
+                    <strong>Videos and Screencasts</strong>
+                </ExternalLink>
+                <p>Learn more about Galaxy by watching videos and screencasts.</p>
+            </div>
+            <div v-if="config.citation_url">
+                <ExternalLink :href="config.citation_url">
+                    <strong>How to Cite Us</strong>
+                </ExternalLink>
+                <p>View details on how to properly cite Galaxy.</p>
+            </div>
+            <Heading h2 separator size="md">Technical Details</Heading>
             <div>
                 <!-- Galaxy version (detailed), with a link to the release notes -->
-                <Heading h2 separator size="md">Version Information</Heading>
+                <ExternalLink :href="versionUserDocumentationUrl">
+                    <strong>Release Notes</strong>
+                </ExternalLink>
                 <p>
-                    The Galaxy Server is running version
-                    <ExternalLink :href="versionUserDocumentationUrl">
-                        <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </ExternalLink
-                    >, and the web client was built on <UtcDate :date="clientBuildDate" mode="pretty" />.
+                    This Galaxy server version is <strong>{{ config.version_major }}.{{ config.version_minor }}</strong
+                    >, and the web client was built on
+                    <strong><UtcDate :date="clientBuildDate" mode="pretty" /></strong>.
                 </p>
                 <template v-if="config.version_extra">
                     <p>The server also provides the following extra version information</p>
@@ -104,25 +92,21 @@ const versionUserDocumentationUrl = computed(() => {
                 </template>
             </div>
             <div>
-                <Heading h2 separator size="md">License Information</Heading>
-                <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
+                <ExternalLink :href="apiDocsLink">
+                    <strong>API Documentation</strong>
+                </ExternalLink>
+                <p>Explore the Galaxy API.</p>
+            </div>
+            <div>
+                <License class="font-weight-bold" :license-id="galaxyLicense" />
+                <p>The Galaxy Software is licensed under the MIT License.</p>
             </div>
             <div v-if="config.terms_url">
                 <!-- Terms, if available.-->
-                <Heading h2 separator size="md">Terms and Conditions</Heading>
-                <p>
-                    This Galaxy Server has specified Terms and Conditions that apply to use of the service.
-                    <ExternalLink :href="config.terms_url">Review them here.</ExternalLink>
-                </p>
-            </div>
-            <div v-if="config.support_url">
-                <Heading h2 separator size="md">Support</Heading>
-                <p>
-                    Do you need help? Reach out at
-                    <ExternalLink :href="config.support_url">
-                        {{ config.support_url }}
-                    </ExternalLink>
-                </p>
+                <ExternalLink :href="config.terms_url">
+                    <strong>Terms and Conditions</strong>
+                </ExternalLink>
+                <p>This Galaxy Server has specified Terms and Conditions that apply to use of the service.</p>
             </div>
         </div>
     </div>
