@@ -16,7 +16,7 @@ requirement field.
 
     <requirements>
         <!-- Container based dependency handling -->
-        <container type="docker">busybox:ubuntu-14.04</container>
+        <container type="docker">busybox:1.36.1-glibc</container>
         <!-- Conda based dependency handling -->
         <requirement type="package" version="8.22">gnu_coreutils</requirement>
     </requirements>
