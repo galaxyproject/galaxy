@@ -155,15 +155,6 @@
       ]
     },
     {
-      "login": "frederikcoppens",
-      "name": "Frederik Coppens",
-      "avatar_url": "https://avatars.githubusercontent.com/u/11292979?v=4",
-      "profile": "https://github.com/frederikcoppens",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "FreekDB",
       "name": "Freek de Bruijn",
       "avatar_url": "https://avatars.githubusercontent.com/u/1876144?v=4",
@@ -888,6 +879,60 @@
       "name": "ycgong",
       "avatar_url": "https://avatars.githubusercontent.com/u/25645631?v=4",
       "profile": "https://github.com/ycgong",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "arjunnath",
+      "name": "Arjun R Nath",
+      "avatar_url": "https://avatars.githubusercontent.com/u/10749618?v=4",
+      "profile": "https://github.com/arjunnath",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "meekrob",
+      "name": "David",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4528993?v=4",
+      "profile": "https://github.com/meekrob",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "kpvincent",
+      "name": "Kelly Vincent",
+      "avatar_url": "https://avatars.githubusercontent.com/u/107574288?v=4",
+      "profile": "https://github.com/kpvincent",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "roryk",
+      "name": "Rory Kirchner",
+      "avatar_url": "https://avatars.githubusercontent.com/u/414586?v=4",
+      "profile": "https://github.com/roryk",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "tesujimath",
+      "name": "Simon Guest",
+      "avatar_url": "https://avatars.githubusercontent.com/u/4411912?v=4",
+      "profile": "http://coldharbourdigital.com/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "remyd1",
+      "name": "DERNAT Rémy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/929620?v=4",
+      "profile": "https://remyd1.fr/",
       "contributions": [
         "code"
       ]
