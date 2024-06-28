@@ -8,7 +8,7 @@ import { useUserStore } from "@/stores/userStore";
 import { bytesToString } from "@/utils/utils";
 
 const { config } = useConfig();
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 
 const hasQuota = computed(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
@@ -30,6 +30,10 @@ const usage = computed(() => {
     return currentUser.value?.total_disk_usage ?? 0;
 });
 
+const quotaTitle = computed(() =>
+    isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
+);
+
 const variant = computed(() => {
     if (!hasQuota.value || usage.value < 80) {
         return "success";
@@ -41,8 +45,8 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" title="Storage and Usage Details">
-        <BLink class="quota-progress" to="/storage" data-description="storage dashboard link">
+    <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
+        <BLink class="quota-progress" to="/storage" data-description="storage dashboard link" :disabled="isAnonymous">
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
