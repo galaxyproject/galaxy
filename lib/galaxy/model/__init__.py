@@ -7666,7 +7666,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
-            raise Exception("Version does not exist")
+            raise galaxy.exceptions.RequestParameterInvalidException("Version does not exist")
         return list(reversed(self.workflows))[version]
 
     def version_of(self, workflow):
