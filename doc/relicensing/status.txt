@@ -227,8 +227,8 @@ Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
 Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
 Hiral Vora <hvora1@uncc.edu>  # GH user: ??
 Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
-Ian Schenck <ian@bx.psu.edu>  # GH user: ??
-ichorny <none@none> # GH user: ??
+Ian Schenck <ian@bx.psu.edu>  # GH user: ianschenck
+ichorny <none@none> # GH user: ??, Ilya Chorny, currently at Quantum-Si
 Ignacio Eguinoa <ignacio.eguinoa@gmail.com>  # GH user: ieguinoa
 Ivan Kuzmin <inkuzm@gmail.com>  # GH user: inkuzmin
 James Boocock <sfk2001@gmail.com>  # GH user: theboocock
@@ -239,7 +239,7 @@ Jesse c j van Dam <jesse.vandam@wur.nl>  # GH user: jessevdam
 Jianbin He <jbhe@bx.psu.edu>  # GH user: ??
 Joachim Jacob <joachim.jacob@gmail.com>  # GH user: joachimjacob
 Joachim Wolff <wolffj@informatik.uni-freiburg.de>  # GH user: joachimwolff
-John Duddy <jduddy@illumina.com>  # GH user: ??
+John Duddy <jduddy@illumina.com>  # GH user: jdlogicman
 jra001k <jra001k@gmail.com>  # GH user: ???
 (JR) Ray Sajulga <jraysajulga@gmail.com>  # GH user: jraysajulga
 Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
