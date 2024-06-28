@@ -4,10 +4,60 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Raise exception if collection elements missing during download by `@jdavcs <https://github.com/jdavcs>`_ in `#18094 <https://github.com/galaxyproject/galaxy/pull/18094>`_
+* Allow purge query param, deprecate purge body param by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18105 <https://github.com/galaxyproject/galaxy/pull/18105>`_
+* Backport OIDC schema fix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18111 <https://github.com/galaxyproject/galaxy/pull/18111>`_
+* Don't log exception if cancelled slurm job doesn't have stderr file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18121 <https://github.com/galaxyproject/galaxy/pull/18121>`_
+* Downgrade missing output file in working directory to warning for failed jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18123 <https://github.com/galaxyproject/galaxy/pull/18123>`_
+* Fix data default values not getting added to history by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18132 <https://github.com/galaxyproject/galaxy/pull/18132>`_
+* Drop redundant error message by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18156 <https://github.com/galaxyproject/galaxy/pull/18156>`_
+* Emit warning when user-cancelled job already complete by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18178 <https://github.com/galaxyproject/galaxy/pull/18178>`_
+* Avoid object store path lookup when constructing JobState object by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18190 <https://github.com/galaxyproject/galaxy/pull/18190>`_
+* Add string cast for dbkey / genome_build by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18207 <https://github.com/galaxyproject/galaxy/pull/18207>`_
+* Check dataset state when attempting to acces dataset contents by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18214 <https://github.com/galaxyproject/galaxy/pull/18214>`_
+* Don't set dataset peek for errored jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18231 <https://github.com/galaxyproject/galaxy/pull/18231>`_
+* Raise exception when extracting dataset from collection without datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18249 <https://github.com/galaxyproject/galaxy/pull/18249>`_
+* Skip tests if toolshed, dx.doi not responding by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18250 <https://github.com/galaxyproject/galaxy/pull/18250>`_
+* Don't attempt to download purged datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18278 <https://github.com/galaxyproject/galaxy/pull/18278>`_
+* Check various preconditions in FeatureLocationIndexDataProvider by `@davelopez <https://github.com/davelopez>`_ in `#18283 <https://github.com/galaxyproject/galaxy/pull/18283>`_
+* Don't serialize display application links for deleted datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18307 <https://github.com/galaxyproject/galaxy/pull/18307>`_
+* Downgrade doi fetch error to debug by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18330 <https://github.com/galaxyproject/galaxy/pull/18330>`_
+* Fix authentication error for anonymous users querying jobs by `@davelopez <https://github.com/davelopez>`_ in `#18333 <https://github.com/galaxyproject/galaxy/pull/18333>`_
+* Fix seek in slurm memory check by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18338 <https://github.com/galaxyproject/galaxy/pull/18338>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
+* Kill pulsar job if job stopped on galaxy side by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18348 <https://github.com/galaxyproject/galaxy/pull/18348>`_
+* Allow DCE as outer input to to_cwl by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18349 <https://github.com/galaxyproject/galaxy/pull/18349>`_
+* Fix anonymous user job retrieval logic by `@davelopez <https://github.com/davelopez>`_ in `#18358 <https://github.com/galaxyproject/galaxy/pull/18358>`_
+* Fix update group API payload model by `@davelopez <https://github.com/davelopez>`_ in `#18374 <https://github.com/galaxyproject/galaxy/pull/18374>`_
+* Fix user's private role can be missing by `@davelopez <https://github.com/davelopez>`_ in `#18381 <https://github.com/galaxyproject/galaxy/pull/18381>`_
+* Fix null inputs in database operation tools by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18385 <https://github.com/galaxyproject/galaxy/pull/18385>`_
+* Assign default ``data`` extension on discovered collection output  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18389 <https://github.com/galaxyproject/galaxy/pull/18389>`_
+* Fix ``get_accessible_job`` if called without session by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18400 <https://github.com/galaxyproject/galaxy/pull/18400>`_
+* Fix invocation step_job_summary for new collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18402 <https://github.com/galaxyproject/galaxy/pull/18402>`_
+* Really allow in-range validator for txt by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18411 <https://github.com/galaxyproject/galaxy/pull/18411>`_
+* Fix collection map over status for dragged collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18416 <https://github.com/galaxyproject/galaxy/pull/18416>`_
+* Serialize purged flag for datasets in collections by `@davelopez <https://github.com/davelopez>`_ in `#18420 <https://github.com/galaxyproject/galaxy/pull/18420>`_
+
+=============
+Other changes
+=============
+
+* Minor linting cleanup by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18421 <https://github.com/galaxyproject/galaxy/pull/18421>`_
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
 
 -------------------
 24.0.2 (2024-05-07)

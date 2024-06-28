@@ -4,10 +4,43 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* do not expand datasets that are known to be inaccessible by `@martenson <https://github.com/martenson>`_ in `#17818 <https://github.com/galaxyproject/galaxy/pull/17818>`_
+* Raise exception if collection elements missing during download by `@jdavcs <https://github.com/jdavcs>`_ in `#18094 <https://github.com/galaxyproject/galaxy/pull/18094>`_
+* Allow purge query param, deprecate purge body param by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18105 <https://github.com/galaxyproject/galaxy/pull/18105>`_
+* Prevent anonymous and inactive users from running workflows by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18192 <https://github.com/galaxyproject/galaxy/pull/18192>`_
+* Fix `make all histories private` with immutable histories by `@davelopez <https://github.com/davelopez>`_ in `#18200 <https://github.com/galaxyproject/galaxy/pull/18200>`_
+* Fix pca 3d rendering of tabular files and visualization error handling in general by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18211 <https://github.com/galaxyproject/galaxy/pull/18211>`_
+* Check dataset state when attempting to acces dataset contents by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18214 <https://github.com/galaxyproject/galaxy/pull/18214>`_
+* Restrict job_files access to jobs that are not terminal by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18217 <https://github.com/galaxyproject/galaxy/pull/18217>`_
+* Raise appropriate exception if accessing deleted input file by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18223 <https://github.com/galaxyproject/galaxy/pull/18223>`_
+* Fix element serialization for collections that aren't populated yet by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18235 <https://github.com/galaxyproject/galaxy/pull/18235>`_
+* Skip new history creation if user is anonymous and login is required by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18319 <https://github.com/galaxyproject/galaxy/pull/18319>`_
+* Fix users API serialization when listing users by `@davelopez <https://github.com/davelopez>`_ in `#18329 <https://github.com/galaxyproject/galaxy/pull/18329>`_
+* Fix authentication error for anonymous users querying jobs by `@davelopez <https://github.com/davelopez>`_ in `#18333 <https://github.com/galaxyproject/galaxy/pull/18333>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
+* Fix anonymous user job retrieval logic by `@davelopez <https://github.com/davelopez>`_ in `#18358 <https://github.com/galaxyproject/galaxy/pull/18358>`_
+* Fix update group API payload model by `@davelopez <https://github.com/davelopez>`_ in `#18374 <https://github.com/galaxyproject/galaxy/pull/18374>`_
+* Drop unnecessary escaping for workflow name and annotation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18376 <https://github.com/galaxyproject/galaxy/pull/18376>`_
+
+=============
+Other changes
+=============
+
+* Decrease log level for expected visualization errors by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18229 <https://github.com/galaxyproject/galaxy/pull/18229>`_
 
 -------------------
 24.0.2 (2024-05-07)
