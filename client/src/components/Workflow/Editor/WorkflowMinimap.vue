@@ -23,6 +23,7 @@ const props = defineProps<{
     comments: WorkflowComment[];
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
+    ignoreErrors?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -192,7 +193,7 @@ function renderMinimap() {
             selectedStep = step;
         }
 
-        if (step.errors) {
+        if (!props.ignoreErrors && step.errors) {
             errorSteps.push(step);
         } else {
             okSteps.push(step);
