@@ -3,63 +3,6 @@
     <script type="text/javascript">
         config.addInitialization(function() {
             console.log("common.mako, common_javascripts");
-
-            // --- Initialize sample trees
-            $("#tree").dynatree({
-                title: "${repository.name}",
-                minExpandLevel: 1,
-                persist: false,
-                checkbox: true,
-                selectMode: 3,
-                onPostInit: function(isReloading, isError) {
-                    // Re-fire onActivate, so the text is updated
-                    this.reactivate();
-                },
-                fx: { height: "toggle", duration: 200 },
-                // initAjax is hard to fake, so we pass the children as object array:
-                initAjax: {url: "${h.url_for( controller='repository', action='open_folder' )}",
-                           dataType: "json",
-                           data: { folder_path: "${repository.repo_path( trans.app )}", repository_id: "${trans.security.encode_id( repository.id )}"  },
-                },
-                onLazyRead: function(dtnode){
-                    dtnode.appendAjax({
-                        url: "${h.url_for( controller='repository', action='open_folder' )}",
-                        dataType: "json",
-                        data: { folder_path: dtnode.data.key, repository_id: "${trans.security.encode_id( repository.id )}"  },
-                    });
-                },
-                onSelect: function(select, dtnode) {
-                    // Display list of selected nodes
-                    var selNodes = dtnode.tree.getSelectedNodes();
-                    // convert to title/key array
-                    var selKeys = $.map(selNodes, function(node) {
-                        return node.data.key;
-                    });
-                },
-                onActivate: function(dtnode) {
-                    var cell = $("#file_contents");
-                    var selected_value;
-                     if (dtnode.data.key == 'root') {
-                        selected_value = "${repository.repo_path( trans.app )}/";
-                    } else {
-                        selected_value = dtnode.data.key;
-                    };
-                    if (selected_value.charAt(selected_value.length-1) != '/') {
-                        // Make ajax call
-                        $.ajax( {
-                            type: "POST",
-                            url: "${h.url_for( controller='repository', action='get_file_contents' )}",
-                            dataType: "json",
-                            data: { file_path: selected_value, repository_id: "${trans.security.encode_id( repository.id )}" },
-                            success : function ( data ) {
-                                cell.html( '<label>'+data+'</label>' )
-                            }
-                        });
-                    } else {
-                        cell.html( '' );
-                    };
-                },
-            });
         });
     </script>
 </%def>
