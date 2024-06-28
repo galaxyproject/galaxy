@@ -2,6 +2,8 @@
 import { BDropdownItem, BNavItemDropdown, VBTooltipPlugin } from "bootstrap-vue";
 import Vue, { ref } from "vue";
 
+import TextShort from "@/components/Common/TextShort.vue";
+
 Vue.use(VBTooltipPlugin);
 
 const dropdown = ref(null);
@@ -34,7 +36,7 @@ defineProps({
         <template v-if="icon" v-slot:button-content>
             <span class="sr-only">{{ tooltip || id }}</span>
             <span class="fa fa-fw" :class="icon" />
-            <span>{{ title }}</span>
+            <TextShort :text="title" />
         </template>
         <template>
             <BDropdownItem v-for="(item, idx) in menu" :key="idx" role="menuitem" @click="item.handler">
