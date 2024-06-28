@@ -1,19 +1,19 @@
 # agreed to re-licensing
 # GitHub username, primary email, evidence
 
-dannon, https://github.com/galaxyproject/galaxy/pull/14540
-jmchilton, https://github.com/galaxyproject/galaxy/pull/14540
-natefoo, https://github.com/galaxyproject/galaxy/pull/14540
-hexylena, https://github.com/galaxyproject/galaxy/pull/14540
-bgruening, https://github.com/galaxyproject/galaxy/pull/14540
-blankenberg, https://github.com/galaxyproject/galaxy/pull/14540
-martenson, https://github.com/galaxyproject/galaxy/pull/14540
-nuwang, https://github.com/galaxyproject/galaxy/pull/14540
+dannon, dannon.baker@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+jmchilton, mchilton@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+natefoo, nate@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/14540
+hexylena, helena.rasche@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+bgruening, bjoern@gruenings.eu, https://github.com/galaxyproject/galaxy/pull/14540
+blankenberg, dan.blankenberg@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+martenson, cech.marten@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+nuwang, FIXME, https://github.com/galaxyproject/galaxy/pull/14540
 anuprulez, anup.rulez@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
-jdavcs, https://github.com/galaxyproject/galaxy/pull/14540
-mvdbeek, https://github.com/galaxyproject/galaxy/pull/14540
-VJalili, https://github.com/galaxyproject/galaxy/pull/14540
-davelopez, https://github.com/galaxyproject/galaxy/pull/14540
+jdavcs, jdavcs@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+mvdbeek, m.vandenbeek@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+VJalili, jalili.vahid@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+davelopez, 46503462+davelopez@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/14540
 ahmedhamidawan, aawan@mindgrub.com, https://github.com/galaxyproject/galaxy/pull/13332
 abretaud, abretaud@irisa.fr, https://github.com/galaxyproject/galaxy/pull/12159
 ZimmerA, z.adrian1995@gmail.com, https://github.com/galaxyproject/galaxy/pull/12337
@@ -76,10 +76,10 @@ johanneskoester, johannes.koester@uni-due.de, https://github.com/galaxyproject/g
 laperlej, jonathan.laperle@usherbrooke.ca, https://github.com/galaxyproject/galaxy/pull/16320
 kysrpex, dominguj@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16449
 jvanbraekel, juvanbraekel@bioit-galaxy-test.sciensano.be, https://github.com/galaxyproject/galaxy/pull/16132
-SandyRogers, https://github.com/galaxyproject/galaxy/pull/16179
-selten, https://github.com/galaxyproject/galaxy/pull/12333
-simonbray, https://github.com/galaxyproject/galaxy/pull/11844
-sveinugu, https://github.com/galaxyproject/galaxy/pull/14694
+SandyRogers, sandyr@ebi.ac.uk, https://github.com/galaxyproject/galaxy/pull/16179
+selten, peter.selten98@gmail.com, https://github.com/galaxyproject/galaxy/pull/12333
+simonbray, sbray1371@gmail.com, https://github.com/galaxyproject/galaxy/pull/11844
+sveinugu, sveinugu@gmail.com, https://github.com/galaxyproject/galaxy/pull/14694
 tensionhead, tensionheadx@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712368424
 ooobik, ott.oopkaup@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712493853
 alanamoose, alan.amosse@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712585650
@@ -138,42 +138,42 @@ Lain-inrae, lain.pavot@inrae.fr, https://github.com/galaxyproject/galaxy/pull/15
 abueg, labueg@rockefeller.edu, https://github.com/galaxyproject/galaxy/pull/15096
 lldelisle, lucille.delisle@epfl.ch, https://github.com/galaxyproject/galaxy/pull/13411
 luke-c-sargent, luke.c.sargent@gmail.com, https://github.com/galaxyproject/galaxy/pull/12902
-Mahendra Paipuri, mahendra.paipuri@gmail.com, https://github.com/galaxyproject/galaxy/pull/16119
-Maiken Pedersen, maikenp@uio.no, https://github.com/galaxyproject/galaxy/pull/12097
-Mason Houtz, nerdinacan@gmail.com, https://github.com/galaxyproject/galaxy/pull/12351
-Matej Troják, trojak@mail.muni.cz, https://github.com/galaxyproject/galaxy/pull/14766
-Max Skoryk, 37554442+maximskorik@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12077
-Mehmet Tekman, mtekman89@gmail.com, https://github.com/galaxyproject/galaxy/pull/12336
-Melissa Black, 16723182+melibleq@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12384
-Michael R. Crusoe, michael.crusoe@gmail.com, https://github.com/galaxyproject/galaxy/pull/16963
-Michael Schatz, mschatz@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/15123
-Michelle Savage, <michelle.savage.1@gmail.com, https://github.com/galaxyproject/galaxy/pull/18074
-Minh Vu, minh@biocommons.org.au, https://github.com/galaxyproject/galaxy/pull/15998
-Mira Kuntz, mira.kuntz@yahoo.com, https://github.com/galaxyproject/galaxy/pull/17510
-Dave Clements, clements@galaxyproject.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1819222603
-Ross, ross.lazarus@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1812328933
-Matthias Desmet, matthias.desmet@ugent.be, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145433909
-Lance Parsons, lance@lanceparsons.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145435807
-Max Schaefer, max@semmle.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145442153
-Loraine Brillet-Guéguen, loraine-gueguen@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145443698
-Kai Kruse, krusekai@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145456687
-Tamsen Spelchak, tamsen.spelchak@phac-aspc.gc.ca, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145457606
-Matt Shirley, mdshw5@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145510830
-Kiran Telukunta saraswathi, kiran.telukunta@indiayouth.info, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145520159
-Maria Bernard, maria.bernard@jouy.inra.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145533151
-Mark Eino, mark.einon@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145602162
-Marcel Bargull, marcel.bargull@udo.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145707579
-Luca Pireddu, pireddu@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145746457
+mahendrapaipuri, mahendra.paipuri@gmail.com, https://github.com/galaxyproject/galaxy/pull/16119
+maikenp, maikenp@uio.no, https://github.com/galaxyproject/galaxy/pull/12097
+Nerdinacan, nerdinacan@gmail.com, https://github.com/galaxyproject/galaxy/pull/12351
+xtrojak, trojak@mail.muni.cz, https://github.com/galaxyproject/galaxy/pull/14766
+maximskorik, 37554442+maximskorik@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12077
+mtekman, mtekman89@gmail.com, https://github.com/galaxyproject/galaxy/pull/12336
+melibleq, 16723182+melibleq@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/12384
+mr-c, michael.crusoe@gmail.com, https://github.com/galaxyproject/galaxy/pull/16963
+mschatz, mschatz@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/15123
+hujambo-dunia, <michelle.savage.1@gmail.com, https://github.com/galaxyproject/galaxy/pull/18074
+minh-biocommons, minh@biocommons.org.au, https://github.com/galaxyproject/galaxy/pull/15998
+mira-miracoli, mira.kuntz@yahoo.com, https://github.com/galaxyproject/galaxy/pull/17510
+tnabtaf, clements@galaxyproject.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1819222603
+fubar2, ross.lazarus@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1812328933
+matthdsm, matthias.desmet@ugent.be, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145433909
+lparsons, lance@lanceparsons.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145435807
+xiemaisi, max@semmle.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145442153
+loraine-gueguen, loraine-gueguen@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145443698
+kaukrise, krusekai@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145456687
+tizzir, tamsen.spelchak@phac-aspc.gc.ca, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145457606
+mdshw5, mdshw5@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145510830
+telukir, kiran.telukunta@indiayouth.info, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145520159
+mariabernard, maria.bernard@jouy.inra.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145533151
+einonm, mark.einon@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145602162
+mbargull, marcel.bargull@udo.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145707579
+ilveroluca, pireddu@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145746457
 kaktus42, vowinkel.alexander@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145754145
-Kenzo-Hugo Hillion, hillion.kenzo@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145762267
-Mark Esler, eslerm@umn.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145802437
-Matthew Dillon, matthewrdillon@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145930733
-Kyle Ellrott, kellrott@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146085259
-Kanwei Li, kanwei@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146114511
-Maximilian Friedersdorff, max@friedersdorff.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146179536
-Milad Miladi, miladim@cs.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146473191
-Marcus Christie, marc.christie@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146776249
-Miguel Julia, migueljuliamolina@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147150944
+khillion, hillion.kenzo@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145762267
+eslerm, eslerm@umn.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145802437
+thermokarst, matthewrdillon@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2145930733
+kellrott, kellrott@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146085259
+kanwei, kanwei@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146114511
+maxf130, max@friedersdorff.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146179536
+mmiladi, miladim@cs.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146473191
+machristie, marc.christie@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2146776249
+MiguelJulia, migueljuliamolina@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147150944
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -254,6 +254,9 @@ Michael Sauria <crockopotamus@gmail.com>  # GH user: msauria
 MONJEAUD Cyril <Cyril.Monjeaud@irisa.fr>  # GH user: cmonjeau
 MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
 Marco Tangaro <ma.tangaro@gmail.com>  # GH user: mtangaro
+
+Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
+
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
