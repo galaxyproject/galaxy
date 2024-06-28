@@ -15,7 +15,6 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "dynatree_skin/ui.dynatree" )}
 </%def>
 
 <%def name="javascripts()">

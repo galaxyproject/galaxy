@@ -13,7 +13,6 @@ require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/select2"
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery-ui");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/farbtastic");
 // TODO: ensure unused
-require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.dynatree");
 require("imports-loader?imports=default|jqueryVendor|jQuery!jquery-migrate");
 
 // Only used in reports

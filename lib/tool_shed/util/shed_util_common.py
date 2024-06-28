@@ -356,7 +356,6 @@ def open_repository_files_folder(
             )
         if filename:
             if os.path.isdir(full_path) and path_is_browsable:
-                # Append a '/' character so that our jquery dynatree will function properly.
                 filename = f"{filename}/"
                 full_path = f"{full_path}/"
                 is_folder = True
