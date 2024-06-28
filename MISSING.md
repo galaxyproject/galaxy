@@ -96,6 +96,12 @@ Thanks goes to these wonderful people. We still need them to approve https://git
       <td align="center" valign="top" width="20%"><a href="https://github.com/npinter"><img src="https://avatars.githubusercontent.com/u/34959927?v=4?s=150" width="150px;" alt="Niko Pinter"/><br /><sub><b>Niko Pinter</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=npinter" title="Code">💻</a></td>
       <td align="center" valign="top" width="20%"><a href="https://github.com/nturaga"><img src="https://avatars.githubusercontent.com/u/2746443?v=4?s=150" width="150px;" alt="Nitesh Turaga"/><br /><sub><b>Nitesh Turaga</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=nturaga" title="Code">💻</a></td>
       <td align="center" valign="top" width="20%"><a href="https://github.com/nvk747"><img src="https://avatars.githubusercontent.com/u/39386288?v=4?s=150" width="150px;" alt="VIJAY"/><br /><sub><b>VIJAY</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=nvk747" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/moskalenko"><img src="https://avatars.githubusercontent.com/u/151978?v=4?s=150" width="150px;" alt="Oleksandr Moskalenko"/><br /><sub><b>Oleksandr Moskalenko</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=moskalenko" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/odoppelt"><img src="https://avatars.githubusercontent.com/u/2970530?v=4?s=150" width="150px;" alt="odoppelt"/><br /><sub><b>odoppelt</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=odoppelt" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/osallou"><img src="https://avatars.githubusercontent.com/u/1024098?v=4?s=150" width="150px;" alt="Olivier Sallou"/><br /><sub><b>Olivier Sallou</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=osallou" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/ooobik"><img src="https://avatars.githubusercontent.com/u/3826220?v=4?s=150" width="150px;" alt="Ott Oopkaup"/><br /><sub><b>Ott Oopkaup</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=ooobik" title="Code">💻</a></td>
     </tr>
   </tbody>
 </table>

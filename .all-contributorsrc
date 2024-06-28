@@ -576,6 +576,42 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "moskalenko",
+      "name": "Oleksandr Moskalenko",
+      "avatar_url": "https://avatars.githubusercontent.com/u/151978?v=4",
+      "profile": "https://github.com/moskalenko",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "odoppelt",
+      "name": "odoppelt",
+      "avatar_url": "https://avatars.githubusercontent.com/u/2970530?v=4",
+      "profile": "https://github.com/odoppelt",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "osallou",
+      "name": "Olivier Sallou",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1024098?v=4",
+      "profile": "https://github.com/osallou",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ooobik",
+      "name": "Ott Oopkaup",
+      "avatar_url": "https://avatars.githubusercontent.com/u/3826220?v=4",
+      "profile": "https://github.com/ooobik",
+      "contributions": [
+        "code"
+      ]
     }
   ],
   "contributorsPerLine": 5,
