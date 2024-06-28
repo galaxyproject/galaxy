@@ -206,7 +206,7 @@ roalva1, roalva1@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#p
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
-Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
+Arjun Nath <arjun@bx.psu.edu> # GH user: arjunnath
 Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
 BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (GitHub account deleted)
@@ -216,13 +216,13 @@ Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
 Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes "as a federal employee, anything I contribute to is a "Government Work", and cannot have a domestic copyright. We have approval for release under CC0. "
 Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
 Charles Strittmatter <cstrittmatter@gmail.com>  # GH user: charesredhat
-Chinmay Rao <chinmay@bx.psu.edu>
+Chinmay Rao <chinmay@bx.psu.edu>  # HG user: ??
 Chris Armstrong <carmstrong1gw@github.com>  # GH user: carmstrong1gw
 Chris Barnett <chris.barnett@uct.ac.za>  # GH user: chrisbarnettster
 Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
 Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
-David C. King <dcking@bx.psu.edu>  # GH user: ??
+David C. King <dcking@bx.psu.edu>  # GH user: meekrob
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
@@ -233,7 +233,7 @@ Frederik Delaere <frederik.delaere@gmail.com>  # GH user: ??
 Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
 Galaxy <galaxy-dev@plantandfood.co.nz>  # GH user: ???
 Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony, last contribution in 2016
-Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
+Guruprasad Ananda <gua110@bx.psu.edu>  # GH user: ??
 Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
 Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
 Hiral Vora <hvora1@uncc.edu>  # GH user: ??
@@ -258,7 +258,7 @@ Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
 Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
 Katarzyna Kamieniecka <k.murat1@bradford.ac.uk>  # GH user: kpbioteam
 Katrin Leinweber <kalei@posteo.de>  # GH user: katrinleinweber
-Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: ??
+Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: kpvincent
 Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
 Lawrence Nicastro <lawrence.nicastro1@gmail.com>  # GH user: lawrence1470
 Léo Biscassi <leo.biscassi@gmail.com>  # GH user: leobiscassi
@@ -298,21 +298,21 @@ Ramkrishna Chakrabarty <rc@bx.psu.edu>  # GH user: ???
 Rossano Atzeni <rossano.atzeni@crs4.it>  # GH user: ratzeni
 Ryan Velazquez <ryan.velazquez0001@temple.edu>  # GH user: rdvelazquez
 Rémi Marenco <remi.marenco@gmail.com>  # GH user: remimarenco
-remy_d1 <remy.d1@gmail.com>  # GH user: ???
+remy_d1 <remy.d1@gmail.com>  # GH user: remyd1
 Renato Alves <alves.rjc@gmail.com>  # GH user: unode
 Richard James Acton <racton@uni-koeln.de>  # GH user: RichardJActon
 Richard Park <rpark@bu.edu>  # GH user: rpark37
 rikeshi <rikeshi@users.noreply.github.com>  # GH user: rikeshi
 Rob Hooft <rob.hooft@nbic.nl>  # GH user: rwwh
 Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
-Rory Kirchner <roryk@mit.edu>  # GH user: ???
+Rory Kirchner <roryk@mit.edu>  # GH user: roryk
 Roy Storey <kiwiroy@gmail.com>  # GH user: kiwiroy
 Rupert Nash <r.nash@epcc.ed.ac.uk>  # GH user: rupertnash
 Ryan Golhar <ngsbioinformatics@gmail.com> # GH user: golharam
 Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
 Shane Dowling <shane@shanedowling.com>  # GH user: shano
 Simone Leo <simone.leo@gmail.com>  # GH user: simleo
-Simon Guest <simon.guest@agresearch.co.nz>  # GH user: ???
+Simon Guest <simon.guest@agresearch.co.nz>  # GH user: tesujimath
 Stavros Sachtouris <saxtouri@admin.grnet.gr>  # GH user: saxtouri
 Steffen Neumann <sneumann@ipb-halle.de>  # GH user: sneumann
 Steve Cassidy <steve.cassidy@mq.edu.au>  # GH user: stevecassidy
