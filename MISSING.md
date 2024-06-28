@@ -85,6 +85,18 @@ Thanks goes to these wonderful people. We still need them to approve https://git
       <td align="center" valign="top" width="20%"><a href="https://github.com/miloaec"><img src="https://avatars.githubusercontent.com/u/17707793?v=4?s=150" width="150px;" alt="miloaec"/><br /><sub><b>miloaec</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=miloaec" title="Code">💻</a></td>
       <td align="center" valign="top" width="20%"><a href="http://www.ibiom.cnr.it/"><img src="https://avatars.githubusercontent.com/u/16704987?v=4?s=150" width="150px;" alt="Marco Tangaro"/><br /><sub><b>Marco Tangaro</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=mtangaro" title="Code">💻</a></td>
     </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/nagoue"><img src="https://avatars.githubusercontent.com/u/9028638?v=4?s=150" width="150px;" alt="Nadia Goué"/><br /><sub><b>Nadia Goué</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=nagoue" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/NCEichner"><img src="https://avatars.githubusercontent.com/u/31483851?v=4?s=150" width="150px;" alt="Norbert Eichner"/><br /><sub><b>Norbert Eichner</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=NCEichner" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://myweb.ecu.edu/herndonn19/"><img src="https://avatars.githubusercontent.com/u/4636279?v=4?s=150" width="150px;" alt="Nic Herndon"/><br /><sub><b>Nic Herndon</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=NicHerndon" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://nick.semenkovich.com/"><img src="https://avatars.githubusercontent.com/u/167135?v=4?s=150" width="150px;" alt="Nick Semenkovich"/><br /><sub><b>Nick Semenkovich</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=semenko" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://nstoler.com/"><img src="https://avatars.githubusercontent.com/u/645773?v=4?s=150" width="150px;" alt="Nick Stoler"/><br /><sub><b>Nick Stoler</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=NickSto" title="Code">💻</a></td>
+    </tr>
+    <tr>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/npinter"><img src="https://avatars.githubusercontent.com/u/34959927?v=4?s=150" width="150px;" alt="Niko Pinter"/><br /><sub><b>Niko Pinter</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=npinter" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/nturaga"><img src="https://avatars.githubusercontent.com/u/2746443?v=4?s=150" width="150px;" alt="Nitesh Turaga"/><br /><sub><b>Nitesh Turaga</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=nturaga" title="Code">💻</a></td>
+      <td align="center" valign="top" width="20%"><a href="https://github.com/nvk747"><img src="https://avatars.githubusercontent.com/u/39386288?v=4?s=150" width="150px;" alt="VIJAY"/><br /><sub><b>VIJAY</b></sub></a><br /><a href="https://github.com/galaxyproject/galaxy/commits?author=nvk747" title="Code">💻</a></td>
+    </tr>
   </tbody>
 </table>
 
