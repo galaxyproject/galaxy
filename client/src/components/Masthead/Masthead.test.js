@@ -52,10 +52,10 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(6);
+        expect(wrapper.findAll("li.nav-item").length).toBe(5);
         // Ensure specified link title respected.
-        expect(wrapper.find("#analysis a").text()).toBe("Tools, Workflows and Histories");
-        expect(wrapper.find("#analysis a").attributes("href")).toBe("#");
+        expect(wrapper.find("#help").text()).toBe("Support, Contact, and Community");
+        expect(wrapper.find("#help a").attributes("href")).toBe("/about");
     });
 
     it("should display window manager button", async () => {

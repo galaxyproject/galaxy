@@ -108,6 +108,7 @@ onMounted(() => {
             <MastheadItem
                 id="help"
                 icon="fa-question"
+                url="/about"
                 tooltip="Support, Contact, and Community"
                 @click="openUrl('/about')" />
             <QuotaMeter />
