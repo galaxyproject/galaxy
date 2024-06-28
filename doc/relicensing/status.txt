@@ -185,6 +185,7 @@ nekrut, anton@nekrut.org, https://github.com/galaxyproject/galaxy/pull/16970#pul
 mtangaro, ma.tangaro@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147366950
 pcm32, pablo.a.moreno@gmail.com, https://github.com/galaxyproject/galaxy/pull/15238
 pvanheus, pvh@sanbi.ac.za, https://github.com/galaxyproject/galaxy/pull/14389
+qiagu, guqiang01@gmail.com, https://github.com/galaxyproject/galaxy/pull/14992
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
