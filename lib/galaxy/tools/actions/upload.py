@@ -3,7 +3,10 @@ import logging
 import os
 
 from galaxy.exceptions import RequestParameterMissingException
+from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model import History
 from galaxy.model.base import transaction
+from galaxy.model.dataset_collections.builder import BoundCollectionBuilder
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
@@ -107,32 +110,64 @@ class FetchUploadToolAction(BaseUploadToolAction):
         return self._create_job(trans, incoming, tool, None, outputs, history=history)
 
 
-def _precreate_fetched_hdas(trans, history, target, outputs):
-    for item in target.get("elements", []):
-        name = item.get("name", None)
-        if name is None:
-            src = item.get("src", None)
-            if src == "url":
-                url = item.get("url")
-                if name is None:
-                    name = url.split("/")[-1]
-            elif src == "path":
-                path = item["path"]
-                if name is None:
-                    name = os.path.basename(path)
+def _element_to_hda(trans: ProvidesHistoryContext, item, history: History):
+    name = item.get("name", None)
+    if name is None:
+        src = item.get("src", None)
+        if src == "url":
+            url = item.get("url")
+            if name is None:
+                name = url.split("/")[-1]
+        elif src == "path":
+            path = item["path"]
+            if name is None:
+                name = os.path.basename(path)
 
-        file_type = item.get("ext", "auto")
-        dbkey = item.get("dbkey", "?")
-        uploaded_dataset = Bunch(type="file", name=name, file_type=file_type, dbkey=dbkey)
-        tag_list = item.get("tags", [])
-        data = upload_common.new_upload(
-            trans, "", uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list
-        )
+    file_type = item.get("ext", "auto")
+    dbkey = item.get("dbkey", "?")
+    uploaded_dataset = Bunch(type="file", name=name, file_type=file_type, dbkey=dbkey)
+    tag_list = item.get("tags", [])
+    data = upload_common.new_upload(trans, "", uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list)
+    return data
+
+
+def _precreate_fetched_hdas(trans: ProvidesHistoryContext, history: History, target, outputs):
+    for item in target.get("elements", []):
+        data = _element_to_hda(trans, item, history)
         outputs.append(data)
         item["object_id"] = data.id
 
 
-def _precreate_fetched_collection_instance(trans, history, target, outputs):
+PRECREATABLE_SRCS = ("files", "composite", "ftp_import", "pasted", "path", "url")  # currently just excluding server_dir
+
+
+def can_precreate_all_elements(elements):
+    for element in elements:
+        if "elements" in element:
+            if not can_precreate_all_elements(element["elements"]):
+                return False
+        elif element["src"] not in PRECREATABLE_SRCS:
+            return False
+        elif element.get("elements_from"):
+            return False
+    return True
+
+
+def write_elements_to_collection(
+    trans: ProvidesHistoryContext, elements, collection_builder: BoundCollectionBuilder, history: History
+):
+    for element_dict in elements:
+        identifier = element_dict["name"]
+        is_dataset = bool(element_dict.get("src"))
+        if is_dataset:
+            hda = _element_to_hda(trans, element_dict, history)
+            collection_builder.add_dataset(identifier, hda)
+        else:
+            subcollection_builder = collection_builder.get_level(identifier)
+            write_elements_to_collection(trans, element_dict["elements"], subcollection_builder, history=history)
+
+
+def _precreate_fetched_collection_instance(trans: ProvidesHistoryContext, history: History, target, outputs):
     collection_type = target.get("collection_type")
     if not collection_type:
         # Can't precreate collections of unknown type at this time.
@@ -149,6 +184,13 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
+    elements = target.get("elements")
+    if elements is not None:
+        if can_precreate_all_elements(elements):
+            root_collection_builder = collections_manager.collection_builder_for(hdca.collection)
+            write_elements_to_collection(trans, elements, root_collection_builder, history)
+            root_collection_builder.populate()
+
     outputs.append(hdca)
     # Following flushed needed for an ID.
     with transaction(trans.sa_session):

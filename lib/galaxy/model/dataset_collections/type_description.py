@@ -47,7 +47,11 @@ class CollectionTypeDescription:
 
     collection_type: str
 
-    def __init__(self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory):
+    def __init__(
+        self,
+        collection_type: Union[str, "CollectionTypeDescription"],
+        collection_type_description_factory: CollectionTypeDescriptionFactory,
+    ):
         if isinstance(collection_type, CollectionTypeDescription):
             self.collection_type = collection_type.collection_type
         else:
