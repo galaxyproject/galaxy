@@ -22,7 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.8', '3.12']
+        python-version: ['3.8', '3.13']
     env:
       LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
