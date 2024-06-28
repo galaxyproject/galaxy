@@ -92,7 +92,7 @@ function recalculateAABB() {
 
 // redraw if any steps or comments change
 watch(
-    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed],
+    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed, props.ignoreErrors],
     () => {
         if (!toolbarStore.inputCatcherPressed) {
             redraw = true;
