@@ -213,22 +213,26 @@ class JobIO(Dictifiable):
         for value in ds.metadata.values():
             if isinstance(value, MetadataFile):
                 filenames.append(value.get_file_name())
+        if ds.dataset and ds.dataset.extra_files_path_exists():
+            filenames.append(ds.dataset.extra_files_path)
         return filenames
 
-    def get_input_fnames(self) -> List[str]:
+    def get_input_datasets(self) -> List[DatasetInstance]:
         job = self.job
+        return [
+            da.dataset for da in job.input_datasets + job.input_library_datasets if da.dataset
+        ]  # da is JobToInputDatasetAssociation object
+
+    def get_input_fnames(self) -> List[str]:
         filenames = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                filenames.extend(self.get_input_dataset_fnames(da.dataset))
+        for ds in self.get_input_datasets():
+            filenames.extend(self.get_input_dataset_fnames(ds))
         return filenames
 
     def get_input_paths(self) -> List[DatasetPath]:
-        job = self.job
         paths = []
-        for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
-            if da.dataset:
-                paths.append(self.get_input_path(da.dataset))
+        for ds in self.get_input_datasets():
+            paths.append(self.get_input_path(ds))
         return paths
 
     def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
