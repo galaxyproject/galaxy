@@ -193,6 +193,15 @@ heisner-tillman, theisner@posteo.de, https://github.com/galaxyproject/galaxy/pul
 ieguinoa, ignacio.eguinoa@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147638955
 wm75, maierw@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/17586
 yvanlebras, yvan.le-bras@mnhn.fr, https://github.com/galaxyproject/galaxy/pull/16713
+semenko, semenko@alum.mit.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147813980
+lecorguille, lecorguille@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147838932
+julozi, seilerj@igbmc.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147839291
+tom-tan, ttanjo@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147839291
+ValentinMarcon, v.marcon@outlook.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147848988
+theosotr, theosot@dmst.aueb.gr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147854653
+Takadonet, philipmabon@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147861691
+souravsingh, souravsingh@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147862161
+roalva1, roalva1@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147862274
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -224,7 +233,6 @@ Frederik Delaere <frederik.delaere@gmail.com>  # GH user: ??
 Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
 Galaxy <galaxy-dev@plantandfood.co.nz>  # GH user: ???
 Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony, last contribution in 2016
-Gildas Le Corguillé <lecorguille@users.noreply.github.com>  # GH user: lecorguille
 Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
 Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
 Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
@@ -245,7 +253,6 @@ John Duddy <jduddy@illumina.com>  # GH user: jdlogicman
 jra001k <jra001k@gmail.com>  # GH user: ???
 (JR) Ray Sajulga <jraysajulga@gmail.com>  # GH user: jraysajulga
 Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
-Julien Seiler <seilerj@igbmc.fr>  # GH user: julozi
 Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
 Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
 Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
@@ -270,7 +277,6 @@ MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
 Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
 Norbert Eichner <norbert.eichner@ur.de>  # GH user: NCEichner
 Nic Herndon <nic.herndon@uconn.edu>  # GH user: NicHerndon
-Nick Semenkovich <semenko@alum.mit.edu>  # GH user: semenko
 Nick Stoler <nick@nstoler.com>  # GH user: NickSto
 Niko Pinter <34959927+npinter@users.noreply.github.com>  # GH user: npinter
 Nitesh Turaga <nitesh.turaga@gmail.com>  # GH user: nturaga
@@ -282,7 +288,6 @@ Ott Oopkaup <ott.oopkaup@gmail.com>  # GH user: ooobik
 Pavankumar Videm <videmp@informatik.uni-freiburg.de>  # GH user: pavanvidem
 Peter van 't Hof <pjrvanthof@gmail.com>  # GH user: ffinfo
 Petraea <Petraea@users.noreply.github.com>  # GH user: Petraea
-Philip Mabon <philipmabon@gmail.com>  # GH user: Takadonet
 Pierre Lindenbaum <plindenbaum@yahoo.fr>  # GH user: lindenb
 Pierrick Roger Mele <pierrick.rogermele@icloud.com>  # GH user: pkrog
 Radhesh Kamath <radhesh@bx.psu.edu>  # GH user: ???
@@ -298,7 +303,6 @@ Renato Alves <alves.rjc@gmail.com>  # GH user: unode
 Richard James Acton <racton@uni-koeln.de>  # GH user: RichardJActon
 Richard Park <rpark@bu.edu>  # GH user: rpark37
 rikeshi <rikeshi@users.noreply.github.com>  # GH user: rikeshi
-Ralonso <roalva1@gmail.com>  # GH user: roalva1
 Rob Hooft <rob.hooft@nbic.nl>  # GH user: rwwh
 Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
 Rory Kirchner <roryk@mit.edu>  # GH user: ???
@@ -309,24 +313,20 @@ Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
 Shane Dowling <shane@shanedowling.com>  # GH user: shano
 Simone Leo <simone.leo@gmail.com>  # GH user: simleo
 Simon Guest <simon.guest@agresearch.co.nz>  # GH user: ???
-Sourav Singh <souravsingh@users.noreply.github.com>  # GH user: souravsingh
 Stavros Sachtouris <saxtouri@admin.grnet.gr>  # GH user: saxtouri
 Steffen Neumann <sneumann@ipb-halle.de>  # GH user: sneumann
 Steve Cassidy <steve.cassidy@mq.edu.au>  # GH user: stevecassidy
 Takao Nakaguchi <takao.nakaguchi@gmail.com>  # GH user: takawitter
 Thoba Lose <lose.thoba@gmail.com>  # GH user: thobalose
-Thodoris Sotiropoulos <theosot@dmst.aueb.gr>  # GH user: theosotr
 Thomas McGowan <mcgo0092@umn.edu>  # GH user: tmcgowan
 Thomas Wollmann <thomas.s.wollmann@gmail.com>  # GH user: ThomasWollmann
 Thom Cuddihy <thom@hometreelab.com>  # GH user: thomcuddihy
 Tim Thompson <tim.thompson@xdbio.com>  # GH user: XDtim
 Timur Shtatland <shtatland@neb.com>  # GH user: tshtatland
 Tomithy Too <tomithy.too@gmail.com>  # GH user: tomithy
-Tomoya Tanjo <ttanjo@gmail.com>  # GH user: tom-tan
 Torfinn Nome <torfinn.nome@gmail.com>  # GH user: torfinnnome
 Trevor Wennblom <trevor@well.com>  # GH user: trevor
 Valentin Chambon <chavaldranis@gmail.com> # GH user: ValentinChCloud
-Valentin Marcon <v.marcon@outlook.fr> # GH user: ValentinMarcon
 Varun Shankar S <varunshankar55@gmail.com> # GH user: varunshankar
 Vimalkumar Velayudhan <vimalkumarvelayudhan@gmail.com> # GH user: vimalkvn
 Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
