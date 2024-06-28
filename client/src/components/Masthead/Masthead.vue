@@ -72,6 +72,7 @@ onMounted(() => {
     <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <BNavbarNav>
             <BNavbarBrand
+                id="analysis"
                 v-b-tooltip.hover
                 class="ml-2 mr-2 p-0"
                 title="Home"
@@ -85,7 +86,6 @@ onMounted(() => {
             </span>
         </BNavbarNav>
         <BNavbarNav v-if="isConfigLoaded" class="mr-1">
-            <MastheadItem id="analysis" tooltip="Tools, Workflows and Histories" icon="fa-home" @click="openUrl('/')" />
             <MastheadItem id="library" icon="fa-database" tooltip="Data Libraries" @click="openUrl('/libraries')" />
             <MastheadItem
                 v-if="windowTab"
