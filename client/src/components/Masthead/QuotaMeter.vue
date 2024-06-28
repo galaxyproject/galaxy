@@ -30,6 +30,8 @@ const usage = computed(() => {
     return currentUser.value?.total_disk_usage ?? 0;
 });
 
+const quotaLink = computed(() => (isAnonymous.value ? "/login/start" : "/storage"));
+
 const quotaTitle = computed(() =>
     isAnonymous.value ? "Login to Access Storage Details" : "Storage and Usage Details"
 );
@@ -46,7 +48,7 @@ const variant = computed(() => {
 
 <template>
     <div v-b-tooltip.hover.bottom class="quota-meter d-flex align-items-center" :title="quotaTitle">
-        <BLink class="quota-progress" to="/storage" data-description="storage dashboard link" :disabled="isAnonymous">
+        <BLink class="quota-progress" :to="quotaLink" data-description="storage dashboard link">
             <BProgress :max="100">
                 <BProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
             </BProgress>
