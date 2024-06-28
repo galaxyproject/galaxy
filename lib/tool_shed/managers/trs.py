@@ -112,7 +112,7 @@ def trs_tool_id_to_repository_metadata(
     app = trans.app
     versions: Dict[str, RepositoryMetadata] = get_repository_metadata_by_tool_version(app, repository, tool_id)
     if not versions:
-        return None
+        raise ObjectNotFound()
 
     return repository, versions
 
@@ -121,8 +121,6 @@ def get_tool(trans: ProvidesRepositoriesContext, trs_tool_id: str) -> Tool:
     guid = decode_identifier(trans.repositories_hostname, trs_tool_id)
     guid = remove_protocol_and_user_from_clone_url(guid)
     repo_metadata = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
-    if not repo_metadata:
-        raise ObjectNotFound()
     repository, metadata_by_version = repo_metadata
 
     repo_owner = repository.user.username
