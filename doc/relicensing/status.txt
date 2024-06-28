@@ -210,6 +210,15 @@ pavanvidem, videmp@informatik.uni-freiburg.de, https://github.com/galaxyproject/
 frederikcoppens, frederik.coppens@psb.vib-ugent.be, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147989316
 rikeshi, rikeshi@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970
 rupertnash, r.nash@epcc.ed.ac.uk, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148017249
+varunshankar, varunshankar55@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148132174
+yochannah, yochannah@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148154276
+pkrog, pierrick.rogermele@icloud.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148227360
+ooobik, ott.oopkaup@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148244838
+NickSto, nick@nstoler.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148309698
+rpark37, rpark@bu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148430871
+yhoogstrate, y.hoogstrate@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148445252
+kpbioteam & kkamieniecka, k.murat1@bradford.ac.uk, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148448901
+nvk747, nvk747@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148466787
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -263,7 +272,6 @@ Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
 Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
 Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
 Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
-Katarzyna Kamieniecka <k.murat1@bradford.ac.uk>  # GH user: kpbioteam
 Katrin Leinweber <kalei@posteo.de>  # GH user: katrinleinweber
 Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: kpvincent
 Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
@@ -283,18 +291,14 @@ MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
 Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
 Norbert Eichner <norbert.eichner@ur.de>  # GH user: NCEichner
 Nic Herndon <nic.herndon@uconn.edu>  # GH user: NicHerndon
-Nick Stoler <nick@nstoler.com>  # GH user: NickSto
 Niko Pinter <34959927+npinter@users.noreply.github.com>  # GH user: npinter
 Nitesh Turaga <nitesh.turaga@gmail.com>  # GH user: nturaga
-VIJAY <nvk747@gmail.com>  # GH user: nvk747
 Oleksandr Moskalenko <om@rc.ufl.edu>  # GH user: moskalenko
 Olivia Doppelt-Azeroual <olivia.doppelt@pasteur.fr>  # GH user: odoppelt
 Olivier Sallou <olivier.sallou@gmail.com>  # GH user: osallou
-Ott Oopkaup <ott.oopkaup@gmail.com>  # GH user: ooobik
 Peter van 't Hof <pjrvanthof@gmail.com>  # GH user: ffinfo
 Petraea <Petraea@users.noreply.github.com>  # GH user: Petraea
 Pierre Lindenbaum <plindenbaum@yahoo.fr>  # GH user: lindenb
-Pierrick Roger Mele <pierrick.rogermele@icloud.com>  # GH user: pkrog
 Radhesh Kamath <radhesh@bx.psu.edu>  # GH user: ???
 Raj Ayyampalayam <raj76@uga.edu>  # GH user: ???
 Ramez Alrawas <ramezrawas@gmail.com>  # GH user: ramezrawas
@@ -304,7 +308,6 @@ Rémi Marenco <remi.marenco@gmail.com>  # GH user: remimarenco
 remy_d1 <remy.d1@gmail.com>  # GH user: remyd1
 Renato Alves <alves.rjc@gmail.com>  # GH user: unode
 Richard James Acton <racton@uni-koeln.de>  # GH user: RichardJActon
-Richard Park <rpark@bu.edu>  # GH user: rpark37
 Rob Hooft <rob.hooft@nbic.nl>  # GH user: rwwh
 Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
 Rory Kirchner <roryk@mit.edu>  # GH user: roryk
@@ -328,7 +331,6 @@ Tomithy Too <tomithy.too@gmail.com>  # GH user: tomithy
 Torfinn Nome <torfinn.nome@gmail.com>  # GH user: torfinnnome
 Trevor Wennblom <trevor@well.com>  # GH user: trevor
 Valentin Chambon <chavaldranis@gmail.com> # GH user: ValentinChCloud
-Varun Shankar S <varunshankar55@gmail.com> # GH user: varunshankar
 Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
 William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
 Will Simpson <wsimpson@email.arizona.edu>  # GH user: simpsonw
@@ -336,8 +338,6 @@ Xavier Garnier <xgaia@gmx.com>  # GH user: xgaia
 xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
 Xiaoqian Jiang <jxq198409@hotmail.com>  # GH user: xiaoqian1984
 Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
-Youri Hoogstrate <y.hoogstrate@gmail.com>  # GH user: yhoogstrate
-Yo Yehudi <yochannah@gmail.com>  # GH user: yochannah
 Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
 
 # not agreed, but contributions no longer present
