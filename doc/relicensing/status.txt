@@ -189,6 +189,7 @@ qiagu, guqiang01@gmail.com, https://github.com/galaxyproject/galaxy/pull/14992
 rhpvorderman, r.h.p.vorderman@lumc.nl, https://github.com/galaxyproject/galaxy/pull/13179
 richard-burhans, burhans@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/17565
 shenweiyan, weiyanshum@gmail.com, https://github.com/galaxyproject/galaxy/pull/13323
+heisner-tillman, theisner@posteo.de, https://github.com/galaxyproject/galaxy/pull/17463
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -312,6 +313,18 @@ Sourav Singh <souravsingh@users.noreply.github.com>  # GH user: souravsingh
 Stavros Sachtouris <saxtouri@admin.grnet.gr>  # GH user: saxtouri
 Steffen Neumann <sneumann@ipb-halle.de>  # GH user: sneumann
 Steve Cassidy <steve.cassidy@mq.edu.au>  # GH user: stevecassidy
+Takao Nakaguchi <takao.nakaguchi@gmail.com>  # GH user: takawitter
+Thoba Lose <lose.thoba@gmail.com>  # GH user: thobalose
+Thodoris Sotiropoulos <theosot@dmst.aueb.gr>  # GH user: theosotr
+Thomas McGowan <mcgo0092@umn.edu>  # GH user: tmcgowan
+Thomas Wollmann <thomas.s.wollmann@gmail.com>  # GH user: ThomasWollmann
+Thom Cuddihy <thom@hometreelab.com>  # GH user: thomcuddihy
+Tim Thompson <tim.thompson@xdbio.com>  # GH user: XDtim
+Timur Shtatland <shtatland@neb.com>  # GH user: tshtatland
+Tomithy Too <tomithy.too@gmail.com>  # GH user: tomithy
+Tomoya Tanjo <ttanjo@gmail.com>  # GH user: tom-tan
+Torfinn Nome <torfinn.nome@gmail.com>  # GH user: torfinnnome
+Trevor Wennblom <trevor@well.com>  # GH user: trevor
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
