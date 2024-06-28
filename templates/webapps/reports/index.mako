@@ -25,7 +25,7 @@
 
 <%def name="left_panel()">
     <%
-        from datetime import datetime
+        from datetime import datetime, timezone
         from time import mktime, strftime, localtime
     %>
     <div class="unified-panel-header" unselectable="on">
@@ -44,7 +44,7 @@
                 </div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=datetime.utcnow().strftime( "%Y-%m-%d" ), sort_id='default', order='default' )}">Today's jobs</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', specified_date=datetime.now(tz=timezone.utc).strftime( "%Y-%m-%d" ), sort_id='default', order='default' )}">Today's jobs</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_all', sort_id='default', order='default' )}">Jobs per day this month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_in_error', sort_id='default', order='default' )}">Jobs in error per day this month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', operation='unfinished', sort_id='default', order='default' )}">All unfinished jobs</a></div>

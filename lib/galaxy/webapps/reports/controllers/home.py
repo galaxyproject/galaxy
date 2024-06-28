@@ -3,6 +3,7 @@ import logging
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 
 import sqlalchemy as sa
@@ -21,7 +22,7 @@ class HomePage(BaseUIController, ReportQueryBuilder):
     @web.expose
     def run_stats(self, trans, **kwd):
         message = ""
-        end_date = datetime.utcnow()
+        end_date = datetime.now(tz=timezone.utc)
         end_date = datetime(end_date.year, end_date.month, end_date.day, end_date.hour)
         end_date_buffer = datetime(end_date.year, end_date.month, end_date.day, end_date.hour + 1)
         start_hours = end_date - timedelta(1)

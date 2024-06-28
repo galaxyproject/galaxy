@@ -4,7 +4,10 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from unittest.mock import patch
 
 from sqlalchemy import (
@@ -168,7 +171,7 @@ class TestUserManager(BaseTestCase):
         )
         assert check_password(default_password, user2.password)
         assert not check_password(changed_password, user2.password)
-        prt.expiration_time = datetime.utcnow()
+        prt.expiration_time = datetime.now(tz=timezone.utc)
         user, message = self.user_manager.change_password(
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )

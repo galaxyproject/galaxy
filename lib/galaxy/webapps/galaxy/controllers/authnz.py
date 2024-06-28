@@ -2,9 +2,12 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-import datetime
 import json
 import logging
+from datetime import (
+    datetime,
+    timezone,
+)
 
 import jwt
 
@@ -57,7 +60,7 @@ class OIDC(JSAppLauncher):
                         "id": trans.app.security.encode_id(token.id),
                         "provider": token.provider,
                         "email": userinfo["email"],
-                        "expiration": str(datetime.datetime.utcfromtimestamp(userinfo["exp"])),
+                        "expiration": str(datetime.fromtimestamp(userinfo["exp"], timezone.utc)),
                     }
                 )
             except Exception:

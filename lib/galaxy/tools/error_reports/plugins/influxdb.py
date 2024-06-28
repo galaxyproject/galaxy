@@ -1,7 +1,10 @@
 """The module describes the ``influxdb`` error plugin plugin."""
 
-import datetime
 import logging
+from datetime import (
+    datetime,
+    timezone,
+)
 
 try:
     import influxdb
@@ -41,7 +44,7 @@ class InfluxDBPlugin(ErrorPlugin):
             [
                 {
                     "measurement": "galaxy_tool_error",
-                    "time": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "time": datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     "fields": {"value": 1},
                     "tags": {
                         "exit_code": job.exit_code,

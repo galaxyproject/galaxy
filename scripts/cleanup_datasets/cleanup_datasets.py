@@ -9,6 +9,7 @@ import time
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 from time import strftime
 
@@ -186,7 +187,7 @@ def main():
     app_properties = app_properties_from_args(args, legacy_config_override=config_override)
     config = galaxy.config.Configuration(**app_properties)
     app = CleanupDatasetsApplication(config)
-    cutoff_time = datetime.utcnow() - timedelta(days=args.days)
+    cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=args.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
 
     log.info("##########################################")
