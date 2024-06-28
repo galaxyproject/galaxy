@@ -191,6 +191,8 @@ richard-burhans, burhans@bx.psu.edu, https://github.com/galaxyproject/galaxy/pul
 shenweiyan, weiyanshum@gmail.com, https://github.com/galaxyproject/galaxy/pull/13323
 heisner-tillman, theisner@posteo.de, https://github.com/galaxyproject/galaxy/pull/17463
 ieguinoa, ignacio.eguinoa@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147638955
+wm75, maierw@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/17586
+yvanlebras, yvan.le-bras@mnhn.fr, https://github.com/galaxyproject/galaxy/pull/16713
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -325,6 +327,20 @@ Tomithy Too <tomithy.too@gmail.com>  # GH user: tomithy
 Tomoya Tanjo <ttanjo@gmail.com>  # GH user: tom-tan
 Torfinn Nome <torfinn.nome@gmail.com>  # GH user: torfinnnome
 Trevor Wennblom <trevor@well.com>  # GH user: trevor
+Valentin Chambon <chavaldranis@gmail.com> # GH user: ValentinChCloud
+Valentin Marcon <v.marcon@outlook.fr> # GH user: ValentinMarcon
+Varun Shankar S <varunshankar55@gmail.com> # GH user: varunshankar
+Vimalkumar Velayudhan <vimalkumarvelayudhan@gmail.com> # GH user: vimalkvn
+Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
+William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
+Will Simpson <wsimpson@email.arizona.edu>  # GH user: simpsonw
+Xavier Garnier <xgaia@gmx.com>  # GH user: xgaia
+xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
+Xiaoqian Jiang <jxq198409@hotmail.com>  # GH user: xiaoqian1984
+Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
+Youri Hoogstrate <y.hoogstrate@gmail.com>  # GH user: yhoogstrate
+Yo Yehudi <yochannah@gmail.com>  # GH user: yochannah
+Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
