@@ -1413,7 +1413,7 @@ class WorkflowContentsManager(UsesAnnotations):
         If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
         """
         annotation_str = ""
-        tag_str = ""
+        tags_list = []
         annotation_owner = None
         if stored is not None:
             if stored.id:
@@ -1424,7 +1424,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     or self.get_item_annotation_str(trans.sa_session, annotation_owner, stored)
                     or ""
                 )
-                tag_str = stored.make_tag_string_list()
+                tags_list = stored.make_tag_string_list()
             else:
                 # dry run with flushed workflow objects, just use the annotation
                 annotations = stored.annotations
@@ -1437,7 +1437,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["format-version"] = "0.1"
         data["name"] = workflow.name
         data["annotation"] = annotation_str
-        data["tags"] = tag_str
+        data["tags"] = tags_list
         if workflow.uuid is not None:
             data["uuid"] = str(workflow.uuid)
         steps: Dict[int, Dict[str, Any]] = {}
