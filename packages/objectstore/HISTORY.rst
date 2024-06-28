@@ -3,11 +3,24 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Include stack when reporting delete error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18208 <https://github.com/galaxyproject/galaxy/pull/18208>`_
+* Only log error if deleting directory really failed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18236 <https://github.com/galaxyproject/galaxy/pull/18236>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
 
 -------------------
 24.0.2 (2024-05-07)

@@ -3,11 +3,22 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Use config_section to distinguish between galaxy and ts or other apps by `@jdavcs <https://github.com/jdavcs>`_ in `#18215 <https://github.com/galaxyproject/galaxy/pull/18215>`_
 
 -------------------
 24.0.2 (2024-05-07)

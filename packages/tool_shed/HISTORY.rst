@@ -3,11 +3,24 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add ``hgweb_repo_prefix`` attribute to ``TestToolShedConfig`` by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18268 <https://github.com/galaxyproject/galaxy/pull/18268>`_
+* Fix tool_shed package unit tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18327 <https://github.com/galaxyproject/galaxy/pull/18327>`_
+* Fix one more tool shed unit test by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18328 <https://github.com/galaxyproject/galaxy/pull/18328>`_
 
 -------------------
 24.0.2 (2024-05-07)

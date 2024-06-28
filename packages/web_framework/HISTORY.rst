@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Reset content-length for unhandled exceptions by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18233 <https://github.com/galaxyproject/galaxy/pull/18233>`_
+* More fixes for running the TS with external hgweb by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18279 <https://github.com/galaxyproject/galaxy/pull/18279>`_
 
 -------------------
 24.0.2 (2024-05-07)

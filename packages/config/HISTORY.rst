@@ -3,11 +3,29 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Backport OIDC schema fix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18111 <https://github.com/galaxyproject/galaxy/pull/18111>`_
+* Minor fix to enable external hgweb process by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18256 <https://github.com/galaxyproject/galaxy/pull/18256>`_
+
+=============
+Other changes
+=============
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
 
 -------------------
 24.0.2 (2024-05-07)

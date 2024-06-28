@@ -3,11 +3,25 @@ History
 
 .. to_doc
 
----------
-24.1.dev0
----------
+-----------
+24.1.0.dev0
+-----------
 
 
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Allow purge query param, deprecate purge body param by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18105 <https://github.com/galaxyproject/galaxy/pull/18105>`_
+* Make sure that all Linter subclasses are imported for listing them by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18339 <https://github.com/galaxyproject/galaxy/pull/18339>`_
+* Assign default ``data`` extension on discovered collection output  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18389 <https://github.com/galaxyproject/galaxy/pull/18389>`_
+* Allow in_range validator for selects by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#18403 <https://github.com/galaxyproject/galaxy/pull/18403>`_
 
 -------------------
 24.0.2 (2024-05-07)
