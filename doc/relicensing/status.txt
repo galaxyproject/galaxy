@@ -178,11 +178,15 @@ nsoranzo, nicola.soranzo@gmail.com, https://github.com/galaxyproject/galaxy/pull
 innovate-invent, innovate.invent@gmail.com, https://github.com/galaxyproject/galaxy/pull/13608
 nuwang, nuwan.goonasekera@gmail.com, https://github.com/galaxyproject/galaxy/pull/17748
 OlegZharkov, oleg.zharkov22@gmail.com, https://github.com/galaxyproject/galaxy/pull/12937
+mblue9, maria.doyle@petermac.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147309479
+Mataivic, victor.mataigne@wanadoo.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147324370
+Delphine-L, lariviere.delphine@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147329464
+nekrut, anton@nekrut.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147347824
+mtangaro, ma.tangaro@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147366950
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
-Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
 Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
 Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
@@ -200,7 +204,6 @@ Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
 Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
 David C. King <dcking@bx.psu.edu>  # GH user: ??
-Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
@@ -246,18 +249,15 @@ Léo Biscassi <leo.biscassi@gmail.com>  # GH user: leobiscassi
 linnil1 <linnil1.886@gmail.com>  # GH user: linnil1
 Manabu ISHII <manabu.ishii.rb@gmail.com> # GH user: manabuishii
 Marek Vavruša <marek@vavrusa.com>  # GH user: vavrusa
-Maria Doyle <maria.doyle@petermac.org>  # GH user: mblue9
 Marie Gramm <mariegramm@192-168-1-109.tpgi.com.au>  # GH user: dlal-group
 Mark Iskander <motiontracker@gmail.com>  # GH user: markiskander
 Martijn Vermaat <m.vermaat.hg@lumc.nl>  # GH user: martijnvermaattest
-Victor Mataigne <victor.mataigne@wanadoo.fr>  # GH user: Mataivic
 Matt Ralston <mrals89@gmail.com>  # GH user: MatthewRalston
 mgehring <mgehrin@emory.edu>  # GH user: ???
 Michael Cotterell <mepcotterell@gmail.com>  # GH user: mepcotterell
 Michael Sauria <crockopotamus@gmail.com>  # GH user: msauria
 MONJEAUD Cyril <Cyril.Monjeaud@irisa.fr>  # GH user: cmonjeau
 MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
-Marco Tangaro <ma.tangaro@gmail.com>  # GH user: mtangaro
 
 Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
 Norbert Eichner <norbert.eichner@ur.de>  # GH user: NCEichner

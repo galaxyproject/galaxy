@@ -29,15 +29,6 @@
       ]
     },
     {
-      "login": "nekrut",
-      "name": "Anton Nekrutenko",
-      "avatar_url": "https://avatars.githubusercontent.com/u/4291636?v=4",
-      "profile": "http://nekrut.bx.psu.edu/",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "ashvark",
       "name": "Ashok Varadharajan",
       "avatar_url": "https://avatars.githubusercontent.com/u/7712157?v=4",
@@ -132,15 +123,6 @@
       "name": "Christopher Mundus",
       "avatar_url": "https://avatars.githubusercontent.com/u/17323411?v=4",
       "profile": "https://github.com/crashGoBoom",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "Delphine-L",
-      "name": "Delphine Lariviere",
-      "avatar_url": "https://avatars.githubusercontent.com/u/11195061?v=4",
-      "profile": "https://github.com/Delphine-L",
       "contributions": [
         "code"
       ]
@@ -416,15 +398,6 @@
       ]
     },
     {
-      "login": "mblue9",
-      "name": "Maria Doyle",
-      "avatar_url": "https://avatars.githubusercontent.com/u/5591821?v=4",
-      "profile": "https://github.com/mblue9",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "dlal-group",
       "name": "dlal-group",
       "avatar_url": "https://avatars.githubusercontent.com/u/26526288?v=4",
@@ -447,15 +420,6 @@
       "name": "martijnvermaattest",
       "avatar_url": "https://avatars.githubusercontent.com/u/17727768?v=4",
       "profile": "https://github.com/martijnvermaattest",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "Mataivic",
-      "name": "Mataivic",
-      "avatar_url": "https://avatars.githubusercontent.com/u/23168771?v=4",
-      "profile": "https://github.com/Mataivic",
       "contributions": [
         "code"
       ]
@@ -492,15 +456,6 @@
       "name": "miloaec",
       "avatar_url": "https://avatars.githubusercontent.com/u/17707793?v=4",
       "profile": "https://github.com/miloaec",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "mtangaro",
-      "name": "Marco Tangaro",
-      "avatar_url": "https://avatars.githubusercontent.com/u/16704987?v=4",
-      "profile": "http://www.ibiom.cnr.it/",
       "contributions": [
         "code"
       ]
@@ -609,6 +564,33 @@
       "name": "Ott Oopkaup",
       "avatar_url": "https://avatars.githubusercontent.com/u/3826220?v=4",
       "profile": "https://github.com/ooobik",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "cbare",
+      "name": "Christopher Bare",
+      "avatar_url": "https://avatars.githubusercontent.com/u/170360?v=4",
+      "profile": "https://cbare.github.io/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "claresloggett",
+      "name": "claresloggett",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1815107?v=4",
+      "profile": "https://github.com/claresloggett",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "dan-blanchard",
+      "name": "Dan Blanchard",
+      "avatar_url": "https://avatars.githubusercontent.com/u/976345?v=4",
+      "profile": "https://dan-blanchard.github.io/",
       "contributions": [
         "code"
       ]
