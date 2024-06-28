@@ -43,7 +43,7 @@ defineProps({
         :target="target || '_parent'"
         :link-classes="{ 'nav-icon': !!icon, toggle: toggle }"
         :title="tooltip"
-        @click="$emit('click')">
+        @click.prevent="$emit('click')">
         <template v-if="icon">
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tooltip || id }}</span>
