@@ -190,6 +190,7 @@ rhpvorderman, r.h.p.vorderman@lumc.nl, https://github.com/galaxyproject/galaxy/p
 richard-burhans, burhans@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/17565
 shenweiyan, weiyanshum@gmail.com, https://github.com/galaxyproject/galaxy/pull/13323
 heisner-tillman, theisner@posteo.de, https://github.com/galaxyproject/galaxy/pull/17463
+ieguinoa, ignacio.eguinoa@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147638955
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -229,7 +230,6 @@ Hiral Vora <hvora1@uncc.edu>  # GH user: ??
 Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
 Ian Schenck <ian@bx.psu.edu>  # GH user: ianschenck
 ichorny <none@none> # GH user: ??, Ilya Chorny, currently at Quantum-Si
-Ignacio Eguinoa <ignacio.eguinoa@gmail.com>  # GH user: ieguinoa
 Ivan Kuzmin <inkuzm@gmail.com>  # GH user: inkuzmin
 James Boocock <sfk2001@gmail.com>  # GH user: theboocock
 James Taylor <james@jamestaylor.org  # GH user: jxtx (deceased, RIP buddy)
