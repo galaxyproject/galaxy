@@ -132,11 +132,21 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
     userStore.toggleSideBar(toggle);
 }
 
+const syncActivities = () => {
+    activityStore.sync();
+    if (config.value && ["workflow_centric", "workflow_runner"].indexOf(config.value.client_mode) >= 0) {
+        userStore.untoggleToolbarIfNeeded();
+    }
+};
+
 watch(
     () => hashedUserId.value,
-    () => {
-        activityStore.sync();
-    }
+    syncActivities,
+);
+
+watch(
+    isConfigLoaded,
+    syncActivities,
 );
 </script>
 
@@ -179,11 +189,7 @@ watch(
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="
-                                    ['admin', 'tools', 'visualizations', 'multiview', 'invocation'].includes(
-                                        activity.id
-                                    )
-                                "
+                                v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -216,10 +222,10 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="cog"
+                    icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
-                    title="Settings"
-                    tooltip="Edit preferences"
+                    title="More"
+                    tooltip="View additional activities"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin"

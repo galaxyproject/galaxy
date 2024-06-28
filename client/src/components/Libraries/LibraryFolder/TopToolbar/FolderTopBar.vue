@@ -12,7 +12,7 @@
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
                     <button
-                        v-if="metadata.can_add_library_item"
+                        v-if="canAddLibraryItem"
                         title="Create new folder"
                         class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                         type="button"
@@ -20,7 +20,7 @@
                         <FontAwesomeIcon icon="plus" />
                         Folder
                     </button>
-                    <div v-if="metadata.can_add_library_item">
+                    <div v-if="canAddLibraryItem">
                         <div
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1">
@@ -167,6 +167,10 @@ export default {
         unselected: {
             type: Array,
             required: true,
+        },
+        canAddLibraryItem: {
+            type: Boolean,
+            default: false,
         },
         metadata: {
             type: Object,

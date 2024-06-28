@@ -11,8 +11,7 @@ class TestSignOut(SeleniumTestCase):
     def test_sign_out(self):
         email = self._get_random_email()
         self.register(email)
-        self.click_masthead_user()
-        self.components.masthead.preferences.wait_for_and_click()
+        self.navigate_to_user_preferences()
         self.components.preferences.sign_out.wait_for_and_click()
         self.components.sign_out.cancel_button.wait_for_and_click()
         assert self.is_logged_in()

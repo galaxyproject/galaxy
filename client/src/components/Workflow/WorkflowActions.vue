@@ -31,6 +31,7 @@ interface Props {
     menu?: boolean;
     published?: boolean;
     buttonSize?: "sm" | "md" | "lg";
+    allowWorkflowManagement?: boolean;
 }
 
 type BaseAction = {
@@ -59,6 +60,7 @@ interface BAction extends BaseAction {
 
 const props = withDefaults(defineProps<Props>(), {
     buttonSize: "sm",
+    allowWorkflowManagement: true,
 });
 
 const emit = defineEmits<{
@@ -126,7 +128,7 @@ async function onDelete() {
 const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
-            condition: !props.workflow.deleted && !props.workflow.show_in_tool_panel,
+            condition: !props.workflow.deleted && !props.workflow.show_in_tool_panel && props.allowWorkflowManagement,
             class: "workflow-bookmark-button-add",
             component: "async",
             title: "Add bookmarks",

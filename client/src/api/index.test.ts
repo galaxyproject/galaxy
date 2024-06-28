@@ -22,6 +22,7 @@ const REGISTERED_USER: User = {
 
 const ANONYMOUS_USER: AnonymousUser = {
     isAnonymous: true,
+    total_disk_usage: 0,
 };
 
 const SESSIONLESS_USER = null;
