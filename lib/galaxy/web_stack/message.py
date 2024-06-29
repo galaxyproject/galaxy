@@ -68,7 +68,9 @@ class ApplicationStackMessage(dict):
         names = set()
         for cls in reversed(self.__class__.mro()):
             names.update(
-                [x for x in dir(cls) if x.startswith("_") and not x.startswith("__") and type(getattr(cls, x)) == tuple]
+                x
+                for x in dir(cls)
+                if x.startswith("_") and not x.startswith("__") and type(getattr(cls, x)) == tuple  # noqa: E721
             )
         for name in names:
             setattr(self.__class__, name.lstrip("_"), property(lambda self, name=name: self._get_list_from_mro(name)))
