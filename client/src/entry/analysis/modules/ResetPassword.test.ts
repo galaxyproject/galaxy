@@ -6,6 +6,7 @@ import { setActivePinia } from "pinia";
 import { getGalaxyInstance } from "@/app/singleton";
 
 import ResetPassword from "./ResetPassword.vue";
+import assert from "assert";
 
 const localVue = getLocalVue(true);
 
@@ -56,9 +57,13 @@ describe("ResetPassword", () => {
         const wrapper = mountResetPassword({
             redirect: "redirect_url",
         });
+        const emailField = wrapper.find("#reset-email");
+        const submitButton = wrapper.find("#reset-password");
+        const testEmail = "eihfeuh";
 
-        console.log("wrapper:", wrapper.html());
-        const emailForm = wrapper.find("#reset-email");
-        console.log("emailForm:", emailForm.element);
+        emailField.setValue(testEmail);
+        const emailValue = emailField.element.textContent;
+        expect(emailValue).toBe(testEmail);
+
     });
 });
