@@ -9,7 +9,7 @@
   "imageSize": 150,
   "commit": false,
   "commitConvention": "none",
-  "contributorTemplate": "<img src=\"<%= contributor.avatar_url %>?s=<%= options.imageSize %>\" width=\"<%= options.imageSize %>px;\" alt=\"<%= contributor.name %>\"/><br /><sub><b><%= contributor.name %> (<%= contributor.login %>)</b></sub><br />",
+  "contributorTemplate": "<a href=\"http://github.com/<%= contributor.login %>\"><img src=\"<%= contributor.avatar_url %>?s=<%= options.imageSize %>\" width=\"<%= options.imageSize %>px;\" alt=\"<%= contributor.name %>\"/></a><br /><sub><b><%= contributor.name %> (<%= contributor.login %>)</b></sub><br />",
   "contributors": [
     {
       "login": "anatskiy",
