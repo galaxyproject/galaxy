@@ -240,16 +240,13 @@ def include_all_package_routers(app: FastAPI, package_name: str):
     for _, module in walk_controller_modules(package_name):
         router = getattr(module, "router", None)
         if router:
-            responses: typing.Optional[typing.Dict[typing.Union[int, str], typing.Dict[str, typing.Any]]] = {
-                400: {
-                    "description": "Bad Request",
-                    "model": MessageExceptionModel,
+            app.include_router(
+                router,
+                responses={
+                    422: {
+                        "description": "Bad Request",
+                        "model": MessageExceptionModel,
+                    },
                 },
-            }
-            app.include_router(router, responses=responses)
+            )
 
-
-def remove_422(app: FastAPI):
-    for _, operations in app.openapi()["paths"].items():
-        for _, metadata in operations.items():
-            metadata["responses"].pop("422", None)
