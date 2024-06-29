@@ -143,7 +143,7 @@ export const Activities = [
         mutable: false,
         optional: true,
         panel: false,
-        title: "Data Library",
+        title: "Libraries",
         tooltip: "Access Data Libraries",
         to: "/libraries",
         visible: true,
