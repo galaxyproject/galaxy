@@ -1007,7 +1007,7 @@ libraries:
 
   selectors:
     _: '#libraries_list'
-    activity: "#activity-libraries"
+    activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
