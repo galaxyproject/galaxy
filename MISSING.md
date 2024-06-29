@@ -1,7 +1,7 @@
 
 ## Contributors ✨
 
-Thanks goes to these wonderful people. We still need them to approve https://github.com/galaxyproject/galaxy/pull/16970
+Thanks goes to these wonderful people. We still need them to re-license their previous contributions to Galaxy by following the process at <https://gxy.io/relicense>.
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <!-- prettier-ignore-start -->
