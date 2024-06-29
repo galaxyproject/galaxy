@@ -29,6 +29,7 @@ const versionUserDocumentationUrl = computed(() => {
 
 <template>
     <div v-if="isConfigLoaded" class="about-galaxy">
+        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="lg">Help and Support</Heading>
         <div class="p-2">
             <Heading h2 separator size="md">Support</Heading>
             <div v-if="config.wiki_url">
