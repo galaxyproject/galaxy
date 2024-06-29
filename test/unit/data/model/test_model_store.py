@@ -1215,7 +1215,6 @@ def import_archive(archive_path, app, user, import_options=None):
     dest_dir = CompressedFile(archive_path).extract(dest_parent)
 
     import_options = import_options or store.ImportOptions()
-    new_history = None
     model_store = store.get_import_model_store_for_directory(
         dest_dir,
         app=app,
