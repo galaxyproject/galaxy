@@ -226,120 +226,121 @@ kiwiroy, kiwiroy@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#p
 torfinnnome, torfinn.nome@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148929362
 rwwh, rob.hooft@nbic.nl, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148994965
 linnil1, linnil1.886@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149097400
+jgoecks, jgoecks@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149586713
 
 # not yet agreed, needs research
-Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
-Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
-Arjun Nath <arjun@bx.psu.edu> # GH user: arjunnath
-Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
-Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
-BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (GitHub account deleted)
-balto <balto_59@hotmail.fr>  # ¿ same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
-bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
-Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
-Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes "as a federal employee, anything I contribute to is a "Government Work", and cannot have a domestic copyright. We have approval for release under CC0. "
-Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
-Charles Strittmatter <cstrittmatter@gmail.com>  # GH user: charesredhat
-Chinmay Rao <chinmay@bx.psu.edu>  # HG user: ??
-Chris Armstrong <carmstrong1gw@github.com>  # GH user: carmstrong1gw
-Chris Barnett <chris.barnett@uct.ac.za>  # GH user: chrisbarnettster
-Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
-Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
-Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
-David C. King <dcking@bx.psu.edu>  # GH user: meekrob
-Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
-dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
-Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
-Fabien Mareuil <fmareuil@pasteur.fr>  # GH user: fmareuil
-Frederic Sapet <frederic.sapet@limagrain.com>  # GH user: FredericBGA
-Frederik Delaere <frederik.delaere@gmail.com>  # GH user: ??
-Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
-Galaxy <galaxy-dev@plantandfood.co.nz>  # GH user: ???
-Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony, last contribution in 2016
-Guruprasad Ananda <gua110@bx.psu.edu>  # GH user: ??
-Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
-Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
-Hiral Vora <hvora1@uncc.edu>  # GH user: ??
-Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
-Ian Schenck <ian@bx.psu.edu>  # GH user: ianschenck
-ichorny <none@none> # GH user: ??, Ilya Chorny, currently at Quantum-Si
-Ivan Kuzmin <inkuzm@gmail.com>  # GH user: inkuzmin
-James Boocock <sfk2001@gmail.com>  # GH user: theboocock
-James Taylor <james@jamestaylor.org  # GH user: jxtx (deceased, RIP buddy)
-Jens Preußner <jenzopr@users.noreply.github.com>  # GH user: jenzopr
-Jeremy Goecks <jgoecks@users.noreply.github.com>  # GH user: jgoecks
-Jesse c j van Dam <jesse.vandam@wur.nl>  # GH user: jessevdam
-Jianbin He <jbhe@bx.psu.edu>  # GH user: ??
-Joachim Jacob <joachim.jacob@gmail.com>  # GH user: joachimjacob
-Joachim Wolff <wolffj@informatik.uni-freiburg.de>  # GH user: joachimwolff
-John Duddy <jduddy@illumina.com>  # GH user: jdlogicman
-jra001k <jra001k@gmail.com>  # GH user: ???
-(JR) Ray Sajulga <jraysajulga@gmail.com>  # GH user: jraysajulga
-Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
-Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
-Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
-Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
-Katrin Leinweber <kalei@posteo.de>  # GH user: katrinleinweber
-Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: kpvincent
-Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
-Lawrence Nicastro <lawrence.nicastro1@gmail.com>  # GH user: lawrence1470
-Léo Biscassi <leo.biscassi@gmail.com>  # GH user: leobiscassi
-Manabu ISHII <manabu.ishii.rb@gmail.com> # GH user: manabuishii
-Marek Vavruša <marek@vavrusa.com>  # GH user: vavrusa
-Marie Gramm <mariegramm@192-168-1-109.tpgi.com.au>  # GH user: dlal-group
-Mark Iskander <motiontracker@gmail.com>  # GH user: markiskander
-Martijn Vermaat <m.vermaat.hg@lumc.nl>  # GH user: martijnvermaattest
-Matt Ralston <mrals89@gmail.com>  # GH user: MatthewRalston
-mgehring <mgehrin@emory.edu>  # GH user: ???
-Michael Cotterell <mepcotterell@gmail.com>  # GH user: mepcotterell
-MONJEAUD Cyril <Cyril.Monjeaud@irisa.fr>  # GH user: cmonjeau
-MORITA Hideyuki <h-morita@esm.co.jp>  # GH user: ???
-Nadia Goué <nadia.goue@gmail.com>  # GH user: nagoue
-Norbert Eichner <norbert.eichner@ur.de>  # GH user: NCEichner
-Nic Herndon <nic.herndon@uconn.edu>  # GH user: NicHerndon
-Niko Pinter <34959927+npinter@users.noreply.github.com>  # GH user: npinter
-Nitesh Turaga <nitesh.turaga@gmail.com>  # GH user: nturaga
-Oleksandr Moskalenko <om@rc.ufl.edu>  # GH user: moskalenko
-Olivia Doppelt-Azeroual <olivia.doppelt@pasteur.fr>  # GH user: odoppelt
-Olivier Sallou <olivier.sallou@gmail.com>  # GH user: osallou
-Peter van 't Hof <pjrvanthof@gmail.com>  # GH user: ffinfo
-Petraea <Petraea@users.noreply.github.com>  # GH user: Petraea
-Pierre Lindenbaum <plindenbaum@yahoo.fr>  # GH user: lindenb
-Radhesh Kamath <radhesh@bx.psu.edu>  # GH user: ???
-Raj Ayyampalayam <raj76@uga.edu>  # GH user: ???
-Ramez Alrawas <ramezrawas@gmail.com>  # GH user: ramezrawas
-Ramkrishna Chakrabarty <rc@bx.psu.edu>  # GH user: ???
-Rossano Atzeni <rossano.atzeni@crs4.it>  # GH user: ratzeni
-Rémi Marenco <remi.marenco@gmail.com>  # GH user: remimarenco
-remy_d1 <remy.d1@gmail.com>  # GH user: remyd1
-Richard James Acton <racton@uni-koeln.de>  # GH user: RichardJActon
-Romain Dallet <romain.dallet@sb-roscoff.fr>  # GH user: rdallet
-Rory Kirchner <roryk@mit.edu>  # GH user: roryk
-Ryan Golhar <ngsbioinformatics@gmail.com> # GH user: golharam
-Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
-Shane Dowling <shane@shanedowling.com>  # GH user: shano
-Simone Leo <simone.leo@gmail.com>  # GH user: simleo
-Simon Guest <simon.guest@agresearch.co.nz>  # GH user: tesujimath
-Stavros Sachtouris <saxtouri@admin.grnet.gr>  # GH user: saxtouri
-Steffen Neumann <sneumann@ipb-halle.de>  # GH user: sneumann
-Steve Cassidy <steve.cassidy@mq.edu.au>  # GH user: stevecassidy
-Takao Nakaguchi <takao.nakaguchi@gmail.com>  # GH user: takawitter
-Thoba Lose <lose.thoba@gmail.com>  # GH user: thobalose
-Thomas McGowan <mcgo0092@umn.edu>  # GH user: tmcgowan
-Thomas Wollmann <thomas.s.wollmann@gmail.com>  # GH user: ThomasWollmann
-Thom Cuddihy <thom@hometreelab.com>  # GH user: thomcuddihy
-Tim Thompson <tim.thompson@xdbio.com>  # GH user: XDtim
-Timur Shtatland <shtatland@neb.com>  # GH user: tshtatland
-Tomithy Too <tomithy.too@gmail.com>  # GH user: tomithy
-Trevor Wennblom <trevor@well.com>  # GH user: trevor
-Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
-William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
-Will Simpson <wsimpson@email.arizona.edu>  # GH user: simpsonw
-Xavier Garnier <xgaia@gmx.com>  # GH user: xgaia
-xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
-Xiaoqian Jiang <jxq198409@hotmail.com>  # GH user: xiaoqian1984
-Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
-Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
+# GitHub username or NA, Name, email address, Comment
+anatskiy, Evgeny Anatskiy, evgeny.anatskiy@gmail.com
+aloraine, Ann Loraine, aloraine@uncc.edu, only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
+arjunnath, Arjun Nath, arjun@bx.psu.edu
+ashvark, Ashok Varadharajan, ashvark@gmail.com
+arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
+BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account deleted
+the-nidhogg, balto, balto_59@hotmail.fr>, ¿same as BalthazarPavot (only commits from both are in the same PR)?
+bensellak, bensellak, bensellak@ensat.ac.ma
+dtrudg, Dave Trudgian, dave@trudgian.net
+BradHolmes, Brad Holmes, holmesbr@ncbi.nlm.nih.gov, "as a federal employee, anything I contribute to is a "Government Work", and cannot have a domestic copyright. We have approval for release under CC0."
+cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
+charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
+NA, Chinmay Rao, chinmay@bx.psu.edu
+carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com
+chrisbarnettster, Chris Barnett, chris.barnett@uct.ac.za
+blankclemens, Clemens Blank, blankclemens@gmail.com
+cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
+crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
+meekrob, David C. King, dcking@bx.psu.edu
+dpryan79, Devon Ryan, dpryan79@gmail.com
+NA, dorine francheteau, dorine@bx.psu.edu
+NA, Eric Paniagua, paniagua.cshl@gmail.com
+fmareuil, Fabien Mareuil, fmareuil@pasteur.fr
+FredericBGA, Frederic Sapet, frederic.sapet@limagrain.com
+Na, Frederik Delaere, frederik.delaere@gmail.com
+FreekDB, Freek de Bruijn, freek.de.bruijn@nbic.nl
+NA, Galaxy, galaxy-dev@plantandfood.co.nz
+sszakony, Scott Szakonyi, sszakony@nd.edu, last contribution in 2016
+NA, Guruprasad Ananda, gua110@bx.psu.edu
+hanfeisun, Hanfei Sun, ad9075@gmail.com
+vdtoorn, Henk van den Toorn, vdtoorn@hotmail.com
+NA, Hiral Vora, hvora1@uncc.edu
+NA, Hunter Moseley, hunter.moseley@louisville.edu
+ianschenck, Ian Schenck, ian@bx.psu.edu
+NA, Ilya ichorny, none@none, currently at Quantum-Si
+inkuzmin, Ivan Kuzmin, inkuzm@gmail.com
+theboocock, James Boocock, sfk2001@gmail.com
+jxtx, James Taylor, james@jamestaylor.org, deceased, RIP buddy)
+jenzopr, Jens Preußner, jenzopr@users.noreply.github.com
+jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
+NA, Jianbin He, jbhe@bx.psu.edu
+joachimjacob, Joachim Jacob, joachim.jacob@gmail.com
+joachimwolff, Joachim Wolff, wolffj@informatik.uni-freiburg.de
+jdlogicman, John Duddy, jduddy@illumina.com
+NA, jra001k, jra001k@gmail.com
+jraysajulga, (JR) Ray Sajulga, raysajulga@gmail.com
+juleengraham, Juleen Graham, juleengrah@gmail.com
+junzwang, Junzhou Wang, junzhouwang@gmail.com
+NA, Scott McManus, scottmcmanus@gatech.edu, last contribution in 2012
+scrathat, Sebastian Kapust, sebastian@kapust.org, last contribution in 2020
+katrinleinweber, Katrin Leinweber, kalei@posteo.de
+kpvincent, Kelly Vincent, kpvincent@bx.psu.edu
+kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
+lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
+leobiscassi, Léo Biscassi, leo.biscassi@gmail.com
+manabuishii, Manabu ISHII, manabu.ishii.rb@gmail.com
+vavrusa, Marek Vavruša, marek@vavrusa.com
+dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
+markiskander, Mark Iskander, motiontracker@gmail.com
+martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
+MatthewRalston, Matt Ralston, mrals89@gmail.com
+NA, mgehring, mgehrin@emory.edu
+mepcotterell, Michael Cotterell, mepcotterell@gmail.com
+cmonjeau, Cyril Monjeaud, Cyril.Monjeaud@irisa.fr
+NA, MORITA Hideyuki, h-morita@esm.co.jp
+nagoue, Nadia Goué, nadia.goue@gmail.com
+NCEichner, Norbert Eichner, norbert.eichner@ur.de
+NicHerndon, Nic Herndon, nic.herndon@uconn.edu
+npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
+nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
+moskalenko, Oleksandr Moskalenko, om@rc.ufl.edu
+odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
+osallou, Olivier Sallou, olivier.sallou@gmail.com
+ffinfo, Peter van 't Hof, pjrvanthof@gmail.com
+Petraea, Petraea, Petraea@users.noreply.github.com
+lindenb, Pierre Lindenbaum, plindenbaum@yahoo.fr
+NA, Radhesh Kamath, radhesh@bx.psu.edu
+NA, Raj Ayyampalayam, raj76@uga.edu
+ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
+NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
+ratzeni, Rossano Atzeni, rossano.atzeni@crs4.it
+remimarenco, Rémi Marenco, remi.marenco@gmail.com
+remyd1, remy_d1, remy.d1@gmail.com
+RichardJActon, Richard James Acton, racton@uni-koeln.de
+rdallet, Romain Dallet, romain.dallet@sb-roscoff.fr
+roryk, Rory Kirchner, roryk@mit.edu
+golharam, Ryan Golhar, ngsbioinformatics@gmail.com
+sszakony, Scott Szakonyi, sszakony@nd.edu
+shano, Shane Dowling, shane@shanedowling.com
+simleo, Simone Leo, simone.leo@gmail.com
+tesujimath, Simon Guest, simon.guest@agresearch.co.nz
+saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
+sneumann, Steffen Neumann, sneumann@ipb-halle.de
+stevecassidy, Steve Cassidy, steve.cassidy@mq.edu.au
+takawitter, Takao Nakaguchi, takao.nakaguchi@gmail.com
+thobalose, Thoba Lose, lose.thoba@gmail.com
+tmcgowan, Thomas McGowan, mcgo0092@umn.edu
+ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
+thomcuddihy, Thom Cuddihy, thom@hometreelab.com
+XDtim, Tim Thompson, tim.thompson@xdbio.com
+tshtatland, Timur Shtatland, shtatland@neb.com
+tomithy, Tomithy Too, tomithy.too@gmail.com
+trevor, Trevor Wennblom,trevor@well.com
+NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
+WilliamHolden, William Holden, theappdev@protonmail.com
+simpsonw, Will Simpson, wsimpson@email.arizona.edu
+xgaia, Xavier Garnier, xgaia@gmx.com
+xiaojay, xiaojay, xiaojay@gmail.com
+xiaoqian1984, Xiaoqian Jiang, jxq198409@hotmail.com
+NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
+ycgong, Yunchen Gong, yunchen.gong@gmail.com
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
