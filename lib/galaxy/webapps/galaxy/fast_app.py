@@ -20,7 +20,6 @@ from galaxy.webapps.base.api import (
     add_request_id_middleware,
     GalaxyFileResponse,
     include_all_package_routers,
-    remove_422,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
 from galaxy.webapps.openapi.utils import get_openapi
@@ -186,7 +185,6 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     else:
         add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
-    remove_422(app)
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
