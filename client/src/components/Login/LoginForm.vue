@@ -191,7 +191,12 @@ function returnToLogin() {
                                                 v-localize
                                                 href="javascript:void(0)"
                                                 role="button"
-                                                @click.prevent="router.push('/login/reset_password')">
+                                                @click.prevent="
+                                                    router.push({
+                                                        path: '/login/reset_password',
+                                                        query: { email: login },
+                                                    })
+                                                ">
                                                 Click here to reset your password.
                                             </a>
                                         </BFormText>

@@ -130,6 +130,7 @@ export function getRouter(Galaxy) {
             {
                 path: "/login/reset_password",
                 component: ResetPassword,
+                props: (route) => ({ email: route.query.email }),
                 redirect: redirectLoggedIn(),
             },
             /** Page editor */
