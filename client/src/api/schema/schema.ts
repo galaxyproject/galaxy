@@ -322,9 +322,19 @@ export interface paths {
         /** Purge user file source instance. */
         delete: operations["file_sources__instances_purge"];
     };
+    "/api/file_source_instances/{user_file_source_id}/test": {
+        /** Test a file source instance and return status. */
+        get: operations["file_sources__instances_test_instance"];
+        /** Test updating or upgrading user file source instance. */
+        post: operations["file_sources__test_instances_update"];
+    };
     "/api/file_source_templates": {
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
+    };
+    "/api/file_source_templates/{template_id}/{template_version}/oauth2": {
+        /** Template Oauth2 */
+        get: operations["file_sources__template_oauth2"];
     };
     "/api/folders/{folder_id}/contents": {
         /**
@@ -1273,6 +1283,12 @@ export interface paths {
         /** Purge user object store instance. */
         delete: operations["object_stores__instances_purge"];
     };
+    "/api/object_store_instances/{user_object_store_id}/test": {
+        /** Get a persisted user object store instance. */
+        get: operations["object_stores__instances_test_instance"];
+        /** Test updating or upgrading user object source instance. */
+        post: operations["object_stores__test_instances_update"];
+    };
     "/api/object_store_templates": {
         /** Get a list of object store templates available to build user defined object stores from */
         get: operations["object_stores__templates_index"];
@@ -2040,6 +2056,10 @@ export interface paths {
     "/ga4gh/drs/v1/service-info": {
         /** Service Info */
         get: operations["service_info_ga4gh_drs_v1_service_info_get"];
+    };
+    "/oauth2_callback": {
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        get: operations["oauth2_callback_oauth2_callback_get"];
     };
 }
 
@@ -3139,6 +3159,8 @@ export interface components {
             template_id: string;
             /** Template Version */
             template_version: number;
+            /** Uuid */
+            uuid?: string | null;
             /** Variables */
             variables: {
                 [key: string]: (string | boolean | number) | undefined;
@@ -5166,7 +5188,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "dropbox" | "googledrive";
             /** Variables */
             variables?:
                 | (
@@ -9942,6 +9964,11 @@ export interface components {
              */
             updated_count: number;
         };
+        /** OAuth2Info */
+        OAuth2Info: {
+            /** Authorize Url */
+            authorize_url: string;
+        };
         /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
             /**
@@ -10467,6 +10494,7 @@ export interface components {
         /** PluginStatus */
         PluginStatus: {
             connection?: components["schemas"]["PluginAspectStatus"] | null;
+            oauth2_access_token_generation?: components["schemas"]["PluginAspectStatus"] | null;
             template_definition: components["schemas"]["PluginAspectStatus"];
             template_settings?: components["schemas"]["PluginAspectStatus"] | null;
         };
@@ -11996,6 +12024,26 @@ export interface components {
              */
             type: "string";
         };
+        /** TestUpdateInstancePayload */
+        TestUpdateInstancePayload: {
+            /** Variables */
+            variables?: {
+                [key: string]: (string | boolean | number) | undefined;
+            } | null;
+        };
+        /** TestUpgradeInstancePayload */
+        TestUpgradeInstancePayload: {
+            /** Secrets */
+            secrets: {
+                [key: string]: string | undefined;
+            };
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            };
+        };
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -12758,7 +12806,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "dropbox" | "googledrive";
             /** Uri Root */
             uri_root: string;
             /** Uuid */
@@ -15062,6 +15110,67 @@ export interface operations {
             };
         };
     };
+    file_sources__instances_test_instance: {
+        /** Test a file source instance and return status. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__test_instances_update: {
+        /** Test updating or upgrading user file source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID index for a persisted UserFileSourceStore object. */
+            path: {
+                user_file_source_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     file_sources__templates_index: {
         /** Get a list of file source templates available to build user defined file sources from */
         parameters?: {
@@ -15075,6 +15184,35 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    file_sources__template_oauth2: {
+        /** Template Oauth2 */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The template ID of the target file source template. */
+            /** @description The template version of the target file source template. */
+            path: {
+                template_id: string;
+                template_version: number;
+            };
+        };
+        responses: {
+            /** @description OAuth2 authorization url to redirect user to prior to creation. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["OAuth2Info"];
                 };
             };
             /** @description Validation Error */
@@ -20986,6 +21124,67 @@ export interface operations {
             };
         };
     };
+    object_stores__instances_test_instance: {
+        /** Get a persisted user object store instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__test_instances_update: {
+        /** Test updating or upgrading user object source instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The UUID used to identify a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["TestUpgradeInstancePayload"]
+                    | components["schemas"]["TestUpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["PluginStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     object_stores__templates_index: {
         /** Get a list of object store templates available to build user defined object stores from */
         parameters?: {
@@ -25468,6 +25667,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+        };
+    };
+    oauth2_callback_oauth2_callback_get: {
+        /** Callback entry point for remote resource responses with OAuth2 authorization codes */
+        parameters: {
+            /** @description Base-64 encoded JSON used to route request within Galaxy. */
+            query: {
+                state: string;
+                code: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

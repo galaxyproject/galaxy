@@ -19,7 +19,7 @@ describe("InstanceDropdown", () => {
         });
         const menu = wrapper.find(".dropdown-menu");
         const links = menu.findAll("button.dropdown-item");
-        expect(links.length).toBe(2);
+        expect(links.length).toBe(3);
     });
 
     it("should render a drop down with upgrade if upgrade available as an option", async () => {
@@ -35,6 +35,6 @@ describe("InstanceDropdown", () => {
         });
         const menu = wrapper.find(".dropdown-menu");
         const links = menu.findAll("button.dropdown-item");
-        expect(links.length).toBe(3);
+        expect(links.length).toBe(4);
     });
 });
