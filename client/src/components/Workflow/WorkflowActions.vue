@@ -63,7 +63,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "refreshList", a?: boolean): void;
-    (e: "toggleShowPreview", a?: boolean): void;
 }>();
 
 const userStore = useUserStore();
@@ -146,17 +145,6 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
             size: props.buttonSize,
             variant: "link",
             action: () => onToggleBookmark(false),
-        },
-        {
-            condition: true,
-            class: "workflow-view-button",
-            component: "button",
-            title: "View workflow",
-            tooltip: "View workflow",
-            icon: faEye,
-            size: props.buttonSize,
-            variant: "link",
-            onClick: () => emit("toggleShowPreview", true),
         },
     ];
 });

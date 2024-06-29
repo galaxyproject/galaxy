@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faEye, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -141,7 +141,12 @@ async function onTagClick(tag: string) {
                 </div>
 
                 <span class="workflow-name font-weight-bold">
-                    {{ workflow.name }}
+                    <BLink
+                        v-b-tooltip.hover.noninteractive
+                        title="Preview Workflow"
+                        @click.stop.prevent="toggleShowPreview(true)"
+                        >{{ workflow.name }}</BLink
+                    >
                     <BButton
                         v-if="!shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
