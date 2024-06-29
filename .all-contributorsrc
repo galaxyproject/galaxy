@@ -281,15 +281,6 @@
       ]
     },
     {
-      "login": "BenjaminHCCarr",
-      "name": "Ben",
-      "avatar_url": "https://avatars.githubusercontent.com/u/8225968?v=4",
-      "profile": "https://github.com/BenjaminHCCarr",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "katrinleinweber",
       "name": "Katrin Leinweber",
       "avatar_url": "https://avatars.githubusercontent.com/u/9948149?v=4",
@@ -321,15 +312,6 @@
       "name": "Léo Biscassi",
       "avatar_url": "https://avatars.githubusercontent.com/u/1977418?v=4",
       "profile": "https://github.com/leobiscassi",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "linnil1",
-      "name": "linnil1",
-      "avatar_url": "https://avatars.githubusercontent.com/u/14067508?v=4",
-      "profile": "https://linnil1.tw/",
       "contributions": [
         "code"
       ]
@@ -560,15 +542,6 @@
       ]
     },
     {
-      "login": "unode",
-      "name": "Renato Alves",
-      "avatar_url": "https://avatars.githubusercontent.com/u/122319?v=4",
-      "profile": "https://gitlab.com/unode",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "rwwh",
       "name": "Rob Hooft",
       "avatar_url": "https://avatars.githubusercontent.com/u/418043?v=4",
@@ -582,15 +555,6 @@
       "name": "Romain Dallet",
       "avatar_url": "https://avatars.githubusercontent.com/u/33418051?v=4",
       "profile": "https://github.com/rdallet",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "kiwiroy",
-      "name": "Roy Storey",
-      "avatar_url": "https://avatars.githubusercontent.com/u/313562?v=4",
-      "profile": "http://git.io/vmnNT",
       "contributions": [
         "code"
       ]
@@ -722,28 +686,10 @@
       ]
     },
     {
-      "login": "torfinnnome",
-      "name": "Torfinn Nome",
-      "avatar_url": "https://avatars.githubusercontent.com/u/985657?v=4",
-      "profile": "http://torfinnnome.com/",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "trevor",
       "name": "Trevor Wennblom",
       "avatar_url": "https://avatars.githubusercontent.com/u/5945?v=4",
       "profile": "https://github.com/trevor",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "ValentinChCloud",
-      "name": "NobodyMonarch",
-      "avatar_url": "https://avatars.githubusercontent.com/u/26431997?v=4",
-      "profile": "https://github.com/ValentinChCloud",
       "contributions": [
         "code"
       ]
