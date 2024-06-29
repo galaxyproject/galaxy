@@ -1,14 +1,28 @@
 <template>
     <div class="donemessagelarge">
-        <p>
-            Started tool <b>{{ toolName }}</b> and successfully added {{ nJobsText }} to the queue.
-        </p>
-        <p>It produces {{ nOutputsText }}:</p>
-        <ul>
-            <li v-for="item of jobResponse.outputs" :key="item.hid">
-                <b>{{ item.hid }}: {{ item.name }}</b>
-            </li>
-        </ul>
+        <div v-if="usedToolRequest">
+            You used the fancy new API... something new will be here.
+            <img
+                src="https://www.animatedimages.org/data/media/695/animated-under-construction-image-0055.gif"
+                alt="90s style under construction" />
+        </div>
+        <div v-else>
+            <p>
+                Started tool <b>{{ toolName }}</b> and successfully added {{ nJobsText }} to the queue.
+            </p>
+            <p>The tool uses {{ nInputsText }}:</p>
+            <ul>
+                <li v-for="item of inputs" :key="item.hid">
+                    <b>{{ item.hid }}: {{ item.name }}</b>
+                </li>
+            </ul>
+            <p>It produces {{ nOutputsText }}:</p>
+            <ul>
+                <li v-for="item of jobResponse.outputs" :key="item.hid">
+                    <b>{{ item.hid }}: {{ item.name }}</b>
+                </li>
+            </ul>
+        </div>
         <p>
             You can check the status of queued jobs and view the resulting data by refreshing the History panel. When
             the job has been run the status will change from 'running' to 'finished' if completed successfully or
@@ -26,6 +40,10 @@ export default {
         },
         toolName: {
             type: String,
+            required: true,
+        },
+        usedToolRequest: {
+            type: Boolean,
             required: true,
         },
     },

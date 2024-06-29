@@ -75,7 +75,7 @@ class MockGalaxyInteractor:
             if tool_version is None or tool_version != "*":
                 break
 
-        return ToolTestCaseList(__root__=test_defs)
+        return ToolTestCaseList(test_defs)
 
     def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List[Dict[str, Any]]:
-        return [m.dict() for m in self.get_tool_tests_model(tool_id, tool_version).__root__]
+        return [m.dict() for m in self.get_tool_tests_model(tool_id, tool_version).root]
