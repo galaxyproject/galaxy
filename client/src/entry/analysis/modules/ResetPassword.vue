@@ -27,21 +27,25 @@ async function resetLogin() {
 </script>
 
 <template>
-    <div class="container">
-        <div class="justify-content-md-center">
-            <BForm @submit.prevent="resetLogin">
-                <BAlert v-if="!!message" class="mt-2" :variant="messageVariant" show>
-                    {{ message }}
-                </BAlert>
+    <div class="overflow-auto m-3">
+        <div class="container">
+            <div class="row justify-content-md-center">
+                <div class="col col-lg-6">
+                    <BForm @submit.prevent="resetLogin">
+                        <BAlert v-if="!!message" class="mt-2" :variant="messageVariant" show>
+                            {{ message }}
+                        </BAlert>
 
-                <BCard header="Reset your password">
-                    <BFormGroup label="Email Address">
-                        <BFormInput id="reset-email" v-model="email" type="email" />
-                    </BFormGroup>
+                        <BCard header="Reset your password">
+                            <BFormGroup label="Email Address">
+                                <BFormInput id="reset-email" v-model="email" type="email" />
+                            </BFormGroup>
 
-                    <BButton type="submit">Reset your password</BButton>
-                </BCard>
-            </BForm>
+                            <BButton type="submit">Reset your password</BButton>
+                        </BCard>
+                    </BForm>
+                </div>
+            </div>
         </div>
     </div>
 </template>
