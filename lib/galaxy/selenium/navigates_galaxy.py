@@ -785,31 +785,6 @@ class NavigatesGalaxy(HasDriver):
         elif assert_valid:
             self.wait_for_logged_in()
 
-            # Code below previously was needed because there was a bug that would prevent the masthead from changing,
-            # the bug seems maybe to be fixed though - so we could consider eliminating these extra checks to speed
-            # up tests.
-            self.home()
-            self.wait_for_logged_in()
-            self.click_masthead_user()
-            # Make sure the user menu was dropped down
-            user_menu = self.components.masthead.user_menu.wait_for_visible()
-            try:
-                username_element = self.components.masthead.username.wait_for_visible()
-            except SeleniumTimeoutException as e:
-                menu_items = user_menu.find_elements(By.CSS_SELECTOR, "li a")
-                menu_text = [mi.text for mi in menu_items]
-                message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
-                raise self.prepend_timeout_message(e, message)
-
-            text = username_element.text
-            assert username in text
-            user_object = self.get_logged_in_user()
-            assert user_object and "email" in user_object
-            assert user_object["email"] == email
-
-            # clicking away no longer closes menu post Masthead -> VueJS
-            self.click_masthead_user()
-
     def wait_for_logged_in(self):
         try:
             self.components.masthead.logged_in_only.wait_for_visible()
@@ -1262,47 +1237,41 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_histories_page(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.shared_histories.tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
-        self.click_masthead_user()
+        self.components.masthead.user.wait_for_and_click()
         self.components.masthead.preferences.wait_for_and_click()
 
     def navigate_to_invocations(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.invocations.wait_for_and_click()
+        self.components.invocations.activity.wait_for_and_click()
+        self.components.invocations.activity_expand.wait_for_and_click()
 
     def navigate_to_pages(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.pages.wait_for_and_click()
+        self.components.pages.activity.wait_for_and_click()
 
     def navigate_to_published_workflows(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.workflows.wait_for_and_click()
+        self.components.workflows.activity.wait_for_and_click()
         self.components.workflows.published_tab.wait_for_and_click()
 
     def navigate_to_published_histories(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.activity.wait_for_and_click()
         self.components.published_histories.tab.wait_for_and_click()
 
-    def navigate_to_published_pages(self):
+    def navigate_to_tools(self):
         self.home()
-        self.click_masthead_data()
-        self.components.masthead.pages.wait_for_and_click()
+        self.components.tools.activity.wait_for_and_click()
 
     def admin_open(self):
         self.components.admin.activity.wait_for_and_click()
@@ -1354,7 +1323,6 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.click_masthead_data()
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
@@ -1478,7 +1446,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_open(self):
         self.home()
-        self.click_masthead_workflow()
+        self.click_activity_workflow()
 
     def workflow_shared_with_me_open(self):
         self.workflow_index_open()
@@ -1738,14 +1706,8 @@ class NavigatesGalaxy(HasDriver):
     def tool_form_execute(self):
         self.components.tool_form.execute.wait_for_and_click()
 
-    def click_masthead_user(self):
-        self.components.masthead.user.wait_for_and_click()
-
-    def click_masthead_data(self):
-        self.components.masthead.data.wait_for_and_click()
-
-    def click_masthead_workflow(self):
-        self.components.masthead.workflow.wait_for_and_click()
+    def click_activity_workflow(self):
+        self.components.workflows.activity.wait_for_and_click()
 
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
@@ -2027,7 +1989,7 @@ class NavigatesGalaxy(HasDriver):
 
     def logout(self):
         self.components.masthead.logged_in_only.wait_for_visible()
-        self.click_masthead_user()
+        self.components.masthead.user.wait_for_and_click()
         self.components.masthead.logout.wait_for_and_click()
         try:
             self.components.masthead.logged_out_only.wait_for_visible()

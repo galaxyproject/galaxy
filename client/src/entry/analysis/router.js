@@ -88,10 +88,14 @@ Vue.use(VueRouter);
 patchRouterPush(VueRouter);
 
 // redirect anon users
-function redirectAnon() {
+function redirectAnon(redirect = "") {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy.user || !Galaxy.user.id) {
-        return "/login/start";
+        if (redirect !== "") {
+            return redirect;
+        } else {
+            return "/login/start";
+        }
     }
 }
 
@@ -313,7 +317,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/histories/list_published"),
                     },
                     {
                         path: "histories/list_shared",
@@ -446,7 +450,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/pages/list_published"),
                     },
                     {
                         path: "pages/list_published",
@@ -628,7 +632,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/list",
                         component: WorkflowList,
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/workflows/list_published"),
                     },
                     {
                         path: "workflows/list_published",

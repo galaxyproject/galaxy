@@ -15,7 +15,6 @@ class TestUserFileSourceAwsPublicSeleniumIntegration(BaseUserObjectStoreSelenium
     @managed_history
     @selenium_test
     def test_create_and_use(self):
-        self.navigate_to_user_preferences()
         random_name = self._get_random_name(prefix="Encyclopedia of DNA Elements ENCODE")
         instance = FileSourceInstance(
             template_id="aws_public",
