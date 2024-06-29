@@ -36,7 +36,7 @@ async function resetLogin() {
 
                 <BCard header="Reset your password">
                     <BFormGroup label="Email Address">
-                        <BFormInput v-model="email" type="email" />
+                        <BFormInput id="reset-email" v-model="email" type="email" />
                     </BFormGroup>
 
                     <BButton type="submit">Reset your password</BButton>
