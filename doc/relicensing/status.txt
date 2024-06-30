@@ -227,6 +227,10 @@ torfinnnome, torfinn.nome@gmail.com, https://github.com/galaxyproject/galaxy/pul
 rwwh, rob.hooft@nbic.nl, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2148994965
 linnil1, linnil1.886@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149097400
 jgoecks, jgoecks@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149586713
+shano, shane@shanedowling.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149828812
+stevecassidy, steve.cassidy@mq.edu.au, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149922864
+takawitter, takao.nakaguchi@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149953931
+chrisbarnettster, chris.barnett@uct.ac.za, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149963693
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -244,7 +248,6 @@ cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
 charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
 carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com
-chrisbarnettster, Chris Barnett, chris.barnett@uct.ac.za
 blankclemens, Clemens Blank, blankclemens@gmail.com
 cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
 crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
@@ -318,13 +321,10 @@ rdallet, Romain Dallet, romain.dallet@sb-roscoff.fr
 roryk, Rory Kirchner, roryk@mit.edu
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 sszakony, Scott Szakonyi, sszakony@nd.edu
-shano, Shane Dowling, shane@shanedowling.com
 simleo, Simone Leo, simone.leo@gmail.com
 tesujimath, Simon Guest, simon.guest@agresearch.co.nz
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
 sneumann, Steffen Neumann, sneumann@ipb-halle.de
-stevecassidy, Steve Cassidy, steve.cassidy@mq.edu.au
-takawitter, Takao Nakaguchi, takao.nakaguchi@gmail.com
 thobalose, Thoba Lose, lose.thoba@gmail.com
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com

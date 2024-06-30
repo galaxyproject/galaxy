@@ -93,15 +93,6 @@
       ]
     },
     {
-      "login": "chrisbarnettster",
-      "name": "chrisbarnettster",
-      "avatar_url": "https://avatars.githubusercontent.com/u/4262750?v=4",
-      "profile": "https://github.com/chrisbarnettster",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "blankclemens",
       "name": "Clemens Blank",
       "avatar_url": "https://avatars.githubusercontent.com/u/12255194?v=4",
@@ -561,15 +552,6 @@
       ]
     },
     {
-      "login": "shano",
-      "name": "Shane Dowling",
-      "avatar_url": "https://avatars.githubusercontent.com/u/167567?v=4",
-      "profile": "https://shanedowling.com/",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "saxtouri",
       "name": "Stavros Sachtouris",
       "avatar_url": "https://avatars.githubusercontent.com/u/3098971?v=4",
@@ -583,24 +565,6 @@
       "name": "Steffen Neumann",
       "avatar_url": "https://avatars.githubusercontent.com/u/195385?v=4",
       "profile": "https://github.com/sneumann",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "stevecassidy",
-      "name": "Steve Cassidy",
-      "avatar_url": "https://avatars.githubusercontent.com/u/4685447?v=4",
-      "profile": "http://stevecassidy.net/",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "takawitter",
-      "name": "Takao Nakaguchi",
-      "avatar_url": "https://avatars.githubusercontent.com/u/335244?v=4",
-      "profile": "https://takao.blogspot.jp/",
       "contributions": [
         "code"
       ]
