@@ -30,4 +30,9 @@ def test_get_tool(provides_repositories: ProvidesRepositoriesContext, new_reposi
     )
     assert len(cached_bundle.input_models) == 3
 
-    print(RequestToolState.parameter_model_for(cached_bundle).model_json_schema())
+
+def test_stock_bundle(provides_repositories: ProvidesRepositoriesContext):
+    cached_bundle = tool_input_models_cached_for(
+        provides_repositories, "__ZIP_COLLECTION__", "1.0.0", repository_clone_url=None
+    )
+    assert len(cached_bundle.input_models) == 2

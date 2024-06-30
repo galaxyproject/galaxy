@@ -2,6 +2,7 @@ import os
 import tempfile
 from collections import namedtuple
 from typing import (
+    Dict,
     List,
     Optional,
     Tuple,
@@ -27,6 +28,7 @@ from galaxy.tool_util.parser import (
     get_tool_source,
     ToolSource,
 )
+from galaxy.tools.stock import stock_tool_sources
 from tool_shed.context import (
     ProvidesRepositoriesContext,
     SessionRequestContext,
@@ -35,6 +37,8 @@ from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.webapp.model import RepositoryMetadata
 from tool_shed.webapp.search.tool_search import ToolSearch
 from .trs import trs_tool_id_to_repository_metadata
+
+STOCK_TOOL_SOURCES: Optional[Dict[str, Dict[str, ToolSource]]] = None
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -115,6 +119,18 @@ def tool_input_models_for(
 def tool_source_for(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
 ) -> ToolSource:
+    if "~" in trs_tool_id:
+        return _shed_tool_source_for(trans, trs_tool_id, tool_version, repository_clone_url)
+    else:
+        tool_source = _stock_tool_source_for(trs_tool_id, tool_version)
+        if tool_source is None:
+            raise ObjectNotFound()
+        return tool_source
+
+
+def _shed_tool_source_for(
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
+) -> ToolSource:
     rval = get_repository_metadata_tool_dict(trans, trs_tool_id, tool_version)
     repository_metadata, tool_version_metadata = rval
     tool_config = tool_version_metadata["tool_config"]
@@ -133,3 +149,24 @@ def tool_source_for(
         return tool_source
     finally:
         remove_dir(work_dir)
+
+
+def _stock_tool_source_for(tool_id: str, tool_version: str) -> Optional[ToolSource]:
+    _init_stock_tool_sources()
+    assert STOCK_TOOL_SOURCES
+    tool_version_sources = STOCK_TOOL_SOURCES.get(tool_id)
+    if tool_version_sources is None:
+        return None
+    return tool_version_sources.get(tool_version)
+
+
+def _init_stock_tool_sources() -> None:
+    global STOCK_TOOL_SOURCES
+    if STOCK_TOOL_SOURCES is None:
+        STOCK_TOOL_SOURCES = {}
+        for tool_source in stock_tool_sources():
+            tool_id = tool_source.parse_id()
+            tool_version = tool_source.parse_version()
+            if tool_id not in STOCK_TOOL_SOURCES:
+                STOCK_TOOL_SOURCES[tool_id] = {}
+            STOCK_TOOL_SOURCES[tool_id][tool_version] = tool_source
