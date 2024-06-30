@@ -231,6 +231,7 @@ shano, shane@shanedowling.com, https://github.com/galaxyproject/galaxy/pull/1697
 stevecassidy, steve.cassidy@mq.edu.au, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149922864
 takawitter, takao.nakaguchi@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149953931
 chrisbarnettster, chris.barnett@uct.ac.za, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149963693
+BradHolmes, holmesbr@ncbi.nlm.nih.gov, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-1792780245
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -243,7 +244,6 @@ BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account dele
 the-nidhogg, balto, balto_59@hotmail.fr>, ¿same as BalthazarPavot (only commits from both are in the same PR)?
 bensellak, bensellak, bensellak@ensat.ac.ma
 dtrudg, Dave Trudgian, dave@trudgian.net
-BradHolmes, Brad Holmes, holmesbr@ncbi.nlm.nih.gov, "as a federal employee, anything I contribute to is a "Government Work", and cannot have a domestic copyright. We have approval for release under CC0."
 cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
 charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
