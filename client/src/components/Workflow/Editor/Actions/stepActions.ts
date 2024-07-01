@@ -54,6 +54,22 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
     }
 }
 
+function onLabelSet(
+    classInstance: LazySetLabelAction | LazySetOutputLabelAction,
+    from: string | null | undefined,
+    to: string | null | undefined
+) {
+    const markdown = classInstance.stateStore.report.markdown ?? "";
+    const newMarkdown = replaceLabel(markdown, classInstance.labelType, from, to);
+
+    if (markdown !== newMarkdown) {
+        classInstance.stateStore.report.markdown = newMarkdown;
+        classInstance.success(
+            `${classInstance.labelTypeTitle} label updated from "${from}" to "${to}" in workflow report.`
+        );
+    }
+}
+
 export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
     labelType: "input" | "step";
     labelTypeTitle: "Input" | "Step";
@@ -80,30 +96,13 @@ export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
         this.success = useToast().success;
     }
 
-    private toast(from: string, to: string) {
-        this.success(`${this.labelTypeTitle} label updated from "${from}" to "${to}" in workflow report.`);
-    }
-
     run() {
-        const markdown = this.stateStore.report.markdown ?? "";
-        const newMarkdown = replaceLabel(markdown, this.labelType, this.fromValue as string, this.toValue as string);
-
-        if (markdown !== newMarkdown) {
-            this.stateStore.report.markdown = newMarkdown;
-            this.toast(this.fromValue ?? "", this.toValue ?? "");
-        }
+        onLabelSet(this, this.fromValue, this.toValue);
     }
 
     undo() {
         super.undo();
-
-        const markdown = this.stateStore.report.markdown ?? "";
-        const newMarkdown = replaceLabel(markdown, this.labelType, this.toValue as string, this.fromValue as string);
-
-        if (markdown !== newMarkdown) {
-            this.stateStore.report.markdown = newMarkdown;
-            this.toast(this.toValue ?? "", this.fromValue ?? "");
-        }
+        onLabelSet(this, this.toValue, this.fromValue);
     }
 
     redo() {
@@ -117,6 +116,8 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     fromLabel;
     toLabel;
     stateStore;
+    labelType = "output" as const;
+    labelTypeTitle = "Output" as const;
 
     constructor(
         stepStore: WorkflowStepStore,
@@ -138,30 +139,13 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
         this.success = useToast().success;
     }
 
-    private toast(from: string, to: string) {
-        this.success(`Output label updated from "${from}" to "${to}" in workflow report.`);
-    }
-
     run() {
-        const markdown = this.stateStore.report.markdown ?? "";
-        const newMarkdown = replaceLabel(markdown, "output", this.fromLabel, this.toLabel);
-
-        if (newMarkdown !== markdown) {
-            this.stateStore.report.markdown = newMarkdown;
-            this.toast(this.fromLabel ?? "", this.toLabel ?? "");
-        }
+        onLabelSet(this, this.fromLabel, this.toLabel);
     }
 
     undo() {
         super.undo();
-
-        const markdown = this.stateStore.report.markdown ?? "";
-        const newMarkdown = replaceLabel(markdown, "output", this.toLabel, this.fromLabel);
-
-        if (newMarkdown !== markdown) {
-            this.stateStore.report.markdown = newMarkdown;
-            this.toast(this.toLabel ?? "", this.fromLabel ?? "");
-        }
+        onLabelSet(this, this.toLabel, this.fromLabel);
     }
 
     redo() {
