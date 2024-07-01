@@ -20,7 +20,7 @@ bdbag==1.6.3; (python_version >= "2.7" and python_full_version < "3.0.0") or (py
 beaker==1.11.0
 billiard==3.6.4.0; python_version >= "3.7"
 bioblend==0.17.0; python_version >= "3.7"
-bleach==5.0.0; python_version >= "3.7"
+bleach==5.0.1; python_version >= "3.7"
 boltons==21.0.0
 boto==2.49.0
 bx-python==0.8.13; python_version >= "3.7"
