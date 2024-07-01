@@ -87,8 +87,11 @@ export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
     run() {
         const markdown = this.stateStore.report.markdown ?? "";
         const newMarkdown = replaceLabel(markdown, this.labelType, this.fromValue as string, this.toValue as string);
-        this.stateStore.report.markdown = newMarkdown;
-        this.toast(this.fromValue ?? "", this.toValue ?? "");
+
+        if (markdown !== newMarkdown) {
+            this.stateStore.report.markdown = newMarkdown;
+            this.toast(this.fromValue ?? "", this.toValue ?? "");
+        }
     }
 
     undo() {
@@ -96,8 +99,11 @@ export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
 
         const markdown = this.stateStore.report.markdown ?? "";
         const newMarkdown = replaceLabel(markdown, this.labelType, this.toValue as string, this.fromValue as string);
-        this.stateStore.report.markdown = newMarkdown;
-        this.toast(this.toValue ?? "", this.fromValue ?? "");
+
+        if (markdown !== newMarkdown) {
+            this.stateStore.report.markdown = newMarkdown;
+            this.toast(this.toValue ?? "", this.fromValue ?? "");
+        }
     }
 
     redo() {
@@ -139,8 +145,11 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
     run() {
         const markdown = this.stateStore.report.markdown ?? "";
         const newMarkdown = replaceLabel(markdown, "output", this.fromLabel, this.toLabel);
-        this.stateStore.report.markdown = newMarkdown;
-        this.toast(this.fromLabel ?? "", this.toLabel ?? "");
+
+        if (newMarkdown !== markdown) {
+            this.stateStore.report.markdown = newMarkdown;
+            this.toast(this.fromLabel ?? "", this.toLabel ?? "");
+        }
     }
 
     undo() {
@@ -148,9 +157,11 @@ export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_out
 
         const markdown = this.stateStore.report.markdown ?? "";
         const newMarkdown = replaceLabel(markdown, "output", this.toLabel, this.fromLabel);
-        this.stateStore.report.markdown = newMarkdown;
 
-        this.toast(this.toLabel ?? "", this.fromLabel ?? "");
+        if (newMarkdown !== markdown) {
+            this.stateStore.report.markdown = newMarkdown;
+            this.toast(this.toLabel ?? "", this.fromLabel ?? "");
+        }
     }
 
     redo() {
