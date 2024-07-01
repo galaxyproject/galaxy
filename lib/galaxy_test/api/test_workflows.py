@@ -7704,6 +7704,13 @@ outer_input:
         invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
         return invocation_ids
 
+    def test_subworkflow_tags(self):
+        workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_tags")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id)
+        subworkflow = downloaded_workflow["steps"]["1"]["subworkflow"]
+        assert subworkflow["tags"] == []
+
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
     require_admin_user = True
