@@ -156,7 +156,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         Create a toolbox from the config files named by `config_filenames`, using
         `tool_root_dir` as the base directory for finding individual tool config files.
         """
-        self._default_panel_view = default_panel_view
+        self.__default_panel_view = default_panel_view
         # The _dynamic_tool_confs list contains dictionaries storing
         # information about the tools defined in each shed-related
         # shed_tool_conf.xml file.
@@ -237,6 +237,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             self._load_tool_panel_views()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
+
+    def _default_panel_view(self, trans):
+        config = self.app.config
+        if hasattr(config, "config_value_for_host"):
+            config_value = config.config_value_for_host("default_panel_view", trans.host)
+        else:
+            config_value = getattr(config, "default_panel_view", None)
+        return config_value or self.__default_panel_view
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -1275,7 +1283,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def tool_panel_contents(self, trans, view=None, **kwds):
         """Filter tool_panel contents for displaying for user."""
         if view is None:
-            view = self._default_panel_view
+            view = self._default_panel_view(trans)
         if view not in self._tool_panel_view_rendered:
             raise RequestParameterInvalidException(f"No panel view {view} found.")
         filter_method = self._build_filter_method(trans)
@@ -1338,7 +1346,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             {section_id: { section but with .tools=List[all tool ids] }, ...}}
         """
         if view == "default_panel_view":
-            view = self._default_panel_view
+            view = self._default_panel_view(trans)
         view_contents: Dict[str, Dict] = {}
         panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
         for elt in panel_elts:
