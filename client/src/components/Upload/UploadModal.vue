@@ -1,4 +1,5 @@
 <script setup>
+import { BModal } from "bootstrap-vue";
 import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
@@ -71,13 +72,14 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal
+    <BModal
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
         modal-class="ui-modal"
         dialog-class="upload-dialog"
         body-class="upload-dialog-body"
+        no-close-on-esc
         no-enforce-focus
         hide-footer>
         <template v-slot:modal-header>
@@ -90,7 +92,7 @@ defineExpose({
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
-    </b-modal>
+    </BModal>
 </template>
 
 <style>
