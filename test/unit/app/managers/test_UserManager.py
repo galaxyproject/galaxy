@@ -240,7 +240,7 @@ class TestUserManager(BaseTestCase):
         self.user_manager.delete(user)
         assert user.deleted is True
         message = self.user_manager.send_reset_email(self.trans, {"email": user_email})
-        assert message == None
+        assert message is None
 
     def test_get_user_by_identity(self):
         # return None if username/email not found
