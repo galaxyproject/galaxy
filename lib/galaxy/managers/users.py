@@ -609,7 +609,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     log.debug(body)
                     return f"Failed to submit email. Please contact the administrator: {util.unicodify(e)}"
             else:
-                return "Failed to produce password reset token. User not found."
+                return None
 
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
