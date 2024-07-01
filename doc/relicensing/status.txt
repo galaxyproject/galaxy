@@ -237,6 +237,7 @@ tomithy, tomithy.too@gmail.com, https://github.com/galaxyproject/galaxy/pull/169
 moskalenko, om@rc.ufl.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150205033
 sneumann, sneumann@ipb-halle.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150606285
 Petraea, Petraea@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150708344
+fretn, frederik.delaere@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2151141471
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -262,7 +263,6 @@ NA, dorine francheteau, dorine@bx.psu.edu
 NA, Eric Paniagua, paniagua.cshl@gmail.com
 fmareuil, Fabien Mareuil, fmareuil@pasteur.fr
 FredericBGA, Frederic Sapet, frederic.sapet@limagrain.com
-Na, Frederik Delaere, frederik.delaere@gmail.com
 FreekDB, Freek de Bruijn, freek.de.bruijn@nbic.nl
 NA, Galaxy, galaxy-dev@plantandfood.co.nz
 sszakony, Scott Szakonyi, sszakony@nd.edu, last contribution in 2016
