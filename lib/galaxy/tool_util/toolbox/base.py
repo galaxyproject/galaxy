@@ -239,7 +239,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             self._save_integrated_tool_panel()
 
     def _default_panel_view(self, trans):
-        return self.app.config.config_value_for_host("default_panel_view", trans.host) or self.__default_panel_view
+        config = self.app.config
+        if hasattr(config, "config_value_for_host"):
+            config_value = config.config_value_for_host("default_panel_view", trans.host)
+        else:
+            config_value = getattr(config, "default_panel_view", None)
+        return config_value or self.__default_panel_view
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
