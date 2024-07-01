@@ -1,4 +1,5 @@
 <script setup>
+import { BModal } from "bootstrap-vue";
 import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
@@ -17,7 +18,6 @@ const { config, isConfigLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
-        title: "Upload from Disk or Web",
         modalStatic: true,
         callback: null,
         immediateUpload: false,
@@ -71,17 +71,21 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal
+    <BModal
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
         modal-class="ui-modal"
         dialog-class="upload-dialog"
         body-class="upload-dialog-body"
+        no-close-on-esc
         no-enforce-focus
         hide-footer>
         <template v-slot:modal-header>
-            <h2 class="title h-sm" tabindex="0">{{ options.title }}</h2>
+            <h2 v-localize class="title h-sm" tabindex="0">Upload from Disk or Web</h2>
+            <button type="button" class="close" aria-label="Close" @click="dismiss">
+                <span aria-hidden="true">&times;</span>
+            </button>
         </template>
         <UploadContainer
             v-if="currentHistoryId"
@@ -90,7 +94,7 @@ defineExpose({
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
-    </b-modal>
+    </BModal>
 </template>
 
 <style>
