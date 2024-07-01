@@ -64,7 +64,7 @@ function toggleHighlights() {
                 <DatasetActions
                     :item="result"
                     :writable="writable"
-                    :show-highlight="showHighlight"
+                    :show-highlight="showHighlight && !result.copied_from_hda_id"
                     :item-urls="itemUrls"
                     @toggleHighlights="toggleHighlights" />
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
