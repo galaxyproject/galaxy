@@ -89,15 +89,18 @@ class WorkRequestContext(ProvidesHistoryContext):
 class GalaxyAbstractRequest:
     """Abstract interface to provide access to some request properties."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def base(self) -> str:
         """Base URL of the request."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def host(self) -> str:
         """The host address."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def is_secure(self) -> bool:
         """Was this a secure (https) request."""
 
@@ -109,7 +112,8 @@ class GalaxyAbstractRequest:
 class GalaxyAbstractResponse:
     """Abstract interface to provide access to some response utilities."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def headers(self) -> dict:
         """The response headers."""
 
