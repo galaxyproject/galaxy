@@ -46,64 +46,57 @@ Thanks goes to these wonderful people. We still need them to re-license their pr
     <tr>
       <td align="center" valign="top" width="20%"><a href="http://github.com/junzwang"><img src="https://avatars.githubusercontent.com/u/16789060?v=4?s=150" width="150px;" alt="Junzhou"/></a><br /><sub><b>Junzhou (junzwang)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/scrathat"><img src="https://avatars.githubusercontent.com/u/7573072?v=4?s=150" width="150px;" alt="Sebastian Kapust"/></a><br /><sub><b>Sebastian Kapust (scrathat)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/abdulrahmanazab"><img src="https://avatars.githubusercontent.com/u/11062692?v=4?s=150" width="150px;" alt="Abdulrahman Azab"/></a><br /><sub><b>Abdulrahman Azab (abdulrahmanazab)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/katrinleinweber"><img src="https://avatars.githubusercontent.com/u/9948149?v=4?s=150" width="150px;" alt="Katrin Leinweber"/></a><br /><sub><b>Katrin Leinweber (katrinleinweber)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/kidanem"><img src="https://avatars.githubusercontent.com/u/11715191?v=4?s=150" width="150px;" alt="Kidane M. Tekle"/></a><br /><sub><b>Kidane M. Tekle (kidanem)</b></sub><br /></td>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/lawrence1470"><img src="https://avatars.githubusercontent.com/u/98620798?v=4?s=150" width="150px;" alt="lawrence nicastro"/></a><br /><sub><b>lawrence nicastro (lawrence1470)</b></sub><br /></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/lawrence1470"><img src="https://avatars.githubusercontent.com/u/98620798?v=4?s=150" width="150px;" alt="lawrence nicastro"/></a><br /><sub><b>lawrence nicastro (lawrence1470)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/leobiscassi"><img src="https://avatars.githubusercontent.com/u/1977418?v=4?s=150" width="150px;" alt="Léo Biscassi"/></a><br /><sub><b>Léo Biscassi (leobiscassi)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/manabuishii"><img src="https://avatars.githubusercontent.com/u/7508005?v=4?s=150" width="150px;" alt="Manabu ISHII"/></a><br /><sub><b>Manabu ISHII (manabuishii)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/vavrusa"><img src="https://avatars.githubusercontent.com/u/139311?v=4?s=150" width="150px;" alt="Marek Vavruša"/></a><br /><sub><b>Marek Vavruša (vavrusa)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/dlal-group"><img src="https://avatars.githubusercontent.com/u/26526288?v=4?s=150" width="150px;" alt="dlal-group"/></a><br /><sub><b>dlal-group (dlal-group)</b></sub><br /></td>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/markiskander"><img src="https://avatars.githubusercontent.com/u/14098761?v=4?s=150" width="150px;" alt="markiskander"/></a><br /><sub><b>markiskander (markiskander)</b></sub><br /></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/markiskander"><img src="https://avatars.githubusercontent.com/u/14098761?v=4?s=150" width="150px;" alt="markiskander"/></a><br /><sub><b>markiskander (markiskander)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/martijnvermaattest"><img src="https://avatars.githubusercontent.com/u/17727768?v=4?s=150" width="150px;" alt="martijnvermaattest"/></a><br /><sub><b>martijnvermaattest (martijnvermaattest)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/MatthewRalston"><img src="https://avatars.githubusercontent.com/u/4308024?v=4?s=150" width="150px;" alt="Matt Ralston"/></a><br /><sub><b>Matt Ralston (MatthewRalston)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/mepcotterell"><img src="https://avatars.githubusercontent.com/u/49024?v=4?s=150" width="150px;" alt="Michael Cotterell"/></a><br /><sub><b>Michael Cotterell (mepcotterell)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/miloaec"><img src="https://avatars.githubusercontent.com/u/17707793?v=4?s=150" width="150px;" alt="miloaec"/></a><br /><sub><b>miloaec (miloaec)</b></sub><br /></td>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/nagoue"><img src="https://avatars.githubusercontent.com/u/9028638?v=4?s=150" width="150px;" alt="Nadia Goué"/></a><br /><sub><b>Nadia Goué (nagoue)</b></sub><br /></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/nagoue"><img src="https://avatars.githubusercontent.com/u/9028638?v=4?s=150" width="150px;" alt="Nadia Goué"/></a><br /><sub><b>Nadia Goué (nagoue)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/NCEichner"><img src="https://avatars.githubusercontent.com/u/31483851?v=4?s=150" width="150px;" alt="Norbert Eichner"/></a><br /><sub><b>Norbert Eichner (NCEichner)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/NicHerndon"><img src="https://avatars.githubusercontent.com/u/4636279?v=4?s=150" width="150px;" alt="Nic Herndon"/></a><br /><sub><b>Nic Herndon (NicHerndon)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/npinter"><img src="https://avatars.githubusercontent.com/u/34959927?v=4?s=150" width="150px;" alt="Niko Pinter"/></a><br /><sub><b>Niko Pinter (npinter)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/nturaga"><img src="https://avatars.githubusercontent.com/u/2746443?v=4?s=150" width="150px;" alt="Nitesh Turaga"/></a><br /><sub><b>Nitesh Turaga (nturaga)</b></sub><br /></td>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/odoppelt"><img src="https://avatars.githubusercontent.com/u/2970530?v=4?s=150" width="150px;" alt="odoppelt"/></a><br /><sub><b>odoppelt (odoppelt)</b></sub><br /></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/moskalenko"><img src="https://avatars.githubusercontent.com/u/151978?v=4?s=150" width="150px;" alt="Oleksandr Moskalenko"/></a><br /><sub><b>Oleksandr Moskalenko (moskalenko)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/odoppelt"><img src="https://avatars.githubusercontent.com/u/2970530?v=4?s=150" width="150px;" alt="odoppelt"/></a><br /><sub><b>odoppelt (odoppelt)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/osallou"><img src="https://avatars.githubusercontent.com/u/1024098?v=4?s=150" width="150px;" alt="Olivier Sallou"/></a><br /><sub><b>Olivier Sallou (osallou)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/cbare"><img src="https://avatars.githubusercontent.com/u/170360?v=4?s=150" width="150px;" alt="Christopher Bare"/></a><br /><sub><b>Christopher Bare (cbare)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/claresloggett"><img src="https://avatars.githubusercontent.com/u/1815107?v=4?s=150" width="150px;" alt="claresloggett"/></a><br /><sub><b>claresloggett (claresloggett)</b></sub><br /></td>
-    </tr>
-    <tr>
       <td align="center" valign="top" width="20%"><a href="http://github.com/dan-blanchard"><img src="https://avatars.githubusercontent.com/u/976345?v=4?s=150" width="150px;" alt="Dan Blanchard"/></a><br /><sub><b>Dan Blanchard (dan-blanchard)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/ffinfo"><img src="https://avatars.githubusercontent.com/u/2419555?v=4?s=150" width="150px;" alt="Peter van 't Hof"/></a><br /><sub><b>Peter van 't Hof (ffinfo)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/Petraea"><img src="https://avatars.githubusercontent.com/u/5269432?v=4?s=150" width="150px;" alt="Petraea"/></a><br /><sub><b>Petraea (Petraea)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/lindenb"><img src="https://avatars.githubusercontent.com/u/33838?v=4?s=150" width="150px;" alt="Pierre Lindenbaum"/></a><br /><sub><b>Pierre Lindenbaum (lindenb)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/ramezrawas"><img src="https://avatars.githubusercontent.com/u/16448081?v=4?s=150" width="150px;" alt="Ramez Alrawas"/></a><br /><sub><b>Ramez Alrawas (ramezrawas)</b></sub><br /></td>
     </tr>
     <tr>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/lindenb"><img src="https://avatars.githubusercontent.com/u/33838?v=4?s=150" width="150px;" alt="Pierre Lindenbaum"/></a><br /><sub><b>Pierre Lindenbaum (lindenb)</b></sub><br /></td>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/ramezrawas"><img src="https://avatars.githubusercontent.com/u/16448081?v=4?s=150" width="150px;" alt="Ramez Alrawas"/></a><br /><sub><b>Ramez Alrawas (ramezrawas)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/ratzeni"><img src="https://avatars.githubusercontent.com/u/428210?v=4?s=150" width="150px;" alt="Rossano Atzeni"/></a><br /><sub><b>Rossano Atzeni (ratzeni)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/remimarenco"><img src="https://avatars.githubusercontent.com/u/2152858?v=4?s=150" width="150px;" alt="Rémi Marenco"/></a><br /><sub><b>Rémi Marenco (remimarenco)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/rdallet"><img src="https://avatars.githubusercontent.com/u/33418051?v=4?s=150" width="150px;" alt="Romain Dallet"/></a><br /><sub><b>Romain Dallet (rdallet)</b></sub><br /></td>
+    </tr>
+    <tr>
       <td align="center" valign="top" width="20%"><a href="http://github.com/golharam"><img src="https://avatars.githubusercontent.com/u/671079?v=4?s=150" width="150px;" alt="Ryan Golhar"/></a><br /><sub><b>Ryan Golhar (golharam)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/sszakony"><img src="https://avatars.githubusercontent.com/u/9634629?v=4?s=150" width="150px;" alt="Scott Szakonyi"/></a><br /><sub><b>Scott Szakonyi (sszakony)</b></sub><br /></td>
-    </tr>
-    <tr>
       <td align="center" valign="top" width="20%"><a href="http://github.com/saxtouri"><img src="https://avatars.githubusercontent.com/u/3098971?v=4?s=150" width="150px;" alt="Stavros Sachtouris"/></a><br /><sub><b>Stavros Sachtouris (saxtouri)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/sneumann"><img src="https://avatars.githubusercontent.com/u/195385?v=4?s=150" width="150px;" alt="Steffen Neumann"/></a><br /><sub><b>Steffen Neumann (sneumann)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/thobalose"><img src="https://avatars.githubusercontent.com/u/5425346?v=4?s=150" width="150px;" alt="Thoba Lose"/></a><br /><sub><b>Thoba Lose (thobalose)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/tmcgowan"><img src="https://avatars.githubusercontent.com/u/7782986?v=4?s=150" width="150px;" alt="Thomas McGowan"/></a><br /><sub><b>Thomas McGowan (tmcgowan)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/ThomasWollmann"><img src="https://avatars.githubusercontent.com/u/6473917?v=4?s=150" width="150px;" alt="Thomas Wollmann"/></a><br /><sub><b>Thomas Wollmann (ThomasWollmann)</b></sub><br /></td>
     </tr>
     <tr>
+      <td align="center" valign="top" width="20%"><a href="http://github.com/ThomasWollmann"><img src="https://avatars.githubusercontent.com/u/6473917?v=4?s=150" width="150px;" alt="Thomas Wollmann"/></a><br /><sub><b>Thomas Wollmann (ThomasWollmann)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/thomcuddihy"><img src="https://avatars.githubusercontent.com/u/5326997?v=4?s=150" width="150px;" alt="thom"/></a><br /><sub><b>thom (thomcuddihy)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/XDtim"><img src="https://avatars.githubusercontent.com/u/29701877?v=4?s=150" width="150px;" alt="Tim Thompson"/></a><br /><sub><b>Tim Thompson (XDtim)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/tshtatland"><img src="https://avatars.githubusercontent.com/u/16547000?v=4?s=150" width="150px;" alt="Timur Shtatland"/></a><br /><sub><b>Timur Shtatland (tshtatland)</b></sub><br /></td>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/tomithy"><img src="https://avatars.githubusercontent.com/u/1452048?v=4?s=150" width="150px;" alt="tomithy"/></a><br /><sub><b>tomithy (tomithy)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/trevor"><img src="https://avatars.githubusercontent.com/u/5945?v=4?s=150" width="150px;" alt="Trevor Wennblom"/></a><br /><sub><b>Trevor Wennblom (trevor)</b></sub><br /></td>
     </tr>
     <tr>

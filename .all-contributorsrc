@@ -255,15 +255,6 @@
       ]
     },
     {
-      "login": "abdulrahmanazab",
-      "name": "Abdulrahman Azab",
-      "avatar_url": "https://avatars.githubusercontent.com/u/11062692?v=4",
-      "profile": "https://www.usit.uio.no/english/about/organisation/rc/rss/staff/azab",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "katrinleinweber",
       "name": "Katrin Leinweber",
       "avatar_url": "https://avatars.githubusercontent.com/u/9948149?v=4",
@@ -417,15 +408,6 @@
       ]
     },
     {
-      "login": "moskalenko",
-      "name": "Oleksandr Moskalenko",
-      "avatar_url": "https://avatars.githubusercontent.com/u/151978?v=4",
-      "profile": "https://github.com/moskalenko",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "odoppelt",
       "name": "odoppelt",
       "avatar_url": "https://avatars.githubusercontent.com/u/2970530?v=4",
@@ -475,15 +457,6 @@
       "name": "Peter van 't Hof",
       "avatar_url": "https://avatars.githubusercontent.com/u/2419555?v=4",
       "profile": "https://github.com/ffinfo",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "Petraea",
-      "name": "Petraea",
-      "avatar_url": "https://avatars.githubusercontent.com/u/5269432?v=4",
-      "profile": "https://github.com/Petraea",
       "contributions": [
         "code"
       ]
@@ -561,15 +534,6 @@
       ]
     },
     {
-      "login": "sneumann",
-      "name": "Steffen Neumann",
-      "avatar_url": "https://avatars.githubusercontent.com/u/195385?v=4",
-      "profile": "https://github.com/sneumann",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "thobalose",
       "name": "Thoba Lose",
       "avatar_url": "https://avatars.githubusercontent.com/u/5425346?v=4",
@@ -619,15 +583,6 @@
       "name": "Timur Shtatland",
       "avatar_url": "https://avatars.githubusercontent.com/u/16547000?v=4",
       "profile": "https://github.com/tshtatland",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
-      "login": "tomithy",
-      "name": "tomithy",
-      "avatar_url": "https://avatars.githubusercontent.com/u/1452048?v=4",
-      "profile": "https://github.com/tomithy",
       "contributions": [
         "code"
       ]

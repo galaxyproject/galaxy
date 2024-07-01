@@ -232,6 +232,11 @@ stevecassidy, steve.cassidy@mq.edu.au, https://github.com/galaxyproject/galaxy/p
 takawitter, takao.nakaguchi@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149953931
 chrisbarnettster, chris.barnett@uct.ac.za, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2149963693
 BradHolmes, holmesbr@ncbi.nlm.nih.gov, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-1792780245
+abdulrahmanazab, eng.azab@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-2198545978
+tomithy, tomithy.too@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150199047
+moskalenko, om@rc.ufl.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150205033
+sneumann, sneumann@ipb-halle.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150606285
+Petraea, Petraea@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150708344
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -303,11 +308,9 @@ NCEichner, Norbert Eichner, norbert.eichner@ur.de
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu
 npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
-moskalenko, Oleksandr Moskalenko, om@rc.ufl.edu
 odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
 osallou, Olivier Sallou, olivier.sallou@gmail.com
 ffinfo, Peter van 't Hof, pjrvanthof@gmail.com
-Petraea, Petraea, Petraea@users.noreply.github.com
 lindenb, Pierre Lindenbaum, plindenbaum@yahoo.fr
 NA, Radhesh Kamath, radhesh@bx.psu.edu
 NA, Raj Ayyampalayam, raj76@uga.edu
@@ -324,14 +327,12 @@ sszakony, Scott Szakonyi, sszakony@nd.edu
 simleo, Simone Leo, simone.leo@gmail.com
 tesujimath, Simon Guest, simon.guest@agresearch.co.nz
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
-sneumann, Steffen Neumann, sneumann@ipb-halle.de
 thobalose, Thoba Lose, lose.thoba@gmail.com
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
 thomcuddihy, Thom Cuddihy, thom@hometreelab.com
 XDtim, Tim Thompson, tim.thompson@xdbio.com
 tshtatland, Timur Shtatland, shtatland@neb.com
-tomithy, Tomithy Too, tomithy.too@gmail.com
 trevor, Trevor Wennblom,trevor@well.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
 WilliamHolden, William Holden, theappdev@protonmail.com
@@ -343,7 +344,6 @@ NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
 ycgong, Yunchen Gong, yunchen.gong@gmail.com
 
 # not agreed, but contributions no longer present
-Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
 Christopher Bare <christopherbare@gmail.com>  # GH user: cbare, contribution reverted or otherwise unused
 Clare Sloggett <sloc@unimelb.edu.au>  # GH user: claresloggett, code heavily refactored since 2012 contribution
