@@ -342,7 +342,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         payload = payload or {}
         if message := self.user_manager.send_reset_email(trans, payload):
             return self.message_exception(trans, message)
-        return {"message": "Reset link has been sent to your email."}
+        return {"message": "If an account exists for this email address a confirmation email will be dispatched."}
 
     def __get_redirect_url(self, redirect):
         if not redirect or redirect == "None":
