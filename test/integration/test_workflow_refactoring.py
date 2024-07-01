@@ -537,6 +537,35 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_keeps_when_expression(self):
+        self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  the_bool:
+    type: boolean
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      when: the_bool
+    state:
+      inttest: 0
+    when: $(inputs.when)
+"""
+        )
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        action_executions = self._refactor(actions).action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+        step = self._latest_workflow.step_by_label("the_step")
+        assert step.tool_version == "0.2"
+        assert step.when_expression
+
     def test_tool_version_upgrade_state_added(self):
         self.workflow_populator.upload_yaml_workflow(
             """
