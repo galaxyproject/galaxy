@@ -10,6 +10,54 @@ History
 
 
 -------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix permissions for temporary upload file for API uploads by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17850 <https://github.com/galaxyproject/galaxy/pull/17850>`_
+* Dynamic tool fixes by `@dcore94 <https://github.com/dcore94>`_ in `#18085 <https://github.com/galaxyproject/galaxy/pull/18085>`_
+* Revert some requests import changes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18199 <https://github.com/galaxyproject/galaxy/pull/18199>`_
+* Small bug fixes for user data plugins by `@jmchilton <https://github.com/jmchilton>`_ in `#18246 <https://github.com/galaxyproject/galaxy/pull/18246>`_
+* Fix various packages' issues by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18301 <https://github.com/galaxyproject/galaxy/pull/18301>`_
+
+============
+Enhancements
+============
+
+* Remove deprecated BCO export endpoint by `@martenson <https://github.com/martenson>`_ in `#16645 <https://github.com/galaxyproject/galaxy/pull/16645>`_
+* Implement a page object accessibility dialog by `@jmchilton <https://github.com/jmchilton>`_ in `#17225 <https://github.com/galaxyproject/galaxy/pull/17225>`_
+* Enable storage management by object store by `@jmchilton <https://github.com/jmchilton>`_ in `#17500 <https://github.com/galaxyproject/galaxy/pull/17500>`_
+* Type annotation and CWL-related improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17630 <https://github.com/galaxyproject/galaxy/pull/17630>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17653 <https://github.com/galaxyproject/galaxy/pull/17653>`_
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* SQLAlchemy 2.0 by `@jdavcs <https://github.com/jdavcs>`_ in `#17778 <https://github.com/galaxyproject/galaxy/pull/17778>`_
+* Add `email` notifications channel by `@davelopez <https://github.com/davelopez>`_ in `#17914 <https://github.com/galaxyproject/galaxy/pull/17914>`_
+* Model typing and SA2.0 follow-up by `@jdavcs <https://github.com/jdavcs>`_ in `#17958 <https://github.com/galaxyproject/galaxy/pull/17958>`_
+* Drop unused workflow controller methods by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17974 <https://github.com/galaxyproject/galaxy/pull/17974>`_
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Consolidate Visualization container, avoid using default iframe by `@guerler <https://github.com/guerler>`_ in `#18016 <https://github.com/galaxyproject/galaxy/pull/18016>`_
+* Add pagination support to Files Source plugins by `@davelopez <https://github.com/davelopez>`_ in `#18059 <https://github.com/galaxyproject/galaxy/pull/18059>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+* Enable flake8-implicit-str-concat ruff rules by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18067 <https://github.com/galaxyproject/galaxy/pull/18067>`_
+* Change `InvocationsList` into a grid using `GridList` by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18088 <https://github.com/galaxyproject/galaxy/pull/18088>`_
+* Empower users to bring their own storage and file sources by `@jmchilton <https://github.com/jmchilton>`_ in `#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`_
+* Harden User Object Store and File Source Creation by `@jmchilton <https://github.com/jmchilton>`_ in `#18172 <https://github.com/galaxyproject/galaxy/pull/18172>`_
+* Drop restriction to switch to immutable histories by `@davelopez <https://github.com/davelopez>`_ in `#18234 <https://github.com/galaxyproject/galaxy/pull/18234>`_
+* More structured indexing for user data objects. by `@jmchilton <https://github.com/jmchilton>`_ in `#18291 <https://github.com/galaxyproject/galaxy/pull/18291>`_
+* Allow running and editing workflows for specific versions by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18378 <https://github.com/galaxyproject/galaxy/pull/18378>`_
+
+=============
+Other changes
+=============
+
+* Fix typing issue in reused variable by `@davelopez <https://github.com/davelopez>`_ in `#18344 <https://github.com/galaxyproject/galaxy/pull/18344>`_
+
+-------------------
 24.0.3 (2024-06-28)
 -------------------
 

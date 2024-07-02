@@ -10,6 +10,24 @@ History
 
 
 -------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Visualizing workflow runs with an invocation graph view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#17413 <https://github.com/galaxyproject/galaxy/pull/17413>`_
+* Add `email` notifications channel by `@davelopez <https://github.com/davelopez>`_ in `#17914 <https://github.com/galaxyproject/galaxy/pull/17914>`_
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add pagination support to Files Source plugins by `@davelopez <https://github.com/davelopez>`_ in `#18059 <https://github.com/galaxyproject/galaxy/pull/18059>`_
+* Enable flake8-implicit-str-concat ruff rules by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18067 <https://github.com/galaxyproject/galaxy/pull/18067>`_
+* Empower users to bring their own storage and file sources by `@jmchilton <https://github.com/jmchilton>`_ in `#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`_
+* Display DOIs in Archived Histories by `@davelopez <https://github.com/davelopez>`_ in `#18134 <https://github.com/galaxyproject/galaxy/pull/18134>`_
+* Allow running and editing workflows for specific versions by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18378 <https://github.com/galaxyproject/galaxy/pull/18378>`_
+
+-------------------
 24.0.3 (2024-06-28)
 -------------------
 

@@ -10,6 +10,18 @@ History
 
 
 -------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+
+-------------------
 24.0.3 (2024-06-28)
 -------------------
 
