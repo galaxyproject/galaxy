@@ -6,13 +6,13 @@ from lxml.etree import XMLSyntaxError
 # (once we are running the tool shed from packages not rooted with Galaxy).
 import galaxy.tools
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.util import galaxy_root_path
+from galaxy.util import galaxy_directory
 from galaxy.util.resources import files
 
 
 def stock_tool_paths():
     yield from _walk_directory_for_tools(files(galaxy.tools))
-    yield from _walk_directory_for_tools(galaxy_root_path / "test" / "functional" / "tools")
+    yield from _walk_directory_for_tools(galaxy_directory() / "test" / "functional" / "tools")
 
 
 def stock_tool_sources():
