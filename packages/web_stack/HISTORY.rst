@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-24.1.0.dev0
------------
+-------------------
+24.1.1 (2024-07-02)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17653 <https://github.com/galaxyproject/galaxy/pull/17653>`_
 
 -------------------
 24.0.3 (2024-06-28)
