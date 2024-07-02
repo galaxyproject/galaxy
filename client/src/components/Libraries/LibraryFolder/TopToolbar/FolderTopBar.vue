@@ -1,52 +1,326 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BFormCheckbox } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+
+import { fetchDatatypes } from "@/api/datatypes";
+import { fetchGenomes } from "@/api/genomes";
+import type { components } from "@/api/schema/schema";
+import { getGalaxyInstance } from "@/app";
+import { Services } from "@/components/Libraries/LibraryFolder/services";
+import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
+import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
+import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
+import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
+import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { Toast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+
+import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
+
+library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
+
+type DatatypeDetails = components["schemas"]["DatatypeDetails"][];
+
+type GenomesList = { id: string; text: string }[];
+type ExtensionsList = { id: string; text: string; description: string; description_url: string }[];
+
+interface Props {
+    metadata: any;
+    selected: any[];
+    folderId: string;
+    unselected: any[];
+    searchText: string;
+    folderContents: any[];
+    includeDeleted: boolean;
+    isAllSelectedMode: boolean;
+    canAddLibraryItem?: boolean;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "newFolder"): void;
+    (e: "refreshTable"): void;
+    (e: "fetchFolderContents"): void;
+    (e: "refreshTableContent"): void;
+    (e: "setBusy", value: boolean): void;
+    (e: "deleteFromTable", item: any): void;
+    (e: "updateSearch", value: string): void;
+    (e: "update:includeDeleted", value: boolean): void;
+}>();
+
+const userStore = useUserStore();
+const { isAdmin } = storeToRefs(userStore);
+
+const libraryImportDir = ref(false);
+const allowLibraryPathPaste = ref(false);
+const genomesList = ref<GenomesList>([]);
+const extensionsList = ref<ExtensionsList>([]);
+const userLibraryImportDirAvailable = ref(false);
+const auto = ref({
+    id: "auto",
+    text: "Auto-detect",
+    description: `This system will try to detect the file type automatically.
+                     If your file is not detected properly as one of the known formats,
+                     it most likely means that it has some format problems (e.g., different
+                     number of columns on different rows). You can still coerce the system
+                     to set your data to the format you think it should be.
+                     You can also upload compressed files, which will automatically be decompressed`,
+    description_url: "",
+});
+
+const Galaxy = getGalaxyInstance();
+
+const services = new Services();
+
+const containsFileOrFolder = computed(() => {
+    return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
+});
+const canDelete = computed(() => {
+    return !!(containsFileOrFolder.value && isAdmin.value);
+});
+const datasetManipulation = computed(() => {
+    return !!(containsFileOrFolder.value && Galaxy.user);
+});
+
+function updateSearch(value: string) {
+    emit("updateSearch", value);
+}
+
+function newFolder() {
+    emit("newFolder");
+}
+
+async function getSelected() {
+    if (props.isAllSelectedMode) {
+        try {
+            emit("setBusy", true);
+
+            const selected = await services.getFilteredFolderContents(
+                props.folderId,
+                props.unselected,
+                props.searchText
+            );
+
+            emit("setBusy", false);
+
+            return selected;
+        } catch (err) {
+            console.error(err);
+        } finally {
+            emit("setBusy", false);
+        }
+
+        return [];
+    } else {
+        return props.selected;
+    }
+}
+
+async function deleteSelected() {
+    try {
+        const selected = await getSelected();
+
+        deleteSelectedItems(
+            selected,
+            (deletedItem: any) => emit("deleteFromTable", deletedItem),
+            () => emit("refreshTable"),
+            () => emit("refreshTableContent")
+        );
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function findCheckedItems(idOnly = true) {
+    const folders: any[] = [];
+    const datasets: any[] = [];
+
+    try {
+        const selected = await getSelected();
+
+        selected.forEach((item: any) => {
+            const selectedItem = idOnly ? item.id : item;
+
+            item.type === "file" ? datasets.push(selectedItem) : folders.push(selectedItem);
+        });
+    } catch (err) {
+        console.error(err);
+    }
+
+    return { datasets, folders };
+}
+
+async function downloadData(format: string) {
+    try {
+        const { datasets, folders } = await findCheckedItems();
+
+        if (props.selected.length === 0) {
+            Toast.info("You must select at least one dataset to download");
+
+            return;
+        }
+
+        download(format, datasets, folders);
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function importToHistoryModal(isCollection: boolean) {
+    try {
+        const { datasets, folders } = await findCheckedItems(!isCollection);
+
+        const checkedItems: any = props.selected;
+
+        checkedItems.dataset_ids = datasets;
+        checkedItems.folder_ids = folders;
+
+        if (isCollection) {
+            new mod_import_collection.ImportCollectionModal({
+                selected: checkedItems,
+            });
+        } else {
+            new mod_import_dataset.ImportDatasetModal({
+                selected: checkedItems,
+            });
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// TODO: after replacing the selection dialog with the new component that is not using jquery
+function addDatasets(source: string) {
+    new mod_add_datasets.AddDatasets({
+        source: source,
+        id: props.folderId,
+        updateContent: updateContent,
+        list_genomes: genomesList.value,
+        list_extensions: extensionsList.value,
+    });
+}
+
+function updateContent() {
+    emit("fetchFolderContents");
+}
+// END TODO
+
+async function fetchExtAndGenomes() {
+    try {
+        const { data: dataTypes } = await fetchDatatypes({ extension_only: false });
+
+        if (typeof dataTypes[0] === "string") {
+            extensionsList.value = (dataTypes as string[]).map((datatype) => ({
+                id: datatype,
+                text: datatype,
+                description: "",
+                description_url: "",
+            }));
+        } else {
+            extensionsList.value = (dataTypes as DatatypeDetails).map((datatype) => ({
+                id: datatype.extension,
+                text: datatype.extension,
+                description: datatype.description || "",
+                description_url: datatype.description_url || "",
+            }));
+        }
+
+        extensionsList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+
+        extensionsList.value = [auto.value, ...extensionsList.value];
+    } catch (err) {
+        console.error(err);
+    }
+
+    try {
+        const { data: genomes } = await fetchGenomes({});
+
+        genomesList.value = genomes.map((genome: string[]) => ({
+            id: genome[1] || "",
+            text: genome[0] || "",
+        }));
+
+        genomesList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+onMounted(async () => {
+    libraryImportDir.value = Galaxy.config.library_import_dir;
+    allowLibraryPathPaste.value = Galaxy.config.allow_library_path_paste;
+    userLibraryImportDirAvailable.value = Galaxy.config.user_library_import_dir_available;
+
+    await fetchExtAndGenomes();
+});
+</script>
+
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button
+            <BButton
                 class="mr-1 btn btn-secondary"
                 :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
-                <FontAwesomeIcon icon="home" />
-            </b-button>
+                <FontAwesomeIcon :icon="faHome" />
+            </BButton>
+
             <div>
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
-                    <button
-                        v-if="canAddLibraryItem"
+
+                    <BButton
+                        v-if="props.canAddLibraryItem"
                         title="Create new folder"
                         class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                         type="button"
                         @click="newFolder">
-                        <FontAwesomeIcon icon="plus" />
+                        <FontAwesomeIcon :icon="faPlus" />
                         Folder
-                    </button>
-                    <div v-if="canAddLibraryItem">
+                    </BButton>
+
+                    <div v-if="props.canAddLibraryItem">
                         <div
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1">
-                            <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-                                <span class="fa fa-plus"></span> Datasets <span class="caret" />
-                            </button>
+                            <BButton type="button" class="btn btn-secondary" data-toggle="dropdown">
+                                <FontAwesomeIcon :icon="faPlus" />
+                                Datasets
+                                <FontAwesomeIcon :icon="faCaretDown" />
+                            </BButton>
+
                             <div class="dropdown-menu">
                                 <a class="dropdown-item cursor-pointer" @click="addDatasets('history')">
-                                    from History</a
-                                >
+                                    from History
+                                </a>
+
                                 <a
-                                    v-if="user_library_import_dir_available"
+                                    v-if="userLibraryImportDirAvailable"
                                     class="dropdown-item cursor-pointer"
                                     @click="addDatasets('userdir')">
                                     from User Directory
                                 </a>
-                                <div v-if="library_import_dir || allow_library_path_paste">
+
+                                <div v-if="libraryImportDir || allowLibraryPathPaste">
                                     <h2 class="dropdown-header cursor-pointer h-text">Admins only</h2>
+
                                     <a
-                                        v-if="library_import_dir"
+                                        v-if="libraryImportDir"
                                         class="dropdown-item cursor-pointer"
                                         @click="addDatasets('importdir')">
                                         from Import Directory
                                     </a>
+
                                     <a
-                                        v-if="allow_library_path_paste"
+                                        v-if="allowLibraryPathPaste"
                                         class="dropdown-item cursor-pointer"
                                         @click="addDatasets('path')">
                                         from Path
@@ -55,14 +329,14 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="dropdown mr-1">
-                        <button
-                            type="button"
-                            class="primary-button dropdown-toggle add-to-history"
-                            data-toggle="dropdown">
-                            <FontAwesomeIcon icon="book" />
-                            Add to History <span class="caret"></span>
-                        </button>
+                        <BButton type="button" class="primary-button add-to-history" data-toggle="dropdown">
+                            <FontAwesomeIcon :icon="faBook" />
+                            Add to History
+                            <FontAwesomeIcon :icon="faCaretDown" />
+                        </BButton>
+
                         <div class="dropdown-menu" role="menu">
                             <a
                                 href="javascript:void(0)"
@@ -71,6 +345,7 @@
                                 @click="importToHistoryModal(false)">
                                 as Datasets
                             </a>
+
                             <a
                                 href="javascript:void(0)"
                                 role="button"
@@ -80,271 +355,42 @@
                             </a>
                         </div>
                     </div>
+
                     <div
-                        v-if="dataset_manipulation"
+                        v-if="datasetManipulation"
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1">
-                        <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
-                            <FontAwesomeIcon icon="download" />
+                        <BButton id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
+                            <FontAwesomeIcon :icon="faDownload" />
                             Download
-                        </button>
+                        </BButton>
                     </div>
-                    <button
+
+                    <BButton
                         v-if="canDelete"
                         data-toggle="tooltip"
                         title="Mark items deleted"
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                         type="button"
                         @click="deleteSelected">
-                        <FontAwesomeIcon icon="trash" />
+                        <FontAwesomeIcon :icon="faTrash" />
                         Delete
-                    </button>
-                    <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
+                    </BButton>
+
+                    <FolderDetails :id="props.folderId" class="mr-1" :metadata="props.metadata" />
+
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
+                        <BFormCheckbox :checked="props.includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
-                        </b-form-checkbox>
+                        </BFormCheckbox>
                     </div>
                 </div>
             </div>
         </div>
 
         <LibraryBreadcrumb
-            v-if="metadata && metadata.full_path"
-            :full_path="metadata.full_path"
-            :current-id="folder_id" />
+            v-if="props.metadata && props.metadata.full_path"
+            :full_path="props.metadata.full_path"
+            :current-id="props.folderId" />
     </div>
 </template>
-<script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
-import { initTopBarIcons } from "components/Libraries/icons";
-import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
-import mod_utils from "utils/utils";
-import Vue from "vue";
-
-import SearchField from "../SearchField";
-import { Services } from "../services";
-import mod_add_datasets from "./add-datasets";
-import { deleteSelectedItems } from "./delete-selected";
-import download from "./download";
-import mod_import_collection from "./import-to-history/import-collection";
-import mod_import_dataset from "./import-to-history/import-dataset";
-
-initTopBarIcons();
-
-Vue.use(BootstrapVue);
-
-export default {
-    name: "FolderTopBar",
-    components: {
-        SearchField,
-        FontAwesomeIcon,
-        LibraryBreadcrumb,
-        FolderDetails,
-    },
-    props: {
-        folder_id: {
-            type: String,
-            required: true,
-        },
-        includeDeleted: {
-            type: Boolean,
-            required: true,
-        },
-        isAllSelectedMode: {
-            type: Boolean,
-            required: true,
-        },
-        selected: {
-            type: Array,
-            required: true,
-        },
-        unselected: {
-            type: Array,
-            required: true,
-        },
-        canAddLibraryItem: {
-            type: Boolean,
-            default: false,
-        },
-        metadata: {
-            type: Object,
-            required: true,
-        },
-        folderContents: {
-            type: Array,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            is_admin: false,
-            user_library_import_dir_available: false,
-            library_import_dir: false,
-            allow_library_path_paste: false,
-            list_genomes: [],
-            list_extensions: [],
-            // datatype placeholder for extension auto-detection
-            auto: {
-                id: "auto",
-                text: "Auto-detect",
-                description: `This system will try to detect the file type automatically.
-                     If your file is not detected properly as one of the known formats,
-                     it most likely means that it has some format problems (e.g., different
-                     number of columns on different rows). You can still coerce the system
-                     to set your data to the format you think it should be.
-                     You can also upload compressed files, which will automatically be decompressed`,
-            },
-        };
-    },
-    computed: {
-        contains_file_or_folder: function () {
-            return this.folderContents.find((el) => el.type === "folder" || el.type === "file");
-        },
-        canDelete: function () {
-            return !!(this.contains_file_or_folder && this.is_admin);
-        },
-        dataset_manipulation: function () {
-            const Galaxy = getGalaxyInstance();
-            // logic from legacy code
-            return !!(this.contains_file_or_folder && Galaxy.user);
-        },
-    },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        this.services = new Services();
-        this.is_admin = Galaxy.user.attributes.is_admin;
-        this.user_library_import_dir_available = Galaxy.config.user_library_import_dir_available;
-        this.library_import_dir = Galaxy.config.library_import_dir;
-        this.allow_library_path_paste = Galaxy.config.allow_library_path_paste;
-
-        this.fetchExtAndGenomes();
-    },
-    methods: {
-        updateSearch: function (value) {
-            this.$emit("updateSearch", value);
-        },
-        deleteSelected: function () {
-            this.getSelected().then((selected) =>
-                deleteSelectedItems(
-                    selected,
-                    (deletedItem) => this.$emit("deleteFromTable", deletedItem),
-                    () => this.$emit("refreshTable"),
-                    () => this.$emit("refreshTableContent")
-                )
-            );
-        },
-        async getSelected() {
-            if (this.isAllSelectedMode) {
-                this.$emit("setBusy", true);
-                const selected = await this.services.getFilteredFolderContents(
-                    this.folder_id,
-                    this.unselected,
-                    this.$parent.searchText
-                );
-                this.$emit("setBusy", false);
-                return selected;
-            } else {
-                return this.selected;
-            }
-        },
-        newFolder() {
-            this.$emit("newFolder");
-        },
-        downloadData(format) {
-            this.findCheckedItems().then(({ datasets, folders }) => {
-                if (this.selected.length === 0) {
-                    Toast.info("You must select at least one dataset to download");
-                    return;
-                }
-
-                download(format, datasets, folders);
-            });
-        },
-        addDatasets(source) {
-            new mod_add_datasets.AddDatasets({
-                source: source,
-                id: this.folder_id,
-                updateContent: this.updateContent,
-                list_genomes: this.list_genomes,
-                list_extensions: this.list_extensions,
-            });
-        },
-        // helper function to make legacy code compatible
-        findCheckedItems: async function (idOnly = true) {
-            const datasets = [];
-            const folders = [];
-            const selected = await this.getSelected();
-            selected.forEach((item) => {
-                const selected_item = idOnly ? item.id : item;
-                item.type === "file" ? datasets.push(selected_item) : folders.push(selected_item);
-            });
-            return { datasets: datasets, folders: folders };
-        },
-        importToHistoryModal: function (isCollection) {
-            this.findCheckedItems(!isCollection).then(({ datasets, folders }) => {
-                const checkedItems = this.selected;
-                checkedItems.dataset_ids = datasets;
-                checkedItems.folder_ids = folders;
-                if (isCollection) {
-                    new mod_import_collection.ImportCollectionModal({
-                        selected: checkedItems,
-                    });
-                } else {
-                    new mod_import_dataset.ImportDatasetModal({
-                        selected: checkedItems,
-                    });
-                }
-            });
-        },
-        /*
-            Slightly adopted Bootstrap code
-        */
-        /**
-         * Request all extensions and genomes from Galaxy
-         * and save them in sorted arrays.
-         */
-        fetchExtAndGenomes: function () {
-            mod_utils.get({
-                url: `${getAppRoot()}api/datatypes?extension_only=False`,
-                success: (datatypes) => {
-                    this.list_extensions = [];
-                    for (const key in datatypes) {
-                        this.list_extensions.push({
-                            id: datatypes[key].extension,
-                            text: datatypes[key].extension,
-                            description: datatypes[key].description,
-                            description_url: datatypes[key].description_url,
-                        });
-                    }
-                    this.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-                    this.list_extensions.unshift(this.auto);
-                },
-                cache: true,
-            });
-            mod_utils.get({
-                url: `${getAppRoot()}api/genomes`,
-                success: (genomes) => {
-                    this.list_genomes = [];
-                    for (const key in genomes) {
-                        this.list_genomes.push({
-                            id: genomes[key][1],
-                            text: genomes[key][0],
-                        });
-                    }
-                    this.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-                },
-                cache: true,
-            });
-        },
-        updateContent: function () {
-            this.$emit("fetchFolderContents");
-        },
-    },
-};
-</script>
