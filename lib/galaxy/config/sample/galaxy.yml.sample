@@ -189,8 +189,8 @@ gravity:
     # Public-facing port of the proxy
     # port: 4002
 
-    # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
+    # Database to monitor.
+    # Should be set to the same value as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
     # ``interactivetools_map is set``.
     # sessions: database/interactivetools_map.sqlite
 

@@ -1518,9 +1518,11 @@ mapping:
       interactivetools_map:
         type: str
         default: interactivetools_map.sqlite
-        path_resolves_to: data_dir
+        path_resolves_to: data_dir  # does not apply to SQLAlchemy database URLs
         desc: |
-          Map for interactivetool proxy.
+          Map for interactivetool proxy. It may be either a path to a SQLite database or a SQLALchemy database URL (see
+          https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls). In either case, mappings will be written
+          to the table "gxitproxy" within the database.
 
       interactivetools_prefix:
         type: str

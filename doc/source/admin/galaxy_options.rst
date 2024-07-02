@@ -2128,9 +2128,12 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Map for interactivetool proxy.
-    The value of this option will be resolved with respect to
-    <data_dir>.
+    Map for interactivetool proxy. It may be either a path to a SQLite
+    database or a SQLAlchemy database URL (see
+    https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls).
+    In either case, mappings will be written to the table "gxitproxy" within the
+    database. If it is a path, the value of this option will be resolved with
+    respect to <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
 

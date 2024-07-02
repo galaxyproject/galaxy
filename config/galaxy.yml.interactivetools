@@ -12,6 +12,8 @@ gravity:
 
 galaxy:
   interactivetools_enable: true
+  # either a path to a SQLite database file or a SQLAlchemy database URL, in both cases the table "gxitproxy" on
+  # the target database is used
   interactivetools_map: database/interactivetools_map.sqlite
 
   # outputs_to_working_directory will provide you with a better level of isolation. It is highly recommended to set
