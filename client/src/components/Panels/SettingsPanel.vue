@@ -32,6 +32,7 @@ function onQuery(newQuery: string) {
                 variant="link"
                 title="Restore default"
                 @click="confirmRestore = true">
+                <span v-localize>Reset</span>
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
             </BButton>
         </template>
