@@ -248,6 +248,9 @@ export default {
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
         },
+        runButtonTitle() {
+            return "Run Tool";
+        },
     },
     watch: {
         currentHistoryId() {

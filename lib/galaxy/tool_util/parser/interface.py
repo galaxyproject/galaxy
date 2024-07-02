@@ -401,10 +401,10 @@ class InputSource(metaclass=ABCMeta):
         return self.get_bool("optional", default)
 
     def parse_dynamic_options_elem(self):
-        """Return an XML elemnt describing dynamic options."""
+        """Return an XML element describing dynamic options."""
         return None
 
-    def parse_static_options(self):
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """Return list of static options if this is a select type without
         defining a dynamic options.
         """
