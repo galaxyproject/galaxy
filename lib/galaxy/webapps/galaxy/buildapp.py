@@ -415,8 +415,13 @@ def populate_api_routes(webapp, app):
         controller="tools",
         conditions=dict(method=["POST"]),
     )
+    webapp.mapper.connect(
+        "api/tools",
+        action="index",
+        controller="tools",
+        conditions=dict(method=["GET"]),
+    )
     webapp.mapper.connect("/api/tools/{id:.+?}", action="show", controller="tools")
-    webapp.mapper.resource("tool", "tools", path_prefix="/api")
     webapp.mapper.resource("dynamic_tools", "dynamic_tools", path_prefix="/api")
 
     webapp.mapper.connect(
