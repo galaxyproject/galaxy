@@ -13,12 +13,12 @@ import { useUserStore } from "@/stores/userStore";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
+import WorkflowActionsExtend from "@/components/Workflow/List/WorkflowActionsExtend.vue";
+import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
+import WorkflowRename from "@/components/Workflow/List/WorkflowRename.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
-import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
-import WorkflowActionsExtend from "@/components/Workflow/WorkflowActionsExtend.vue";
-import WorkflowIndicators from "@/components/Workflow/WorkflowIndicators.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRename from "@/components/Workflow/WorkflowRename.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 library.add(faEdit, faEye, faPen, faUpload);

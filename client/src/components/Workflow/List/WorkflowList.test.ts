@@ -7,7 +7,7 @@ import { setActivePinia } from "pinia";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-import { generateRandomWorkflowList } from "./testUtils";
+import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 

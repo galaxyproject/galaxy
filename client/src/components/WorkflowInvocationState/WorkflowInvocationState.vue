@@ -18,13 +18,13 @@ import { isTerminal, jobCount, runningCount } from "./util";
 import Heading from "../Common/Heading.vue";
 import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
 import UtcDate from "../UtcDate.vue";
-import InvocationReport from "../Workflow/InvocationReport.vue";
-import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRunButton from "../Workflow/WorkflowRunButton.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import InvocationReport from "@/components/Workflow/InvocationReport.vue";
+import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
+import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
 

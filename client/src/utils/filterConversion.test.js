@@ -1,5 +1,5 @@
 import { HistoryFilters } from "components/History/HistoryFilters";
-import { WorkflowFilters } from "components/Workflow/WorkflowFilters";
+import { WorkflowFilters } from "components/Workflow/List/WorkflowFilters";
 
 describe("test filtering helpers to convert filters to filter text", () => {
     const MyWorkflowFilters = WorkflowFilters("my");
