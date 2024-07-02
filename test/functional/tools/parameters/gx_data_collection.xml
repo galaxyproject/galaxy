@@ -1,0 +1,14 @@
+<tool id="gx_data_collection" name="gx_data_collection" version="1.0.0">
+    <command><![CDATA[
+cat '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="data_collection" ext="data" />
+    </inputs>
+    <outputs>
+        <data name="output" format="data" />
+    </outputs>
+    <tests>
+        <!-- TODO: -->
+    </tests>
+</tool>

@@ -845,7 +845,7 @@ class ColorToolParameter(ToolParameter):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.value = input_source.get("value", "#000000")
-        self.rgb = input_source.get("rgb", False)
+        self.rgb = input_source.get_bool("rgb", False)
 
     def get_initial_value(self, trans, other_values):
         if self.value is not None:
