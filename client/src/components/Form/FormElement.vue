@@ -129,7 +129,7 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
-const showField = computed(() => !collapsed.value && !props.disabled);
+const showField = computed(() => !collapsed.value);
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -318,7 +318,7 @@ function onAlert(value: string | undefined) {
                 v-else-if="props.type === 'tags'"
                 v-model="currentValue"
                 :placeholder="props.attributes?.placeholder" />
-            <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
+            <FormInput v-else :id="props.id" v-model="currentValue" :disabled="props.disabled" :area="attrs['area']" />
         </div>
 
         <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
