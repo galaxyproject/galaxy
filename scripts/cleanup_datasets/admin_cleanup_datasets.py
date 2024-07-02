@@ -47,6 +47,7 @@ from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 from time import strftime
 
@@ -167,7 +168,7 @@ def main():
     config = galaxy.config.Configuration(**app_properties)
 
     app = CleanupDatasetsApplication(config)
-    cutoff_time = datetime.utcnow() - timedelta(days=args.days)
+    cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=args.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
 
     print("##########################################")

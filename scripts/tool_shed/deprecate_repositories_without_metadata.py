@@ -10,6 +10,7 @@ import time
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 from optparse import OptionParser
 from time import strftime
@@ -77,7 +78,7 @@ def main():
     config = tool_shed_config.Configuration(**config_dict)
 
     app = DeprecateRepositoriesApplication(config)
-    cutoff_time = datetime.utcnow() - timedelta(days=options.days)
+    cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=options.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
     print("\n####################################################################################")
     print("# %s - Handling stuff older than %i days" % (now, options.days))
