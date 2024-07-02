@@ -143,6 +143,7 @@ async function onTagClick(tag: string) {
                 <span class="workflow-name font-weight-bold">
                     <BLink
                         v-b-tooltip.hover.noninteractive
+                        class="workflow-name-preview"
                         title="Preview Workflow"
                         @click.stop.prevent="toggleShowPreview(true)"
                         >{{ workflow.name }}</BLink

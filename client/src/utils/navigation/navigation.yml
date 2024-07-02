@@ -614,7 +614,7 @@ workflows:
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[data-workflow-actions-dropdown]'
     delete_button: '.workflow-delete-button'
-    view_button: '.workflow-view-button'
+    view_button: '.workflow-name-preview'
     workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'
     view_external_link: ".workflow-view-external-link-button"
