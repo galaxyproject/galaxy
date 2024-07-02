@@ -380,11 +380,6 @@ export interface components {
             /** Err Msg */
             err_msg: string
         }
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][]
-        }
         /** ImageData */
         ImageData: {
             /**
@@ -423,6 +418,13 @@ export interface components {
         InstallInfo: {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
             repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
+        }
+        /** MessageExceptionModel */
+        MessageExceptionModel: {
+            /** Err Code */
+            err_code: number
+            /** Err Msg */
+            err_msg: string
         }
         /** Organization */
         Organization: {
@@ -1009,15 +1011,6 @@ export interface components {
             /** Version String Cmd */
             version_string_cmd?: string | null
         }
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[]
-            /** Message */
-            msg: string
-            /** Error Type */
-            type: string
-        }
         /** Version */
         Version: {
             /**
@@ -1050,6 +1043,66 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"]
                 }
             }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     categories__index: {
@@ -1062,6 +1115,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Category"][]
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1083,10 +1196,64 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1109,10 +1276,64 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1141,10 +1362,64 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoriesByCategory"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1158,6 +1433,66 @@ export interface operations {
                     "application/json": components["schemas"]["Service"]
                 }
             }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     tools__trs_tool_classes: {
@@ -1169,6 +1504,66 @@ export interface operations {
                     "application/json": components["schemas"]["ToolClass"][]
                 }
             }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     tools__trs_index: {
@@ -1178,6 +1573,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1197,10 +1652,64 @@ export interface operations {
                     "application/json": components["schemas"]["Tool"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1220,10 +1729,64 @@ export interface operations {
                     "application/json": components["schemas"]["ToolVersion"][]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1252,10 +1815,64 @@ export interface operations {
                         | components["schemas"]["Repository"][]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1277,10 +1894,64 @@ export interface operations {
                     "application/json": components["schemas"]["Repository"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1304,10 +1975,64 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1334,10 +2059,64 @@ export interface operations {
                     "application/json": Record<string, never>[]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1364,10 +2143,64 @@ export interface operations {
                     "application/json": components["schemas"]["InstallInfo"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1382,6 +2215,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1403,10 +2296,64 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1426,10 +2373,64 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedRepository"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1449,10 +2450,64 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1474,10 +2529,64 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1499,10 +2608,64 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1534,10 +2697,64 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryUpdate"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1551,12 +2768,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1570,12 +2841,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1602,10 +2927,64 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1625,10 +3004,64 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryPermissions"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1651,10 +3084,64 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1670,12 +3157,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1691,12 +3232,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1721,10 +3316,64 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1745,10 +3394,64 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1766,6 +3469,66 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
                 }
             }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     users__index: {
@@ -1778,6 +3541,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"][]
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1799,10 +3622,64 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1817,6 +3694,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"]
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1839,10 +3776,64 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1862,10 +3853,64 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1885,10 +3930,64 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1902,12 +4001,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1919,6 +4072,66 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Version"]
+                }
+            }
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1934,12 +4147,66 @@ export interface operations {
             }
         }
         responses: {
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
             /** @description Successful Response */
             204: never
-            /** @description Validation Error */
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1961,10 +4228,64 @@ export interface operations {
                     "application/json": components["schemas"]["UiLoginResponse"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1986,10 +4307,64 @@ export interface operations {
                     "application/json": components["schemas"]["UiLogoutResponse"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -2011,10 +4386,64 @@ export interface operations {
                     "application/json": components["schemas"]["UiRegisterResponse"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -2041,10 +4470,64 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryMetadata"]
                 }
             }
-            /** @description Validation Error */
+            /** @description Galaxy has accepted this request and is processing. A retry-after header indicates to the client when to retry. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description User does not have permissions to run jobs as another user. */
+            400: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication failed, invalid credentials supplied. */
+            401: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Authentication required for this request */
+            403: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description No such object found. */
+            404: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Database conflict prevented fulfilling the request. */
+            409: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description This API method or call signature has been deprecated and is no longer available */
+            410: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Validation error */
             422: {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Internal server error. */
+            500: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Method is not implemented. */
+            501: {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }

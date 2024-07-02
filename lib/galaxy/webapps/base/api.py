@@ -37,6 +37,8 @@ if typing.TYPE_CHECKING:
         Send,
     )
 
+from galaxy.exceptions.error_codes import error_codes_by_int_code
+from galaxy.schema.schema import MessageExceptionModel
 
 log = getLogger(__name__)
 
@@ -236,7 +238,21 @@ def add_request_id_middleware(app: FastAPI):
 
 
 def include_all_package_routers(app: FastAPI, package_name: str):
+    responses: typing.Dict[typing.Union[int, str], typing.Dict[str, typing.Any]] = {
+        422: {
+            "description": "Validation error",
+            "model": MessageExceptionModel,
+        },
+    }
+    for code, error in error_codes_by_int_code.items():
+        code_int = int(str(code)[:3])
+        if code_int in [0, 204] or code_int in responses:
+            continue
+        responses[code_int] = {
+            "description": str(error),
+            "model": MessageExceptionModel,
+        }
     for _, module in walk_controller_modules(package_name):
         router = getattr(module, "router", None)
         if router:
-            app.include_router(router)
+            app.include_router(router, responses=responses)
