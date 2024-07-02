@@ -1323,7 +1323,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.components.masthead.libraries.wait_for_and_click()
+        self.components.libraries.activity.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
     def libraries_open_with_name(self, name):
