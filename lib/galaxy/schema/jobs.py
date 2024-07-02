@@ -82,6 +82,19 @@ class JobOutputAssociation(JobAssociation):
     )
 
 
+class JobOutputCollectionAssociation(Model):
+    name: str = Field(
+        default=...,
+        title="name",
+        description="Name of the job parameter.",
+    )
+    dataset_collection_instance: EncodedDataItemSourceId = Field(
+        default=...,
+        title="dataset_collection_instance",
+        description="Reference to the associated item.",
+    )
+
+
 class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField = Field(
         default=...,

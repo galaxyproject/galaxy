@@ -1332,6 +1332,33 @@ class PasswordResetToken(Base):
         self.expiration_time = now() + timedelta(hours=24)
 
 
+class ToolSource(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_source"
+
+    id = Column(Integer, primary_key=True)
+    hash = Column(Unicode(255))
+    source = Column(JSONType)
+
+
+class ToolRequest(Base, Dictifiable, RepresentById):
+    __tablename__ = "tool_request"
+
+    id = Column(Integer, primary_key=True)
+    tool_source_id = Column(Integer, ForeignKey("tool_source.id"), index=True)
+    history_id = Column(Integer, ForeignKey("history.id"), index=True)
+    request = Column(JSONType)
+    state = Column(TrimmedString(32), index=True)
+    state_message = Column(JSONType, index=True)
+
+    tool_source = relationship("ToolSource")
+    history = relationship("History", back_populates="tool_requests")
+
+    class states(str, Enum):
+        NEW = "new"
+        SUBMITTED = "submitted"
+        FAILED = "failed"
+
+
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
@@ -1458,7 +1485,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
     object_store_id_overrides: Mapped[Optional[STR_TO_STR_DICT]] = mapped_column(JSONType)
+    tool_request_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("tool_request.id"), index=True)
 
+    tool_request: Mapped[Optional["ToolRequest"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
@@ -3180,6 +3209,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     )
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
     jobs: Mapped[List["Job"]] = relationship(back_populates="history", cascade_backrefs=False)
+    tool_requests: Mapped[List["ToolRequest"]] = relationship(back_populates="history")
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
