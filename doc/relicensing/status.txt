@@ -245,6 +245,8 @@ rdallet, romain.dallet@sb-roscoff.fr, https://github.com/galaxyproject/galaxy/pu
 manabuishii, manabu.ishii.rb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
 ratzeni, rossano.atzeni@crs4.it, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156437442
 ianschenck, ian@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156554721
+roryk, roryk@mit.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156734170
+NCEichner, norbert.eichner@ur.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156822869
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -313,7 +315,6 @@ NA, mgehring, mgehrin@emory.edu
 cmonjeau, Cyril Monjeaud, Cyril.Monjeaud@irisa.fr
 NA, MORITA Hideyuki, h-morita@esm.co.jp
 nagoue, Nadia Goué, nadia.goue@gmail.com
-NCEichner, Norbert Eichner, norbert.eichner@ur.de
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
 odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
@@ -327,7 +328,6 @@ NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
 remimarenco, Rémi Marenco, remi.marenco@gmail.com
 remyd1, Rémy Dernat, remy.d1@gmail.com
 RichardJActon, Richard James Acton, racton@uni-koeln.de
-roryk, Rory Kirchner, roryk@mit.edu
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 sszakony, Scott Szakonyi, sszakony@nd.edu
 simleo, Simone Leo, simone.leo@gmail.com
