@@ -11,3 +11,5 @@ export async function fetchDatatypesAndMappings(upload_only = true) {
     const { data } = await typesAndMappingsFetcher({ upload_only });
     return data;
 }
+
+export const fetchDatatypes = fetcher.path("/api/datatypes").method("get").create();
