@@ -296,7 +296,7 @@ NA, Jianbin He, jbhe@bx.psu.edu
 joachimjacob, Joachim Jacob, joachim.jacob@gmail.com
 joachimwolff, Joachim Wolff, wolffj@informatik.uni-freiburg.de
 jdlogicman, John Duddy, jduddy@illumina.com
-NA, jra001k, jra001k@gmail.com
+jra001k, Jerome Raciazek, jra001k@gmail.com
 jraysajulga, (JR) Ray Sajulga, raysajulga@gmail.com
 juleengraham, Juleen Graham, juleengrah@gmail.com
 junzwang, Junzhou Wang, junzhouwang@gmail.com
@@ -312,7 +312,6 @@ markiskander, Mark Iskander, motiontracker@gmail.com
 martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 MatthewRalston, Matt Ralston, mrals89@gmail.com
 NA, mgehring, mgehrin@emory.edu
-cmonjeau, Cyril Monjeaud, Cyril.Monjeaud@irisa.fr
 NA, MORITA Hideyuki, h-morita@esm.co.jp
 nagoue, Nadia Goué, nadia.goue@gmail.com
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu
