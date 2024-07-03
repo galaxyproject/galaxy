@@ -264,7 +264,7 @@ arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
 BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account deleted
 the-nidhogg, balto, balto_59@hotmail.fr, ¿same as BalthazarPavot (only commits from both are in the same PR)?
 bensellak, bensellak, bensellak@ensat.ac.ma
-dtrudg, Dave Trudgian, dave@trudgian.net
+dtrudg, Dave Trudgian, dave@trudgian.net, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712375794
 cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
 charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
@@ -324,7 +324,7 @@ NA, Raj Ayyampalayam, raj76@uga.edu
 ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
 NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
 remimarenco, Rémi Marenco, remi.marenco@gmail.com
-remyd1, remy_d1, remy.d1@gmail.com
+remyd1, Rémy Dernat, remy.d1@gmail.com
 RichardJActon, Richard James Acton, racton@uni-koeln.de
 roryk, Rory Kirchner, roryk@mit.edu
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
