@@ -1,26 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import axios from "axios";
 import { BButtonGroup, BButtonToolbar, BCard, BCardTitle } from "bootstrap-vue";
-import { useMarkdown } from "composables/markdown";
-import { Toast } from "composables/toast";
 import { computed, provide, ref } from "vue";
+
+import { useMarkdown } from "@/composables/markdown";
+import { Toast } from "@/composables/toast";
 
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
-import StsDownloadButton from "components/StsDownloadButton.vue";
-import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
-import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
+import StsDownloadButton from "@/components/StsDownloadButton.vue";
+import ExportToRemoteButton from "@/components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
+import ExportToRemoteModal from "@/components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const exportRemoteModal = ref(null);
-const exportToRemoteTaskId = ref(null);
+const exportRemoteModal = ref();
+const exportToRemoteTaskId = ref();
 
-const props = defineProps({
-    exportPlugin: { type: InvocationExportPlugin, required: true },
-    invocationId: { type: String, required: true },
-});
+interface Props {
+    exportPlugin: InvocationExportPlugin;
+    invocationId: string;
+}
+
+const props = defineProps<Props>();
 
 // Make `invocationId` available to child components via `inject`
 provide("invocationId", props.invocationId);
@@ -29,6 +32,9 @@ const descriptionRendered = computed(() => renderMarkdown(props.exportPlugin.mar
 const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const downloadParams = computed(() => {
     const exportParams = props.exportPlugin.exportParams;
+    if (!exportParams) {
+        return undefined;
+    }
     return {
         model_store_format: exportParams.modelStoreFormat,
         include_files: exportParams.includeFiles,
@@ -41,7 +47,14 @@ function openRemoteExportDialog() {
     exportRemoteModal.value.showModal();
 }
 
-function exportToFileSource(exportDirectory, fileName) {
+function closeRemoteExportDialog() {
+    exportRemoteModal.value.hideModal();
+}
+
+function exportToFileSource(exportDirectory: string, fileName: string) {
+    if (!props.exportPlugin.exportParams) {
+        throw new Error("Export parameters are not defined");
+    }
     const exportFormat = props.exportPlugin.exportParams.modelStoreFormat;
     const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportFormat}`;
     const writeStoreParams = {
@@ -56,7 +69,7 @@ function exportToFileSource(exportDirectory, fileName) {
         .catch((err) => {
             Toast.error(`Failed to export to remote source. ${err}`);
         });
-    exportRemoteModal.value.hideModal();
+    closeRemoteExportDialog();
 }
 
 function onExportToFileSourceSuccess() {
