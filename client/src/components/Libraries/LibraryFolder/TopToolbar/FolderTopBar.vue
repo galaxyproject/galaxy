@@ -6,7 +6,6 @@ import { BButton, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { fetchGenomes } from "@/api/genomes";
 import { getGalaxyInstance } from "@/app";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
@@ -16,6 +15,7 @@ import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolb
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
+import { useDbKeyStore } from "@/stores/dbKeyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
@@ -55,6 +55,8 @@ const userStore = useUserStore();
 const { isAdmin } = storeToRefs(userStore);
 
 const { datatypes } = useDetailedDatatypes();
+
+const dbKeyStore = useDbKeyStore();
 
 const libraryImportDir = ref(false);
 const allowLibraryPathPaste = ref(false);
@@ -225,12 +227,9 @@ async function fetchExtAndGenomes() {
     }
 
     try {
-        const { data: genomes } = await fetchGenomes({});
+        await dbKeyStore.fetchUploadDbKeys();
 
-        genomesList.value = genomes.map((genome: string[]) => ({
-            id: genome[1] || "",
-            text: genome[0] || "",
-        }));
+        genomesList.value = dbKeyStore.uploadDbKeys;
 
         genomesList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
     } catch (err) {
