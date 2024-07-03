@@ -243,6 +243,16 @@ thobalose, lose.thoba@gmail.com, https://github.com/galaxyproject/galaxy/pull/16
 rdallet, romain.dallet@sb-roscoff.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154616875
 manabuishii, manabu.ishii.rb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
 
+# not yet agreed, special handling
+jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
+
+# not yet agreed, need to find a 2024-valid email for them
+crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
+NA, Ilya ichorny, none@none, currently at Quantum-Si
+jenzopr, Jens Preußner, jenzopr@users.noreply.github.com
+npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
+dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
+
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
 anatskiy, Evgeny Anatskiy, evgeny.anatskiy@gmail.com
@@ -251,7 +261,7 @@ arjunnath, Arjun Nath, arjun@bx.psu.edu
 ashvark, Ashok Varadharajan, ashvark@gmail.com
 arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
 BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account deleted
-the-nidhogg, balto, balto_59@hotmail.fr>, ¿same as BalthazarPavot (only commits from both are in the same PR)?
+the-nidhogg, balto, balto_59@hotmail.fr, ¿same as BalthazarPavot (only commits from both are in the same PR)?
 bensellak, bensellak, bensellak@ensat.ac.ma
 dtrudg, Dave Trudgian, dave@trudgian.net
 cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
@@ -260,7 +270,6 @@ NA, Chinmay Rao, chinmay@bx.psu.edu
 carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com
 blankclemens, Clemens Blank, blankclemens@gmail.com
 cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
-crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
 meekrob, David C. King, dcking@bx.psu.edu
 dpryan79, Devon Ryan, dpryan79@gmail.com
 NA, dorine francheteau, dorine@bx.psu.edu
@@ -276,11 +285,8 @@ vdtoorn, Henk van den Toorn, vdtoorn@hotmail.com
 NA, Hiral Vora, hvora1@uncc.edu
 NA, Hunter Moseley, hunter.moseley@louisville.edu
 ianschenck, Ian Schenck, ian@bx.psu.edu
-NA, Ilya ichorny, none@none, currently at Quantum-Si
 inkuzmin, Ivan Kuzmin, inkuzm@gmail.com
 theboocock, James Boocock, sfk2001@gmail.com
-jxtx, James Taylor, james@jamestaylor.org, deceased, RIP buddy)
-jenzopr, Jens Preußner, jenzopr@users.noreply.github.com
 jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
 NA, Jianbin He, jbhe@bx.psu.edu
 joachimjacob, Joachim Jacob, joachim.jacob@gmail.com
@@ -298,7 +304,6 @@ kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
 lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
 leobiscassi, Léo Biscassi, leo.biscassi@gmail.com
 vavrusa, Marek Vavruša, marek@vavrusa.com
-dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
 markiskander, Mark Iskander, motiontracker@gmail.com
 martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 MatthewRalston, Matt Ralston, mrals89@gmail.com
@@ -308,7 +313,6 @@ NA, MORITA Hideyuki, h-morita@esm.co.jp
 nagoue, Nadia Goué, nadia.goue@gmail.com
 NCEichner, Norbert Eichner, norbert.eichner@ur.de
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu
-npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
 odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
 osallou, Olivier Sallou, olivier.sallou@gmail.com
@@ -344,7 +348,7 @@ NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
 ycgong, Yunchen Gong, yunchen.gong@gmail.com
 
 # not agreed, but contributions no longer present
-Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
-Christopher Bare <christopherbare@gmail.com>  # GH user: cbare, contribution reverted or otherwise unused
-Clare Sloggett <sloc@unimelb.edu.au>  # GH user: claresloggett, code heavily refactored since 2012 contribution
-Dan Blanchard <dan.blanchard@gmail.com>  # GH user: dan-blanchard, one liner changing the drmaa version
+NA, Andrea Sbardellati, andrea.sbardellati@crs4.it, only one commit to bowtie2 wrapper; since moved to the tool shed
+cbare, Christopher Bare, christopherbare@gmail.com, contribution reverted or otherwise unused
+claresloggett, Clare Sloggett, sloc@unimelb.edu.au, code heavily refactored since 2012 contribution
+dan-blanchard, Dan Blanchard, dan.blanchard@gmail.com, one liner changing the drmaa version
