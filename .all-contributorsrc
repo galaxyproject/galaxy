@@ -543,15 +543,6 @@
       ]
     },
     {
-      "login": "trevor",
-      "name": "Trevor Wennblom",
-      "avatar_url": "https://avatars.githubusercontent.com/u/5945?v=4",
-      "profile": "https://github.com/trevor",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "WilliamHolden",
       "name": "WilliamHolden",
       "avatar_url": "https://avatars.githubusercontent.com/u/5874358?v=4",
@@ -655,6 +646,24 @@
       "name": "DERNAT Rémy",
       "avatar_url": "https://avatars.githubusercontent.com/u/929620?v=4",
       "profile": "https://remyd1.fr/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "hanfeisun",
+      "name": "Hanfei Sun",
+      "avatar_url": "https://avatars.githubusercontent.com/u/922081?v=4",
+      "profile": "https://github.com/hanfeisun",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "jdlogicman",
+      "name": "John Duddy",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1210206?v=4",
+      "profile": "https://github.com/jdlogicman",
       "contributions": [
         "code"
       ]

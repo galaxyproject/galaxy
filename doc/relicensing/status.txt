@@ -244,6 +244,7 @@ thobalose, lose.thoba@gmail.com, https://github.com/galaxyproject/galaxy/pull/16
 rdallet, romain.dallet@sb-roscoff.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154616875
 manabuishii, manabu.ishii.rb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
 ratzeni, rossano.atzeni@crs4.it, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156437442
+ianschenck, ian@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156554721
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -286,7 +287,6 @@ hanfeisun, Hanfei Sun, ad9075@gmail.com
 vdtoorn, Henk van den Toorn, vdtoorn@hotmail.com
 NA, Hiral Vora, hvora1@uncc.edu
 NA, Hunter Moseley, hunter.moseley@louisville.edu
-ianschenck, Ian Schenck, ian@bx.psu.edu
 inkuzmin, Ivan Kuzmin, inkuzm@gmail.com
 theboocock, James Boocock, sfk2001@gmail.com
 jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
