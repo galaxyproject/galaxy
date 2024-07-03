@@ -92,7 +92,7 @@ pillow = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2.7.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/pull/9639
+pydantic = {version = ">=2.7.0", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -175,7 +175,7 @@ Werkzeug = "*"
 mypy = "*"
 boto3-stubs = {version = "*", extras = ["s3"]}
 lxml-stubs = "*"
-pydantic = ">=2.7.4"  # for pydantic.mypy plugin
+pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
 types-bleach = "*"
 types-boto = "*"
 types-contextvars = "*"
