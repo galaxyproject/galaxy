@@ -204,6 +204,7 @@ souravsingh, souravsingh@users.noreply.github.com, https://github.com/galaxyproj
 roalva1, roalva1@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147862274
 vimalkvn, vimalkumarvelayudhan@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147907660
 rdvelazquez, ryan.velazquez0001@temple.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147937206
+trevor, trevor@well.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147944477
 RJMW, RJMW@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147953775
 msauria, crockopotamus@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147958781
 pavanvidem, videmp@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2147983489
@@ -337,7 +338,6 @@ ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
 thomcuddihy, Thom Cuddihy, thom@hometreelab.com
 XDtim, Tim Thompson, tim.thompson@xdbio.com
 tshtatland, Timur Shtatland, shtatland@neb.com
-trevor, Trevor Wennblom,trevor@well.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
 WilliamHolden, William Holden, theappdev@protonmail.com
 simpsonw, Will Simpson, wsimpson@email.arizona.edu
