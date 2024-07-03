@@ -238,6 +238,10 @@ moskalenko, om@rc.ufl.edu, https://github.com/galaxyproject/galaxy/pull/16970#pu
 sneumann, sneumann@ipb-halle.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150606285
 Petraea, Petraea@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2150708344
 fretn, frederik.delaere@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2151141471
+mepcotterell, mepcotterell@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2151857571
+thobalose, lose.thoba@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154578396
+rdallet, romain.dallet@sb-roscoff.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154616875
+manabuishii, manabu.ishii.rb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -293,14 +297,12 @@ kpvincent, Kelly Vincent, kpvincent@bx.psu.edu
 kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
 lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
 leobiscassi, Léo Biscassi, leo.biscassi@gmail.com
-manabuishii, Manabu ISHII, manabu.ishii.rb@gmail.com
 vavrusa, Marek Vavruša, marek@vavrusa.com
 dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
 markiskander, Mark Iskander, motiontracker@gmail.com
 martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 MatthewRalston, Matt Ralston, mrals89@gmail.com
 NA, mgehring, mgehrin@emory.edu
-mepcotterell, Michael Cotterell, mepcotterell@gmail.com
 cmonjeau, Cyril Monjeaud, Cyril.Monjeaud@irisa.fr
 NA, MORITA Hideyuki, h-morita@esm.co.jp
 nagoue, Nadia Goué, nadia.goue@gmail.com
@@ -320,14 +322,12 @@ ratzeni, Rossano Atzeni, rossano.atzeni@crs4.it
 remimarenco, Rémi Marenco, remi.marenco@gmail.com
 remyd1, remy_d1, remy.d1@gmail.com
 RichardJActon, Richard James Acton, racton@uni-koeln.de
-rdallet, Romain Dallet, romain.dallet@sb-roscoff.fr
 roryk, Rory Kirchner, roryk@mit.edu
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 sszakony, Scott Szakonyi, sszakony@nd.edu
 simleo, Simone Leo, simone.leo@gmail.com
 tesujimath, Simon Guest, simon.guest@agresearch.co.nz
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
-thobalose, Thoba Lose, lose.thoba@gmail.com
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
 thomcuddihy, Thom Cuddihy, thom@hometreelab.com
