@@ -909,7 +909,12 @@ def username_exists(session, username: str, model_class=User):
 
 def generate_next_available_username(session, username, model_class=User):
     """Generate unique username; user can change it later"""
+    return generate_next_available_username_with_connection(session.connection(), username, model_class)
+
+
+def generate_next_available_username_with_connection(connection, username, model_class=User):
+    """Generate unique username; user can change it later"""
     i = 1
-    while session.execute(select(model_class).where(model_class.username == f"{username}-{i}")).first():
+    while connection.execute(select(model_class).where(model_class.username == f"{username}-{i}")).first():
         i += 1
     return f"{username}-{i}"
