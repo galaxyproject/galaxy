@@ -242,6 +242,7 @@ mepcotterell, mepcotterell@gmail.com, https://github.com/galaxyproject/galaxy/pu
 thobalose, lose.thoba@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154578396
 rdallet, romain.dallet@sb-roscoff.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2154616875
 manabuishii, manabu.ishii.rb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2155753284
+ratzeni, rossano.atzeni@crs4.it, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156437442
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -322,7 +323,6 @@ NA, Radhesh Kamath, radhesh@bx.psu.edu
 NA, Raj Ayyampalayam, raj76@uga.edu
 ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
 NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
-ratzeni, Rossano Atzeni, rossano.atzeni@crs4.it
 remimarenco, Rémi Marenco, remi.marenco@gmail.com
 remyd1, remy_d1, remy.d1@gmail.com
 RichardJActon, Richard James Acton, racton@uni-koeln.de
