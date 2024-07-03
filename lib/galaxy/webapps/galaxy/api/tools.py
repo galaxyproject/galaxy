@@ -185,7 +185,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
 
         rval = {}
-        rval["default_panel_view"] = self.app.toolbox._default_panel_view
+        rval["default_panel_view"] = self.app.toolbox._default_panel_view(trans)
         rval["views"] = self.app.toolbox.panel_view_dicts()
         return rval
 
