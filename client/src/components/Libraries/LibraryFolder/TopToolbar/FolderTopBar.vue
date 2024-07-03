@@ -6,9 +6,7 @@ import { BButton, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { fetchDatatypes } from "@/api/datatypes";
 import { fetchGenomes } from "@/api/genomes";
-import type { components } from "@/api/schema/schema";
 import { getGalaxyInstance } from "@/app";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
@@ -16,6 +14,7 @@ import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToo
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -25,10 +24,7 @@ import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
 
 library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
 
-type DatatypeDetails = components["schemas"]["DatatypeDetails"][];
-
 type GenomesList = { id: string; text: string }[];
-type ExtensionsList = { id: string; text: string; description: string; description_url: string }[];
 
 interface Props {
     metadata: any;
@@ -58,13 +54,16 @@ const emit = defineEmits<{
 const userStore = useUserStore();
 const { isAdmin } = storeToRefs(userStore);
 
+const { datatypes } = useDetailedDatatypes();
+
 const libraryImportDir = ref(false);
 const allowLibraryPathPaste = ref(false);
 const genomesList = ref<GenomesList>([]);
-const extensionsList = ref<ExtensionsList>([]);
+const extensionsList = ref<DetailedDatatypes[]>([]);
 const userLibraryImportDirAvailable = ref(false);
 const auto = ref({
     id: "auto",
+    extension: "auto",
     text: "Auto-detect",
     description: `This system will try to detect the file type automatically.
                      If your file is not detected properly as one of the known formats,
@@ -197,7 +196,9 @@ async function importToHistoryModal(isCollection: boolean) {
 }
 
 // TODO: after replacing the selection dialog with the new component that is not using jquery
-function addDatasets(source: string) {
+async function addDatasets(source: string) {
+    await fetchExtAndGenomes();
+
     new mod_add_datasets.AddDatasets({
         source: source,
         id: props.folderId,
@@ -214,25 +215,9 @@ function updateContent() {
 
 async function fetchExtAndGenomes() {
     try {
-        const { data: dataTypes } = await fetchDatatypes({ extension_only: false });
+        extensionsList.value = datatypes.value;
 
-        if (typeof dataTypes[0] === "string") {
-            extensionsList.value = (dataTypes as string[]).map((datatype) => ({
-                id: datatype,
-                text: datatype,
-                description: "",
-                description_url: "",
-            }));
-        } else {
-            extensionsList.value = (dataTypes as DatatypeDetails).map((datatype) => ({
-                id: datatype.extension,
-                text: datatype.extension,
-                description: datatype.description || "",
-                description_url: datatype.description_url || "",
-            }));
-        }
-
-        extensionsList.value.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+        extensionsList.value.sort((a, b) => (a.extension > b.extension ? 1 : a.extension < b.extension ? -1 : 0));
 
         extensionsList.value = [auto.value, ...extensionsList.value];
     } catch (err) {
@@ -257,8 +242,6 @@ onMounted(async () => {
     libraryImportDir.value = Galaxy.config.library_import_dir;
     allowLibraryPathPaste.value = Galaxy.config.allow_library_path_paste;
     userLibraryImportDirAvailable.value = Galaxy.config.user_library_import_dir_available;
-
-    await fetchExtAndGenomes();
 });
 </script>
 
