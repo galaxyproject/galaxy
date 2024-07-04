@@ -3,9 +3,21 @@ import os.path
 import shutil
 import tempfile
 from math import isinf
-from typing import Optional
+from typing import (
+    cast,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from galaxy.tool_util.parser.factory import get_tool_source
+from galaxy.tool_util.parser.output_models import (
+    from_tool_source,
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputDataset,
+)
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest import TestCase
 
@@ -248,6 +260,10 @@ class BaseLoaderTestCase(TestCase):
     def _tool_source(self):
         return self._get_tool_source()
 
+    @property
+    def _output_models(self) -> List[ToolOutput]:
+        return from_tool_source(self._tool_source)
+
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
         if source_file_name is None:
             source_file_name = self._get_source_file_name()
@@ -387,6 +403,16 @@ class TestXmlLoader(BaseLoaderTestCase):
         attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
@@ -666,6 +692,17 @@ class TestApplyRulesToolLoader(BaseLoaderTestCase):
         assert len(outputs) == 1
         assert len(output_collections) == 1
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "output"
+        assert not output_model.hidden
+        assert output_model.label == "${input.name} (re-organized)"
+        output_collection_model = assert_output_model_of_type(output_model, ToolOutputCollection)
+        structure = output_collection_model.structure
+        assert structure.collection_type_from_rules == "rules"
+
 
 class TestBuildListToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
@@ -711,6 +748,14 @@ class TestExpressionTestToolLoader(FunctionalTestToolTestCase):
         output0 = outputs[0]
         assert "object" in output0["attributes"]
         assert output0["attributes"]["object"] is None
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "bool_out"
+        assert not output_model.hidden
+        assert output_model.label is None
 
 
 class TestDefaultDataTestToolLoader(FunctionalTestToolTestCase):
@@ -886,3 +931,43 @@ class TestQcStdio(FunctionalTestToolTestCase):
         assert len(regexes) == 2
         regex = regexes[0]
         assert regex.error_level == 1.1
+
+
+class TestCollectionCatGroupTag(FunctionalTestToolTestCase):
+    test_path = "collection_cat_group_tag.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out_file1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source == "input1"
+
+
+class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
+    test_path = "tool_provided_metadata_2.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "sample"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
+        discover_datasets = output_dataset_model.discover_datasets or []
+        assert len(discover_datasets) == 1
+        discover_datasets_0 = discover_datasets[0]
+        assert discover_datasets_0.discover_via == "pattern"
+
+
+T = TypeVar("T")
+
+
+def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
+    assert isinstance(obj, clazz)
+    return cast(T, obj)

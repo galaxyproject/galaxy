@@ -535,7 +535,7 @@ class XmlToolSource(ToolSource):
         output.default_identifier_source = data_elem.get("default_identifier_source", "None")
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
         output.parent = data_elem.get("parent", None)
-        output.label = xml_text(data_elem, "label")
+        output.label = xml_text(data_elem, "label", None)
         output.count = int(data_elem.get("count", 1))
         output.filters = data_elem.findall("filter")
         output.tool = tool
@@ -561,7 +561,7 @@ class XmlToolSource(ToolSource):
             from_expression,
         )
         output.path = output_elem.get("value")
-        output.label = xml_text(output_elem, "label")
+        output.label = xml_text(output_elem, "label", None)
 
         output.hidden = string_as_bool(output_elem.get("hidden", ""))
         output.actions = ToolOutputActionGroup(output, output_elem.find("actions"))
