@@ -100,13 +100,10 @@ Thanks goes to these wonderful people. We still need them to re-license their pr
       <td align="center" valign="top" width="20%"><a href="http://github.com/arjunnath"><img src="https://avatars.githubusercontent.com/u/10749618?v=4?s=150" width="150px;" alt="Arjun R Nath"/></a><br /><sub><b>Arjun R Nath (arjunnath)</b></sub><br /></td>
     </tr>
     <tr>
-      <td align="center" valign="top" width="20%"><a href="http://github.com/meekrob"><img src="https://avatars.githubusercontent.com/u/4528993?v=4?s=150" width="150px;" alt="David"/></a><br /><sub><b>David (meekrob)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/kpvincent"><img src="https://avatars.githubusercontent.com/u/107574288?v=4?s=150" width="150px;" alt="Kelly Vincent"/></a><br /><sub><b>Kelly Vincent (kpvincent)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/tesujimath"><img src="https://avatars.githubusercontent.com/u/4411912?v=4?s=150" width="150px;" alt="Simon Guest"/></a><br /><sub><b>Simon Guest (tesujimath)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/remyd1"><img src="https://avatars.githubusercontent.com/u/929620?v=4?s=150" width="150px;" alt="DERNAT Rémy"/></a><br /><sub><b>DERNAT Rémy (remyd1)</b></sub><br /></td>
       <td align="center" valign="top" width="20%"><a href="http://github.com/hanfeisun"><img src="https://avatars.githubusercontent.com/u/922081?v=4?s=150" width="150px;" alt="Hanfei Sun"/></a><br /><sub><b>Hanfei Sun (hanfeisun)</b></sub><br /></td>
-    </tr>
-    <tr>
       <td align="center" valign="top" width="20%"><a href="http://github.com/jdlogicman"><img src="https://avatars.githubusercontent.com/u/1210206?v=4?s=150" width="150px;" alt="John Duddy"/></a><br /><sub><b>John Duddy (jdlogicman)</b></sub><br /></td>
     </tr>
   </tbody>
