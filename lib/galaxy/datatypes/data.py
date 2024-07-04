@@ -484,16 +484,17 @@ class Data(metaclass=DataMeta):
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/binary_file.mako",
-                data=data,
-                file_contents=open(data.get_file_name(), "rb").read(max_peek_size),
-                file_size=util.nice_size(file_size),
-                truncated=file_size > max_peek_size,
-            ),
-            headers,
-        )
+        with open(data.get_file_name(), "rb") as fh:
+            return (
+                trans.fill_template_mako(
+                    "/dataset/binary_file.mako",
+                    data=data,
+                    file_contents=fh.read(max_peek_size),
+                    file_size=util.nice_size(file_size),
+                    truncated=file_size > max_peek_size,
+                ),
+                headers,
+            )
 
     def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
@@ -502,16 +503,17 @@ class Data(metaclass=DataMeta):
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
             return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
 
-        # preview large text file
-        headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/large_file.mako",
-                truncated_data=open(data.get_file_name(), "rb").read(max_peek_size),
-                data=data,
-            ),
-            headers,
-        )
+        with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
+            # preview large text file
+            headers["content-type"] = "text/html"
+            return (
+                trans.fill_template_mako(
+                    "/dataset/large_file.mako",
+                    truncated_data=fh.read(max_peek_size),
+                    data=data,
+                ),
+                headers,
+            )
 
     def display_data(
         self,

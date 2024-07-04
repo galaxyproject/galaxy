@@ -311,7 +311,10 @@ class HDAManager(
 
         truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
         with get_fileobj(file_path) as fh:
-            hda_data = fh.read(MAX_PEEK_SIZE)
+            try:
+                hda_data = fh.read(MAX_PEEK_SIZE)
+            except UnicodeDecodeError:
+                raise exceptions.RequestParameterInvalidException("Cannot generate text preview for dataset.")
         return truncated, hda_data
 
     # .... annotatable
