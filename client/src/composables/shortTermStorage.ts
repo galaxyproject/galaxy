@@ -22,7 +22,7 @@ interface StorageRequestResponse {
 
 type StartPreparingDownloadCallback = (objectId: string, params: StoreExportPayload) => Promise<StorageRequestResponse>;
 
-const DEFAULT_POLL_DELAY = 1000;
+const DEFAULT_POLL_DELAY = 3000;
 const DEFAULT_OPTIONS: Options = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
 
 const startPreparingHistoryDownload = fetcher
