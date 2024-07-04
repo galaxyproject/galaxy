@@ -32,6 +32,7 @@ from galaxy.util import (
 )
 from .interface import (
     AssertionList,
+    Citation,
     InputSource,
     PageSource,
     PagesSource,
@@ -41,6 +42,7 @@ from .interface import (
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
+    XrefDict,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -142,7 +144,7 @@ class XmlToolSource(ToolSource):
         self.root = None
         self._xml_tree = None
 
-    def parse_version(self):
+    def parse_version(self) -> Optional[str]:
         return self.root.get("version", None)
 
     def parse_id(self):
@@ -174,7 +176,7 @@ class XmlToolSource(ToolSource):
             return root.get("tool_type")
 
     def parse_name(self):
-        return self.root.get("name")
+        return self.root.get("name") or self.parse_id()
 
     def parse_edam_operations(self):
         edam_ops = self.root.find("edam_operations")
@@ -188,17 +190,17 @@ class XmlToolSource(ToolSource):
             return []
         return [edam_topic.text for edam_topic in edam_topics.findall("edam_topic")]
 
-    def parse_xrefs(self):
+    def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root.find("xrefs")
         if xrefs is None:
             return []
         return [
-            dict(value=xref.text.strip(), reftype=xref.attrib["type"])
+            XrefDict(value=xref.text.strip(), reftype=str(xref.attrib["type"]))
             for xref in xrefs.findall("xref")
-            if xref.get("type")
+            if xref.get("type") and xref.text
         ]
 
-    def parse_description(self):
+    def parse_description(self) -> str:
         return xml_text(self.root, "description")
 
     def parse_display_interface(self, default):
@@ -659,8 +661,23 @@ class XmlToolSource(ToolSource):
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
 
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         return self.root.get("license")
+
+    def parse_citations(self) -> List[Citation]:
+        """Return a list of citations."""
+        citations: List[Citation] = []
+        root = self.root
+        citations_elem = root.find("citations")
+        if citations_elem is None:
+            return citations
+
+        for citation_elem in citations_elem:
+            citation = parse_citation_elem(citation_elem)
+            if citation:
+                citations.append(citation)
+
+        return citations
 
     def parse_python_template_version(self):
         python_template_version = self.root.get("python_template_version")
@@ -1372,3 +1389,18 @@ class ParallelismInfo:
             # legacy basic mode - provide compatible defaults
             self.attributes["split_size"] = 20
             self.attributes["split_mode"] = "number_of_parts"
+
+
+def parse_citation_elem(citation_elem: Element) -> Optional[Citation]:
+    if citation_elem.tag != "citation":
+        return None
+
+    citation_type = citation_elem.attrib.get("type", None)
+    citation_raw_text = citation_elem.text
+    assert citation_raw_text
+    content = citation_raw_text.strip()
+
+    return Citation(
+        type=citation_type,
+        content=content,
+    )

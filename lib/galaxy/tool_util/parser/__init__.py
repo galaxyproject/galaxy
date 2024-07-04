@@ -9,6 +9,7 @@ from .factory import (
 from .interface import (
     RequiredFiles,
     ToolSource,
+    XrefDict,
 )
 from .output_objects import ToolOutputCollectionPart
 
@@ -19,4 +20,5 @@ __all__ = (
     "RequiredFiles",
     "ToolOutputCollectionPart",
     "ToolSource",
+    "XrefDict",
 )
