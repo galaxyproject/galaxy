@@ -22,6 +22,8 @@ export interface Activity {
     mutable: boolean;
     // indicate wether this activity can be disabled by the user
     optional: boolean;
+    // specifiy wether this activity utilizes the side panel
+    panel: boolean;
     // title to be displayed in the activity bar
     title: string;
     // route to be executed upon selecting the activity

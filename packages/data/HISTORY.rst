@@ -4,10 +4,89 @@ History
 .. to_doc
 
 ---------
-24.1.dev0
+24.2.dev0
 ---------
 
 
+
+-------------------
+24.1.1 (2024-07-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix syntax for SA2.0 by `@jdavcs <https://github.com/jdavcs>`_ in `#17663 <https://github.com/galaxyproject/galaxy/pull/17663>`_
+* Fix empty usernames in database + bug in username generation by `@jdavcs <https://github.com/jdavcs>`_ in `#18379 <https://github.com/galaxyproject/galaxy/pull/18379>`_
+* Fix `input_step_parameters` missing values that don't have a label by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#18405 <https://github.com/galaxyproject/galaxy/pull/18405>`_
+* Improve workflow-related exception reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18447 <https://github.com/galaxyproject/galaxy/pull/18447>`_
+
+============
+Enhancements
+============
+
+* Enable all-vs-all collection analysis patterns. by `@jmchilton <https://github.com/jmchilton>`_ in `#17366 <https://github.com/galaxyproject/galaxy/pull/17366>`_
+* Visualizing workflow runs with an invocation graph view by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#17413 <https://github.com/galaxyproject/galaxy/pull/17413>`_
+* Better display of estimated line numbers and add number of columns for tabular by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17492 <https://github.com/galaxyproject/galaxy/pull/17492>`_
+* Enable storage management by object store by `@jmchilton <https://github.com/jmchilton>`_ in `#17500 <https://github.com/galaxyproject/galaxy/pull/17500>`_
+* Set minimal metadata also for empty bed datasets by `@wm75 <https://github.com/wm75>`_ in `#17586 <https://github.com/galaxyproject/galaxy/pull/17586>`_
+* Type annotation improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17601 <https://github.com/galaxyproject/galaxy/pull/17601>`_
+* Type annotation and CWL-related improvements by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17630 <https://github.com/galaxyproject/galaxy/pull/17630>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17653 <https://github.com/galaxyproject/galaxy/pull/17653>`_
+* Code cleanups from ruff and pyupgrade by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17654 <https://github.com/galaxyproject/galaxy/pull/17654>`_
+* SQLAlchemy 2.0 by `@jdavcs <https://github.com/jdavcs>`_ in `#17778 <https://github.com/galaxyproject/galaxy/pull/17778>`_
+* Outline use of type_annotation_map to fix mypy issues by `@jmchilton <https://github.com/jmchilton>`_ in `#17902 <https://github.com/galaxyproject/galaxy/pull/17902>`_
+* Add `email` notifications channel by `@davelopez <https://github.com/davelopez>`_ in `#17914 <https://github.com/galaxyproject/galaxy/pull/17914>`_
+* Model edits and bug fixes by `@jdavcs <https://github.com/jdavcs>`_ in `#17922 <https://github.com/galaxyproject/galaxy/pull/17922>`_
+* Model typing and SA2.0 follow-up by `@jdavcs <https://github.com/jdavcs>`_ in `#17958 <https://github.com/galaxyproject/galaxy/pull/17958>`_
+* Enable ``warn_unused_ignores`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17991 <https://github.com/galaxyproject/galaxy/pull/17991>`_
+* Add galaxy to user agent by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18003 <https://github.com/galaxyproject/galaxy/pull/18003>`_
+* Refactor galaxy.files plugin loading + config handling. by `@jmchilton <https://github.com/jmchilton>`_ in `#18049 <https://github.com/galaxyproject/galaxy/pull/18049>`_
+* Add stronger type annotations in file sources + refactoring by `@davelopez <https://github.com/davelopez>`_ in `#18050 <https://github.com/galaxyproject/galaxy/pull/18050>`_
+* Add support for additional media types by `@arash77 <https://github.com/arash77>`_ in `#18054 <https://github.com/galaxyproject/galaxy/pull/18054>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#18063 <https://github.com/galaxyproject/galaxy/pull/18063>`_
+* Enable flake8-implicit-str-concat ruff rules by `@nsoranzo <https://github.com/nsoranzo>`_ in `#18067 <https://github.com/galaxyproject/galaxy/pull/18067>`_
+* Script for deleting userless histories from database + testing + drop unused model testing code by `@jdavcs <https://github.com/jdavcs>`_ in `#18079 <https://github.com/galaxyproject/galaxy/pull/18079>`_
+* Add Net datatype by `@martenson <https://github.com/martenson>`_ in `#18080 <https://github.com/galaxyproject/galaxy/pull/18080>`_
+* Empower users to bring their own storage and file sources by `@jmchilton <https://github.com/jmchilton>`_ in `#18127 <https://github.com/galaxyproject/galaxy/pull/18127>`_
+* Harden User Object Store and File Source Creation by `@jmchilton <https://github.com/jmchilton>`_ in `#18172 <https://github.com/galaxyproject/galaxy/pull/18172>`_
+* Update db revision 24.1 release tags by `@jdavcs <https://github.com/jdavcs>`_ in `#18183 <https://github.com/galaxyproject/galaxy/pull/18183>`_
+* Tighten axt sniffer by `@martenson <https://github.com/martenson>`_ in `#18204 <https://github.com/galaxyproject/galaxy/pull/18204>`_
+* More structured indexing for user data objects. by `@jmchilton <https://github.com/jmchilton>`_ in `#18291 <https://github.com/galaxyproject/galaxy/pull/18291>`_
+
+=============
+Other changes
+=============
+
+* Chore: remove repetitive words by `@tianzedavid <https://github.com/tianzedavid>`_ in `#18076 <https://github.com/galaxyproject/galaxy/pull/18076>`_
+* Fix import broken with forward merge by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18152 <https://github.com/galaxyproject/galaxy/pull/18152>`_
+
+-------------------
+24.0.3 (2024-06-28)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Downgrade count lines error to warning by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18175 <https://github.com/galaxyproject/galaxy/pull/18175>`_
+* Don't set dataset peek for errored jobs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18231 <https://github.com/galaxyproject/galaxy/pull/18231>`_
+* Transparently open compressed files in DatasetDataProvider by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18248 <https://github.com/galaxyproject/galaxy/pull/18248>`_
+* Raise exception when extracting dataset from collection without datasets by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18249 <https://github.com/galaxyproject/galaxy/pull/18249>`_
+* Set page importable to false when serializing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18263 <https://github.com/galaxyproject/galaxy/pull/18263>`_
+* Fix first_dataset_element type hint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18284 <https://github.com/galaxyproject/galaxy/pull/18284>`_
+* Do not copy purged outputs to object store by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18342 <https://github.com/galaxyproject/galaxy/pull/18342>`_
+* Fix user's private role can be missing by `@davelopez <https://github.com/davelopez>`_ in `#18381 <https://github.com/galaxyproject/galaxy/pull/18381>`_
+* Assign default ``data`` extension on discovered collection output  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18389 <https://github.com/galaxyproject/galaxy/pull/18389>`_
+
+=============
+Other changes
+=============
+
+* Replace busybox:ubuntu-14.04 image with busybox:1.36.1-glibc by `@mvdbeek <https://github.com/mvdbeek>`_ in `#18428 <https://github.com/galaxyproject/galaxy/pull/18428>`_
 
 -------------------
 24.0.2 (2024-05-07)

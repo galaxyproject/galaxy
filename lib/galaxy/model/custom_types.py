@@ -32,7 +32,7 @@ class SafeJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.int_):
             return int(obj)
-        elif isinstance(obj, numpy.float_):
+        elif isinstance(obj, numpy.float64):
             return float(obj)
         elif isinstance(obj, bytes):
             return unicodify(obj)

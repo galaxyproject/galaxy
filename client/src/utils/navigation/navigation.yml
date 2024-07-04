@@ -9,9 +9,11 @@
 _:  # global stuff
 
   selectors:
+    center_panel: '#center'
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
+    left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
     right_panel_drag: '.flex-panel.right .drag-handle'
@@ -38,46 +40,28 @@ masthead:
   selectors:
     _: '#masthead'
 
-    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
-    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
-    register_or_login: '#user.loggedout-only > .nav-link'
-
-    user_menu: '#user .dropdown-menu a'
-    workflow: '#workflow .nav-link'
-
-    username:
-      type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
-
+    help: '#help'
+    home: '#analysis'
+    login: '#user'
+    logout: '.dropdown-menu > li > a > .fa-sign-out-alt'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    preferences: '.dropdown-menu > li > a > .fa-gear'
+    register_or_login: '#user.loggedout-only > .nav-link'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
-
-  labels:
-    # top-level menus
-    admin: 'Admin'
-    analyze: 'Analyze Data'
-    data: 'Data'
-    help: 'Help'
-    user: 'User'
-    visualization: 'Visualization'
-    workflow: 'Workflow'
-
-    # user menu
-    logout: 'Sign Out'
-    preferences: 'Preferences'
-
-    # data menu
-    libraries: 'Data Libraries'
-    histories: 'Histories'
-    invocations: 'Workflow Invocations'
-    pages: 'Pages'
-    workflows: 'Workflows'
+    user: '#user.loggedin-only > a.nav-link > .fa'
+    username:
+      type: xpath
+      selector: '//a[contains(text(), "Signed in as")]'
+    window_manager: '#enable-window-manager'
+    workflow: '#workflow .nav-link'
 
 preferences:
   selectors:
+    activity: "#activity-settings"
+    activity_expand: ".activity-panel-footer"
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
@@ -457,6 +441,7 @@ collection_builders:
 
 histories:
   selectors:
+    activity: '#activity-histories'
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
@@ -532,6 +517,7 @@ history_import:
 
 pages:
   selectors:
+    activity: "#activity-pages"
     create: '#page-create'
     submit: '#submit'
     create_title_input: '#form-element-title input'
@@ -600,6 +586,7 @@ tool_form:
 
 workflows:
   selectors:
+    activity: '#activity-workflows'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'
@@ -626,7 +613,7 @@ workflows:
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[data-workflow-actions-dropdown]'
     delete_button: '.workflow-delete-button'
-    view_button: '.workflow-view-button'
+    view_button: '.workflow-name-preview'
     workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'
     view_external_link: ".workflow-view-external-link-button"
@@ -650,6 +637,7 @@ workflows:
 visualization:
   selectors:
     _: '#center div.plugin-list'
+    activity: '#activity-visualizations'
     plugin_item: '[data-plugin-name*="${id}"]'
 
 trs_search:
@@ -855,6 +843,8 @@ workflow_show:
 
 invocations:
   selectors:
+    activity: "#activity-invocation"
+    activity_expand: ".activity-panel-footer"
     invocations_table: '#invocations-grid .grid-table'
     invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
     pager: '[data-description="grid pager"]'
@@ -899,6 +889,15 @@ tour:
       content: '${_} .tour-content'
       next: '${_} .tour-next'
       end: '${_} .tour-end'
+
+tools:
+  selectors:
+    activity: '#activity-tools'
+    body: '#center #tool-card-body'
+    execute: '#execute'
+    help: 'div.form-help'
+    search: '.search-query'
+    title: '.toolSectionTitle'
 
 admin:
   allowlist:
@@ -1008,6 +1007,7 @@ libraries:
 
   selectors:
     _: '#libraries_list'
+    activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
@@ -1128,6 +1128,7 @@ upload:
     source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
     start_button: '#btn-start'
+    local_button: '#btn-local'
 
 new_user_welcome:
   selectors:

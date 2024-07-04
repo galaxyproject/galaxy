@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faEye, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -13,12 +13,12 @@ import { useUserStore } from "@/stores/userStore";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
+import WorkflowActionsExtend from "@/components/Workflow/List/WorkflowActionsExtend.vue";
+import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
+import WorkflowRename from "@/components/Workflow/List/WorkflowRename.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
-import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
-import WorkflowActionsExtend from "@/components/Workflow/WorkflowActionsExtend.vue";
-import WorkflowIndicators from "@/components/Workflow/WorkflowIndicators.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRename from "@/components/Workflow/WorkflowRename.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 library.add(faEdit, faEye, faPen, faUpload);
@@ -141,7 +141,13 @@ async function onTagClick(tag: string) {
                 </div>
 
                 <span class="workflow-name font-weight-bold">
-                    {{ workflow.name }}
+                    <BLink
+                        v-b-tooltip.hover.noninteractive
+                        class="workflow-name-preview"
+                        title="Preview Workflow"
+                        @click.stop.prevent="toggleShowPreview(true)"
+                        >{{ workflow.name }}</BLink
+                    >
                     <BButton
                         v-if="!shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive

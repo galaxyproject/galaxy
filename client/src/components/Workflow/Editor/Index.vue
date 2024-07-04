@@ -355,6 +355,15 @@ export default {
         }
 
         const tags = ref([]);
+
+        watch(
+            () => props.workflowTags,
+            (newTags) => {
+                tags.value = [...newTags];
+            },
+            { immediate: true }
+        );
+
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
@@ -792,12 +801,9 @@ export default {
             this.report.markdown = markdown;
         },
         onRun() {
-            const runUrl = `/workflows/run?id=${this.id}${
-                this.version !== undefined ? `&version=${this.version}` : ""
-            }`;
-            this.onNavigate(runUrl);
+            this.onNavigate(`/workflows/run?id=${this.id}`, false, false, true);
         },
-        async onNavigate(url, forceSave = false, ignoreChanges = false) {
+        async onNavigate(url, forceSave = false, ignoreChanges = false, appendVersion = false) {
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
@@ -810,6 +816,9 @@ export default {
                 await this.onSave();
             }
 
+            if (appendVersion && this.version !== undefined) {
+                url += `&version=${this.version}`;
+            }
             this.hasChanges = false;
             await nextTick();
             this.$router.push(url);

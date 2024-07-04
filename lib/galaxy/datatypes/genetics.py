@@ -334,7 +334,6 @@ class Rgenetics(Html):
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
         with open(dataset.get_file_name(), "w") as f:

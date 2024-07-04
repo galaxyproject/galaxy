@@ -36,11 +36,11 @@ import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import TrsImport from "components/Workflow/Import/TrsImport";
 import TrsSearch from "components/Workflow/Import/TrsSearch";
 import InvocationReport from "components/Workflow/InvocationReport";
+import WorkflowList from "components/Workflow/List/WorkflowList";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
-import WorkflowList from "components/Workflow/WorkflowList";
 import Analysis from "entry/analysis/modules/Analysis";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
 import Home from "entry/analysis/modules/Home";
@@ -88,10 +88,14 @@ Vue.use(VueRouter);
 patchRouterPush(VueRouter);
 
 // redirect anon users
-function redirectAnon() {
+function redirectAnon(redirect = "") {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy.user || !Galaxy.user.id) {
-        return "/login/start";
+        if (redirect !== "") {
+            return redirect;
+        } else {
+            return "/login/start";
+        }
     }
 }
 
@@ -313,7 +317,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/histories/list_published"),
                     },
                     {
                         path: "histories/list_shared",
@@ -446,7 +450,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/pages/list_published"),
                     },
                     {
                         path: "pages/list_published",
@@ -622,13 +626,13 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.params.invocationId,
                             isFullPage: true,
-                            fromPanel: route.query.from_panel,
+                            fromPanel: Boolean(route.query.from_panel),
                         }),
                     },
                     {
                         path: "workflows/list",
                         component: WorkflowList,
-                        redirect: redirectAnon(),
+                        redirect: redirectAnon("/workflows/list_published"),
                     },
                     {
                         path: "workflows/list_published",

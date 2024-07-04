@@ -179,11 +179,7 @@ watch(
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="
-                                    ['admin', 'tools', 'visualizations', 'multiview', 'invocation'].includes(
-                                        activity.id
-                                    )
-                                "
+                                v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -216,10 +212,10 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
-                    icon="cog"
+                    icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
-                    title="Settings"
-                    tooltip="Edit preferences"
+                    title="More"
+                    tooltip="View additional activities"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin"

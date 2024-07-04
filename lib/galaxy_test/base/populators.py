@@ -76,7 +76,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-from gxformat2._yaml import ordered_load
+from gxformat2.yaml import ordered_load
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import Literal

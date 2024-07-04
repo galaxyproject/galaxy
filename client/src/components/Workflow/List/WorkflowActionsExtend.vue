@@ -18,13 +18,11 @@ library.add(faCopy, faDownload, faLink, faShareAlt, faTrashRestore);
 
 interface Props {
     workflow: any;
-    menu?: boolean;
     published?: boolean;
-    buttonSize?: "sm" | "md" | "lg";
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    buttonSize: "sm",
+    published: false,
 });
 
 const emit = defineEmits<{
@@ -87,7 +85,7 @@ function onCopyPublicLink() {
                 v-if="workflow.published && !workflow.deleted"
                 id="workflow-copy-public-button"
                 v-b-tooltip.hover.noninteractive
-                :size="buttonSize"
+                size="sm"
                 title="Copy link to workflow"
                 variant="outline-primary"
                 @click="onCopyPublicLink">
@@ -99,7 +97,7 @@ function onCopyPublicLink() {
                 v-if="!isAnonymous && !shared && !workflow.deleted"
                 id="workflow-copy-button"
                 v-b-tooltip.hover.noninteractive
-                :size="buttonSize"
+                size="sm"
                 title="Copy"
                 variant="outline-primary"
                 @click="onCopy">
@@ -111,7 +109,7 @@ function onCopyPublicLink() {
                 v-if="!workflow.deleted"
                 id="workflow-download-button"
                 v-b-tooltip.hover.noninteractive
-                :size="buttonSize"
+                size="sm"
                 title="Download workflow in .ga format"
                 variant="outline-primary"
                 :href="downloadUrl">
@@ -123,7 +121,7 @@ function onCopyPublicLink() {
                 v-if="!isAnonymous && !shared && !workflow.deleted"
                 id="workflow-share-button"
                 v-b-tooltip.hover.noninteractive
-                :size="buttonSize"
+                size="sm"
                 title="Share"
                 variant="outline-primary"
                 :to="`/workflows/sharing?id=${workflow.id}`">
@@ -135,7 +133,7 @@ function onCopyPublicLink() {
                 v-if="workflow.deleted"
                 id="restore-button"
                 v-b-tooltip.hover.noninteractive
-                :size="buttonSize"
+                size="sm"
                 title="Restore"
                 variant="outline-primary"
                 @click="onRestore">

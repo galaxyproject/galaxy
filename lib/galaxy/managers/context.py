@@ -79,11 +79,13 @@ class ProvidesAppContext:
     Mixed in class must provide `app` property.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def app(self) -> MinimalManagerApp:
         """Provide access to the Galaxy ``app`` object."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def url_builder(self) -> Optional[Callable[..., str]]:
         """
         Provide access to Galaxy URLs (if available).
@@ -217,7 +219,8 @@ class ProvidesUserContext(ProvidesAppContext):
             raise AuthenticationRequired("The async task requires user authentication.")
         return RequestUser(user_id=self.user.id)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """Provide access to the user object."""
 
@@ -290,7 +293,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
     properties.
     """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def history(self) -> Optional[History]:
         """Provide access to the user's current history model object.
 
