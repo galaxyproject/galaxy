@@ -97,5 +97,9 @@ export function useTaskMonitor() {
          * If true, the status of the task cannot be determined because of a request error.
          */
         requestHasFailed: readonly(requestHasFailed),
+        /**
+         * The current status of the task.
+         */
+        status: readonly(status),
     };
 }
