@@ -1,26 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckCircle, faCloudUploadAlt, faExclamationCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { useTaskMonitor } from "composables/taskMonitor";
 import { watch } from "vue";
+
+import { useTaskMonitor } from "@/composables/taskMonitor";
 
 library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 
 const { isRunning, isCompleted, hasFailed, requestHasFailed, waitForTask } = useTaskMonitor();
 
-const props = defineProps({
-    title: { type: String, required: true },
-    taskId: { type: String, default: null },
-});
+interface Props {
+    title: string;
+    taskId?: string;
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits(["onClick", "onSuccess", "onFailure"]);
 
 watch(
     () => props.taskId,
     (newTaskId, oldTaskId) => {
-        if (newTaskId !== oldTaskId) {
+        if (newTaskId && newTaskId !== oldTaskId) {
             waitForTask(newTaskId);
         }
     }
