@@ -1,4 +1,5 @@
 - id: generic_s3_legacy
+  version: 0
   name: Any S3 Compatible Storage (Legacy)
   description: |
     The APIs used to connect to Amazon's S3 (Simple Storage Service) have become something
@@ -20,7 +21,6 @@
         the [CloudFlare documentation](https://developers.cloudflare.com/r2/examples/aws/boto3/)
         describes these as ``aws_access_key_id``. Internally to Galaxy, we often just call
         this the ``access_key``.
-
     bucket:
       label: Bucket
       type: string
@@ -35,13 +35,12 @@
       help: |
         The [hostname](https://en.wikipedia.org/wiki/Hostname) used to connect to the target
         S3 compatible service.
-        
+
         If the documentation for your storage service has something called an ``endpoint_url``,
         this can be used to determine this value. For instance, the CloudFlare documentation
         describes its endpoints as ``https://<accountid>.r2.cloudflarestorage.com``. Here
         you would substitute your CloudFlare account ID into the endpoint and shave off the ``https://``,
         so if your account ID was ``galactian``, you would enter ``galactian.r2.cloudflarestorage.com``.
-
     port:
       label: Connection Port
       type: integer

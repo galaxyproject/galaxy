@@ -1,5 +1,6 @@
 # https://cloud.google.com/storage/docs/aws-simple-migration
 - id: gcp_s3_interop
+  version: 0
   name: Google Cloud Storage
   description: |
     This template can be used to connect to your [Google Cloud Storage](https://cloud.google.com/storage).
@@ -16,7 +17,6 @@
       help: |
         This will be given to you by Google when you generate [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys)
         to use your storage.
-
     bucket:
       label: Bucket
       type: string
@@ -30,7 +30,6 @@
         This will be given to you by Google when you generate [HMAC Keys](https://cloud.google.com/storage/docs/authentication/hmackeys)
         to use your storage. It should be 40 characters long and look something like the example used
         the Google documentation - `bGoa+V7g/yqDXvKRqq+JTFn4uQZbPiQJo4pf9RzJ`.
-
   configuration:
     type: boto3
     auth:

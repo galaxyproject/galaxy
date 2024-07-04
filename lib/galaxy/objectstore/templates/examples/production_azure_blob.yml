@@ -8,10 +8,8 @@
     auth:
       account_name: '{{ variables.account_name }}'
       account_key: '{{ secrets.account_key}}'
-
     container:
       name: '{{ variables.container_name }}'
-
   variables:
     container_name:
       label: Container Name
@@ -25,7 +23,6 @@
       help: |
         The name of your Azure Blob Storage account. More information on containers can be found in the
         [Azure Storage documentation](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview).
-
   secrets:
     account_key:
       label: Account Key
