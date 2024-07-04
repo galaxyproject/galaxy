@@ -21,7 +21,7 @@ def assert_has_h5_attribute(output_bytes: bytes, key: str, value: str) -> None:
     local_attrs = h5py.File(output_temp, "r").attrs
     assert (
         key in local_attrs and str(local_attrs[key]) == value
-    ), f"Not a HDF5 file or H5 attributes do not match:\n\t{list(local_attrs.items())}\n\n\t({key} : {value})"
+    ), f"Not a HDF5 file or H5 attributes do not match:\n\t{[(key, str(value)) for key, value in local_attrs.items()]}\n\n\t({key} : {value})"
 
 
 # TODO the function actually queries groups. so the function and argument name are misleading

@@ -1315,7 +1315,7 @@ if h5py is not None:
         """test has_attribute .. negative"""
         a = run_assertions(H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES)
         assert (
-            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)"
+            "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', '1')]\n\n\t(myfileattr : wrong)"
             in a
         )
         assert len(a) == 1
