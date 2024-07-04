@@ -122,10 +122,6 @@ steps:
       element: "#analysis"
       intro: "This is the current view. Start your <b>Analysis</b> from here."
 
-    - title: "Data Libraries"
-      component: masthead.libraries
-      intro: "Get access to source data."
-
     - title: "Workflow"
       component: workflows.activity
       intro: "Create, manage, import, export and share your <b>Workflows</b>."

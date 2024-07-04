@@ -124,7 +124,7 @@ export const Activities = [
     },
     {
         anonymous: true,
-        description: "Display and create new Pages.",
+        description: "Display and create new pages.",
         icon: "fa-file-contract",
         id: "pages",
         mutable: false,
@@ -133,6 +133,19 @@ export const Activities = [
         title: "Pages",
         tooltip: "Show all pages",
         to: "/pages/list",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Display Data Libraries with datasets available to all users.",
+        icon: "fa-database",
+        id: "libraries",
+        mutable: false,
+        optional: true,
+        panel: false,
+        title: "Libraries",
+        tooltip: "Access Data Libraries",
+        to: "/libraries",
         visible: true,
     },
 ];
