@@ -1146,8 +1146,8 @@ mapping:
         default: -1
         required: false
         desc: |
-          Default cache size for caching object stores if cache not configured for
-          that object store entry.
+          Default cache size, in GB, for caching object stores if the cache is not
+          configured for that object store entry.
 
       object_store_always_respect_user_selection:
         type: bool
@@ -3828,7 +3828,7 @@ mapping:
           `result_backend` option in the `celery_conf` option to a valid Celery result
           backend URL. By default, Galaxy uses an SQLite database at '<data_dir>/results.sqlite' for storing task results.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
-          
+
       celery_conf:
         type: any
         required: false
