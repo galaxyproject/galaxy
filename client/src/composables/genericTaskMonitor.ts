@@ -1,8 +1,45 @@
-import { computed, readonly, ref } from "vue";
+import { computed, readonly, type Ref, ref } from "vue";
 
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_POLL_DELAY = 10000;
+
+export interface TaskMonitor {
+    /**
+     * Waits for a particular task ID to be completed.
+     * While the task is pending, the state will be updated every `pollDelayInMs` by polling the server.
+     * @param taskId The task ID
+     * @param pollDelayInMs The time (milliseconds) between poll requests to update the task state.
+     */
+    waitForTask: (taskId: string, pollDelayInMs?: number) => Promise<void>;
+
+    /**
+     * Whether the task is currently running.
+     */
+    isRunning: Readonly<Ref<boolean>>;
+
+    /**
+     * Whether the task has been completed successfully.
+     */
+    isCompleted: Readonly<Ref<boolean>>;
+
+    /**
+     * Indicates the task has failed and will not yield results.
+     */
+    hasFailed: Readonly<Ref<boolean>>;
+
+    /**
+     * If true, the status of the task cannot be determined because of a request error.
+     */
+    requestHasFailed: Readonly<Ref<boolean>>;
+
+    /**
+     * The current status of the task.
+     * The meaning of the status string is up to the monitor implementation.
+     * In case of an error, this will be the error message.
+     */
+    status: Readonly<Ref<string | undefined>>;
+}
 
 /**
  * Composable for waiting (polling) on generic background tasks or processes.
@@ -25,7 +62,7 @@ export function useGenericMonitor(options: {
      * The delay can be overridden when calling `waitForTask`.
      */
     defaultPollDelay?: number;
-}) {
+}): TaskMonitor {
     let timeout: NodeJS.Timeout | null = null;
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
 
@@ -88,32 +125,11 @@ export function useGenericMonitor(options: {
     }
 
     return {
-        /**
-         * Waits for a particular task ID to be completed.
-         * While the task is pending, the state will be updated every `pollDelayInMs` by polling the server.
-         * @param taskId The task ID
-         * @param pollDelayInMs The time (milliseconds) between poll requests to update the task state.
-         */
         waitForTask,
-        /**
-         * Whether the task is currently running.
-         */
         isRunning: readonly(isRunning),
-        /**
-         * Whether the task has been completed successfully.
-         */
         isCompleted: readonly(isCompleted),
-        /**
-         * Indicates the task has failed and will not yield results.
-         */
         hasFailed: readonly(hasFailed),
-        /**
-         * If true, the status of the task cannot be determined because of a request error.
-         */
         requestHasFailed: readonly(requestHasFailed),
-        /**
-         * The current status of the task.
-         */
         status: readonly(status),
     };
 }
