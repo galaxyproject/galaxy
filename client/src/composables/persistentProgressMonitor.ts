@@ -64,7 +64,7 @@ export interface MonitoringRequest {
     description?: string;
 }
 
-interface MonitoringData {
+export interface MonitoringData {
     /**
      * The ID of the task or short-term storage request to monitor.
      */
