@@ -35,6 +35,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     HTTPError,
     Ingress,
     ingress_object_dict,
+    is_pod_running,
     is_pod_unschedulable,
     Job,
     job_object_dict,
@@ -802,10 +803,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                                 pass
                         else:
                             pass
-                    else:
+                    elif self.__check_job_pod_running(job_state):
                         log.debug("Job set to running...")
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+                    else:
+                        pass
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
@@ -955,6 +958,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return True
 
         return False
+
+    def __check_job_pod_running(self, job_state):
+        """
+        checks the state of the pod to see if it is unschedulable.
+        """
+        pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
+        if not pods.response["items"]:
+            return False
+
+        pod = Pod(self._pykube_api, pods.response["items"][0])
+        return is_pod_running(self._pykube_api, pod, self.runner_params["k8s_namespace"])
 
     def __job_pending_due_to_unschedulable_pod(self, job_state):
         """

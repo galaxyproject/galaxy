@@ -94,6 +94,17 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
     return Pod.objects(pykube_api).filter(selector=f"job-name={job_name}", namespace=namespace)
 
 
+def is_pod_running(pykube_api, pod, namespace=None):
+    is_running = not any(
+        c.get("state", {}).get("running", {}).get("startedAt", False) == False
+        for c in pod.obj["status"].get("containerStatuses", [])
+    )
+    if pod.obj["status"].get("phase") == "Running" and is_running:
+        return True
+
+    return False
+
+
 def is_pod_unschedulable(pykube_api, pod, namespace=None):
     is_unschedulable = any(c.get("reason") == "Unschedulable" for c in pod.obj["status"].get("conditions", []))
     if pod.obj["status"].get("phase") == "Pending" and is_unschedulable:
@@ -311,6 +322,7 @@ __all__ = (
     "find_pod_object_by_name",
     "galaxy_instance_id",
     "HTTPError",
+    "is_pod_running",
     "is_pod_unschedulable",
     "Job",
     "Service",
