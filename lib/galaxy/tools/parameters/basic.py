@@ -2053,7 +2053,8 @@ def src_id_to_item(
         item = sa_session.get(src_to_class[value["src"]], decoded_id)
     except KeyError:
         raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
-    assert item
+    if not item:
+        raise ValueError("Invalid input id passed to job submission API.")
     item.extra_params = {k: v for k, v in value.items() if k not in ("src", "id")}
     return item
 
