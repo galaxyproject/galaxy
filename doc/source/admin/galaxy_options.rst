@@ -1606,7 +1606,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default cache size for caching object stores if cache not
+    Default cache size, in GB, for caching object stores if the cache is not
     configured for that object store entry.
 :Default: ``-1``
 :Type: int
