@@ -774,7 +774,7 @@ class BaseFastq(Sequence):
     ):
         headers = kwd.get("headers", {})
         if preview:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+            with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
                 max_peek_size = 1000000  # 1 MB
                 if os.stat(dataset.get_file_name()).st_size < max_peek_size:
                     mime = "text/plain"

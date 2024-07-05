@@ -154,12 +154,12 @@ class TabularData(Text):
         )
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
-        with compression_utils.get_fileobj(dataset.get_file_name()) as f:
+        with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != "\n":
+            if ck_data and ck_data[-1] != b"\n":
                 cursor = f.read(1)
-                while cursor and cursor != "\n":
+                while cursor and cursor != b"\n":
                     ck_data += cursor
                     cursor = f.read(1)
             last_read = f.tell()
