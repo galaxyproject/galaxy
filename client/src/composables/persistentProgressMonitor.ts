@@ -103,7 +103,7 @@ export function usePersistentProgressTaskMonitor(
         return Boolean(currentMonitoringData.value);
     });
 
-    const { waitForTask, isRunning, isCompleted, hasFailed, requestHasFailed } = useMonitor;
+    const { waitForTask, isRunning, isCompleted, hasFailed, requestHasFailed, status } = useMonitor;
 
     async function start(monitoringData?: MonitoringData) {
         if (monitoringData) {
@@ -142,5 +142,7 @@ export function usePersistentProgressTaskMonitor(
         hasFailed,
         requestHasFailed,
         hasMonitoringData,
+        storedTaskId: currentMonitoringData.value?.taskId,
+        status,
     };
 }
