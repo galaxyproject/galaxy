@@ -10,12 +10,12 @@ from fastapi import (
 from galaxy.tool_util.parameters import (
     RequestToolState,
     to_json_schema_string,
-    ToolParameterBundleModel,
 )
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
+    parsed_tool_model_cached_for,
+    ParsedTool,
     search,
-    tool_input_models_cached_for,
 )
 from tool_shed.managers.trs import (
     get_tool,
@@ -144,17 +144,17 @@ class FastAPITools:
         return get_tool(trans, tool_id).versions
 
     @router.get(
-        "/api/tools/{tool_id}/versions/{tool_version}/parameter_model",
+        "/api/tools/{tool_id}/versions/{tool_version}",
         operation_id="tools__parameter_model",
         summary="Return Galaxy's meta model description of the tool's inputs",
     )
-    def tool_parameters_meta_model(
+    def show_tool(
         self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
-    ) -> ToolParameterBundleModel:
-        return tool_input_models_cached_for(trans, tool_id, tool_version)
+    ) -> ParsedTool:
+        return parsed_tool_model_cached_for(trans, tool_id, tool_version)
 
     @router.get(
         "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema",
@@ -168,6 +168,5 @@ class FastAPITools:
         tool_id: str = TOOL_ID_PATH_PARAM,
         tool_version: str = TOOL_VERSION_PATH_PARAM,
     ) -> Response:
-        return json_schema_response(
-            RequestToolState.parameter_model_for(tool_input_models_cached_for(trans, tool_id, tool_version))
-        )
+        parsed_tool = parsed_tool_model_cached_for(trans, tool_id, tool_version)
+        return json_schema_response(RequestToolState.parameter_model_for(parsed_tool.inputs))

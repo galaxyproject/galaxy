@@ -8,6 +8,8 @@ from typing import (
     Tuple,
 )
 
+from pydantic import BaseModel
+
 from galaxy import exceptions
 from galaxy.exceptions import (
     InternalServerError,
@@ -21,12 +23,15 @@ from galaxy.tool_shed.util.hg_util import (
 )
 from galaxy.tool_util.parameters import (
     input_models_for_tool_source,
-    tool_parameter_bundle_from_json,
-    ToolParameterBundleModel,
+    ToolParameterT,
 )
 from galaxy.tool_util.parser import (
     get_tool_source,
     ToolSource,
+)
+from galaxy.tool_util.parser.interface import (
+    Citation,
+    XrefDict,
 )
 from galaxy.tools.stock import stock_tool_sources
 from tool_shed.context import (
@@ -39,6 +44,53 @@ from tool_shed.webapp.search.tool_search import ToolSearch
 from .trs import trs_tool_id_to_repository_metadata
 
 STOCK_TOOL_SOURCES: Optional[Dict[str, Dict[str, ToolSource]]] = None
+
+
+# parse the tool source with galaxy.util abstractions to provide a bit richer
+# information about the tool than older tool shed abstractions.
+class ParsedTool(BaseModel):
+    id: str
+    version: Optional[str]
+    name: str
+    description: Optional[str]
+    inputs: List[ToolParameterT]
+    citations: List[Citation]
+    license: Optional[str]
+    profile: Optional[str]
+    edam_operations: List[str]
+    edam_topics: List[str]
+    xrefs: List[XrefDict]
+    help: Optional[str]
+
+
+def _parse_tool(tool_source: ToolSource) -> ParsedTool:
+    id = tool_source.parse_id()
+    version = tool_source.parse_version()
+    name = tool_source.parse_name()
+    description = tool_source.parse_description()
+    inputs = input_models_for_tool_source(tool_source).input_models
+    citations = tool_source.parse_citations()
+    license = tool_source.parse_license()
+    profile = tool_source.parse_profile()
+    edam_operations = tool_source.parse_edam_operations()
+    edam_topics = tool_source.parse_edam_topics()
+    xrefs = tool_source.parse_xrefs()
+    help = tool_source.parse_help()
+
+    return ParsedTool(
+        id=id,
+        version=version,
+        name=name,
+        description=description,
+        profile=profile,
+        inputs=inputs,
+        license=license,
+        citations=citations,
+        edam_operations=edam_operations,
+        edam_topics=edam_topics,
+        xrefs=xrefs,
+        help=help,
+    )
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -97,23 +149,23 @@ def get_repository_metadata_tool_dict(
     raise ObjectNotFound()
 
 
-def tool_input_models_cached_for(
+def parsed_tool_model_cached_for(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
-) -> ToolParameterBundleModel:
-    tool_state_cache = trans.app.tool_state_cache
-    raw_json = tool_state_cache.get_cache_entry_for(trs_tool_id, tool_version)
-    if raw_json is not None:
-        return tool_parameter_bundle_from_json(raw_json)
-    bundle = tool_input_models_for(trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url)
-    tool_state_cache.insert_cache_entry_for(trs_tool_id, tool_version, bundle.dict())
-    return bundle
+) -> ParsedTool:
+    model_cache = trans.app.model_cache
+    parsed_tool = model_cache.get_cache_entry_for(ParsedTool, trs_tool_id, tool_version)
+    if parsed_tool is not None:
+        return parsed_tool
+    parsed_tool = parsed_tool_model_for(trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url)
+    model_cache.insert_cache_entry_for(parsed_tool, trs_tool_id, tool_version)
+    return parsed_tool
 
 
-def tool_input_models_for(
+def parsed_tool_model_for(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
-) -> ToolParameterBundleModel:
+) -> ParsedTool:
     tool_source = tool_source_for(trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url)
-    return input_models_for_tool_source(tool_source)
+    return _parse_tool(tool_source)
 
 
 def tool_source_for(
