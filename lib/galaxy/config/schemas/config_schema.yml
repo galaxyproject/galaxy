@@ -1474,7 +1474,7 @@ mapping:
           This is used to make carbon emissions estimates more accurate as the location effects the
           carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
           `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
-          visit https://galaxyproject.org/admin/carbon_emissions
+          visit https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
 
       power_usage_effectiveness:
         type: float
