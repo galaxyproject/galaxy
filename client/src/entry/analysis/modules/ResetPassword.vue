@@ -35,16 +35,18 @@ async function resetLogin() {
             <div class="row justify-content-md-center">
                 <div class="col col-lg-6">
                     <BForm @submit.prevent="resetLogin">
-                        <BAlert v-if="!!message" class="mt-2" :variant="messageVariant" show>
+                        <BAlert v-if="!!message" id="reset-password-alert" class="mt-2" :variant="messageVariant" show>
                             {{ message }}
                         </BAlert>
 
                         <BCard header="Reset your password">
                             <BFormGroup label="Email Address">
-                                <BFormInput id="reset-email" v-model="email" type="email" />
+                                <BFormInput id="reset-email" v-model="email" type="email" name="email" required />
                             </BFormGroup>
 
-                            <BButton type="submit">Reset your password</BButton>
+                            <BButton id="reset-password" v-localize type="submit" :disabled="loading"
+                                >Send password reset email</BButton
+                            >
                         </BCard>
                     </BForm>
                 </div>
