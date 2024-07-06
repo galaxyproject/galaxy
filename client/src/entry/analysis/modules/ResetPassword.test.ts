@@ -7,26 +7,6 @@ import ResetPassword from "./ResetPassword.vue";
 
 const localVue = getLocalVue(true);
 
-const configMock = {
-    allow_user_creation: true,
-    enable_oidc: true,
-    mailing_join_addr: "mailing_join_addr",
-    prefer_custos_login: true,
-    registration_warning_message: "registration_warning_message",
-    server_mail_configured: true,
-    show_welcome_with_login: true,
-    terms_url: "terms_url",
-    welcome_url: "welcome_url",
-};
-
-jest.mock("app/singleton");
-jest.mock("@/composables/config", () => ({
-    useConfig: jest.fn(() => ({
-        config: configMock,
-        isConfigLoaded: true,
-    })),
-}));
-
 const mockRouter = (query: object) => ({
     currentRoute: {
         query,
