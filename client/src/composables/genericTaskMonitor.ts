@@ -4,6 +4,10 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 const DEFAULT_POLL_DELAY = 10000;
 
+/**
+ * Represents a task monitor that can be used to wait for a background task to complete or
+ * check its status.
+ */
 export interface TaskMonitor {
     /**
      * Waits for a particular task ID to be completed.
