@@ -532,8 +532,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 ]
             else:
                 k8s_spec_template["spec"]["tls"] = [
-                    {"hosts": [domain],
-                     "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
+                    {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
                 ]
         if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
             new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
