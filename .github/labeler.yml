@@ -109,12 +109,13 @@ area/toolshed:
       - lib/toolshed/**/*
       - templates/webapps/tool_shed/**/*
 area/UI-UX:
-  - changed-files:
-    - any-glob-to-any-file:
-      - client/src/**/*
-      - templates/**/*
-    - all-globs-to-all-files:
-      - '!client/src/api/schema/schema.ts'
+  - all:
+    - changed-files:
+      - any-glob-to-any-file:
+        - client/src/**/*
+        - templates/**/*
+      - all-globs-to-all-files:
+        - '!client/src/api/schema/schema.ts'
 area/util:
   - changed-files:
     - any-glob-to-any-file:
