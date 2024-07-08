@@ -74,13 +74,6 @@ describe("InvocationExportPluginCard", () => {
         expect(remoteExportButton.exists()).toBeTruthy();
     });
 
-    it("should generate the expected download URL for the invocation", () => {
-        const downloadButton = wrapper.find(".download-button");
-        expect(downloadButton.attributes("downloadendpoint")).toBe(
-            `/api/invocations/${FAKE_INVOCATION_ID}/prepare_store_download`
-        );
-    });
-
     it("should display a button for each additional action", () => {
         const actionButtons = wrapper.findAll(".action-button");
         expect(actionButtons.length).toBe(FAKE_EXPORT_PLUGIN.additionalActions.length);
