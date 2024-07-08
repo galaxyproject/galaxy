@@ -247,6 +247,7 @@ ianschenck, ian@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#p
 roryk, roryk@mit.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156734170
 NCEichner, norbert.eichner@ur.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156822869
 meekrob, dcking@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2157094723
+nagoue, nadia.goue@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2162541083
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -312,7 +313,6 @@ martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 MatthewRalston, Matt Ralston, mrals89@gmail.com
 NA, mgehring, mgehrin@emory.edu
 NA, MORITA Hideyuki, h-morita@esm.co.jp
-nagoue, Nadia Goué, nadia.goue@gmail.com
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
 odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
