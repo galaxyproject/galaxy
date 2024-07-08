@@ -1,27 +1,38 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCloudUploadAlt, faDownload } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { BButtonGroup, BButtonToolbar, BCard, BCardTitle } from "bootstrap-vue";
 import { computed, provide, ref } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
+import { MonitoringRequest } from "@/composables/persistentProgressMonitor";
+import { useShortTermStorageMonitor } from "@/composables/shortTermStorageMonitor";
+import { useTaskMonitor } from "@/composables/taskMonitor";
 import { Toast } from "@/composables/toast";
 
 import { InvocationExportPlugin } from "./model";
 
 import ActionButton from "./ActionButton.vue";
-import StsDownloadButton from "@/components/StsDownloadButton.vue";
-import ExportToRemoteButton from "@/components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
+import PersistentTaskProgressMonitorAlert from "@/components/Common/PersistentTaskProgressMonitorAlert.vue";
+import ExportButton from "@/components/Workflow/Invocation/Export/ExportButton.vue";
 import ExportToRemoteModal from "@/components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
+
+library.add(faCloudUploadAlt, faDownload);
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const exportRemoteModal = ref();
 const exportToRemoteTaskId = ref();
+const exportToStsRequestId = ref();
 
 interface Props {
     exportPlugin: InvocationExportPlugin;
     invocationId: string;
 }
+
+const taskMonitor = useTaskMonitor();
+const stsMonitor = useShortTermStorageMonitor();
 
 const props = defineProps<Props>();
 
@@ -29,7 +40,7 @@ const props = defineProps<Props>();
 provide("invocationId", props.invocationId);
 
 const descriptionRendered = computed(() => renderMarkdown(props.exportPlugin.markdownDescription));
-const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
+const preparedDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const downloadParams = computed(() => {
     const exportParams = props.exportPlugin.exportParams;
     if (!exportParams) {
@@ -43,12 +54,43 @@ const downloadParams = computed(() => {
     };
 });
 
+const exportToStsRequest = computed<MonitoringRequest>(() => ({
+    source: props.exportPlugin.id,
+    action: "export",
+    taskType: "short_term_storage",
+    object: {
+        id: props.invocationId,
+        type: "invocation",
+    },
+    description: `Exporting invocation ${props.invocationId} to Short Term Storage in preparation for download`,
+}));
+
+const exportToRemoteRequest = computed<MonitoringRequest>(() => ({
+    source: props.exportPlugin.id,
+    action: "export",
+    taskType: "task",
+    object: {
+        id: props.invocationId,
+        type: "invocation",
+    },
+    description: `Exporting invocation ${props.invocationId} to remote source`,
+}));
+
 function openRemoteExportDialog() {
     exportRemoteModal.value.showModal();
 }
 
 function closeRemoteExportDialog() {
     exportRemoteModal.value.hideModal();
+}
+
+async function exportToSts() {
+    try {
+        const response = await axios.post(preparedDownloadUrl.value, downloadParams.value);
+        exportToStsRequestId.value = response.data.storage_request_id;
+    } catch (err) {
+        Toast.error(`Failed to export invocation. ${err}`);
+    }
 }
 
 function exportToFileSource(exportDirectory: string, fileName: string) {
@@ -71,14 +113,6 @@ function exportToFileSource(exportDirectory: string, fileName: string) {
         });
     closeRemoteExportDialog();
 }
-
-function onExportToFileSourceSuccess() {
-    Toast.success(`Invocation successfully exported to remote source`);
-}
-
-function onExportToFileSourceFailure() {
-    Toast.error(`Failed to export to remote source`);
-}
 </script>
 
 <template>
@@ -88,18 +122,19 @@ function onExportToFileSourceFailure() {
                 {{ exportPlugin.title }}
                 <BButtonToolbar aria-label="Export Options">
                     <BButtonGroup>
-                        <StsDownloadButton
-                            :title="'Download Invocation as ' + exportPlugin.title"
-                            :download-endpoint="invocationDownloadUrl"
-                            :post-parameters="downloadParams"
-                            class="download-button" />
-                        <ExportToRemoteButton
-                            :title="'Export Invocation as ' + exportPlugin.title + ' and upload to remote source'"
-                            :task-id="exportToRemoteTaskId"
+                        <ExportButton
+                            :title="`Download Invocation as ${exportPlugin.title}`"
+                            :idle-icon="faDownload"
+                            :is-busy="stsMonitor.isRunning.value"
+                            class="download-button"
+                            @onClick="exportToSts">
+                        </ExportButton>
+                        <ExportButton
+                            :title="`Export Invocation as ${exportPlugin.title} and upload to Remote Source`"
+                            :idle-icon="faCloudUploadAlt"
+                            :is-busy="taskMonitor.isRunning.value"
                             class="remote-export-button"
-                            @onClick="openRemoteExportDialog"
-                            @onSuccess="onExportToFileSourceSuccess"
-                            @onFailure="onExportToFileSourceFailure" />
+                            @onClick="openRemoteExportDialog" />
                         <ActionButton
                             v-for="action in exportPlugin.additionalActions"
                             :key="action.id"
@@ -110,6 +145,27 @@ function onExportToFileSourceFailure() {
             </BCardTitle>
 
             <div class="markdown-description" v-html="descriptionRendered" />
+
+            <PersistentTaskProgressMonitorAlert
+                class="sts-export-monitor"
+                :monitor-request="exportToStsRequest"
+                :use-monitor="stsMonitor"
+                :task-id="exportToStsRequestId"
+                :enable-auto-download="true"
+                in-progress-message="Preparing your export package. Please wait..."
+                completed-message="Your export is ready! It will start downloading shortly. If it does not start automatically..."
+                failed-message="Your export has failed."
+                request-failed-message="Failed to check export progress. Try again later." />
+
+            <PersistentTaskProgressMonitorAlert
+                class="task-export-monitor"
+                :monitor-request="exportToRemoteRequest"
+                :use-monitor="taskMonitor"
+                :task-id="exportToRemoteTaskId"
+                in-progress-message="Exporting to remote source. It may take a while..."
+                completed-message="Export to remote source is complete!"
+                failed-message="Export to remote source has failed."
+                request-failed-message="Failed to check export progress. Try again later." />
         </BCard>
         <ExportToRemoteModal
             ref="exportRemoteModal"
