@@ -248,6 +248,7 @@ roryk, roryk@mit.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullreq
 NCEichner, norbert.eichner@ur.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2156822869
 meekrob, dcking@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2157094723
 nagoue, nadia.goue@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2162541083
+tshtatland, shtatland@neb.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2163521867
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -335,7 +336,6 @@ tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
 thomcuddihy, Thom Cuddihy, thom@hometreelab.com
 XDtim, Tim Thompson, tim.thompson@xdbio.com
-tshtatland, Timur Shtatland, shtatland@neb.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
 WilliamHolden, William Holden, theappdev@protonmail.com
 simpsonw, Will Simpson, wsimpson@email.arizona.edu
