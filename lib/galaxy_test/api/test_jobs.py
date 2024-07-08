@@ -576,6 +576,23 @@ steps:
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
 
+    def test_submission_on_collection_with_deleted_element(self, history_id):
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id=history_id, wait=True).json()
+        hda_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.delete_dataset(history_id=history_id, content_id=hda_id)
+        response = self.dataset_populator.run_tool_raw(
+            "is_of_type",
+            inputs={
+                "collection": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"], "map_over_type": "list"}]},
+            },
+            history_id=history_id,
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["err_msg"]
+            == "parameter 'collection': the previously selected dataset collection has elements that are deleted."
+        )
+
     @pytest.mark.require_new_history
     @skip_without_tool("create_2")
     def test_purging_output_cleaned_after_ok_run(self, history_id):
