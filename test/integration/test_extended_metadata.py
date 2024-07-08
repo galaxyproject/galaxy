@@ -100,7 +100,7 @@ class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
     def test_purge_while_job_running(self):
         # pass extra_sleep, since templating the command line will fail if the output
         # is deleted before remote_tool_eval runs.
-        purge_while_job_running(self.dataset_populator, extra_sleep=4)
+        purge_while_job_running(self.dataset_populator, extra_sleep=10)
 
 
 class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):
