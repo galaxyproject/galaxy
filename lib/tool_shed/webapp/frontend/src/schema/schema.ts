@@ -255,7 +255,7 @@ export interface components {
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
             /** Commit Message */
-            commit_message?: Record<string, never>
+            commit_message?: unknown
             /** Files */
             files?: string[] | null
         }
@@ -537,7 +537,7 @@ export interface components {
         }
         /** RepositoryMetadata */
         RepositoryMetadata: {
-            [key: string]: components["schemas"]["RepositoryRevisionMetadata"] | undefined
+            [key: string]: components["schemas"]["RepositoryRevisionMetadata"]
         }
         /** RepositoryMetadataInstallInfo */
         RepositoryMetadataInstallInfo: {
@@ -609,7 +609,7 @@ export interface components {
         }
         /** RepositoryRevisionReadmes */
         RepositoryRevisionReadmes: {
-            [key: string]: string | undefined
+            [key: string]: string
         }
         /** RepositorySearchHit */
         RepositorySearchHit: {
@@ -670,7 +670,7 @@ export interface components {
             /** Name */
             name: string
             /** Requirements */
-            requirements: Record<string, never>[]
+            requirements: unknown[]
             /** Tool Config */
             tool_config: string
             /** Tool Type */
@@ -859,7 +859,7 @@ export interface components {
              * @description A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.
              */
             descriptor_type_version?: {
-                [key: string]: components["schemas"]["DescriptorTypeVersion"][] | undefined
+                [key: string]: components["schemas"]["DescriptorTypeVersion"][]
             } | null
             /**
              * Id
@@ -997,9 +997,9 @@ export interface components {
             /** Name */
             name: string
             /** Requirements */
-            requirements: Record<string, never>[]
+            requirements: unknown[]
             /** Tests */
-            tests: Record<string, never>[]
+            tests: unknown[]
             /** Tool Config */
             tool_config: string
             /** Tool Type */
@@ -1038,11 +1038,13 @@ export interface components {
     pathItems: never
 }
 
+export type $defs = Record<string, never>
+
 export type external = Record<string, never>
 
 export interface operations {
+    /** Returns returns an API key for authenticated user based on BaseAuth headers. */
     authenticate__baseauth: {
-        /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1052,11 +1054,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Index
+     * @description index category
+     */
     categories__index: {
-        /**
-         * Index
-         * @description index category
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1066,11 +1068,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Create
+     * @description create a category
+     */
     categories__create: {
-        /**
-         * Create
-         * @description create a category
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateCategoryRequest"]
@@ -1091,14 +1093,14 @@ export interface operations {
             }
         }
     }
+    /**
+     * Show
+     * @description show category
+     */
     categories__show: {
-        /**
-         * Show
-         * @description show category
-         */
         parameters: {
-            /** @description The encoded database identifier of the category. */
             path: {
+                /** @description The encoded database identifier of the category. */
                 encoded_category_id: string
             }
         }
@@ -1117,11 +1119,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Repositories
+     * @description display repositories by category
+     */
     categories__repositories: {
-        /**
-         * Repositories
-         * @description display repositories by category
-         */
         parameters: {
             query?: {
                 installable?: boolean
@@ -1129,8 +1131,8 @@ export interface operations {
                 sort_order?: string
                 page?: number | null
             }
-            /** @description The encoded database identifier of the category. */
             path: {
+                /** @description The encoded database identifier of the category. */
                 encoded_category_id: string
             }
         }
@@ -1149,8 +1151,8 @@ export interface operations {
             }
         }
     }
+    /** Service Info */
     tools_trs_service_info: {
-        /** Service Info */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1160,8 +1162,8 @@ export interface operations {
             }
         }
     }
+    /** Tool Classes */
     tools__trs_tool_classes: {
-        /** Tool Classes */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1171,22 +1173,22 @@ export interface operations {
             }
         }
     }
+    /** Trs Index */
     tools__trs_index: {
-        /** Trs Index */
         responses: {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
                 }
             }
         }
     }
+    /** Trs Get */
     tools__trs_get: {
-        /** Trs Get */
         parameters: {
-            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
             path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
                 tool_id: string
             }
         }
@@ -1205,11 +1207,11 @@ export interface operations {
             }
         }
     }
+    /** Trs Get Versions */
     tools__trs_get_versions: {
-        /** Trs Get Versions */
         parameters: {
-            /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
             path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
                 tool_id: string
             }
         }
@@ -1228,12 +1230,12 @@ export interface operations {
             }
         }
     }
+    /**
+     * Index
+     * @description Get a list of repositories or perform a search.
+     */
     repositories__index: {
-        /**
-         * Index
-         * @description Get a list of repositories or perform a search.
-         */
-        parameters?: {
+        parameters: {
             query?: {
                 q?: string | null
                 page?: number | null
@@ -1260,11 +1262,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Create
+     * @description create a new repository
+     */
     repositories__create: {
-        /**
-         * Create
-         * @description create a new repository
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateRepositoryRequest"]
@@ -1285,12 +1287,12 @@ export interface operations {
             }
         }
     }
+    /**
+     * Get Ordered Installable Revisions
+     * @description Get an ordered list of the repository changeset revisions that are installable
+     */
     repositories__get_ordered_installable_revisions: {
-        /**
-         * Get Ordered Installable Revisions
-         * @description Get an ordered list of the repository changeset revisions that are installable
-         */
-        parameters?: {
+        parameters: {
             query?: {
                 owner?: string | null
                 name?: string | null
@@ -1312,18 +1314,18 @@ export interface operations {
             }
         }
     }
+    /**
+     * Legacy Install Info
+     * @description Get information used by the install client to install this repository.
+     */
     repositories__legacy_install_info: {
-        /**
-         * Legacy Install Info
-         * @description Get information used by the install client to install this repository.
-         */
         parameters: {
-            /** @description Name of the target repository. */
-            /** @description Owner of the target repository. */
-            /** @description Changeset of the target repository. */
             query: {
+                /** @description Name of the target repository. */
                 name: string
+                /** @description Owner of the target repository. */
                 owner: string
+                /** @description Changeset of the target repository. */
                 changeset_revision: string
             }
         }
@@ -1331,7 +1333,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>[]
+                    "application/json": unknown[]
                 }
             }
             /** @description Validation Error */
@@ -1342,18 +1344,18 @@ export interface operations {
             }
         }
     }
+    /**
+     * Install Info
+     * @description Get information used by the install client to install this repository.
+     */
     repositories__install_info: {
-        /**
-         * Install Info
-         * @description Get information used by the install client to install this repository.
-         */
         parameters: {
-            /** @description Name of the target repository. */
-            /** @description Owner of the target repository. */
-            /** @description Changeset of the target repository. */
             query: {
+                /** @description Name of the target repository. */
                 name: string
+                /** @description Owner of the target repository. */
                 owner: string
+                /** @description Changeset of the target repository. */
                 changeset_revision: string
             }
         }
@@ -1372,11 +1374,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Reset Metadata On Repository Legacy
+     * @description reset metadata on a repository
+     */
     repositories__reset_legacy: {
-        /**
-         * Reset Metadata On Repository Legacy
-         * @description reset metadata on a repository
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1386,8 +1388,8 @@ export interface operations {
             }
         }
     }
+    /** Updates */
     repositories__update: {
-        /** Updates */
         parameters: {
             query: {
                 owner?: string | null
@@ -1400,7 +1402,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
                 }
             }
             /** @description Validation Error */
@@ -1411,11 +1413,11 @@ export interface operations {
             }
         }
     }
+    /** Show */
     repositories__show: {
-        /** Show */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1434,11 +1436,11 @@ export interface operations {
             }
         }
     }
+    /** Show Allow Push */
     repositories__show_allow_push: {
-        /** Show Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1457,13 +1459,13 @@ export interface operations {
             }
         }
     }
+    /** Add Allow Push */
     repositories__add_allow_push: {
-        /** Add Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The target username. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The target username. */
                 username: string
             }
         }
@@ -1482,13 +1484,13 @@ export interface operations {
             }
         }
     }
+    /** Remove Allow Push */
     repositories__remove_allow_push: {
-        /** Remove Allow Push */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The target username. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The target username. */
                 username: string
             }
         }
@@ -1507,18 +1509,18 @@ export interface operations {
             }
         }
     }
+    /**
+     * Create Changeset Revision
+     * @description upload new revision to the repository
+     */
     repositories__create_revision: {
-        /**
-         * Create Changeset Revision
-         * @description upload new revision to the repository
-         */
         parameters: {
-            /** @description Set commit message as a query parameter. */
             query?: {
+                /** @description Set commit message as a query parameter. */
                 commit_message?: string | null
             }
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1542,17 +1544,19 @@ export interface operations {
             }
         }
     }
+    /** Set Deprecated */
     repositories__set_deprecated: {
-        /** Set Deprecated */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1561,17 +1565,19 @@ export interface operations {
             }
         }
     }
+    /** Unset Deprecated */
     repositories__unset_deprecated: {
-        /** Unset Deprecated */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1580,18 +1586,18 @@ export interface operations {
             }
         }
     }
+    /**
+     * Metadata
+     * @description Get information about repository metadata
+     */
     repositories__metadata: {
-        /**
-         * Metadata
-         * @description Get information about repository metadata
-         */
         parameters: {
-            /** @description Include only downloadable repositories. */
             query?: {
+                /** @description Include only downloadable repositories. */
                 downloadable_only?: boolean
             }
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1610,11 +1616,11 @@ export interface operations {
             }
         }
     }
+    /** Permissions */
     repositories__permissions: {
-        /** Permissions */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1633,14 +1639,14 @@ export interface operations {
             }
         }
     }
+    /**
+     * Reset Metadata On Repository
+     * @description reset metadata on a repository
+     */
     repositories__reset: {
-        /**
-         * Reset Metadata On Repository
-         * @description reset metadata on a repository
-         */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
@@ -1659,19 +1665,21 @@ export interface operations {
             }
         }
     }
+    /** Set Malicious */
     repositories__set_malicious: {
-        /** Set Malicious */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1680,19 +1688,21 @@ export interface operations {
             }
         }
     }
+    /** Unset Malicious */
     repositories__unset_malicious: {
-        /** Unset Malicious */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1701,16 +1711,16 @@ export interface operations {
             }
         }
     }
+    /**
+     * Get Readmes
+     * @description fetch readmes for repository revision
+     */
     repositories__readmes: {
-        /**
-         * Get Readmes
-         * @description fetch readmes for repository revision
-         */
         parameters: {
-            /** @description The encoded database identifier of the repository. */
-            /** @description The changeset revision corresponding to the target revision of the target repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+                /** @description The changeset revision corresponding to the target revision of the target repository. */
                 changeset_revision: string
             }
         }
@@ -1729,8 +1739,8 @@ export interface operations {
             }
         }
     }
+    /** Index */
     tools__index: {
-        /** Index */
         parameters: {
             query: {
                 q: string
@@ -1742,7 +1752,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>
+                    "application/json": unknown
                 }
             }
             /** @description Validation Error */
@@ -1753,12 +1763,12 @@ export interface operations {
             }
         }
     }
+    /**
+     * Build Search Index
+     * @description Not part of the stable API, just something to simplify
+     * bootstrapping tool sheds, scripting, testing, etc...
+     */
     tools__build_search_index: {
-        /**
-         * Build Search Index
-         * @description Not part of the stable API, just something to simplify
-         * bootstrapping tool sheds, scripting, testing, etc...
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1768,11 +1778,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Index
+     * @description index users
+     */
     users__index: {
-        /**
-         * Index
-         * @description index users
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1782,11 +1792,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Create
+     * @description create a user
+     */
     users__create: {
-        /**
-         * Create
-         * @description create a user
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateUserRequest"]
@@ -1807,11 +1817,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Current
+     * @description show current user
+     */
     users__current: {
-        /**
-         * Current
-         * @description show current user
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1821,14 +1831,14 @@ export interface operations {
             }
         }
     }
+    /**
+     * Show
+     * @description show a user
+     */
     users__show: {
-        /**
-         * Show
-         * @description show a user
-         */
         parameters: {
-            /** @description The encoded database identifier of the user. */
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
         }
@@ -1847,11 +1857,11 @@ export interface operations {
             }
         }
     }
+    /** Return the user's API key */
     users__get_or_create_api_key: {
-        /** Return the user's API key */
         parameters: {
-            /** @description The encoded database identifier of the user. */
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
         }
@@ -1870,11 +1880,11 @@ export interface operations {
             }
         }
     }
+    /** Creates a new API key for the user */
     users__create_api_key: {
-        /** Creates a new API key for the user */
         parameters: {
-            /** @description The encoded database identifier of the user. */
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
         }
@@ -1893,17 +1903,19 @@ export interface operations {
             }
         }
     }
+    /** Delete the current API key of the user */
     users__delete_api_key: {
-        /** Delete the current API key of the user */
         parameters: {
-            /** @description The encoded database identifier of the user. */
             path: {
+                /** @description The encoded database identifier of the user. */
                 encoded_user_id: string
             }
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1912,8 +1924,8 @@ export interface operations {
             }
         }
     }
+    /** Version */
     configuration__version: {
-        /** Version */
         responses: {
             /** @description Successful Response */
             200: {
@@ -1923,11 +1935,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Change Password
+     * @description reset a user
+     */
     users__internal_change_password: {
-        /**
-         * Change Password
-         * @description reset a user
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiChangePasswordRequest"]
@@ -1935,7 +1947,9 @@ export interface operations {
         }
         responses: {
             /** @description Successful Response */
-            204: never
+            204: {
+                content: never
+            }
             /** @description Validation Error */
             422: {
                 content: {
@@ -1944,11 +1958,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Internal Login
+     * @description login to web UI
+     */
     users__internal_login: {
-        /**
-         * Internal Login
-         * @description login to web UI
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiLoginRequest"]
@@ -1969,11 +1983,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Internal Logout
+     * @description logout of web UI
+     */
     users__internal_logout: {
-        /**
-         * Internal Logout
-         * @description logout of web UI
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiLogoutRequest"]
@@ -1994,11 +2008,11 @@ export interface operations {
             }
         }
     }
+    /**
+     * Register
+     * @description register a user
+     */
     users__internal_register: {
-        /**
-         * Register
-         * @description register a user
-         */
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UiRegisterRequest"]
@@ -2019,18 +2033,18 @@ export interface operations {
             }
         }
     }
+    /**
+     * Metadata Internal
+     * @description Get information about repository metadata
+     */
     repositories__internal_metadata: {
-        /**
-         * Metadata Internal
-         * @description Get information about repository metadata
-         */
         parameters: {
-            /** @description Include only downloadable repositories. */
             query?: {
+                /** @description Include only downloadable repositories. */
                 downloadable_only?: boolean
             }
-            /** @description The encoded database identifier of the repository. */
             path: {
+                /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
             }
         }
