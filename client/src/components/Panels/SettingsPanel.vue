@@ -10,9 +10,10 @@ import ActivitySettings from "@/components/ActivityBar/ActivitySettings.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
-const query = ref("");
-const confirmRestore = ref(false);
 const activityStore = useActivityStore();
+
+const confirmRestore = ref(false);
+const query = ref("");
 
 function onQuery(newQuery: string) {
     query.value = newQuery;
