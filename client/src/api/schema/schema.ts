@@ -13782,10 +13782,8 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": unknown;
-                };
+            204: {
+                content: never;
             };
             /** @description Validation Error */
             422: {

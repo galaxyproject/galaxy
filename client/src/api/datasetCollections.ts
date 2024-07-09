@@ -72,7 +72,6 @@ export const fetchCollectionAttributes = fetcher
     .create();
 
 const postCopyCollection = fetcher.path("/api/dataset_collections/{id}/copy").method("post").create();
-export async function copyCollection(id: string, dbkey: string): Promise<Record<string, never>> {
-    const { data } = await postCopyCollection({ id, dbkey });
-    return data;
+export async function copyCollection(id: string, dbkey: string): Promise<void> {
+    await postCopyCollection({ id, dbkey });
 }
