@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
@@ -262,81 +262,59 @@ onMounted(async () => {
                     <BButton
                         v-if="props.canAddLibraryItem"
                         title="Create new folder"
-                        class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
+                        class="add-library-items-folder mr-1"
                         type="button"
                         @click="newFolder">
                         <FontAwesomeIcon :icon="faPlus" />
                         Folder
                     </BButton>
 
-                    <div v-if="props.canAddLibraryItem">
-                        <div
-                            title="Add datasets to current folder"
-                            class="dropdown add-library-items add-library-items-datasets mr-1">
-                            <BButton type="button" class="btn btn-secondary" data-toggle="dropdown">
-                                <FontAwesomeIcon :icon="faPlus" />
-                                Datasets
-                                <FontAwesomeIcon :icon="faCaretDown" />
-                            </BButton>
+                    <BDropdown
+                        v-if="props.canAddLibraryItem"
+                        v-b-tooltip.top.noninteractive
+                        right
+                        no-caret
+                        class="add-library-items-datasets mr-1">
+                        <template v-slot:button-content>
+                            <FontAwesomeIcon :icon="faPlus" />
+                            Datasets
+                            <FontAwesomeIcon :icon="faCaretDown" />
+                        </template>
 
-                            <div class="dropdown-menu">
-                                <a class="dropdown-item cursor-pointer" @click="addDatasets('history')">
-                                    from History
-                                </a>
+                        <BDropdownItem @click="addDatasets('history')"> from History </BDropdownItem>
 
-                                <a
-                                    v-if="userLibraryImportDirAvailable"
-                                    class="dropdown-item cursor-pointer"
-                                    @click="addDatasets('userdir')">
-                                    from User Directory
-                                </a>
+                        <BDropdownItem v-if="userLibraryImportDirAvailable" @click="addDatasets('userdir')">
+                            from User Directory
+                        </BDropdownItem>
 
-                                <div v-if="libraryImportDir || allowLibraryPathPaste">
-                                    <h2 class="dropdown-header cursor-pointer h-text">Admins only</h2>
+                        <BDropdownDivider v-if="libraryImportDir || allowLibraryPathPaste" />
 
-                                    <a
-                                        v-if="libraryImportDir"
-                                        class="dropdown-item cursor-pointer"
-                                        @click="addDatasets('importdir')">
-                                        from Import Directory
-                                    </a>
+                        <BDropdownGroup v-if="libraryImportDir || allowLibraryPathPaste" header="Admins Only">
+                            <BDropdownItem v-if="libraryImportDir" @click="addDatasets('importdir')">
+                                from Import Directory
+                            </BDropdownItem>
 
-                                    <a
-                                        v-if="allowLibraryPathPaste"
-                                        class="dropdown-item cursor-pointer"
-                                        @click="addDatasets('path')">
-                                        from Path
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                            <BDropdownItem v-if="allowLibraryPathPaste" @click="addDatasets('path')">
+                                from Path
+                            </BDropdownItem>
+                        </BDropdownGroup>
+                    </BDropdown>
 
-                    <div class="dropdown mr-1">
-                        <BButton type="button" class="primary-button add-to-history" data-toggle="dropdown">
+                    <BDropdown v-b-tooltip.top.noninteractive right no-caret class="add-to-history mr-1">
+                        <template v-slot:button-content>
                             <FontAwesomeIcon :icon="faBook" />
                             Add to History
                             <FontAwesomeIcon :icon="faCaretDown" />
-                        </BButton>
+                        </template>
 
-                        <div class="dropdown-menu" role="menu">
-                            <a
-                                href="javascript:void(0)"
-                                role="button"
-                                class="toolbtn-bulk-import add-to-history-datasets dropdown-item"
-                                @click="importToHistoryModal(false)">
-                                as Datasets
-                            </a>
+                        <BDropdownItem class="add-to-history-datasets" @click="importToHistoryModal(false)">
+                            as Datasets
+                        </BDropdownItem>
 
-                            <a
-                                href="javascript:void(0)"
-                                role="button"
-                                class="toolbtn-collection-import add-to-history-collection dropdown-item"
-                                @click="importToHistoryModal(true)">
-                                as a Collection
-                            </a>
-                        </div>
-                    </div>
+                        <BDropdownItem class="add-to-history-collection" @click="importToHistoryModal(true)">
+                            as a Collection
+                        </BDropdownItem>
+                    </BDropdown>
 
                     <div
                         v-if="datasetManipulation"
