@@ -1,4 +1,5 @@
 - id: s3fs
+  version: 0
   name: S3 Compatible Storage with Credentials
   description: |
     The APIs used to connect to Amazon's S3 (Simple Storage Service) have become something
@@ -19,7 +20,6 @@
         that is accessing the data. The [Amazon documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html)
         calls these an "access key ID", the [CloudFlare documentation](https://developers.cloudflare.com/r2/examples/aws/boto3/)
         describes these as ``aws_access_key_id``.
-
     bucket:
       label: Bucket
       type: string
@@ -34,13 +34,12 @@
       help: |
         The [hostname](https://en.wikipedia.org/wiki/Hostname) used to connect to the target
         S3 compatible service.
-        
+
         If the documentation for your storage service has something called an ``endpoint_url``,
         this can be used to determine this value. For instance, the CloudFlare documentation
         describes its endpoints as ``https://<accountid>.r2.cloudflarestorage.com``. Here
         you would substitute your CloudFlare account ID into the endpoint and shave off the ``https://``,
         so if your account ID was ``galactian``, you would enter ``galactian.r2.cloudflarestorage.com``.
-
     port:
       label: Connection Port
       type: integer

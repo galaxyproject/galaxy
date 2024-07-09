@@ -1,6 +1,7 @@
 - id: aws_private
+  version: 0
   name: Amazon Web Services Private Bucket
-  description: Setup access to a private AWS bucket using a secret access key. 
+  description: Setup access to a private AWS bucket using a secret access key.
   configuration:
     type: s3fs
     bucket: "{{ bucket }}"
@@ -26,5 +27,5 @@
   secrets:
     secret_key:
       label: Secret Access Key
-      help: |        
+      help: |
         The "secret access key" as defined in the [Amazon Documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html).
