@@ -6,10 +6,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
+import type Filtering from "@/utils/filtering";
 
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -30,6 +33,7 @@ interface Props {
     providerUrl?: string;
     totalItems?: number;
     leafIcon?: string;
+    folderIcon?: string | object;
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
@@ -38,6 +42,9 @@ interface Props {
     selectAllVariant?: SelectionState;
     showSelectIcon?: boolean;
     title?: string;
+    searchTitle?: string;
+    okButtonText?: string;
+    filterClass?: Filtering<any>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,6 +59,7 @@ const props = withDefaults(defineProps<Props>(), {
     providerUrl: undefined,
     totalItems: 0,
     leafIcon: "fa fa-file-o",
+    folderIcon: () => faFolder,
     modalShow: true,
     modalStatic: false,
     multiple: false,
@@ -60,6 +68,9 @@ const props = withDefaults(defineProps<Props>(), {
     selectAllVariant: SELECTION_STATES.UNSELECTED,
     showSelectIcon: false,
     title: "",
+    searchTitle: undefined,
+    okButtonText: "Select",
+    filterClass: undefined,
 });
 
 const emit = defineEmits<{
@@ -74,6 +85,11 @@ const emit = defineEmits<{
 const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
+const showAdvancedSearch = ref(false);
+
+const okButtonText = computed(() => {
+    return props.okButtonText ? props.okButtonText : props.fileMode ? "Select" : "Select this folder";
+});
 
 const fieldDetails = computed(() => {
     const fields = props.fields.slice().map((x) => {
@@ -145,11 +161,27 @@ watch(
     <BModal
         v-if="modalShow"
         modal-class="selection-dialog-modal"
+        header-class="flex-column"
         visible
         :static="modalStatic"
+        :title="title"
         @hide="emit('onCancel')">
         <template v-slot:modal-header>
-            <DataDialogSearch v-model="filter" :title="title" />
+            <slot name="header">
+                <Heading v-if="props.title" h2> {{ props.title }} </Heading>
+
+                <FilterMenu
+                    v-if="props.filterClass"
+                    :name="props.title"
+                    class="w-100"
+                    :placeholder="props.searchTitle || props.title"
+                    :filter-class="props.filterClass"
+                    :filter-text.sync="filter"
+                    :loading="props.isBusy"
+                    :show-advanced.sync="showAdvancedSearch" />
+
+                <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
+            </slot>
         </template>
         <slot name="helper" />
         <BAlert v-if="errorMessage" variant="danger" show>
@@ -191,7 +223,7 @@ watch(
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
-                                    <FontAwesomeIcon :icon="faFolder" />
+                                    <FontAwesomeIcon :icon="props.folderIcon" />
                                     <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
                                 </div>
                             </span>
@@ -262,7 +294,7 @@ watch(
                         :disabled="disableOk"
                         @click="emit('onOk')">
                         <FontAwesomeIcon :icon="faCheck" />
-                        {{ fileMode ? "Ok" : "Select this folder" }}
+                        {{ okButtonText }}
                     </BButton>
                 </div>
             </div>
