@@ -21,6 +21,7 @@ import { useUserStore } from "@/stores/userStore";
 import FolderDetails from "@/components/Libraries/LibraryFolder/FolderDetails/FolderDetails.vue";
 import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
 import SearchField from "@/components/Libraries/LibraryFolder/SearchField.vue";
+import HistoryDatasetPicker from "@/components/Libraries/LibraryFolder/TopToolbar/HistoryDatasetPicker.vue";
 
 library.add(faBook, faCaretDown, faDownload, faHome, faPlus, faTrash);
 
@@ -58,6 +59,7 @@ const { datatypes } = useDetailedDatatypes();
 
 const dbKeyStore = useDbKeyStore();
 
+const modalShow = ref("");
 const libraryImportDir = ref(false);
 const allowLibraryPathPaste = ref(false);
 const genomesList = ref<GenomesList>([]);
@@ -201,6 +203,10 @@ async function importToHistoryModal(isCollection: boolean) {
     }
 }
 
+function onAddDatasets(source: string = "") {
+    modalShow.value = source;
+}
+
 // TODO: after replacing the selection dialog with the new component that is not using jquery
 async function addDatasets(source: string) {
     await fetchExtAndGenomes();
@@ -285,7 +291,7 @@ onMounted(async () => {
                             <FontAwesomeIcon :icon="faCaretDown" />
                         </template>
 
-                        <BDropdownItem @click="addDatasets('history')"> from History </BDropdownItem>
+                        <BDropdownItem @click="onAddDatasets('history')"> from History </BDropdownItem>
 
                         <BDropdownItem v-if="userLibraryImportDirAvailable" @click="addDatasets('userdir')">
                             from User Directory
@@ -356,5 +362,11 @@ onMounted(async () => {
             v-if="props.metadata && props.metadata.full_path"
             :full_path="props.metadata.full_path"
             :current-id="props.folderId" />
+
+        <HistoryDatasetPicker
+            v-if="modalShow === 'history'"
+            :folder-id="props.folderId"
+            @onClose="onAddDatasets"
+            @reload="emit('fetchFolderContents')" />
     </div>
 </template>
