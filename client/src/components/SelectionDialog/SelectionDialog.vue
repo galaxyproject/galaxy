@@ -35,7 +35,7 @@ interface Props {
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
-    selectAllIcon?: string;
+    selectAllVariant?: SelectionState;
     showSelectIcon?: boolean;
     title?: string;
 }
@@ -57,7 +57,7 @@ const props = withDefaults(defineProps<Props>(), {
     multiple: false,
     optionsShow: false,
     undoShow: false,
-    selectAllIcon: SELECTION_STATES.UNSELECTED,
+    selectAllVariant: SELECTION_STATES.UNSELECTED,
     showSelectIcon: false,
     title: "",
 });
@@ -174,7 +174,7 @@ watch(
                         <FontAwesomeIcon
                             class="select-checkbox cursor-pointer"
                             title="Check to select all datasets"
-                            :icon="selectionIcon(selectAllIcon)"
+                            :icon="selectionIcon(selectAllVariant)"
                             @click="$emit('onSelectAll')" />
                     </template>
                     <template v-slot:cell(__select_icon__)="data">
