@@ -335,7 +335,14 @@ def v2_image_name(
     >>> multi_targets_versionless = [build_target("samtools"), build_target("bwa")]
     >>> v2_image_name(multi_targets_versionless)
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
+    >>> targets_version_with_build = [build_target("samtools", version="1.3.1=h9071d68_10"), build_target("bedtools", version="2.26.0=0")]
+    >>> v2_image_name(targets_version_with_build)
+    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:8e86df67d257ce6494ae12b2c60e1b94025ea529'
+    >>> targets_version_with_build = [build_target("samtools", version="1.3.1", build="h9071d68_10"), build_target("bedtools", version="2.26.0", build="0")]
+    >>> v2_image_name(targets_version_with_build)
+    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619'
     """
+
     if name_override is not None:
         print(
             "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
