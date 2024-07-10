@@ -39,10 +39,10 @@ function onViewObjectStore(objectStoreId: string) {
 }
 </script>
 <template>
-    <OverviewPage title="Object Stores Storage Overview">
+    <OverviewPage title="Storage overview by location">
         <p class="text-justify">
-            Here you can find various graphs displaying the storage size taken by all your histories grouped by object
-            store.
+            Here you can find various graphs displaying the storage size taken by all your histories grouped by where
+            they are physically stored.
         </p>
         <WarnDeletedHistories />
         <div v-if="isLoading" class="text-center">
@@ -53,14 +53,14 @@ function onViewObjectStore(objectStoreId: string) {
                 v-if="objectStoresBySizeData"
                 :description="
                     localize(
-                        `This graph displays how your Galaxy data is stored sorted into the object store is stored in. Click on a bar to see more information about the object store.`
+                        `This graph displays how your Galaxy data is stored sorted into the location is stored in. Click on a bar to see more information about the storage location.`
                     )
                 "
                 :data="objectStoresBySizeData"
                 :enable-selection="true"
                 v-bind="byteFormattingForChart">
                 <template v-slot:title>
-                    <b>{{ localize(`Object Stores by Usage`) }}</b>
+                    <b>{{ localize(`Storage locations by Usage`) }}</b>
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <ShowObjectStore v-if="data" :object-store-id="data.id" />

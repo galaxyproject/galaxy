@@ -194,7 +194,7 @@ function onUndelete(datasetId: string) {
                                 id="input-group-object-store"
                                 label="Storage location:"
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular object store.">
+                                description="This will constrain history size calculations to a particular storage location.">
                                 <FilterObjectStoreLink
                                     :object-stores="selectableObjectStores"
                                     :value="objectStore"
