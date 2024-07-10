@@ -98,7 +98,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
