@@ -2128,7 +2128,7 @@ export interface components {
             /** Collection Type */
             collection_type?: string | null;
             /** Default */
-            default?: Record<string, never> | null;
+            default?: unknown;
             /** Label */
             label?: string | null;
             /**
@@ -2187,7 +2187,7 @@ export interface components {
              * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent?: Record<string, never>;
+            quota_percent?: unknown;
             /**
              * Total disk usage
              * @description Size of all non-purged, unique datasets of the user in bytes.
@@ -2309,14 +2309,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -2513,29 +2513,29 @@ export interface components {
              * All Datasets
              * @default true
              */
-            all_datasets?: Record<string, never>;
+            all_datasets?: unknown;
             /** Archive File */
-            archive_file?: Record<string, never>;
+            archive_file?: unknown;
             /** Archive Source */
-            archive_source?: Record<string, never>;
+            archive_source?: unknown;
             /**
              * Archive Type
              * @default url
              */
-            archive_type?: Record<string, never>;
+            archive_type?: unknown;
             /** History Id */
-            history_id?: Record<string, never>;
+            history_id?: unknown;
             /** Name */
-            name?: Record<string, never>;
+            name?: unknown;
         };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
             /** Files */
             files?: string[] | null;
             /** History Id */
-            history_id: Record<string, never>;
+            history_id: unknown;
             /** Targets */
-            targets: Record<string, never>;
+            targets: unknown;
         };
         /** BroadcastNotificationContent */
         BroadcastNotificationContent: {
@@ -2871,7 +2871,7 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Space To Tab
              * @default false
@@ -3022,7 +3022,7 @@ export interface components {
          * }
          */
         ConvertedDatasetsMap: {
-            [key: string]: string | undefined;
+            [key: string]: string;
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -3115,7 +3115,7 @@ export interface components {
              * @default dataset
              */
             type?: components["schemas"]["HistoryContentType"] | null;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** CreateHistoryFromStore */
         CreateHistoryFromStore: {
@@ -3133,7 +3133,7 @@ export interface components {
             name: string;
             /** Secrets */
             secrets: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /** Template Id */
             template_id: string;
@@ -3141,7 +3141,7 @@ export interface components {
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             };
         };
         /** CreateInvocationsFromStorePayload */
@@ -3328,7 +3328,7 @@ export interface components {
              * @description The name of the page.
              */
             title: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** CreateQuotaParams */
         CreateQuotaParams: {
@@ -3584,7 +3584,7 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             contents_states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * Contents URL
@@ -3672,14 +3672,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids?: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             } | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
@@ -4020,7 +4020,7 @@ export interface components {
              * Transform
              * @description The transformations applied to the dataset source.
              */
-            transform?: Record<string, never>[] | null;
+            transform?: unknown[] | null;
         };
         /** DatasetSourceId */
         DatasetSourceId: {
@@ -4228,7 +4228,7 @@ export interface components {
          * @default {}
          */
         DatatypesEDAMDetailsDict: {
-            [key: string]: components["schemas"]["DatatypeEDAMDetails"] | undefined;
+            [key: string]: components["schemas"]["DatatypeEDAMDetails"];
         };
         /** DatatypesMap */
         DatatypesMap: {
@@ -4237,18 +4237,16 @@ export interface components {
              * @description Dictionary mapping datatype's classes with their base classes
              */
             class_to_classes: {
-                [key: string]:
-                    | {
-                          [key: string]: boolean | undefined;
-                      }
-                    | undefined;
+                [key: string]: {
+                    [key: string]: boolean;
+                };
             };
             /**
              * Extension Map
              * @description Dictionary mapping datatype's extensions with implementation classes
              */
             ext_to_class_name: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
         };
         /** DefaultQuota */
@@ -4458,12 +4456,12 @@ export interface components {
              * Quota in bytes
              * @description Quota applicable to the user in bytes.
              */
-            quota_bytes: Record<string, never>;
+            quota_bytes: unknown;
             /**
              * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent?: Record<string, never>;
+            quota_percent?: unknown;
             /**
              * Tags used
              * @description Tags used by the user
@@ -4748,7 +4746,7 @@ export interface components {
              * @default {}
              */
             inputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Job Runner Name
@@ -4767,7 +4765,7 @@ export interface components {
              * @default {}
              */
             output_collections?: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
             };
             /**
              * Outputs
@@ -4775,13 +4773,13 @@ export interface components {
              * @default {}
              */
             outputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Parameters
              * @description Object containing all the parameters of the tool associated with this job. The specific parameters depend on the tool itself.
              */
-            params: Record<string, never>;
+            params: unknown;
             /**
              * State
              * @description Current state of the job.
@@ -5018,7 +5016,7 @@ export interface components {
                 | components["schemas"]["HdcaDataItemsFromTarget"]
                 | components["schemas"]["FtpImportTarget"]
             )[];
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** FileDataElement */
         FileDataElement: {
@@ -5056,7 +5054,7 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Space To Tab
              * @default false
@@ -5357,7 +5355,7 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Space To Tab
              * @default false
@@ -5687,7 +5685,7 @@ export interface components {
              * Metadata
              * @description The metadata associated with this dataset.
              */
-            metadata?: Record<string, never> | null;
+            metadata?: unknown;
             /**
              * Miscellaneous Blurb
              * @description TODO
@@ -5788,7 +5786,7 @@ export interface components {
              * @description The collection of visualizations that can be applied to this dataset.
              */
             visualizations?: components["schemas"]["Visualization"][] | null;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HDADetailed
@@ -5935,7 +5933,7 @@ export interface components {
              * Metadata
              * @description The metadata associated with this dataset.
              */
-            metadata?: Record<string, never> | null;
+            metadata?: unknown;
             /**
              * Miscellaneous Blurb
              * @description TODO
@@ -6164,7 +6162,7 @@ export interface components {
             state: components["schemas"]["DatasetState"];
             /** Tags */
             tags: string[];
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HDASummary
@@ -6721,21 +6719,21 @@ export interface components {
          * @description Model for a category in the help forum.
          */
         HelpForumCategory: {
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HelpForumGroup
          * @description Model for a group in the help forum.
          */
         HelpForumGroup: {
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HelpForumGroupedSearchResult
          * @description Model for a grouped search result.
          */
         HelpForumGroupedSearchResult: {
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HelpForumPost
@@ -6787,7 +6785,7 @@ export interface components {
              * @description The username of the post author.
              */
             username: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HelpForumSearchResponse
@@ -6834,7 +6832,7 @@ export interface components {
          * @description Model for a tag in the help forum.
          */
         HelpForumTag: {
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HelpForumTopic
@@ -6845,7 +6843,7 @@ export interface components {
              * Archetype
              * @description The archetype of the topic.
              */
-            archetype: Record<string, never>;
+            archetype: unknown;
             /**
              * Archived
              * @description Whether the topic is archived.
@@ -6940,7 +6938,7 @@ export interface components {
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.
              */
-            tags_descriptions?: Record<string, never> | null;
+            tags_descriptions?: unknown;
             /**
              * Title
              * @description The title of the topic.
@@ -6967,7 +6965,7 @@ export interface components {
          * @description Model for a user in the help forum.
          */
         HelpForumUser: {
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * HistoryActiveContentCounts
@@ -7190,14 +7188,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -7345,7 +7343,7 @@ export interface components {
              * @default {}
              */
             states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** ImportToolDataBundle */
@@ -7401,7 +7399,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -7412,7 +7410,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -7444,7 +7442,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -7455,7 +7453,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -7487,7 +7485,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -7498,7 +7496,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -7853,7 +7851,7 @@ export interface components {
              * Parameter value
              * @description Value of the input parameter.
              */
-            parameter_value: Record<string, never>;
+            parameter_value: unknown;
             /**
              * Workflow step ID
              * @description The encoded ID of the workflow step associated with the input parameter.
@@ -7885,7 +7883,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationOutput */
@@ -8083,7 +8081,7 @@ export interface components {
              * @default {}
              */
             output_collections?: {
-                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"];
             };
             /**
              * Outputs
@@ -8091,7 +8089,7 @@ export interface components {
              * @default {}
              */
             outputs?: {
-                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationStepOutput"];
             };
             /**
              * State of the invocation step
@@ -8163,7 +8161,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepJobsResponseJobModel */
@@ -8190,7 +8188,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepJobsResponseStepModel */
@@ -8217,7 +8215,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepOutput */
@@ -8294,13 +8292,13 @@ export interface components {
              * @default {}
              */
             ds_map?: {
-                [key: string]: Record<string, never> | undefined;
+                [key: string]: Record<string, never>;
             } | null;
             /**
              * Effective Outputs
              * @description TODO
              */
-            effective_outputs?: Record<string, never> | null;
+            effective_outputs?: unknown;
             /**
              * History
              * @description The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.
@@ -8534,7 +8532,7 @@ export interface components {
              * @description ID assigned to submitted job by external job running system
              */
             "Runner Job ID"?: string | null;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** JobDisplayParametersSummary */
         JobDisplayParametersSummary: {
@@ -8548,7 +8546,7 @@ export interface components {
              * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.
              */
             outputs: {
-                [key: string]: components["schemas"]["JobOutput"][] | undefined;
+                [key: string]: components["schemas"]["JobOutput"][];
             };
             /**
              * Parameters
@@ -8774,7 +8772,7 @@ export interface components {
              * Output label
              * @description The output label
              */
-            label: Record<string, never>;
+            label: unknown;
             /**
              * Dataset
              * @description The associated dataset.
@@ -8815,13 +8813,7 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value?:
-                | components["schemas"]["EncodedJobParameterHistoryItem"][]
-                | number
-                | number
-                | boolean
-                | string
-                | null;
+            value?: components["schemas"]["EncodedJobParameterHistoryItem"][] | number | boolean | string | null;
         };
         /**
          * JobSourceType
@@ -8874,7 +8866,7 @@ export interface components {
              * @default {}
              */
             states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /**
@@ -9188,7 +9180,7 @@ export interface components {
             /** Folder Name */
             folder_name: string;
             /** Full Path */
-            full_path: unknown[][];
+            full_path: [string, string][];
             /**
              * Parent Library Id
              * @example 0123456789ABCDEF
@@ -9486,7 +9478,7 @@ export interface components {
          * @description List of files in Jstree format.
          * @default []
          */
-        ListJstreeResponse: Record<string, never>[];
+        ListJstreeResponse: unknown[];
         /**
          * ListUriResponse
          * @description List of directories and files.
@@ -9633,7 +9625,7 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Space To Tab
              * @default false
@@ -10147,7 +10139,7 @@ export interface components {
              * @description The name of the user owning this Page.
              */
             username: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** PageSummary */
         PageSummary: {
@@ -10265,12 +10257,12 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Paste Content
              * @description Content to upload
              */
-            paste_content: string | number | number | boolean;
+            paste_content: string | number | boolean;
             /**
              * Space To Tab
              * @default false
@@ -10328,7 +10320,7 @@ export interface components {
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /** Path */
             path: string;
             /**
@@ -10367,7 +10359,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -10378,7 +10370,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -10490,21 +10482,21 @@ export interface components {
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Xref
@@ -10991,7 +10983,7 @@ export interface components {
         };
         /** RootModel[Dict[str, int]] */
         RootModel_Dict_str__int__: {
-            [key: string]: number | undefined;
+            [key: string]: number;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -11010,7 +11002,7 @@ export interface components {
              * @description The tool ID related to the job.
              */
             tool_id: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** ServerDirElement */
         ServerDirElement: {
@@ -11050,7 +11042,7 @@ export interface components {
             /** Link Data Only */
             link_data_only?: boolean | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /** Server Dir */
             server_dir: string;
             /**
@@ -11256,7 +11248,7 @@ export interface components {
              * User Identifiers
              * @description A collection of encoded IDs (or email addresses) of users that this resource will be shared with.
              */
-            user_ids: (string | string)[];
+            user_ids: string[];
         };
         /** ShareWithStatus */
         ShareWithStatus: {
@@ -11368,7 +11360,7 @@ export interface components {
         /** ShortTermStoreExportPayload */
         ShortTermStoreExportPayload: {
             /** Duration */
-            duration?: number | number | null;
+            duration?: number | null;
             /**
              * Include deleted
              * @description Include file contents for deleted datasets (if include_files is True).
@@ -11425,7 +11417,7 @@ export interface components {
              * Job dependencies
              * @description The dependencies of the job.
              */
-            dependencies?: Record<string, never>[] | null;
+            dependencies?: unknown[] | null;
             /**
              * Exit Code
              * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
@@ -11462,13 +11454,13 @@ export interface components {
              * @default {}
              */
             inputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Job Messages
              * @description List with additional information and possible reasons for a failed job.
              */
-            job_messages?: Record<string, never>[] | null;
+            job_messages?: unknown[] | null;
             /**
              * Job Metrics
              * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job. Only administrators can see these metrics.
@@ -11501,7 +11493,7 @@ export interface components {
              * @default {}
              */
             output_collections?: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
             };
             /**
              * Outputs
@@ -11509,13 +11501,13 @@ export interface components {
              * @default {}
              */
             outputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Parameters
              * @description Object containing all the parameters of the tool associated with this job. The specific parameters depend on the tool itself.
              */
-            params: Record<string, never>;
+            params: unknown;
             /**
              * State
              * @description Current state of the job.
@@ -11708,7 +11700,7 @@ export interface components {
              * @default {}
              */
             inputs?: {
-                [key: string]: components["schemas"]["WorkflowInput"] | undefined;
+                [key: string]: components["schemas"]["WorkflowInput"];
             };
             /**
              * Latest workflow UUID
@@ -11769,15 +11761,12 @@ export interface components {
              */
             steps?: {
                 [key: string]:
-                    | (
-                          | components["schemas"]["InputDataStep"]
-                          | components["schemas"]["InputDataCollectionStep"]
-                          | components["schemas"]["InputParameterStep"]
-                          | components["schemas"]["PauseStep"]
-                          | components["schemas"]["ToolStep"]
-                          | components["schemas"]["SubworkflowStep"]
-                      )
-                    | undefined;
+                    | components["schemas"]["InputDataStep"]
+                    | components["schemas"]["InputDataCollectionStep"]
+                    | components["schemas"]["InputParameterStep"]
+                    | components["schemas"]["PauseStep"]
+                    | components["schemas"]["ToolStep"]
+                    | components["schemas"]["SubworkflowStep"];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -11815,7 +11804,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -11826,7 +11815,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -12043,14 +12032,14 @@ export interface components {
             base_dir: string[];
             /** Fields */
             fields: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
              */
             files: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * Fingerprint
@@ -12093,7 +12082,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -12104,7 +12093,7 @@ export interface components {
              * Tool Inputs
              * @description TODO
              */
-            tool_inputs?: Record<string, never>;
+            tool_inputs?: unknown;
             /**
              * Tool Version
              * @description The version of the tool associated with this step.
@@ -12268,7 +12257,7 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** UpdateCreatorAction */
         UpdateCreatorAction: {
@@ -12279,7 +12268,7 @@ export interface components {
              */
             action_type: "update_creator";
             /** Creator */
-            creator?: Record<string, never>;
+            creator?: unknown;
         };
         /**
          * UpdateHistoryContentsBatchPayload
@@ -12300,7 +12289,7 @@ export interface components {
              * @description A list of content items to update with the changes.
              */
             items: components["schemas"]["UpdateContentItem"][];
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * UpdateHistoryContentsPayload
@@ -12336,7 +12325,7 @@ export interface components {
              * @description Whether this item is visible in the history.
              */
             visible?: boolean | null;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
@@ -12350,7 +12339,7 @@ export interface components {
             name?: string | null;
             /** Variables */
             variables?: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /** UpdateInstanceSecretPayload */
@@ -12529,7 +12518,7 @@ export interface components {
              * @description The new notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+                [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
         };
         /** UpgradeAllStepsAction */
@@ -12545,13 +12534,13 @@ export interface components {
         UpgradeInstancePayload: {
             /** Secrets */
             secrets: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /** Template Version */
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             };
         };
         /** UpgradeSubworkflowAction */
@@ -12622,7 +12611,7 @@ export interface components {
             /** Info */
             info?: string | null;
             /** Name */
-            name?: string | number | number | boolean | null;
+            name?: string | number | boolean | null;
             /**
              * Space To Tab
              * @default false
@@ -12691,7 +12680,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /** UserCreationPayload */
@@ -12765,7 +12754,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /**
@@ -12824,7 +12813,7 @@ export interface components {
              * @description The notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+                [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
         };
         /**
@@ -13036,7 +13025,7 @@ export interface components {
              * @description The name of the user owning this Visualization.
              */
             username: string;
-            [key: string]: unknown | undefined;
+            [key: string]: unknown;
         };
         /**
          * VisualizationSummaryList
@@ -13059,7 +13048,7 @@ export interface components {
              * Value
              * @description TODO
              */
-            value: Record<string, never> | null;
+            value: unknown;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
@@ -13103,7 +13092,7 @@ export interface components {
              * UUID
              * @description Universal unique identifier of the workflow invocation.
              */
-            uuid?: string | string | null;
+            uuid?: string | null;
             /**
              * Workflow ID
              * @description The encoded Workflow ID associated with the invocation.
@@ -13136,14 +13125,14 @@ export interface components {
              * @description Input step parameters of the workflow invocation.
              */
             input_step_parameters: {
-                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
+                [key: string]: components["schemas"]["InvocationInputParameter"];
             };
             /**
              * Inputs
              * @description Input datasets/dataset collections of the workflow invocation.
              */
             inputs: {
-                [key: string]: components["schemas"]["InvocationInput"] | undefined;
+                [key: string]: components["schemas"]["InvocationInput"];
             };
             /**
              * Messages
@@ -13174,7 +13163,7 @@ export interface components {
              * @description Output dataset collections of the workflow invocation.
              */
             output_collections: {
-                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
+                [key: string]: components["schemas"]["InvocationOutputCollection"];
             };
             /**
              * Output values
@@ -13186,7 +13175,7 @@ export interface components {
              * @description Output datasets of the workflow invocation.
              */
             outputs: {
-                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationOutput"];
             };
             /**
              * Invocation state
@@ -13208,7 +13197,7 @@ export interface components {
              * UUID
              * @description Universal unique identifier of the workflow invocation.
              */
-            uuid?: string | string | null;
+            uuid?: string | null;
             /**
              * Workflow ID
              * @description The encoded Workflow ID associated with the invocation.
@@ -13245,7 +13234,7 @@ export interface components {
              * @default {}
              */
             states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** WriteInvocationStoreToPayload */
@@ -13261,21 +13250,21 @@ export interface components {
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Xref
@@ -13420,11 +13409,13 @@ export interface components {
     pathItems: never;
 }
 
+export type $defs = Record<string, never>;
+
 export type external = Record<string, never>;
 
 export interface operations {
+    /** Returns returns an API key for authenticated user based on BaseAuth headers. */
     get_api_key_api_authenticate_baseauth_get: {
-        /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         responses: {
             /** @description Successful Response */
             200: {
@@ -13434,24 +13425,24 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return an object containing exposable configuration settings
+     * @description Return an object containing exposable configuration settings.
+     *
+     * A more complete list is returned if the user is an admin.
+     * Pass in `view` and a comma-seperated list of keys to control which
+     * configuration settings are returned.
+     */
     index_api_configuration_get: {
-        /**
-         * Return an object containing exposable configuration settings
-         * @description Return an object containing exposable configuration settings.
-         *
-         * A more complete list is returned if the user is an admin.
-         * Pass in `view` and a comma-seperated list of keys to control which
-         * configuration settings are returned.
-         */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13470,18 +13461,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Decode a given id
+     * @description Decode a given id.
+     */
     decode_id_api_configuration_decode__encoded_id__get: {
-        /**
-         * Decode a given id
-         * @description Decode a given id.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description Encoded id to be decoded */
             path: {
+                /** @description Encoded id to be decoded */
                 encoded_id: string;
             };
         };
@@ -13490,7 +13481,7 @@ export interface operations {
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: number | undefined;
+                        [key: string]: number;
                     };
                 };
             };
@@ -13502,14 +13493,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return dynamic tool configuration files
+     * @description Return dynamic tool configuration files.
+     */
     dynamic_tool_confs_api_configuration_dynamic_tool_confs_get: {
-        /**
-         * Return dynamic tool configuration files
-         * @description Return dynamic tool configuration files.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13518,7 +13509,7 @@ export interface operations {
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     }[];
                 };
             };
@@ -13530,18 +13521,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Encode a given id
+     * @description Decode a given id.
+     */
     encode_id_api_configuration_encode__decoded_id__get: {
-        /**
-         * Encode a given id
-         * @description Decode a given id.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description Decoded id to be encoded */
             path: {
+                /** @description Decoded id to be encoded */
                 decoded_id: number;
             };
         };
@@ -13550,7 +13541,7 @@ export interface operations {
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
@@ -13562,14 +13553,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return tool lineages for tools that have them
+     * @description Return tool lineages for tools that have them.
+     */
     tool_lineages_api_configuration_tool_lineages_get: {
-        /**
-         * Return tool lineages for tools that have them
-         * @description Return tool lineages for tools that have them.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13578,7 +13569,7 @@ export interface operations {
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: Record<string, never> | undefined;
+                        [key: string]: Record<string, never>;
                     }[];
                 };
             };
@@ -13590,14 +13581,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Reload the Galaxy toolbox (but not individual tools)
+     * @description Reload the Galaxy toolbox (but not individual tools).
+     */
     reload_toolbox_api_configuration_toolbox_put: {
-        /**
-         * Reload the Galaxy toolbox (but not individual tools)
-         * @description Reload the Galaxy toolbox (but not individual tools).
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13605,7 +13596,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -13616,15 +13607,15 @@ export interface operations {
             };
         };
     };
+    /** Content */
     content_api_dataset_collection_element__dce_id__get: {
-        /** Content */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded ID of the dataset collection element. */
             path: {
+                /** @description The encoded ID of the dataset collection element. */
                 dce_id: string;
             };
         };
@@ -13643,11 +13634,11 @@ export interface operations {
             };
         };
     };
+    /** Create a new dataset collection instance. */
     create_api_dataset_collections_post: {
-        /** Create a new dataset collection instance. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13671,25 +13662,25 @@ export interface operations {
             };
         };
     };
+    /** Returns direct child contents of indicated dataset collection parent ID. */
     contents_dataset_collection_api_dataset_collections__hdca_id__contents__parent_id__get: {
-        /** Returns direct child contents of indicated dataset collection parent ID. */
         parameters: {
-            /** @description The type of collection instance. Either `history` (default) or `library`. */
-            /** @description The maximum number of content elements to return. */
-            /** @description The number of content elements that will be skipped before returning. */
             query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
                 instance_type?: "history" | "library";
+                /** @description The maximum number of content elements to return. */
                 limit?: number | null;
+                /** @description The number of content elements that will be skipped before returning. */
                 offset?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
-            /** @description Parent collection ID describing what collection the contents belongs to. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 hdca_id: string;
+                /** @description Parent collection ID describing what collection the contents belongs to. */
                 parent_id: string;
             };
         };
@@ -13708,21 +13699,21 @@ export interface operations {
             };
         };
     };
+    /** Returns detailed information about the given collection. */
     show_api_dataset_collections__id__get: {
-        /** Returns detailed information about the given collection. */
         parameters: {
-            /** @description The type of collection instance. Either `history` (default) or `library`. */
-            /** @description The view of collection instance to return. */
             query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
                 instance_type?: "history" | "library";
+                /** @description The view of collection instance to return. */
                 view?: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
@@ -13741,19 +13732,19 @@ export interface operations {
             };
         };
     };
+    /** Returns `dbkey`/`extension` attributes for all the collection elements. */
     attributes_api_dataset_collections__id__attributes_get: {
-        /** Returns `dbkey`/`extension` attributes for all the collection elements. */
         parameters: {
-            /** @description The type of collection instance. Either `history` (default) or `library`. */
             query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
                 instance_type?: "history" | "library";
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
@@ -13772,15 +13763,15 @@ export interface operations {
             };
         };
     };
+    /** Copy the given collection datasets to a new collection using a new `dbkey` attribute. */
     copy_api_dataset_collections__id__copy_post: {
-        /** Copy the given collection datasets to a new collection using a new `dbkey` attribute. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
@@ -13791,10 +13782,8 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
+            204: {
+                content: never;
             };
             /** @description Validation Error */
             422: {
@@ -13804,25 +13793,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Download the content of a dataset collection as a `zip` archive.
+     * @description Download the content of a history dataset collection as a `zip` archive
+     * while maintaining approximate collection structure.
+     */
     dataset_collections__download: {
-        /**
-         * Download the content of a dataset collection as a `zip` archive.
-         * @description Download the content of a history dataset collection as a `zip` archive
-         * while maintaining approximate collection structure.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -13831,20 +13822,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Prepare an short term storage object that the collection will be downloaded to.
+     * @description The history dataset collection will be written as a `zip` archive to the
+     * returned short term storage object. Progress tracking this file's creation
+     * can be tracked with the short_term_storage API.
+     */
     prepare_collection_download_api_dataset_collections__id__prepare_download_post: {
-        /**
-         * Prepare an short term storage object that the collection will be downloaded to.
-         * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
@@ -13862,22 +13853,24 @@ export interface operations {
                 };
             };
             /** @description Required asynchronous tasks required for this operation not available. */
-            501: never;
+            501: {
+                content: never;
+            };
         };
     };
+    /** Returns a list of applicable converters for all datatypes in the given collection. */
     suitable_converters_api_dataset_collections__id__suitable_converters_get: {
-        /** Returns a list of applicable converters for all datatypes in the given collection. */
         parameters: {
-            /** @description The type of collection instance. Either `history` (default) or `library`. */
             query?: {
+                /** @description The type of collection instance. Either `history` (default) or `library`. */
                 instance_type?: "history" | "library";
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
             };
         };
@@ -13896,29 +13889,29 @@ export interface operations {
             };
         };
     };
+    /** Search datasets or collections using a query system. */
     index_api_datasets_get: {
-        /** Search datasets or collections using a query system. */
-        parameters?: {
-            /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+        parameters: {
             query?: {
+                /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
                 history_id?: string | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13944,16 +13937,16 @@ export interface operations {
             };
         };
     };
+    /**
+     * Deletes or purges a batch of datasets.
+     * @description Deletes or purges a batch of datasets.
+     * **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
+     * no other checks or restrictions are made.
+     */
     delete_batch_api_datasets_delete: {
-        /**
-         * Deletes or purges a batch of datasets.
-         * @description Deletes or purges a batch of datasets.
-         * **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
-         * no other checks or restrictions are made.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -13977,30 +13970,30 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays information about and/or content of a dataset.
+     * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+     * and return different kinds of responses, the documentation here will be limited.
+     * To get more information please check the source code.
+     */
     show_api_datasets__dataset_id__get: {
-        /**
-         * Displays information about and/or content of a dataset.
-         * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
-         * and return different kinds of responses, the documentation here will be limited.
-         * To get more information please check the source code.
-         */
         parameters: {
-            /** @description The type of information about the dataset to be requested. */
-            /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description The type of information about the dataset to be requested. */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
+                /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
                 data_type?: components["schemas"]["RequestDataType"] | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14008,7 +14001,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14019,24 +14012,24 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the values for the history dataset (HDA) item with the given ``ID``.
+     * @description Updates the values for the history content item with the given ``ID``.
+     */
     datasets__update_dataset: {
-        /**
-         * Updates the values for the history dataset (HDA) item with the given ``ID``.
-         * @description Updates the values for the history content item with the given ``ID``.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
         };
@@ -14066,41 +14059,41 @@ export interface operations {
             };
         };
     };
+    /**
+     * Delete the history dataset content with the given ``ID``.
+     * @description Delete the history content with the given ``ID`` and path specified type.
+     *
+     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+     */
     datasets__delete: {
-        /**
-         * Delete the history dataset content with the given ``ID``.
-         * @description Delete the history content with the given ``ID`` and path specified type.
-         *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-         */
         parameters: {
-            /**
-             * @deprecated
-             * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
-             */
-            /**
-             * @deprecated
-             * @description When deleting a dataset collection, whether to also delete containing datasets.
-             */
-            /**
-             * @deprecated
-             * @description Whether to stop the creating job if all outputs of the job have been deleted.
-             */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /**
+                 * @deprecated
+                 * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
+                 */
                 purge?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description When deleting a dataset collection, whether to also delete containing datasets.
+                 */
                 recursive?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to stop the creating job if all outputs of the job have been deleted.
+                 */
                 stop_job?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
         };
@@ -14130,15 +14123,15 @@ export interface operations {
             };
         };
     };
+    /** Retrieve information about the content of a dataset. */
     get_structured_content_api_datasets__dataset_id__content__content_type__get: {
-        /** Retrieve information about the content of a dataset. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
                 content_type: components["schemas"]["DatasetContentType"];
             };
@@ -14147,7 +14140,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14158,18 +14151,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return a a map with all the existing converted datasets associated with this instance.
+     * @description Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
+     */
     converted_api_datasets__dataset_id__converted_get: {
-        /**
-         * Return a a map with all the existing converted datasets associated with this instance.
-         * @description Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14188,30 +14181,30 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return information about datasets made by converting this dataset to a new format.
+     * @description Return information about datasets made by converting this dataset to a new format.
+     *
+     * If there is no existing converted dataset for the format in `ext`, one will be created.
+     *
+     * **Note**: `view` and `keys` are also available to control the serialization of the dataset.
+     */
     converted_ext_api_datasets__dataset_id__converted__ext__get: {
-        /**
-         * Return information about datasets made by converting this dataset to a new format.
-         * @description Return information about datasets made by converting this dataset to a new format.
-         *
-         * If there is no existing converted dataset for the format in `ext`, one will be created.
-         *
-         * **Note**: `view` and `keys` are also available to control the serialization of the dataset.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
-            /** @description File extension of the new format to convert this dataset to. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
+                /** @description File extension of the new format to convert this dataset to. */
                 ext: string;
             };
         };
@@ -14234,15 +14227,15 @@ export interface operations {
             };
         };
     };
+    /** Get the list of extra files/directories associated with a dataset. */
     extra_files_api_datasets__dataset_id__extra_files_get: {
-        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the dataset. */
             path: {
+                /** @description The encoded database identifier of the dataset. */
                 dataset_id: string;
             };
         };
@@ -14261,15 +14254,15 @@ export interface operations {
             };
         };
     };
+    /** Returns dataset content as Text. */
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
-        /** Returns dataset content as Text. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14288,19 +14281,19 @@ export interface operations {
             };
         };
     };
+    /** Compute dataset hash for dataset and update model */
     compute_hash_api_datasets__dataset_id__hash_put: {
-        /** Compute dataset hash for dataset and update model */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14324,19 +14317,19 @@ export interface operations {
             };
         };
     };
+    /** For internal use, this endpoint may change without warning. */
     show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get: {
-        /** For internal use, this endpoint may change without warning. */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14355,22 +14348,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return job metrics for specified job.
+     * @deprecated
+     */
     get_metrics_api_datasets__dataset_id__metrics_get: {
-        /**
-         * Return job metrics for specified job.
-         * @deprecated
-         */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the dataset */
             path: {
+                /** @description The ID of the dataset */
                 dataset_id: string;
             };
         };
@@ -14389,15 +14382,15 @@ export interface operations {
             };
         };
     };
+    /** Update an object store ID for a dataset you own. */
     datasets__update_object_store_id: {
-        /** Update an object store ID for a dataset you own. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14410,7 +14403,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14421,25 +14414,25 @@ export interface operations {
             };
         };
     };
+    /**
+     * Resolve parameters as a list for nested display.
+     * @deprecated
+     * @description Resolve parameters as a list for nested display.
+     * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+     * this endpoint will change frequently.
+     */
     resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
-        /**
-         * Resolve parameters as a list for nested display.
-         * @deprecated
-         * @description Resolve parameters as a list for nested display.
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
-         */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the dataset */
             path: {
+                /** @description The ID of the dataset */
                 dataset_id: string;
             };
         };
@@ -14458,18 +14451,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set permissions of the given history dataset to the given role ids.
+     * @description Set permissions of the given history dataset to the given role ids.
+     */
     update_permissions_api_datasets__dataset_id__permissions_put: {
-        /**
-         * Set permissions of the given history dataset to the given role ids.
-         * @description Set permissions of the given history dataset to the given role ids.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14493,19 +14486,19 @@ export interface operations {
             };
         };
     };
+    /** Display user-facing storage details related to the objectstore a dataset resides in. */
     show_storage_api_datasets__dataset_id__storage_get: {
-        /** Display user-facing storage details related to the objectstore a dataset resides in. */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
+                /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
         };
@@ -14524,38 +14517,40 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays (preview) or downloads dataset content.
+     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
+     */
     display_api_datasets__history_content_id__display_get: {
-        /**
-         * Displays (preview) or downloads dataset content.
-         * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-         */
         parameters: {
-            /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description If non-null, get the specified filename from the extra files for this dataset. */
-            /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
-            /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
-            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
-            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
+                /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
                 preview?: boolean;
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
                 filename?: string | null;
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
                 to_ext?: string | null;
+                /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
                 raw?: boolean;
+                /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -14564,32 +14559,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Check if dataset content can be previewed or downloaded.
+     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
+     */
     display_api_datasets__history_content_id__display_head: {
-        /**
-         * Check if dataset content can be previewed or downloaded.
-         * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-         */
         parameters: {
-            /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description If non-null, get the specified filename from the extra files for this dataset. */
-            /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
-            /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
-            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
-            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
+                /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
                 preview?: boolean;
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
                 filename?: string | null;
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
                 to_ext?: string | null;
+                /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
                 raw?: boolean;
+                /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
@@ -14597,7 +14592,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14608,25 +14603,27 @@ export interface operations {
             };
         };
     };
+    /** Returns the metadata file associated with this history item. */
     datasets__get_metadata_file: {
-        /** Returns the metadata file associated with this history item. */
         parameters: {
-            /** @description The name of the metadata file to retrieve. */
             query: {
+                /** @description The name of the metadata file to retrieve. */
                 metadata_file: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -14635,19 +14632,19 @@ export interface operations {
             };
         };
     };
+    /** Check if metadata file can be downloaded. */
     get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head: {
-        /** Check if metadata file can be downloaded. */
         parameters: {
-            /** @description The name of the metadata file to retrieve. */
             query: {
+                /** @description The name of the metadata file to retrieve. */
                 metadata_file: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
@@ -14655,7 +14652,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -14666,16 +14663,16 @@ export interface operations {
             };
         };
     };
+    /**
+     * Lists all available data types
+     * @description Gets the list of all available data types.
+     */
     index_api_datatypes_get: {
-        /**
-         * Lists all available data types
-         * @description Gets the list of all available data types.
-         */
-        parameters?: {
-            /** @description Whether to return only the datatype's extension rather than the datatype's details */
-            /** @description Whether to return only datatypes which can be uploaded */
+        parameters: {
             query?: {
+                /** @description Whether to return only the datatype's extension rather than the datatype's details */
                 extension_only?: boolean | null;
+                /** @description Whether to return only datatypes which can be uploaded */
                 upload_only?: boolean | null;
             };
         };
@@ -14694,11 +14691,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the list of all installed converters
+     * @description Gets the list of all installed converters.
+     */
     converters_api_datatypes_converters_get: {
-        /**
-         * Returns the list of all installed converters
-         * @description Gets the list of all installed converters.
-         */
         responses: {
             /** @description List of all datatype converters */
             200: {
@@ -14708,28 +14705,28 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns a dictionary/map of datatypes and EDAM data
+     * @description Gets a map of datatypes and their corresponding EDAM data.
+     */
     edam_data_api_datatypes_edam_data_get: {
-        /**
-         * Returns a dictionary/map of datatypes and EDAM data
-         * @description Gets a map of datatypes and their corresponding EDAM data.
-         */
         responses: {
             /** @description Dictionary/map of datatypes and EDAM data */
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
         };
     };
+    /**
+     * Returns a dictionary of datatypes and EDAM data details
+     * @description Gets a map of datatypes and their corresponding EDAM data.
+     * EDAM data contains the EDAM iri, label, and definition.
+     */
     edam_data_detailed_api_datatypes_edam_data_detailed_get: {
-        /**
-         * Returns a dictionary of datatypes and EDAM data details
-         * @description Gets a map of datatypes and their corresponding EDAM data.
-         * EDAM data contains the EDAM iri, label, and definition.
-         */
         responses: {
             /** @description Dictionary of EDAM data details containing the EDAM iri, label, and definition */
             200: {
@@ -14739,28 +14736,28 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns a dictionary/map of datatypes and EDAM formats
+     * @description Gets a map of datatypes and their corresponding EDAM formats.
+     */
     edam_formats_api_datatypes_edam_formats_get: {
-        /**
-         * Returns a dictionary/map of datatypes and EDAM formats
-         * @description Gets a map of datatypes and their corresponding EDAM formats.
-         */
         responses: {
             /** @description Dictionary/map of datatypes and EDAM formats */
             200: {
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
         };
     };
+    /**
+     * Returns a dictionary of datatypes and EDAM format details
+     * @description Gets a map of datatypes and their corresponding EDAM formats.
+     * EDAM formats contain the EDAM iri, label, and definition.
+     */
     edam_formats_detailed_api_datatypes_edam_formats_detailed_get: {
-        /**
-         * Returns a dictionary of datatypes and EDAM format details
-         * @description Gets a map of datatypes and their corresponding EDAM formats.
-         * EDAM formats contain the EDAM iri, label, and definition.
-         */
         responses: {
             /** @description Dictionary of EDAM format details containing the EDAM iri, label, and definition */
             200: {
@@ -14770,11 +14767,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns mappings for data types and their implementing classes
+     * @description Gets mappings for data types.
+     */
     mapping_api_datatypes_mapping_get: {
-        /**
-         * Returns mappings for data types and their implementing classes
-         * @description Gets mappings for data types.
-         */
         responses: {
             /** @description Dictionary to map data types with their classes */
             200: {
@@ -14784,11 +14781,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the list of all installed sniffers
+     * @description Gets the list of all installed data type sniffers.
+     */
     sniffers_api_datatypes_sniffers_get: {
-        /**
-         * Returns the list of all installed sniffers
-         * @description Gets the list of all installed data type sniffers.
-         */
         responses: {
             /** @description List of datatype sniffers */
             200: {
@@ -14798,18 +14795,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns all the data types extensions and their mappings
+     * @description Combines the datatype information from (/api/datatypes) and the
+     * mapping information from (/api/datatypes/mapping) into a single
+     * response.
+     */
     types_and_mapping_api_datatypes_types_and_mapping_get: {
-        /**
-         * Returns all the data types extensions and their mappings
-         * @description Combines the datatype information from (/api/datatypes) and the
-         * mapping information from (/api/datatypes/mapping) into a single
-         * response.
-         */
-        parameters?: {
-            /** @description Whether to return only the datatype's extension rather than the datatype's details */
-            /** @description Whether to return only datatypes which can be uploaded */
+        parameters: {
             query?: {
+                /** @description Whether to return only the datatype's extension rather than the datatype's details */
                 extension_only?: boolean | null;
+                /** @description Whether to return only datatypes which can be uploaded */
                 upload_only?: boolean | null;
             };
         };
@@ -14828,11 +14825,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the list of display applications.
+     * @description Returns the list of display applications.
+     */
     display_applications_index_api_display_applications_get: {
-        /**
-         * Returns the list of display applications.
-         * @description Returns the list of display applications.
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -14842,21 +14839,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Reloads the list of display applications.
+     * @description Reloads the list of display applications.
+     */
     display_applications_reload_api_display_applications_reload_post: {
-        /**
-         * Reloads the list of display applications.
-         * @description Reloads the list of display applications.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
         requestBody?: {
             content: {
                 "application/json": {
-                    [key: string]: string[] | undefined;
+                    [key: string]: string[];
                 } | null;
             };
         };
@@ -14875,21 +14872,23 @@ export interface operations {
             };
         };
     };
+    /** Download */
     download_api_drs_download__object_id__get: {
-        /** Download */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group */
             path: {
+                /** @description The ID of the group */
                 object_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -14898,11 +14897,11 @@ export interface operations {
             };
         };
     };
+    /** Get a list of persisted file source instances defined by the requesting user. */
     file_sources__instances_index: {
-        /** Get a list of persisted file source instances defined by the requesting user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -14921,11 +14920,11 @@ export interface operations {
             };
         };
     };
+    /** Create a user-bound file source. */
     file_sources__create_instance: {
-        /** Create a user-bound file source. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -14949,11 +14948,11 @@ export interface operations {
             };
         };
     };
+    /** Test payload for creating user-bound file source. */
     file_sources__test_new_instance_configuration: {
-        /** Test payload for creating user-bound file source. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -14977,15 +14976,15 @@ export interface operations {
             };
         };
     };
+    /** Get a persisted user file source instance. */
     file_sources__instances_get: {
-        /** Get a persisted user file source instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
         };
@@ -15004,15 +15003,15 @@ export interface operations {
             };
         };
     };
+    /** Update or upgrade user file source instance. */
     file_sources__instances_update: {
-        /** Update or upgrade user file source instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
         };
@@ -15039,21 +15038,23 @@ export interface operations {
             };
         };
     };
+    /** Purge user file source instance. */
     file_sources__instances_purge: {
-        /** Purge user file source instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID index for a persisted UserFileSourceStore object. */
             path: {
+                /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -15062,11 +15063,11 @@ export interface operations {
             };
         };
     };
+    /** Get a list of file source templates available to build user defined file sources from */
     file_sources__templates_index: {
-        /** Get a list of file source templates available to build user defined file sources from */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -15085,42 +15086,42 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
+     * @description Returns a list of a folder's contents (files and sub-folders).
+     *
+     * Additional metadata for the folder is provided in the response as a separate object containing data
+     * for breadcrumb path building, permissions and other folder's details.
+     *
+     * *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
+     *
+     * **Security note**:
+     * - Accessing a library folder or sub-folder requires only access to the parent library.
+     * - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
+     * - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
+     */
     index_api_folders__folder_id__contents_get: {
-        /**
-         * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
-         * @description Returns a list of a folder's contents (files and sub-folders).
-         *
-         * Additional metadata for the folder is provided in the response as a separate object containing data
-         * for breadcrumb path building, permissions and other folder's details.
-         *
-         * *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
-         *
-         * **Security note**:
-         * - Accessing a library folder or sub-folder requires only access to the parent library.
-         * - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
-         * - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
-         */
         parameters: {
-            /** @description Maximum number of contents to return. */
-            /** @description Return contents from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, contents between position 200-299 will be returned. */
-            /** @description Used to filter the contents. Only the folders and files which name contains this text will be returned. */
-            /** @description Returns also deleted contents. Deleted contents can only be retrieved by Administrators or users with */
-            /** @description Sort results by specified field. */
-            /** @description Sort results in descending order. */
             query?: {
+                /** @description Maximum number of contents to return. */
                 limit?: number;
+                /** @description Return contents from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, contents between position 200-299 will be returned. */
                 offset?: number;
+                /** @description Used to filter the contents. Only the folders and files which name contains this text will be returned. */
                 search_text?: string | null;
+                /** @description Returns also deleted contents. Deleted contents can only be retrieved by Administrators or users with */
                 include_deleted?: boolean | null;
+                /** @description Sort results by specified field. */
                 order_by?: "name" | "description" | "type" | "size" | "update_time";
+                /** @description Sort results in descending order. */
                 sort_desc?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 folder_id: string;
             };
         };
@@ -15139,15 +15140,15 @@ export interface operations {
             };
         };
     };
+    /** Creates a new library file from an existing HDA/HDCA. */
     add_history_datasets_to_library_api_folders__folder_id__contents_post: {
-        /** Creates a new library file from an existing HDA/HDCA. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 folder_id: string;
             };
         };
@@ -15160,7 +15161,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15171,18 +15172,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays information about a particular library folder.
+     * @description Returns detailed information about the library folder with the given ID.
+     */
     show_api_folders__id__get: {
-        /**
-         * Displays information about a particular library folder.
-         * @description Returns detailed information about the library folder with the given ID.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15201,18 +15202,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the information of an existing library folder.
+     * @description Updates the information of an existing library folder.
+     */
     update_api_folders__id__put: {
-        /**
-         * Updates the information of an existing library folder.
-         * @description Updates the information of an existing library folder.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15236,18 +15237,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create a new library folder underneath the one specified by the ID.
+     * @description Returns detailed information about the newly created library folder.
+     */
     create_api_folders__id__post: {
-        /**
-         * Create a new library folder underneath the one specified by the ID.
-         * @description Returns detailed information about the newly created library folder.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15271,22 +15272,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Marks the specified library folder as deleted (or undeleted).
+     * @description Marks the specified library folder as deleted (or undeleted).
+     */
     delete_api_folders__id__delete: {
-        /**
-         * Marks the specified library folder as deleted (or undeleted).
-         * @description Marks the specified library folder as deleted (or undeleted).
-         */
         parameters: {
-            /** @description Whether to restore a deleted library folder. */
             query?: {
+                /** @description Whether to restore a deleted library folder. */
                 undelete?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15305,18 +15306,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Update
+     * @description Updates the information of an existing library folder.
+     */
     update_api_folders__id__patch: {
-        /**
-         * Update
-         * @description Updates the information of an existing library folder.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15340,29 +15341,29 @@ export interface operations {
             };
         };
     };
+    /**
+     * Gets the current or available permissions of a particular library folder.
+     * @description Gets the current or available permissions of a particular library.
+     * The results can be paginated and additionally filtered by a query.
+     */
     get_permissions_api_folders__id__permissions_get: {
-        /**
-         * Gets the current or available permissions of a particular library folder.
-         * @description Gets the current or available permissions of a particular library.
-         * The results can be paginated and additionally filtered by a query.
-         */
         parameters: {
-            /** @description The scope of the permissions to retrieve. Either the `current` permissions or the `available`. */
-            /** @description The page number to retrieve when paginating the available roles. */
-            /** @description The maximum number of permissions per page when paginating. */
-            /** @description Optional search text to retrieve only the roles matching this query. */
             query?: {
+                /** @description The scope of the permissions to retrieve. Either the `current` permissions or the `available`. */
                 scope?: components["schemas"]["LibraryPermissionScope"] | null;
+                /** @description The page number to retrieve when paginating the available roles. */
                 page?: number;
+                /** @description The maximum number of permissions per page when paginating. */
                 page_limit?: number;
+                /** @description Optional search text to retrieve only the roles matching this query. */
                 q?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15383,22 +15384,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Sets the permissions to manage a library folder.
+     * @description Sets the permissions to manage a library folder.
+     */
     set_permissions_api_folders__id__permissions_post: {
-        /**
-         * Sets the permissions to manage a library folder.
-         * @description Sets the permissions to manage a library folder.
-         */
         parameters: {
-            /** @description Indicates what action should be performed on the Library. Currently only `set_permissions` is supported. */
             query?: {
+                /** @description Indicates what action should be performed on the Library. Currently only `set_permissions` is supported. */
                 action?: components["schemas"]["LibraryFolderPermissionAction"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded identifier of the library folder. */
             path: {
+                /** @description The encoded identifier of the library folder. */
                 id: string;
             };
         };
@@ -15422,11 +15423,11 @@ export interface operations {
             };
         };
     };
+    /** Delete */
     delete_api_forms__id__delete: {
-        /** Delete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15437,7 +15438,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15448,11 +15449,11 @@ export interface operations {
             };
         };
     };
+    /** Undelete */
     undelete_api_forms__id__undelete_post: {
-        /** Undelete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15463,7 +15464,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15474,37 +15475,37 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays remote files available to the user. Please use /api/remote_files instead.
+     * @deprecated
+     * @description Lists all remote files available to the user from different sources.
+     *
+     * The total count of files and directories is returned in the 'total_matches' header.
+     */
     index_api_ftp_files_get: {
-        /**
-         * Displays remote files available to the user. Please use /api/remote_files instead.
-         * @deprecated
-         * @description Lists all remote files available to the user from different sources.
-         *
-         * The total count of files and directories is returned in the 'total_matches' header.
-         */
-        parameters?: {
-            /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
-            /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
-            /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
-            /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
-            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
-            /** @description Maximum number of entries to return. */
-            /** @description Number of entries to skip. */
-            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
-            /** @description Sort the entries by the specified field. */
+        parameters: {
             query?: {
+                /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
                 target?: string;
+                /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
+                /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
                 recursive?: boolean | null;
+                /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
                 writeable?: boolean | null;
+                /** @description Maximum number of entries to return. */
                 limit?: number | null;
+                /** @description Number of entries to skip. */
                 offset?: number | null;
+                /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
                 query?: string | null;
+                /** @description Sort the entries by the specified field. */
                 sort_by?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -15525,15 +15526,15 @@ export interface operations {
             };
         };
     };
+    /** Return a list of installed genomes */
     index_api_genomes_get: {
-        /** Return a list of installed genomes */
-        parameters?: {
-            /** @description If true, return genome keys with chromosome lengths */
+        parameters: {
             query?: {
+                /** @description If true, return genome keys with chromosome lengths */
                 chrom_info?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -15552,29 +15553,29 @@ export interface operations {
             };
         };
     };
+    /** Return information about build <id> */
     show_api_genomes__id__get: {
-        /** Return information about build <id> */
         parameters: {
-            /** @description If true, return reference data */
-            /** @description Limits size of returned data */
-            /** @description Limits size of returned data */
-            /** @description Limits size of returned data */
-            /** @description Limits size of returned data */
-            /** @description Format */
             query?: {
+                /** @description If true, return reference data */
                 reference?: boolean;
+                /** @description Limits size of returned data */
                 num?: number;
+                /** @description Limits size of returned data */
                 chrom?: string;
+                /** @description Limits size of returned data */
                 low?: number;
+                /** @description Limits size of returned data */
                 high?: number;
+                /** @description Format */
                 format?: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description Genome ID */
             path: {
+                /** @description Genome ID */
                 id: string;
             };
         };
@@ -15582,7 +15583,7 @@ export interface operations {
             /** @description Information about genome build <id> */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15593,21 +15594,21 @@ export interface operations {
             };
         };
     };
+    /** Return all available indexes for a genome id for provided type */
     indexes_api_genomes__id__indexes_get: {
-        /** Return all available indexes for a genome id for provided type */
         parameters: {
-            /** @description Index type */
-            /** @description Format */
             query?: {
+                /** @description Index type */
                 type?: string;
+                /** @description Format */
                 format?: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description Genome ID */
             path: {
+                /** @description Genome ID */
                 id: string;
             };
         };
@@ -15615,7 +15616,7 @@ export interface operations {
             /** @description Indexes for a genome id for provided type */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15626,27 +15627,27 @@ export interface operations {
             };
         };
     };
+    /** Return raw sequence data */
     sequences_api_genomes__id__sequences_get: {
-        /** Return raw sequence data */
         parameters: {
-            /** @description If true, return reference data */
-            /** @description Limits size of returned data */
-            /** @description Limits size of returned data */
-            /** @description Limits size of returned data */
-            /** @description Format */
             query?: {
+                /** @description If true, return reference data */
                 reference?: boolean;
+                /** @description Limits size of returned data */
                 chrom?: string;
+                /** @description Limits size of returned data */
                 low?: number;
+                /** @description Limits size of returned data */
                 high?: number;
+                /** @description Format */
                 format?: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description Genome ID */
             path: {
+                /** @description Genome ID */
                 id: string;
             };
         };
@@ -15654,7 +15655,7 @@ export interface operations {
             /** @description Raw sequence data */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15665,11 +15666,11 @@ export interface operations {
             };
         };
     };
+    /** Displays a collection (list) of groups. */
     index_api_groups_get: {
-        /** Displays a collection (list) of groups. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -15688,11 +15689,11 @@ export interface operations {
             };
         };
     };
+    /** Creates a new group. */
     create_api_groups_post: {
-        /** Creates a new group. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -15716,11 +15717,11 @@ export interface operations {
             };
         };
     };
+    /** Displays information about a group. */
     show_group_api_groups__group_id__get: {
-        /** Displays information about a group. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15742,11 +15743,11 @@ export interface operations {
             };
         };
     };
+    /** Modifies a group. */
     update_api_groups__group_id__put: {
-        /** Modifies a group. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15773,11 +15774,11 @@ export interface operations {
             };
         };
     };
+    /** Delete */
     delete_api_groups__group_id__delete: {
-        /** Delete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15788,7 +15789,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15799,11 +15800,11 @@ export interface operations {
             };
         };
     };
+    /** Purge */
     purge_api_groups__group_id__purge_post: {
-        /** Purge */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15814,7 +15815,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15825,15 +15826,15 @@ export interface operations {
             };
         };
     };
+    /** Displays a collection (list) of groups. */
     group_roles_api_groups__group_id__roles_get: {
-        /** Displays a collection (list) of groups. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
         };
@@ -15852,17 +15853,17 @@ export interface operations {
             };
         };
     };
+    /** Displays information about a group role. */
     group_role_api_groups__group_id__roles__role_id__get: {
-        /** Displays information about a group role. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the role. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the role. */
                 role_id: string;
             };
         };
@@ -15881,17 +15882,17 @@ export interface operations {
             };
         };
     };
+    /** Adds a role to a group */
     update_api_groups__group_id__roles__role_id__put: {
-        /** Adds a role to a group */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the role. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the role. */
                 role_id: string;
             };
         };
@@ -15910,17 +15911,17 @@ export interface operations {
             };
         };
     };
+    /** Removes a role from a group */
     delete_api_groups__group_id__roles__role_id__delete: {
-        /** Removes a role from a group */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the role. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the role. */
                 role_id: string;
             };
         };
@@ -15939,11 +15940,11 @@ export interface operations {
             };
         };
     };
+    /** Undelete */
     undelete_api_groups__group_id__undelete_post: {
-        /** Undelete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -15954,7 +15955,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -15965,20 +15966,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays information about a group user.
+     * @description Displays information about a group user.
+     */
     group_user_api_groups__group_id__user__user_id__get: {
-        /**
-         * Displays information about a group user.
-         * @description Displays information about a group user.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -15997,21 +15998,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Adds a user to a group
+     * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
+     * Adds a user to a group
+     */
     update_api_groups__group_id__user__user_id__put: {
-        /**
-         * Adds a user to a group
-         * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Adds a user to a group
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -16030,21 +16031,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes a user from a group
+     * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
+     * Removes a user from a group
+     */
     delete_api_groups__group_id__user__user_id__delete: {
-        /**
-         * Removes a user from a group
-         * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Removes a user from a group
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -16063,19 +16064,19 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays a collection (list) of groups.
+     * @description GET /api/groups/{encoded_group_id}/users
+     * Displays a collection (list) of groups.
+     */
     group_users_api_groups__group_id__users_get: {
-        /**
-         * Displays a collection (list) of groups.
-         * @description GET /api/groups/{encoded_group_id}/users
-         * Displays a collection (list) of groups.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
             };
         };
@@ -16094,20 +16095,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays information about a group user.
+     * @description Displays information about a group user.
+     */
     group_user_api_groups__group_id__users__user_id__get: {
-        /**
-         * Displays information about a group user.
-         * @description Displays information about a group user.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -16126,21 +16127,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Adds a user to a group
+     * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
+     * Adds a user to a group
+     */
     update_api_groups__group_id__users__user_id__put: {
-        /**
-         * Adds a user to a group
-         * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Adds a user to a group
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -16159,21 +16160,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes a user from a group
+     * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
+     * Removes a user from a group
+     */
     delete_api_groups__group_id__users__user_id__delete: {
-        /**
-         * Removes a user from a group
-         * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Removes a user from a group
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group. */
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the group. */
                 group_id: string;
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -16192,20 +16193,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Search the Galaxy Help forum.
+     * @description Search the Galaxy Help forum using the Discourse API.
+     *
+     * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+     */
     search_forum_api_help_forum_search_get: {
-        /**
-         * Search the Galaxy Help forum.
-         * @description Search the Galaxy Help forum using the Discourse API.
-         *
-         * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
-         */
         parameters: {
-            /** @description Search query to use for searching the Galaxy Help forum. */
             query: {
+                /** @description Search query to use for searching the Galaxy Help forum. */
                 query: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16224,77 +16225,77 @@ export interface operations {
             };
         };
     };
+    /** Returns histories available to the current user. */
     index_api_histories_get: {
-        /** Returns histories available to the current user. */
-        parameters?: {
-            /** @description The maximum number of items to return. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description Whether to include archived histories. */
-            /** @description Sort index by this specified attribute */
-            /** @description Sort in descending order? */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `name`
-             * : The history's name.
-             *
-             * `annotation`
-             * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Historys: `title`, `description`, `slug`, `tag`.
-             */
-            /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
-            /**
-             * @deprecated
-             * @description Whether to return only deleted items.
-             */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
                 show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
+                /** @description Whether to include archived histories. */
                 show_archived?: boolean | null;
+                /** @description Sort index by this specified attribute */
                 sort_by?: "create_time" | "name" | "update_time" | "username";
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 * ## Query Structure
+                 *
+                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 * being indexed (i.e. a column in the database).
+                 *
+                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 * this means the database operation `ILIKE` will typically be used).
+                 *
+                 * Once the tagged filters are extracted from the search query, the remaining text is just
+                 * used to search various documented attributes of the object.
+                 *
+                 * ## GitHub-style Tags Available
+                 *
+                 * `name`
+                 * : The history's name.
+                 *
+                 * `annotation`
+                 * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `tag`
+                 * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * ## Free Text
+                 *
+                 * Free text search terms will be searched against the following attributes of the
+                 * Historys: `title`, `description`, `slug`, `tag`.
+                 */
                 search?: string | null;
+                /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
                 all?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to return only deleted items.
+                 */
                 deleted?: boolean | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16317,20 +16318,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Creates a new history.
+     * @description The new history can also be copied form a existing history or imported from an archive or URL.
+     */
     create_api_histories_post: {
-        /**
-         * Creates a new history.
-         * @description The new history can also be copied form a existing history or imported from an archive or URL.
-         */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16358,32 +16359,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get a list of all archived histories for the current user.
+     * @description Get a list of all archived histories for the current user.
+     *
+     * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+     */
     get_archived_histories_api_histories_archived_get: {
-        /**
-         * Get a list of all archived histories for the current user.
-         * @description Get a list of all archived histories for the current user.
-         *
-         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
-         */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16391,11 +16392,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": (
-                        | components["schemas"]["ArchivedHistorySummary"]
-                        | components["schemas"]["ArchivedHistoryDetailed"]
-                        | Record<string, never>
-                    )[];
+                    "application/json": unknown[];
                 };
             };
             /** @description Validation Error */
@@ -16406,18 +16403,18 @@ export interface operations {
             };
         };
     };
+    /** Marks several histories with the given IDs as deleted. */
     batch_delete_api_histories_batch_delete_put: {
-        /** Marks several histories with the given IDs as deleted. */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
                 purge?: boolean;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16445,17 +16442,17 @@ export interface operations {
             };
         };
     };
+    /** Marks several histories with the given IDs as undeleted. */
     batch_undelete_api_histories_batch_undelete_put: {
-        /** Marks several histories with the given IDs as undeleted. */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16483,11 +16480,11 @@ export interface operations {
             };
         };
     };
+    /** Returns number of histories for the current user. */
     count_api_histories_count_get: {
-        /** Returns number of histories for the current user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16506,29 +16503,29 @@ export interface operations {
             };
         };
     };
+    /** Returns deleted histories for the current user. */
     index_deleted_api_histories_deleted_get: {
-        /** Returns deleted histories for the current user. */
-        parameters?: {
-            /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
                 all?: boolean | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16551,21 +16548,21 @@ export interface operations {
             };
         };
     };
+    /** Restores a deleted history with the given ID (that hasn't been purged). */
     undelete_api_histories_deleted__history_id__undelete_post: {
-        /** Restores a deleted history with the given ID (that hasn't been purged). */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16587,17 +16584,17 @@ export interface operations {
             };
         };
     };
+    /** Create histories from a model store. */
     create_from_store_api_histories_from_store_post: {
-        /** Create histories from a model store. */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16624,11 +16621,11 @@ export interface operations {
             };
         };
     };
+    /** Launch a task to create histories from a model store. */
     create_from_store_async_api_histories_from_store_async_post: {
-        /** Launch a task to create histories from a model store. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16652,17 +16649,17 @@ export interface operations {
             };
         };
     };
+    /** Returns the most recently used history of the user. */
     show_recent_api_histories_most_recently_used_get: {
-        /** Returns the most recently used history of the user. */
-        parameters?: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
+        parameters: {
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -16684,107 +16681,107 @@ export interface operations {
             };
         };
     };
+    /** Return all histories that are published. */
     published_api_histories_published_get: {
-        /** Return all histories that are published. */
-        parameters?: {
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                q?: string[] | null;
-                qv?: string[] | null;
-                offset?: number | null;
-                limit?: number | null;
-                order?: string | null;
-                view?: string | null;
-                keys?: string | null;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": (
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                    )[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    shared_with_me_api_histories_shared_with_me_get: {
-        /** Return all histories that are shared with the current user. */
-        parameters?: {
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                q?: string[] | null;
-                qv?: string[] | null;
-                offset?: number | null;
-                limit?: number | null;
-                order?: string | null;
-                view?: string | null;
-                keys?: string | null;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": (
-                        | components["schemas"]["CustomHistoryView"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                    )[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    history_api_histories__history_id__get: {
-        /** Returns the history with the given ID. */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
+                q?: string[] | null;
+                /** @description The value to filter by. */
+                qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+                offset?: number | null;
+                /** @description The maximum number of items to return. */
+                limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+                order?: string | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    /** Return all histories that are shared with the current user. */
+    shared_with_me_api_histories_shared_with_me_get: {
+        parameters: {
+            query?: {
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
+                q?: string[] | null;
+                /** @description The value to filter by. */
+                qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+                offset?: number | null;
+                /** @description The maximum number of items to return. */
+                limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+                order?: string | null;
+                /** @description View to be passed to the serializer */
+                view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
+                keys?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    /** Returns the history with the given ID. */
+    history_api_histories__history_id__get: {
+        parameters: {
+            query?: {
+                /** @description View to be passed to the serializer */
+                view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
+                keys?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16806,27 +16803,27 @@ export interface operations {
             };
         };
     };
+    /** Updates the values for the history with the given ID. */
     update_api_histories__history_id__put: {
-        /** Updates the values for the history with the given ID. */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json": unknown;
             };
         };
         responses: {
@@ -16847,22 +16844,22 @@ export interface operations {
             };
         };
     };
+    /** Marks the history with the given ID as deleted. */
     delete_api_histories__history_id__delete: {
-        /** Marks the history with the given ID as deleted. */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 purge?: boolean;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16889,31 +16886,31 @@ export interface operations {
             };
         };
     };
+    /**
+     * Archive a history.
+     * @description Marks the given history as 'archived' and returns the history.
+     *
+     * Archiving a history will remove it from the list of active histories of the user but it will still be
+     * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+     *
+     * Associating an export record:
+     *
+     * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+     * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+     * must be in the ready state.
+     * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+     *
+     * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+     * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+     */
     archive_history_api_histories__history_id__archive_post: {
-        /**
-         * Archive a history.
-         * @description Marks the given history as 'archived' and returns the history.
-         *
-         * Archiving a history will remove it from the list of active histories of the user but it will still be
-         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
-         *
-         * Associating an export record:
-         *
-         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
-         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
-         * must be in the ready state.
-         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
-         *
-         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
-         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16926,10 +16923,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["ArchivedHistorySummary"]
-                        | components["schemas"]["ArchivedHistoryDetailed"]
-                        | Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -16940,28 +16934,28 @@ export interface operations {
             };
         };
     };
+    /**
+     * Restore an archived history.
+     * @description Restores an archived history and returns it.
+     *
+     * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+     *
+     * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+     * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
+     * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+     */
     restore_archived_history_api_histories__history_id__archive_restore_put: {
-        /**
-         * Restore an archived history.
-         * @description Restores an archived history and returns it.
-         *
-         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
-         *
-         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
-         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
-         */
         parameters: {
-            /** @description If true, the history will be un-archived even if it has an associated archive export record and was purged. */
             query?: {
+                /** @description If true, the history will be un-archived even if it has an associated archive export record and was purged. */
                 force?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16983,15 +16977,15 @@ export interface operations {
             };
         };
     };
+    /** Return all the citations for the tools used to produce the datasets in the history. */
     citations_api_histories__history_id__citations_get: {
-        /** Return all the citations for the tools used to produce the datasets in the history. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -16999,7 +16993,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json": unknown[];
                 };
             };
             /** @description Validation Error */
@@ -17010,68 +17004,68 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the contents of the given history.
+     * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
+     *
+     * - The contents can be filtered and queried using the appropriate parameters.
+     * - The amount of information returned for each item can be customized.
+     *
+     * **Note**: Anonymous users are allowed to get their current history contents.
+     */
     history_contents__index: {
-        /**
-         * Returns the contents of the given history.
-         * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
-         *
-         * - The contents can be filtered and queried using the appropriate parameters.
-         * - The amount of information returned for each item can be customized.
-         *
-         * **Note**: Anonymous users are allowed to get their current history contents.
-         */
         parameters: {
-            /** @description Only `dev` value is allowed. Set it to use the latest version of this endpoint. **All parameters marked as `deprecated` will be ignored when this parameter is set.** */
-            /**
-             * @deprecated
-             * @description Legacy name for the `dataset_details` parameter.
-             */
-            /**
-             * @deprecated
-             * @description A comma-separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the specific datasets will be returned. Also, setting this value will return `all` details of the content item.
-             */
-            /**
-             * @deprecated
-             * @description A list or comma-separated list of kinds of contents to return (currently just `dataset` and `dataset_collection` are available). If unset, all types will be returned.
-             */
-            /**
-             * @deprecated
-             * @description Whether to return deleted or undeleted datasets only. Leave unset for both.
-             */
-            /**
-             * @deprecated
-             * @description Whether to return visible or hidden datasets only. Leave unset for both.
-             */
-            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
+                /** @description Only `dev` value is allowed. Set it to use the latest version of this endpoint. **All parameters marked as `deprecated` will be ignored when this parameter is set.** */
                 v?: string | null;
+                /**
+                 * @deprecated
+                 * @description Legacy name for the `dataset_details` parameter.
+                 */
                 details?: string | null;
+                /**
+                 * @deprecated
+                 * @description A comma-separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the specific datasets will be returned. Also, setting this value will return `all` details of the content item.
+                 */
                 ids?: string | null;
+                /**
+                 * @deprecated
+                 * @description A list or comma-separated list of kinds of contents to return (currently just `dataset` and `dataset_collection` are available). If unset, all types will be returned.
+                 */
                 types?: string[] | null;
+                /**
+                 * @deprecated
+                 * @description Whether to return deleted or undeleted datasets only. Leave unset for both.
+                 */
                 deleted?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to return visible or hidden datasets only. Leave unset for both.
+                 */
                 visible?: boolean | null;
+                /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
                 shareable?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17091,27 +17085,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Batch update specific properties of a set items contained in the given History.
+     * @description Batch update specific properties of a set items contained in the given History.
+     *
+     * If you provide an invalid/unknown property key the request will not fail, but no changes
+     * will be made to the items.
+     */
     update_batch_api_histories__history_id__contents_put: {
-        /**
-         * Batch update specific properties of a set items contained in the given History.
-         * @description Batch update specific properties of a set items contained in the given History.
-         *
-         * If you provide an invalid/unknown property key the request will not fail, but no changes
-         * will be made to the items.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17135,27 +17129,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create a new `HDA` or `HDCA` in the given History.
+     * @deprecated
+     * @description Create a new `HDA` or `HDCA` in the given History.
+     */
     history_contents__create: {
-        /**
-         * Create a new `HDA` or `HDCA` in the given History.
-         * @deprecated
-         * @description Create a new `HDA` or `HDCA` in the given History.
-         */
         parameters: {
-            /** @description The type of the target history element. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description The type of the target history element. */
                 type?: components["schemas"]["HistoryContentType"] | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17193,36 +17187,36 @@ export interface operations {
             };
         };
     };
+    /**
+     * Build and return a compressed archive of the selected history contents.
+     * @description Build and return a compressed archive of the selected history contents.
+     *
+     * **Note**: this is a volatile endpoint and settings and behavior may change.
+     */
     history_contents__archive: {
-        /**
-         * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
-         */
         parameters: {
-            /** @description The name that the Archive will have (defaults to history name). */
-            /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
+                /** @description The name that the Archive will have (defaults to history name). */
                 filename?: string | null;
+                /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
                 dry_run?: boolean | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17230,7 +17224,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -17241,41 +17235,41 @@ export interface operations {
             };
         };
     };
+    /**
+     * Build and return a compressed archive of the selected history contents.
+     * @description Build and return a compressed archive of the selected history contents.
+     *
+     * **Note**: this is a volatile endpoint and settings and behavior may change.
+     */
     history_contents__archive_named: {
-        /**
-         * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
-         */
         parameters: {
-            /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
+                /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
                 dry_run?: boolean | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The name that the Archive will have (defaults to history name). */
-            /**
-             * @deprecated
-             * @description Output format of the archive.
-             */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The name that the Archive will have (defaults to history name). */
                 filename: string;
+                /**
+                 * @deprecated
+                 * @description Output format of the archive.
+                 */
                 format: string;
             };
         };
@@ -17283,7 +17277,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -17294,26 +17288,26 @@ export interface operations {
             };
         };
     };
+    /**
+     * Executes an operation on a set of items contained in the given History.
+     * @description Executes an operation on a set of items contained in the given History.
+     *
+     * The items to be processed can be explicitly set or determined by a dynamic query.
+     */
     bulk_operation_api_histories__history_id__contents_bulk_put: {
-        /**
-         * Executes an operation on a set of items contained in the given History.
-         * @description Executes an operation on a set of items contained in the given History.
-         *
-         * The items to be processed can be explicitly set or determined by a dynamic query.
-         */
         parameters: {
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
             query?: {
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17337,27 +17331,29 @@ export interface operations {
             };
         };
     };
+    /**
+     * Download the content of a dataset collection as a `zip` archive.
+     * @description Download the content of a history dataset collection as a `zip` archive
+     * while maintaining approximate collection structure.
+     */
     history_contents__download_collection: {
-        /**
-         * Download the content of a dataset collection as a `zip` archive.
-         * @description Download the content of a history dataset collection as a `zip` archive
-         * while maintaining approximate collection structure.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the `HDCA`. */
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The ID of the `HDCA`. */
                 id: string;
+                /** @description The encoded database identifier of the History. */
                 history_id: string | null;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -17366,17 +17362,17 @@ export interface operations {
             };
         };
     };
+    /** Materialize a deferred dataset into real, usable dataset. */
     materialize_dataset_api_histories__history_id__contents_datasets__id__materialize_post: {
-        /** Materialize a deferred dataset into real, usable dataset. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
         };
@@ -17395,20 +17391,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set permissions of the given history dataset to the given role ids.
+     * @description Set permissions of the given history dataset to the given role ids.
+     */
     update_permissions_api_histories__history_id__contents__dataset_id__permissions_put: {
-        /**
-         * Set permissions of the given history dataset to the given role ids.
-         * @description Set permissions of the given history dataset to the given role ids.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
         };
@@ -17432,39 +17428,41 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays (preview) or downloads dataset content.
+     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
+     */
     history_contents_display_api_histories__history_id__contents__history_content_id__display_get: {
-        /**
-         * Displays (preview) or downloads dataset content.
-         * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-         */
         parameters: {
-            /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description If non-null, get the specified filename from the extra files for this dataset. */
-            /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
-            /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
-            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
-            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
+                /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
                 preview?: boolean;
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
                 filename?: string | null;
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
                 to_ext?: string | null;
+                /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
                 raw?: boolean;
+                /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
                 history_id: string | null;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -17473,32 +17471,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Check if dataset content can be previewed or downloaded.
+     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
+     */
     history_contents_display_api_histories__history_id__contents__history_content_id__display_head: {
-        /**
-         * Check if dataset content can be previewed or downloaded.
-         * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-         */
         parameters: {
-            /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
-            /** @description If non-null, get the specified filename from the extra files for this dataset. */
-            /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
-            /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
-            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
-            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
+                /** @description Whether to get preview contents to be directly displayed on the web. If preview is False (default) the contents will be downloaded instead. */
                 preview?: boolean;
+                /** @description If non-null, get the specified filename from the extra files for this dataset. */
                 filename?: string | null;
+                /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
                 to_ext?: string | null;
+                /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
                 raw?: boolean;
+                /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
                 ck_size?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
                 history_id: string | null;
             };
@@ -17507,7 +17505,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -17518,17 +17516,17 @@ export interface operations {
             };
         };
     };
+    /** Get the list of extra files/directories associated with a dataset. */
     extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
-        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
@@ -17547,27 +17545,29 @@ export interface operations {
             };
         };
     };
+    /** Returns the metadata file associated with this history item. */
     history_contents__get_metadata_file: {
-        /** Returns the metadata file associated with this history item. */
         parameters: {
-            /** @description The name of the metadata file to retrieve. */
             query: {
+                /** @description The name of the metadata file to retrieve. */
                 metadata_file: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the History Dataset. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -17576,11 +17576,11 @@ export interface operations {
             };
         };
     };
+    /** Show tags based on history_content_id */
     index_api_histories__history_id__contents__history_content_id__tags_get: {
-        /** Show tags based on history_content_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -17603,11 +17603,11 @@ export interface operations {
             };
         };
     };
+    /** Show tag based on history_content_id */
     show_api_histories__history_id__contents__history_content_id__tags__tag_name__get: {
-        /** Show tag based on history_content_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -17631,11 +17631,11 @@ export interface operations {
             };
         };
     };
+    /** Update tag based on history_content_id */
     update_api_histories__history_id__contents__history_content_id__tags__tag_name__put: {
-        /** Update tag based on history_content_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -17664,11 +17664,11 @@ export interface operations {
             };
         };
     };
+    /** Create tag based on history_content_id */
     create_api_histories__history_id__contents__history_content_id__tags__tag_name__post: {
-        /** Create tag based on history_content_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -17697,11 +17697,11 @@ export interface operations {
             };
         };
     };
+    /** Delete tag based on history_content_id */
     delete_api_histories__history_id__contents__history_content_id__tags__tag_name__delete: {
-        /** Delete tag based on history_content_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -17725,33 +17725,33 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
+     * @deprecated
+     * @description Return detailed information about an `HDA` or `HDCA` within a history.
+     *
+     * **Note**: Anonymous users are allowed to get their current history contents.
+     */
     history_contents__show_legacy: {
-        /**
-         * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
-         * @deprecated
-         * @description Return detailed information about an `HDA` or `HDCA` within a history.
-         *
-         * **Note**: Anonymous users are allowed to get their current history contents.
-         */
         parameters: {
-            /** @description The type of the target history element. */
-            /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description The type of the target history element. */
                 type?: components["schemas"]["HistoryContentType"];
+                /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
                 fuzzy_count?: number | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -17776,29 +17776,29 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
+     * @deprecated
+     * @description Updates the values for the history content item with the given ``ID``.
+     */
     history_contents__update_legacy: {
-        /**
-         * Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
-         * @deprecated
-         * @description Updates the values for the history content item with the given ``ID``.
-         */
         parameters: {
-            /** @description The type of the target history element. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description The type of the target history element. */
                 type?: components["schemas"]["HistoryContentType"];
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
         };
@@ -17828,45 +17828,45 @@ export interface operations {
             };
         };
     };
+    /**
+     * Delete the history dataset with the given ``ID``.
+     * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
+     *
+     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+     */
     history_contents__delete_legacy: {
-        /**
-         * Delete the history dataset with the given ``ID``.
-         * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
-         *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-         */
         parameters: {
-            /** @description The type of the target history element. */
-            /**
-             * @deprecated
-             * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
-             */
-            /**
-             * @deprecated
-             * @description When deleting a dataset collection, whether to also delete containing datasets.
-             */
-            /**
-             * @deprecated
-             * @description Whether to stop the creating job if all outputs of the job have been deleted.
-             */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description The type of the target history element. */
                 type?: components["schemas"]["HistoryContentType"];
+                /**
+                 * @deprecated
+                 * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
+                 */
                 purge?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description When deleting a dataset collection, whether to also delete containing datasets.
+                 */
                 recursive?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to stop the creating job if all outputs of the job have been deleted.
+                 */
                 stop_job?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
         };
@@ -17896,20 +17896,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Validates the metadata associated with a dataset within a History.
+     * @description Validates the metadata associated with a dataset within a History.
+     */
     validate_api_histories__history_id__contents__id__validate_put: {
-        /**
-         * Validates the metadata associated with a dataset within a History.
-         * @description Validates the metadata associated with a dataset within a History.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
         };
@@ -17928,70 +17928,70 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the contents of the given history filtered by type.
+     * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
+     *
+     * - The contents can be filtered and queried using the appropriate parameters.
+     * - The amount of information returned for each item can be customized.
+     *
+     * **Note**: Anonymous users are allowed to get their current history contents.
+     */
     history_contents__index_typed: {
-        /**
-         * Returns the contents of the given history filtered by type.
-         * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
-         *
-         * - The contents can be filtered and queried using the appropriate parameters.
-         * - The amount of information returned for each item can be customized.
-         *
-         * **Note**: Anonymous users are allowed to get their current history contents.
-         */
         parameters: {
-            /** @description Only `dev` value is allowed. Set it to use the latest version of this endpoint. **All parameters marked as `deprecated` will be ignored when this parameter is set.** */
-            /**
-             * @deprecated
-             * @description Legacy name for the `dataset_details` parameter.
-             */
-            /**
-             * @deprecated
-             * @description A comma-separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the specific datasets will be returned. Also, setting this value will return `all` details of the content item.
-             */
-            /**
-             * @deprecated
-             * @description A list or comma-separated list of kinds of contents to return (currently just `dataset` and `dataset_collection` are available). If unset, all types will be returned.
-             */
-            /**
-             * @deprecated
-             * @description Whether to return deleted or undeleted datasets only. Leave unset for both.
-             */
-            /**
-             * @deprecated
-             * @description Whether to return visible or hidden datasets only. Leave unset for both.
-             */
-            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
-            /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
+                /** @description Only `dev` value is allowed. Set it to use the latest version of this endpoint. **All parameters marked as `deprecated` will be ignored when this parameter is set.** */
                 v?: string | null;
+                /**
+                 * @deprecated
+                 * @description Legacy name for the `dataset_details` parameter.
+                 */
                 details?: string | null;
+                /**
+                 * @deprecated
+                 * @description A comma-separated list of encoded `HDA/HDCA` IDs. If this list is provided, only information about the specific datasets will be returned. Also, setting this value will return `all` details of the content item.
+                 */
                 ids?: string | null;
+                /**
+                 * @deprecated
+                 * @description A list or comma-separated list of kinds of contents to return (currently just `dataset` and `dataset_collection` are available). If unset, all types will be returned.
+                 */
                 types?: string[] | null;
+                /**
+                 * @deprecated
+                 * @description Whether to return deleted or undeleted datasets only. Leave unset for both.
+                 */
                 deleted?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to return visible or hidden datasets only. Leave unset for both.
+                 */
                 visible?: boolean | null;
+                /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
                 shareable?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
+                /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
                 q?: string[] | null;
+                /** @description The value to filter by. */
                 qv?: string[] | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
                 order?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18012,26 +18012,26 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create a new `HDA` or `HDCA` in the given History.
+     * @description Create a new `HDA` or `HDCA` in the given History.
+     */
     history_contents__create_typed: {
-        /**
-         * Create a new `HDA` or `HDCA` in the given History.
-         * @description Create a new `HDA` or `HDCA` in the given History.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18069,32 +18069,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return detailed information about a specific HDA or HDCA with the given `ID` within a history.
+     * @description Return detailed information about an `HDA` or `HDCA` within a history.
+     *
+     * **Note**: Anonymous users are allowed to get their current history contents.
+     */
     history_contents__show: {
-        /**
-         * Return detailed information about a specific HDA or HDCA with the given `ID` within a history.
-         * @description Return detailed information about an `HDA` or `HDCA` within a history.
-         *
-         * **Note**: Anonymous users are allowed to get their current history contents.
-         */
         parameters: {
-            /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
                 fuzzy_count?: number | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The encoded database identifier of the History. */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18119,28 +18119,28 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the values for the history content item with the given ``ID`` and path specified type.
+     * @description Updates the values for the history content item with the given ``ID``.
+     */
     history_contents__update_typed: {
-        /**
-         * Updates the values for the history content item with the given ``ID`` and path specified type.
-         * @description Updates the values for the history content item with the given ``ID``.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18170,45 +18170,45 @@ export interface operations {
             };
         };
     };
+    /**
+     * Delete the history content with the given ``ID`` and path specified type.
+     * @description Delete the history content with the given ``ID`` and path specified type.
+     *
+     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+     */
     history_contents__delete_typed: {
-        /**
-         * Delete the history content with the given ``ID`` and path specified type.
-         * @description Delete the history content with the given ``ID`` and path specified type.
-         *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-         */
         parameters: {
-            /**
-             * @deprecated
-             * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
-             */
-            /**
-             * @deprecated
-             * @description When deleting a dataset collection, whether to also delete containing datasets.
-             */
-            /**
-             * @deprecated
-             * @description Whether to stop the creating job if all outputs of the job have been deleted.
-             */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /**
+                 * @deprecated
+                 * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
+                 */
                 purge?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description When deleting a dataset collection, whether to also delete containing datasets.
+                 */
                 recursive?: boolean | null;
+                /**
+                 * @deprecated
+                 * @description Whether to stop the creating job if all outputs of the job have been deleted.
+                 */
                 stop_job?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18238,27 +18238,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return detailed information about an `HDA` or `HDCAs` jobs.
+     * @description Return detailed information about an `HDA` or `HDCAs` jobs.
+     *
+     * **Warning**: We allow anyone to fetch job state information about any object they
+     * can guess an encoded ID for - it isn't considered protected data. This keeps
+     * polling IDs as part of state calculation for large histories and collections as
+     * efficient as possible.
+     */
     show_jobs_summary_api_histories__history_id__contents__type_s__id__jobs_summary_get: {
-        /**
-         * Return detailed information about an `HDA` or `HDCAs` jobs.
-         * @description Return detailed information about an `HDA` or `HDCAs` jobs.
-         *
-         * **Warning**: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18280,19 +18280,19 @@ export interface operations {
             };
         };
     };
+    /** Prepare a dataset or dataset collection for export-style download. */
     prepare_store_download_api_histories__history_id__contents__type_s__id__prepare_store_download_post: {
-        /** Prepare a dataset or dataset collection for export-style download. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18316,19 +18316,19 @@ export interface operations {
             };
         };
     };
+    /** Prepare a dataset or dataset collection for export-style download and write to supplied URI. */
     write_store_api_histories__history_id__contents__type_s__id__write_store_post: {
-        /** Prepare a dataset or dataset collection for export-style download and write to supplied URI. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the item (`HDA`/`HDCA`) */
-            /** @description The type of the target history element. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
+                /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
         };
@@ -18352,27 +18352,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create contents from store.
+     * @description Create history contents from model store.
+     * Input can be a tarfile created with build_objects script distributed
+     * with galaxy-data, from an exported history with files stripped out,
+     * or hand-crafted JSON dictionary.
+     */
     create_from_store_api_histories__history_id__contents_from_store_post: {
-        /**
-         * Create contents from store.
-         * @description Create history contents from model store.
-         * Input can be a tarfile created with build_objects script distributed
-         * with galaxy-data, from an exported history with files stripped out,
-         * or hand-crafted JSON dictionary.
-         */
         parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Comma-separated list of keys to be passed to the serializer */
                 keys?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18403,15 +18403,15 @@ export interface operations {
             };
         };
     };
+    /** Returns meta data for custom builds. */
     get_custom_builds_metadata_api_histories__history_id__custom_builds_metadata_get: {
-        /** Returns meta data for custom builds. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18430,18 +18430,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item inaccessible by a URL link.
+     * @description Makes this item inaccessible by a URL link and return the current sharing status.
+     */
     disable_link_access_api_histories__history_id__disable_link_access_put: {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18460,18 +18460,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item accessible by a URL link.
+     * @description Makes this item accessible by a URL link and return the current sharing status.
+     */
     enable_link_access_api_histories__history_id__enable_link_access_put: {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18490,26 +18490,26 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get previous history exports.
+     * @description By default the legacy job-based history exports (jeha) are returned.
+     *
+     * Change the `accept` content type header to return the new task-based history exports.
+     */
     get_history_exports_api_histories__history_id__exports_get: {
-        /**
-         * Get previous history exports.
-         * @description By default the legacy job-based history exports (jeha) are returned.
-         *
-         * Change the `accept` content type header to return the new task-based history exports.
-         */
         parameters: {
-            /** @description The maximum number of items to return. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             query?: {
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18529,30 +18529,30 @@ export interface operations {
             };
         };
     };
+    /**
+     * Start job (if needed) to create history export for corresponding history.
+     * @deprecated
+     * @description This will start a job to create a history export archive.
+     *
+     * Calling this endpoint multiple times will return the 202 status code until the archive
+     * has been completely generated and is ready to download. When ready, it will return
+     * the 200 status code along with the download link information.
+     *
+     * If the history will be exported to a `directory_uri`, instead of returning the download
+     * link information, the Job ID will be returned so it can be queried to determine when
+     * the file has been written.
+     *
+     * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+     * `/api/histories/{id}/write_store` instead.
+     */
     archive_export_api_histories__history_id__exports_put: {
-        /**
-         * Start job (if needed) to create history export for corresponding history.
-         * @deprecated
-         * @description This will start a job to create a history export archive.
-         *
-         * Calling this endpoint multiple times will return the 202 status code until the archive
-         * has been completely generated and is ready to download. When ready, it will return
-         * the 200 status code along with the download link information.
-         *
-         * If the history will be exported to a `directory_uri`, instead of returning the download
-         * link information, the Job ID will be returned so it can be queried to determine when
-         * the file has been written.
-         *
-         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-         * `/api/histories/{id}/write_store` instead.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18571,7 +18571,9 @@ export interface operations {
                 };
             };
             /** @description The exported archive file is not ready yet. */
-            202: never;
+            202: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -18580,32 +18582,34 @@ export interface operations {
             };
         };
     };
+    /**
+     * If ready and available, return raw contents of exported history as a downloadable archive.
+     * @deprecated
+     * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
+     * of the history export - when ready, that route will return 200 status
+     * code (instead of 202) and this route can be used to download the archive.
+     *
+     * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+     * `/api/histories/{id}/write_store` instead.
+     */
     history_archive_download_api_histories__history_id__exports__jeha_id__get: {
-        /**
-         * If ready and available, return raw contents of exported history as a downloadable archive.
-         * @deprecated
-         * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
-         * of the history export - when ready, that route will return 200 status
-         * code (instead of 202) and this route can be used to download the archive.
-         *
-         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-         * `/api/histories/{id}/write_store` instead.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
-            /** @description The ID of the specific Job Export History Association or `latest` (default) to download the last generated archive. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
+                /** @description The ID of the specific Job Export History Association or `latest` (default) to download the last generated archive. */
                 jeha_id: string | "latest";
             };
         };
         responses: {
             /** @description The archive file containing the History. */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -18614,29 +18618,29 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
+     * @description Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
+     *
+     * **Warning**: We allow anyone to fetch job state information about any object they
+     * can guess an encoded ID for - it isn't considered protected data. This keeps
+     * polling IDs as part of state calculation for large histories and collections as
+     * efficient as possible.
+     */
     index_jobs_summary_api_histories__history_id__jobs_summary_get: {
-        /**
-         * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
-         * @description Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
-         *
-         * **Warning**: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
-         */
         parameters: {
-            /** @description A comma-separated list of encoded ids of job summary objects to return - if `ids` is specified types must also be specified and have same length. */
-            /** @description A comma-separated list of type of object represented by elements in the `ids` array - any of `Job`, `ImplicitCollectionJob`, or `WorkflowInvocation`. */
             query?: {
+                /** @description A comma-separated list of encoded ids of job summary objects to return - if `ids` is specified types must also be specified and have same length. */
                 ids?: string | null;
+                /** @description A comma-separated list of type of object represented by elements in the `ids` array - any of `Job`, `ImplicitCollectionJob`, or `WorkflowInvocation`. */
                 types?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18659,15 +18663,15 @@ export interface operations {
             };
         };
     };
+    /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
     materialize_to_history_api_histories__history_id__materialize_post: {
-        /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18691,15 +18695,15 @@ export interface operations {
             };
         };
     };
+    /** Return a short term storage token to monitor download of the history. */
     prepare_store_download_api_histories__history_id__prepare_store_download_post: {
-        /** Return a short term storage token to monitor download of the history. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18723,18 +18727,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item public and accessible by a URL link.
+     * @description Makes this item publicly available by a URL link and return the current sharing status.
+     */
     publish_api_histories__history_id__publish_put: {
-        /**
-         * Makes this item public and accessible by a URL link.
-         * @description Makes this item publicly available by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18753,18 +18757,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Share this item with specific users.
+     * @description Shares this item with specific users and return the current sharing status.
+     */
     share_with_users_api_histories__history_id__share_with_users_put: {
-        /**
-         * Share this item with specific users.
-         * @description Shares this item with specific users and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18788,18 +18792,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get the current sharing status of the given item.
+     * @description Return the sharing status of the item.
+     */
     sharing_api_histories__history_id__sharing_get: {
-        /**
-         * Get the current sharing status of the given item.
-         * @description Return the sharing status of the item.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18818,18 +18822,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set a new slug for this shared item.
+     * @description Sets a new slug to access this item by URL. The new slug must be unique.
+     */
     set_slug_api_histories__history_id__slug_put: {
-        /**
-         * Set a new slug for this shared item.
-         * @description Sets a new slug to access this item by URL. The new slug must be unique.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -18840,7 +18844,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -18849,11 +18855,11 @@ export interface operations {
             };
         };
     };
+    /** Show tags based on history_id */
     index_api_histories__history_id__tags_get: {
-        /** Show tags based on history_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -18875,11 +18881,11 @@ export interface operations {
             };
         };
     };
+    /** Show tag based on history_id */
     show_api_histories__history_id__tags__tag_name__get: {
-        /** Show tag based on history_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -18902,11 +18908,11 @@ export interface operations {
             };
         };
     };
+    /** Update tag based on history_id */
     update_api_histories__history_id__tags__tag_name__put: {
-        /** Update tag based on history_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -18934,11 +18940,11 @@ export interface operations {
             };
         };
     };
+    /** Create tag based on history_id */
     create_api_histories__history_id__tags__tag_name__post: {
-        /** Create tag based on history_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -18966,11 +18972,11 @@ export interface operations {
             };
         };
     };
+    /** Delete tag based on history_id */
     delete_api_histories__history_id__tags__tag_name__delete: {
-        /** Delete tag based on history_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -18993,18 +18999,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes this item from the published list.
+     * @description Removes this item from the published list and return the current sharing status.
+     */
     unpublish_api_histories__history_id__unpublish_put: {
-        /**
-         * Removes this item from the published list.
-         * @description Removes this item from the published list and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -19023,15 +19029,15 @@ export interface operations {
             };
         };
     };
+    /** Prepare history for export-style download and write to supplied URI. */
     write_store_api_histories__history_id__write_store_post: {
-        /** Prepare history for export-style download and write to supplied URI. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the History. */
             path: {
+                /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
         };
@@ -19055,38 +19061,38 @@ export interface operations {
             };
         };
     };
+    /** Get the list of a user's workflow invocations. */
     index_invocations_api_invocations_get: {
-        /** Get the list of a user's workflow invocations. */
-        parameters?: {
-            /** @description Return only invocations for this Workflow ID */
-            /** @description Return only invocations for this History ID */
-            /** @description Return only invocations for this Job ID */
-            /** @description Return invocations for this User ID. */
-            /** @description Sort Workflow Invocations by this attribute */
-            /** @description Sort in descending order? */
-            /** @description Set to false to only include terminal Invocations. */
-            /** @description Limit the number of invocations to return. */
-            /** @description Number of invocations to skip. */
-            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
-            /** @description View to be passed to the serializer */
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+        parameters: {
             query?: {
+                /** @description Return only invocations for this Workflow ID */
                 workflow_id?: string | null;
+                /** @description Return only invocations for this History ID */
                 history_id?: string | null;
+                /** @description Return only invocations for this Job ID */
                 job_id?: string | null;
+                /** @description Return invocations for this User ID. */
                 user_id?: string | null;
+                /** @description Sort Workflow Invocations by this attribute */
                 sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
+                /** @description Set to false to only include terminal Invocations. */
                 include_terminal?: boolean | null;
+                /** @description Limit the number of invocations to return. */
                 limit?: number | null;
+                /** @description Number of invocations to skip. */
                 offset?: number | null;
+                /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
                 instance?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
                 include_nested_invocations?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19105,14 +19111,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create Invocations From Store
+     * @description Create invocation(s) from a supplied model store.
+     */
     create_invocations_from_store_api_invocations_from_store_post: {
-        /**
-         * Create Invocations From Store
-         * @description Create invocation(s) from a supplied model store.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19136,15 +19142,15 @@ export interface operations {
             };
         };
     };
+    /** Show details of workflow invocation step. */
     step_api_invocations_steps__step_id__get: {
-        /** Show details of workflow invocation step. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -19163,26 +19169,26 @@ export interface operations {
             };
         };
     };
+    /** Get detailed description of a workflow invocation. */
     show_invocation_api_invocations__invocation_id__get: {
-        /** Get detailed description of a workflow invocation. */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19201,26 +19207,26 @@ export interface operations {
             };
         };
     };
+    /** Cancel the specified workflow invocation. */
     cancel_invocation_api_invocations__invocation_id__delete: {
-        /** Cancel the specified workflow invocation. */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19239,21 +19245,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated across all current jobs of the workflow invocation.
+     * @description Warning: We allow anyone to fetch job state information about any object they
+     * can guess an encoded ID for - it isn't considered protected data. This keeps
+     * polling IDs as part of state calculation for large histories and collections as
+     * efficient as possible.
+     */
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated across all current jobs of the workflow invocation.
-         * @description Warning: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19272,15 +19278,15 @@ export interface operations {
             };
         };
     };
+    /** Prepare a workflow invocation export-style download. */
     prepare_store_download_api_invocations__invocation_id__prepare_store_download_post: {
-        /** Prepare a workflow invocation export-style download. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19304,15 +19310,15 @@ export interface operations {
             };
         };
     };
+    /** Get JSON summarizing invocation for reporting. */
     show_invocation_report_api_invocations__invocation_id__report_get: {
-        /** Get JSON summarizing invocation for reporting. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19331,21 +19337,23 @@ export interface operations {
             };
         };
     };
+    /** Get PDF summarizing invocation for reporting. */
     show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get: {
-        /** Get PDF summarizing invocation for reporting. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -19354,21 +19362,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated per step of the workflow invocation.
+     * @description Warning: We allow anyone to fetch job state information about any object they
+     * can guess an encoded ID for - it isn't considered protected data. This keeps
+     * polling IDs as part of state calculation for large histories and collections as
+     * efficient as possible.
+     */
     invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated per step of the workflow invocation.
-         * @description Warning: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19391,20 +19399,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Show details of workflow invocation step.
+     * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
+     */
     invocation_step_api_invocations__invocation_id__steps__step_id__get: {
-        /**
-         * Show details of workflow invocation step.
-         * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -19423,17 +19431,17 @@ export interface operations {
             };
         };
     };
+    /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
     update_invocation_step_api_invocations__invocation_id__steps__step_id__put: {
-        /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -19457,15 +19465,15 @@ export interface operations {
             };
         };
     };
+    /** Prepare a workflow invocation export-style download and write to supplied URI. */
     write_store_api_invocations__invocation_id__write_store_post: {
-        /** Prepare a workflow invocation export-style download and write to supplied URI. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -19489,14 +19497,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Job Lock Status
+     * @description Get job lock status.
+     */
     job_lock_status_api_job_lock_get: {
-        /**
-         * Job Lock Status
-         * @description Get job lock status.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19515,14 +19523,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Update Job Lock
+     * @description Set job lock status.
+     */
     update_job_lock_api_job_lock_put: {
-        /**
-         * Update Job Lock
-         * @description Set job lock status.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19546,80 +19554,80 @@ export interface operations {
             };
         };
     };
+    /** Index */
     index_api_jobs_get: {
-        /** Index */
-        parameters?: {
-            /** @description If true, and requester is an admin, will return external job id and user email. This is only available to admins. */
-            /** @description an encoded user id to restrict query to, must be own id if not admin user */
-            /** @description Determines columns to return. Defaults to 'collection'. */
-            /** @description Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01') */
-            /** @description Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01') */
-            /** @description Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned. */
-            /** @description Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned. */
-            /** @description Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned. */
-            /** @description Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned. */
-            /** @description Sort results by specified field. */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `user`
-             * : The user email of the user that executed the Job. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tool_id`
-             * : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `runner`
-             * : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
-             *
-             * `handler`
-             * : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Jobs: `user`, `tool`, `handler`, `runner`.
-             */
-            /** @description Maximum number of jobs to return. */
-            /** @description Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned. */
-            /** @description A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned. */
-            /** @description Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned */
-            /** @description Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned */
+        parameters: {
             query?: {
+                /** @description If true, and requester is an admin, will return external job id and user email. This is only available to admins. */
                 user_details?: boolean;
+                /** @description an encoded user id to restrict query to, must be own id if not admin user */
                 user_id?: string | null;
+                /** @description Determines columns to return. Defaults to 'collection'. */
                 view?: components["schemas"]["JobIndexViewEnum"];
-                date_range_min?: string | string | null;
-                date_range_max?: string | string | null;
+                /** @description Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01') */
+                date_range_min?: string | null;
+                /** @description Limit listing of jobs to those that are updated before specified date (e.g. '2014-01-01') */
+                date_range_max?: string | null;
+                /** @description Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned. */
                 history_id?: string | null;
+                /** @description Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned. */
                 workflow_id?: string | null;
+                /** @description Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned. */
                 invocation_id?: string | null;
+                /** @description Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned. */
                 implicit_collection_jobs_id?: string | null;
+                /** @description Sort results by specified field. */
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 * ## Query Structure
+                 *
+                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 * being indexed (i.e. a column in the database).
+                 *
+                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 * this means the database operation `ILIKE` will typically be used).
+                 *
+                 * Once the tagged filters are extracted from the search query, the remaining text is just
+                 * used to search various documented attributes of the object.
+                 *
+                 * ## GitHub-style Tags Available
+                 *
+                 * `user`
+                 * : The user email of the user that executed the Job. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `tool_id`
+                 * : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `runner`
+                 * : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+                 *
+                 * `handler`
+                 * : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+                 *
+                 * ## Free Text
+                 *
+                 * Free text search terms will be searched against the following attributes of the
+                 * Jobs: `user`, `tool`, `handler`, `runner`.
+                 */
                 search?: string | null;
+                /** @description Maximum number of jobs to return. */
                 limit?: number;
+                /** @description Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned. */
                 offset?: number;
+                /** @description A list or comma-separated list of states to filter job query on. If unspecified, jobs of any state may be returned. */
                 state?: string[] | null;
+                /** @description Limit listing of jobs to those that match one of the included tool_ids. If none, all are returned */
                 tool_id?: string[] | null;
+                /** @description Limit listing of jobs to those that match one of the included tool ID sql-like patterns. If none, all are returned */
                 tool_id_like?: string[] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19642,16 +19650,16 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return jobs for current user
+     * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
+     * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+     * recycle the old results.
+     */
     search_jobs_api_jobs_search_post: {
-        /**
-         * Return jobs for current user
-         * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
-         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-         * recycle the old results.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -19675,19 +19683,19 @@ export interface operations {
             };
         };
     };
+    /** Return dictionary containing description of job data. */
     show_job_api_jobs__job_id__get: {
-        /** Return dictionary containing description of job data. */
         parameters: {
-            /** @description Show extra information. */
             query?: {
+                /** @description Show extra information. */
                 full?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19708,15 +19716,15 @@ export interface operations {
             };
         };
     };
+    /** Cancels specified job */
     cancel_job_api_jobs__job_id__delete: {
-        /** Cancels specified job */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19740,15 +19748,15 @@ export interface operations {
             };
         };
     };
+    /** Check inputs and job for common potential problems to aid in error reporting */
     check_common_problems_api_jobs__job_id__common_problems_get: {
-        /** Check inputs and job for common potential problems to aid in error reporting */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19767,15 +19775,15 @@ export interface operations {
             };
         };
     };
+    /** Return destination parameters for specified job. */
     destination_params_job_api_jobs__job_id__destination_params_get: {
-        /** Return destination parameters for specified job. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19794,15 +19802,15 @@ export interface operations {
             };
         };
     };
+    /** Submits a bug report via the API. */
     report_error_api_jobs__job_id__error_post: {
-        /** Submits a bug report via the API. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19826,15 +19834,15 @@ export interface operations {
             };
         };
     };
+    /** Returns input datasets created by a job. */
     get_inputs_api_jobs__job_id__inputs_get: {
-        /** Returns input datasets created by a job. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19853,22 +19861,22 @@ export interface operations {
             };
         };
     };
+    /** Return job metrics for specified job. */
     get_metrics_api_jobs__job_id__metrics_get: {
-        /** Return job metrics for specified job. */
         parameters: {
-            /**
-             * @deprecated
-             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
-             */
             query?: {
+                /**
+                 * @deprecated
+                 * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+                 */
                 hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19887,20 +19895,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get a fresh OIDC token
+     * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+     */
     get_token_api_jobs__job_id__oidc_tokens_get: {
-        /**
-         * Get a fresh OIDC token
-         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
-         */
         parameters: {
-            /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
-            /** @description OIDC provider name */
             query: {
+                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
                 job_key: string;
+                /** @description OIDC provider name */
                 provider: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -19922,15 +19930,15 @@ export interface operations {
             };
         };
     };
+    /** Returns output datasets created by a job. */
     get_outputs_api_jobs__job_id__outputs_get: {
-        /** Returns output datasets created by a job. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19949,27 +19957,27 @@ export interface operations {
             };
         };
     };
+    /**
+     * Resolve parameters as a list for nested display.
+     * @description Resolve parameters as a list for nested display.
+     * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+     * this endpoint will change frequently.
+     */
     resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
-        /**
-         * Resolve parameters as a list for nested display.
-         * @description Resolve parameters as a list for nested display.
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
-         */
         parameters: {
-            /**
-             * @deprecated
-             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
-             */
             query?: {
+                /**
+                 * @deprecated
+                 * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+                 */
                 hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -19988,15 +19996,15 @@ export interface operations {
             };
         };
     };
+    /** Resumes a paused job. */
     resume_paused_job_api_jobs__job_id__resume_put: {
-        /** Resumes a paused job. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the job */
             path: {
+                /** @description The ID of the job */
                 job_id: string;
             };
         };
@@ -20015,18 +20023,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns a list of summary data for all libraries.
+     * @description Returns a list of summary data for all libraries.
+     */
     index_api_libraries_get: {
-        /**
-         * Returns a list of summary data for all libraries.
-         * @description Returns a list of summary data for all libraries.
-         */
-        parameters?: {
-            /** @description Whether to include deleted libraries in the result. */
+        parameters: {
             query?: {
+                /** @description Whether to include deleted libraries in the result. */
                 deleted?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20045,14 +20053,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Creates a new library and returns its summary information.
+     * @description Creates a new library and returns its summary information. Currently, only admin users can create libraries.
+     */
     create_api_libraries_post: {
-        /**
-         * Creates a new library and returns its summary information.
-         * @description Creates a new library and returns its summary information. Currently, only admin users can create libraries.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20076,14 +20084,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns a list of summary data for all libraries marked as deleted.
+     * @description Returns a list of summary data for all libraries marked as deleted.
+     */
     index_deleted_api_libraries_deleted_get: {
-        /**
-         * Returns a list of summary data for all libraries marked as deleted.
-         * @description Returns a list of summary data for all libraries marked as deleted.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20102,11 +20110,11 @@ export interface operations {
             };
         };
     };
+    /** Create libraries from a model store. */
     create_from_store_api_libraries_from_store_post: {
-        /** Create libraries from a model store. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20130,18 +20138,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns summary information about a particular library.
+     * @description Returns summary information about a particular library.
+     */
     show_api_libraries__id__get: {
-        /**
-         * Returns summary information about a particular library.
-         * @description Returns summary information about a particular library.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Library. */
             path: {
+                /** @description The ID of the Library. */
                 id: string;
             };
         };
@@ -20160,23 +20168,23 @@ export interface operations {
             };
         };
     };
+    /**
+     * Marks the specified library as deleted (or undeleted).
+     * @description Marks the specified library as deleted (or undeleted).
+     * Currently, only admin users can delete or restore libraries.
+     */
     delete_api_libraries__id__delete: {
-        /**
-         * Marks the specified library as deleted (or undeleted).
-         * @description Marks the specified library as deleted (or undeleted).
-         * Currently, only admin users can delete or restore libraries.
-         */
         parameters: {
-            /** @description Whether to restore a deleted library. */
             query?: {
+                /** @description Whether to restore a deleted library. */
                 undelete?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Library. */
             path: {
+                /** @description The ID of the Library. */
                 id: string;
             };
         };
@@ -20200,18 +20208,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the information of an existing library.
+     * @description Updates the information of an existing library.
+     */
     update_api_libraries__id__patch: {
-        /**
-         * Updates the information of an existing library.
-         * @description Updates the information of an existing library.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Library. */
             path: {
+                /** @description The ID of the Library. */
                 id: string;
             };
         };
@@ -20235,31 +20243,31 @@ export interface operations {
             };
         };
     };
+    /**
+     * Gets the current or available permissions of a particular library.
+     * @description Gets the current or available permissions of a particular library.
+     * The results can be paginated and additionally filtered by a query.
+     */
     get_permissions_api_libraries__id__permissions_get: {
-        /**
-         * Gets the current or available permissions of a particular library.
-         * @description Gets the current or available permissions of a particular library.
-         * The results can be paginated and additionally filtered by a query.
-         */
         parameters: {
-            /** @description The scope of the permissions to retrieve. Either the `current` permissions or the `available`. */
-            /** @description Indicates whether the roles available for the library access are requested. */
-            /** @description The page number to retrieve when paginating the available roles. */
-            /** @description The maximum number of permissions per page when paginating. */
-            /** @description Optional search text to retrieve only the roles matching this query. */
             query?: {
+                /** @description The scope of the permissions to retrieve. Either the `current` permissions or the `available`. */
                 scope?: components["schemas"]["LibraryPermissionScope"] | null;
+                /** @description Indicates whether the roles available for the library access are requested. */
                 is_library_access?: boolean | null;
+                /** @description The page number to retrieve when paginating the available roles. */
                 page?: number;
+                /** @description The maximum number of permissions per page when paginating. */
                 page_limit?: number;
+                /** @description Optional search text to retrieve only the roles matching this query. */
                 q?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Library. */
             path: {
+                /** @description The ID of the Library. */
                 id: string;
             };
         };
@@ -20280,22 +20288,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Sets the permissions to access and manipulate a library.
+     * @description Sets the permissions to access and manipulate a library.
+     */
     set_permissions_api_libraries__id__permissions_post: {
-        /**
-         * Sets the permissions to access and manipulate a library.
-         * @description Sets the permissions to access and manipulate a library.
-         */
         parameters: {
-            /** @description Indicates what action should be performed on the Library. */
             query?: {
+                /** @description Indicates what action should be performed on the Library. */
                 action?: components["schemas"]["LibraryPermissionAction"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Library. */
             path: {
+                /** @description The ID of the Library. */
                 id: string;
             };
         };
@@ -20323,11 +20331,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Lists all available SPDX licenses
+     * @description Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/).
+     */
     index_api_licenses_get: {
-        /**
-         * Lists all available SPDX licenses
-         * @description Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/).
-         */
         responses: {
             /** @description List of SPDX licenses */
             200: {
@@ -20337,16 +20345,16 @@ export interface operations {
             };
         };
     };
+    /**
+     * Gets the SPDX license metadata associated with the short identifier
+     * @description Returns the license metadata associated with the given
+     * [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
+     */
     get_api_licenses__id__get: {
-        /**
-         * Gets the SPDX license metadata associated with the short identifier
-         * @description Returns the license metadata associated with the given
-         * [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
-         */
         parameters: {
-            /** @description The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/) */
             path: {
-                id: Record<string, never>;
+                /** @description The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/) */
+                id: unknown;
             };
         };
         responses: {
@@ -20364,14 +20372,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Records a collection of metrics.
+     * @description Record any metrics sent and return some status object.
+     */
     create_api_metrics_post: {
-        /**
-         * Records a collection of metrics.
-         * @description Record any metrics sent and return some status object.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20384,7 +20392,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -20395,20 +20403,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the list of notifications associated with the user.
+     * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+     *
+     * You can use the `limit` and `offset` parameters to paginate through the notifications.
+     */
     get_user_notifications_api_notifications_get: {
-        /**
-         * Returns the list of notifications associated with the user.
-         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
-         *
-         * You can use the `limit` and `offset` parameters to paginate through the notifications.
-         */
-        parameters?: {
+        parameters: {
             query?: {
                 limit?: number | null;
                 offset?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20427,11 +20435,11 @@ export interface operations {
             };
         };
     };
+    /** Updates a list of notifications with the requested values in a single request. */
     update_user_notifications_api_notifications_put: {
-        /** Updates a list of notifications with the requested values in a single request. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20455,14 +20463,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Sends a notification to a list of recipients (users, groups or roles).
+     * @description Sends a notification to a list of recipients (users, groups or roles).
+     */
     send_notification_api_notifications_post: {
-        /**
-         * Sends a notification to a list of recipients (users, groups or roles).
-         * @description Sends a notification to a list of recipients (users, groups or roles).
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20488,11 +20496,11 @@ export interface operations {
             };
         };
     };
+    /** Deletes a list of notifications received by the user in a single request. */
     delete_user_notifications_api_notifications_delete: {
-        /** Deletes a list of notifications received by the user in a single request. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20516,14 +20524,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns all currently active broadcasted notifications.
+     * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+     */
     get_all_broadcasted_api_notifications_broadcast_get: {
-        /**
-         * Returns all currently active broadcasted notifications.
-         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20542,25 +20550,25 @@ export interface operations {
             };
         };
     };
+    /**
+     * Broadcasts a notification to every user in the system.
+     * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
+     * They are typically used to display important information such as maintenance windows or new features.
+     * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+     *
+     * Broadcasted notifications can include action links that are displayed as buttons.
+     * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+     *
+     * Some key features of broadcasted notifications include:
+     * - They are not associated with a specific user, so they cannot be deleted or marked as read.
+     * - They can be scheduled to be displayed in the future or to expire after a certain time.
+     * - By default, broadcasted notifications are published immediately and expire six months after publication.
+     * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+     */
     broadcast_notification_api_notifications_broadcast_post: {
-        /**
-         * Broadcasts a notification to every user in the system.
-         * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
-         * They are typically used to display important information such as maintenance windows or new features.
-         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
-         *
-         * Broadcasted notifications can include action links that are displayed as buttons.
-         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
-         *
-         * Some key features of broadcasted notifications include:
-         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
-         * - They can be scheduled to be displayed in the future or to expire after a certain time.
-         * - By default, broadcasted notifications are published immediately and expire six months after publication.
-         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20584,18 +20592,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the information of a specific broadcasted notification.
+     * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+     */
     get_broadcasted_api_notifications_broadcast__notification_id__get: {
-        /**
-         * Returns the information of a specific broadcasted notification.
-         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Notification. */
             path: {
+                /** @description The ID of the Notification. */
                 notification_id: string;
             };
         };
@@ -20614,18 +20622,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the state of a broadcasted notification.
+     * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
+     */
     update_broadcasted_notification_api_notifications_broadcast__notification_id__put: {
-        /**
-         * Updates the state of a broadcasted notification.
-         * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Notification. */
             path: {
+                /** @description The ID of the Notification. */
                 notification_id: string;
             };
         };
@@ -20636,7 +20644,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20645,17 +20655,17 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the current user's preferences for notifications.
+     * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+     *
+     * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+     *   The supported channels are returned in the `supported-channels` header.
+     */
     get_notification_preferences_api_notifications_preferences_get: {
-        /**
-         * Returns the current user's preferences for notifications.
-         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
-         *
-         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
-         *   The supported channels are returned in the `supported-channels` header.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20674,17 +20684,17 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates the user's preferences for notifications.
+     * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+     *
+     * - Can be used to completely enable/disable notifications for a particular type (category)
+     * or to enable/disable a particular channel on each category.
+     */
     update_notification_preferences_api_notifications_preferences_put: {
-        /**
-         * Updates the user's preferences for notifications.
-         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
-         *
-         * - Can be used to completely enable/disable notifications for a particular type (category)
-         * or to enable/disable a particular channel on each category.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20708,17 +20718,17 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns the current status summary of the user's notifications since a particular date.
+     * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+     */
     get_notifications_status_api_notifications_status_get: {
-        /**
-         * Returns the current status summary of the user's notifications since a particular date.
-         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
-         */
         parameters: {
             query: {
                 since: string;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20737,15 +20747,15 @@ export interface operations {
             };
         };
     };
+    /** Displays information about a notification received by the user. */
     show_notification_api_notifications__notification_id__get: {
-        /** Displays information about a notification received by the user. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Notification. */
             path: {
+                /** @description The ID of the Notification. */
                 notification_id: string;
             };
         };
@@ -20764,15 +20774,15 @@ export interface operations {
             };
         };
     };
+    /** Updates the state of a notification received by the user. */
     update_user_notification_api_notifications__notification_id__put: {
-        /** Updates the state of a notification received by the user. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Notification. */
             path: {
+                /** @description The ID of the Notification. */
                 notification_id: string;
             };
         };
@@ -20783,7 +20793,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20792,28 +20804,30 @@ export interface operations {
             };
         };
     };
+    /**
+     * Deletes a notification received by the user.
+     * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
+     *
+     * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+     * - It will be eventually removed from the database by a background task after the expiration time.
+     * - Deleted notifications will be permanently deleted when the expiration time is reached.
+     */
     delete_user_notification_api_notifications__notification_id__delete: {
-        /**
-         * Deletes a notification received by the user.
-         * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
-         *
-         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
-         * - It will be eventually removed from the database by a background task after the expiration time.
-         * - Deleted notifications will be permanently deleted when the expiration time is reached.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Notification. */
             path: {
+                /** @description The ID of the Notification. */
                 notification_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20822,11 +20836,11 @@ export interface operations {
             };
         };
     };
+    /** Get a list of persisted object store instances defined by the requesting user. */
     object_stores__instances_index: {
-        /** Get a list of persisted object store instances defined by the requesting user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20845,11 +20859,11 @@ export interface operations {
             };
         };
     };
+    /** Create a user-bound object store. */
     object_stores__create_instance: {
-        /** Create a user-bound object store. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20873,11 +20887,11 @@ export interface operations {
             };
         };
     };
+    /** Test payload for creating user-bound object store. */
     object_stores__test_new_instance_configuration: {
-        /** Test payload for creating user-bound object store. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -20901,15 +20915,15 @@ export interface operations {
             };
         };
     };
+    /** Get a persisted user object store instance. */
     object_stores__instances_get: {
-        /** Get a persisted user object store instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
         };
@@ -20928,15 +20942,15 @@ export interface operations {
             };
         };
     };
+    /** Update or upgrade user object store instance. */
     object_stores__instances_update: {
-        /** Update or upgrade user object store instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
         };
@@ -20963,21 +20977,23 @@ export interface operations {
             };
         };
     };
+    /** Purge user object store instance. */
     object_stores__instances_purge: {
-        /** Purge user object store instance. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The UUID used to identify a persisted UserObjectStore object. */
             path: {
+                /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -20986,11 +21002,11 @@ export interface operations {
             };
         };
     };
+    /** Get a list of object store templates available to build user defined object stores from */
     object_stores__templates_index: {
-        /** Get a list of object store templates available to build user defined object stores from */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21009,15 +21025,15 @@ export interface operations {
             };
         };
     };
+    /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
     index_api_object_stores_get: {
-        /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
-        parameters?: {
-            /** @description Restrict index query to user selectable object stores, the current implementation requires this to be true. */
+        parameters: {
             query?: {
+                /** @description Restrict index query to user selectable object stores, the current implementation requires this to be true. */
                 selectable?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21039,15 +21055,15 @@ export interface operations {
             };
         };
     };
+    /** Get information about a concrete object store configured with Galaxy. */
     show_info_api_object_stores__object_store_id__get: {
-        /** Get information about a concrete object store configured with Galaxy. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The concrete object store ID. */
             path: {
+                /** @description The concrete object store ID. */
                 object_store_id: string;
             };
         };
@@ -21066,65 +21082,65 @@ export interface operations {
             };
         };
     };
+    /**
+     * Lists all Pages viewable by the user.
+     * @description Get a list with summary information of all Pages available to the user.
+     */
     index_api_pages_get: {
-        /**
-         * Lists all Pages viewable by the user.
-         * @description Get a list with summary information of all Pages available to the user.
-         */
-        parameters?: {
-            /** @description Whether to include deleted pages in the result. */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `title`
-             * : The page's title.
-             *
-             * `slug`
-             * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `user`
-             * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Pages: `title`, `slug`, `tag`, `user`.
-             */
-            /** @description Sort page index by this specified attribute on the page model */
-            /** @description Sort in descending order? */
+        parameters: {
             query?: {
+                /** @description Whether to include deleted pages in the result. */
                 deleted?: boolean;
                 limit?: number;
                 offset?: number;
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 * ## Query Structure
+                 *
+                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 * being indexed (i.e. a column in the database).
+                 *
+                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 * this means the database operation `ILIKE` will typically be used).
+                 *
+                 * Once the tagged filters are extracted from the search query, the remaining text is just
+                 * used to search various documented attributes of the object.
+                 *
+                 * ## GitHub-style Tags Available
+                 *
+                 * `title`
+                 * : The page's title.
+                 *
+                 * `slug`
+                 * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `tag`
+                 * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `user`
+                 * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * ## Free Text
+                 *
+                 * Free text search terms will be searched against the following attributes of the
+                 * Pages: `title`, `slug`, `tag`, `user`.
+                 */
                 search?: string | null;
                 show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
+                /** @description Sort page index by this specified attribute on the page model */
                 sort_by?: "create_time" | "title" | "update_time" | "username";
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 user_id?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21143,14 +21159,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Create a page and return summary information.
+     * @description Get a list with details of all Pages available to the user.
+     */
     create_api_pages_post: {
-        /**
-         * Create a page and return summary information.
-         * @description Get a list with details of all Pages available to the user.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21174,18 +21190,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return a page summary and the content of the last revision.
+     * @description Return summary information about a specific Page and the content of the last revision.
+     */
     show_api_pages__id__get: {
-        /**
-         * Return a page summary and the content of the last revision.
-         * @description Return summary information about a specific Page and the content of the last revision.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21204,24 +21220,26 @@ export interface operations {
             };
         };
     };
+    /**
+     * Marks the specific Page as deleted.
+     * @description Marks the Page with the given ID as deleted.
+     */
     delete_api_pages__id__delete: {
-        /**
-         * Marks the specific Page as deleted.
-         * @description Marks the Page with the given ID as deleted.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -21230,20 +21248,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return a PDF document of the last revision of the Page.
+     * @description Return a PDF document of the last revision of the Page.
+     *
+     * This feature may not be available in this Galaxy.
+     */
     show_pdf_api_pages__id__pdf_get: {
-        /**
-         * Return a PDF document of the last revision of the Page.
-         * @description Return a PDF document of the last revision of the Page.
-         *
-         * This feature may not be available in this Galaxy.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21261,21 +21279,23 @@ export interface operations {
                 };
             };
             /** @description PDF conversion service not available. */
-            501: never;
+            501: {
+                content: never;
+            };
         };
     };
+    /**
+     * Makes this item inaccessible by a URL link.
+     * @description Makes this item inaccessible by a URL link and return the current sharing status.
+     */
     disable_link_access_api_pages__id__disable_link_access_put: {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21294,18 +21314,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item accessible by a URL link.
+     * @description Makes this item accessible by a URL link and return the current sharing status.
+     */
     enable_link_access_api_pages__id__enable_link_access_put: {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21324,20 +21344,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return a PDF document of the last revision of the Page.
+     * @description Return a STS download link for this page to be downloaded as a PDF.
+     *
+     * This feature may not be available in this Galaxy.
+     */
     prepare_pdf_api_pages__id__prepare_download_post: {
-        /**
-         * Return a PDF document of the last revision of the Page.
-         * @description Return a STS download link for this page to be downloaded as a PDF.
-         *
-         * This feature may not be available in this Galaxy.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21355,21 +21375,23 @@ export interface operations {
                 };
             };
             /** @description PDF conversion service not available. */
-            501: never;
+            501: {
+                content: never;
+            };
         };
     };
+    /**
+     * Makes this item public and accessible by a URL link.
+     * @description Makes this item publicly available by a URL link and return the current sharing status.
+     */
     publish_api_pages__id__publish_put: {
-        /**
-         * Makes this item public and accessible by a URL link.
-         * @description Makes this item publicly available by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21388,18 +21410,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Share this item with specific users.
+     * @description Shares this item with specific users and return the current sharing status.
+     */
     share_with_users_api_pages__id__share_with_users_put: {
-        /**
-         * Share this item with specific users.
-         * @description Shares this item with specific users and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21423,18 +21445,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get the current sharing status of the given Page.
+     * @description Return the sharing status of the item.
+     */
     sharing_api_pages__id__sharing_get: {
-        /**
-         * Get the current sharing status of the given Page.
-         * @description Return the sharing status of the item.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21453,18 +21475,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set a new slug for this shared item.
+     * @description Sets a new slug to access this item by URL. The new slug must be unique.
+     */
     set_slug_api_pages__id__slug_put: {
-        /**
-         * Set a new slug for this shared item.
-         * @description Sets a new slug to access this item by URL. The new slug must be unique.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21475,7 +21497,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -21484,24 +21508,26 @@ export interface operations {
             };
         };
     };
+    /**
+     * Undelete the specific Page.
+     * @description Marks the Page with the given ID as undeleted.
+     */
     undelete_api_pages__id__undelete_put: {
-        /**
-         * Undelete the specific Page.
-         * @description Marks the Page with the given ID as undeleted.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -21510,18 +21536,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes this item from the published list.
+     * @description Removes this item from the published list and return the current sharing status.
+     */
     unpublish_api_pages__id__unpublish_put: {
-        /**
-         * Removes this item from the published list.
-         * @description Removes this item from the published list and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Page. */
             path: {
+                /** @description The ID of the Page. */
                 id: string;
             };
         };
@@ -21540,14 +21566,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays a list with information of quotas that are currently active.
+     * @description Displays a list with information of quotas that are currently active.
+     */
     index_api_quotas_get: {
-        /**
-         * Displays a list with information of quotas that are currently active.
-         * @description Displays a list with information of quotas that are currently active.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21566,14 +21592,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Creates a new quota.
+     * @description Creates a new quota.
+     */
     create_api_quotas_post: {
-        /**
-         * Creates a new quota.
-         * @description Creates a new quota.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21597,14 +21623,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays a list with information of quotas that have been deleted.
+     * @description Displays a list with information of quotas that have been deleted.
+     */
     index_deleted_api_quotas_deleted_get: {
-        /**
-         * Displays a list with information of quotas that have been deleted.
-         * @description Displays a list with information of quotas that have been deleted.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21623,18 +21649,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays details on a particular quota that has been deleted.
+     * @description Displays details on a particular quota that has been deleted.
+     */
     deleted_quota_api_quotas_deleted__id__get: {
-        /**
-         * Displays details on a particular quota that has been deleted.
-         * @description Displays details on a particular quota that has been deleted.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21653,18 +21679,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Restores a previously deleted quota.
+     * @description Restores a previously deleted quota.
+     */
     undelete_api_quotas_deleted__id__undelete_post: {
-        /**
-         * Restores a previously deleted quota.
-         * @description Restores a previously deleted quota.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21683,18 +21709,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays details on a particular active quota.
+     * @description Displays details on a particular active quota.
+     */
     quota_api_quotas__id__get: {
-        /**
-         * Displays details on a particular active quota.
-         * @description Displays details on a particular active quota.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21713,18 +21739,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Updates an existing quota.
+     * @description Updates an existing quota.
+     */
     update_api_quotas__id__put: {
-        /**
-         * Updates an existing quota.
-         * @description Updates an existing quota.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21748,18 +21774,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Deletes an existing quota.
+     * @description Deletes an existing quota.
+     */
     delete_api_quotas__id__delete: {
-        /**
-         * Deletes an existing quota.
-         * @description Deletes an existing quota.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21783,15 +21809,15 @@ export interface operations {
             };
         };
     };
+    /** Purges a previously deleted quota. */
     purge_api_quotas__id__purge_post: {
-        /** Purges a previously deleted quota. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the Quota. */
             path: {
+                /** @description The ID of the Quota. */
                 id: string;
             };
         };
@@ -21810,36 +21836,36 @@ export interface operations {
             };
         };
     };
+    /**
+     * Displays remote files available to the user.
+     * @description Lists all remote files available to the user from different sources.
+     *
+     * The total count of files and directories is returned in the 'total_matches' header.
+     */
     index_api_remote_files_get: {
-        /**
-         * Displays remote files available to the user.
-         * @description Lists all remote files available to the user from different sources.
-         *
-         * The total count of files and directories is returned in the 'total_matches' header.
-         */
-        parameters?: {
-            /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
-            /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
-            /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
-            /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
-            /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
-            /** @description Maximum number of entries to return. */
-            /** @description Number of entries to skip. */
-            /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
-            /** @description Sort the entries by the specified field. */
+        parameters: {
             query?: {
+                /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
                 target?: string;
+                /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
                 format?: components["schemas"]["RemoteFilesFormat"] | null;
+                /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
                 recursive?: boolean | null;
+                /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
                 disable?: components["schemas"]["RemoteFilesDisableMode"] | null;
+                /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
                 writeable?: boolean | null;
+                /** @description Maximum number of entries to return. */
                 limit?: number | null;
+                /** @description Number of entries to skip. */
                 offset?: number | null;
+                /** @description Search query to filter entries by. The syntax could be different depending on the target source. */
                 query?: string | null;
+                /** @description Sort the entries by the specified field. */
                 sort_by?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21860,14 +21886,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Creates a new entry (directory/record) on the remote files source.
+     * @description Creates a new entry on the remote files source.
+     */
     create_entry_api_remote_files_post: {
-        /**
-         * Creates a new entry (directory/record) on the remote files source.
-         * @description Creates a new entry on the remote files source.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21891,22 +21917,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Display plugin information for each of the gxfiles:// URI targets available.
+     * @description Display plugin information for each of the gxfiles:// URI targets available.
+     */
     plugins_api_remote_files_plugins_get: {
-        /**
-         * Display plugin information for each of the gxfiles:// URI targets available.
-         * @description Display plugin information for each of the gxfiles:// URI targets available.
-         */
-        parameters?: {
-            /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
-            /** @description Whether to return **only** filesources of the specified kind. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
-            /** @description Whether to exclude filesources of the specified kind from the list. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
+        parameters: {
             query?: {
+                /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
                 browsable_only?: boolean | null;
+                /** @description Whether to return **only** filesources of the specified kind. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
                 include_kind?: components["schemas"]["PluginKind"][] | null;
+                /** @description Whether to exclude filesources of the specified kind from the list. The default is `None`, which will return all filesources. Multiple values can be specified by repeating the parameter. */
                 exclude_kind?: components["schemas"]["PluginKind"][] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21925,11 +21951,11 @@ export interface operations {
             };
         };
     };
+    /** Index */
     index_api_roles_get: {
-        /** Index */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21948,11 +21974,11 @@ export interface operations {
             };
         };
     };
+    /** Create */
     create_api_roles_post: {
-        /** Create */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -21976,11 +22002,11 @@ export interface operations {
             };
         };
     };
+    /** Show */
     show_api_roles__id__get: {
-        /** Show */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -22002,11 +22028,11 @@ export interface operations {
             };
         };
     };
+    /** Delete */
     delete_api_roles__id__delete: {
-        /** Delete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -22028,11 +22054,11 @@ export interface operations {
             };
         };
     };
+    /** Purge */
     purge_api_roles__id__purge_post: {
-        /** Purge */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -22054,11 +22080,11 @@ export interface operations {
             };
         };
     };
+    /** Undelete */
     undelete_api_roles__id__undelete_post: {
-        /** Undelete */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -22080,8 +22106,8 @@ export interface operations {
             };
         };
     };
+    /** Serve the staged download specified by request ID. */
     serve_api_short_term_storage__storage_request_id__get: {
-        /** Serve the staged download specified by request ID. */
         parameters: {
             path: {
                 storage_request_id: string;
@@ -22089,9 +22115,13 @@ export interface operations {
         };
         responses: {
             /** @description The archive file containing the History. */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Request was cancelled without an exception condition recorded. */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -22100,8 +22130,8 @@ export interface operations {
             };
         };
     };
+    /** Determine if specified storage request ID is ready for download. */
     is_ready_api_short_term_storage__storage_request_id__ready_get: {
-        /** Determine if specified storage request ID is ready for download. */
         parameters: {
             path: {
                 storage_request_id: string;
@@ -22122,14 +22152,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
+     * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+     */
     cleanup_datasets_api_storage_datasets_delete: {
-        /**
-         * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
-         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22153,19 +22183,19 @@ export interface operations {
             };
         };
     };
+    /** Returns discarded datasets owned by the given user. The results can be paginated. */
     discarded_datasets_api_storage_datasets_discarded_get: {
-        /** Returns discarded datasets owned by the given user. The results can be paginated. */
-        parameters?: {
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+        parameters: {
             query?: {
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
                 order?: components["schemas"]["StoredItemOrderBy"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22184,11 +22214,11 @@ export interface operations {
             };
         };
     };
+    /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
     discarded_datasets_summary_api_storage_datasets_discarded_summary_get: {
-        /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22207,14 +22237,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Purges a set of histories by ID. The histories must be owned by the user.
+     * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+     */
     cleanup_histories_api_storage_histories_delete: {
-        /**
-         * Purges a set of histories by ID. The histories must be owned by the user.
-         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22238,19 +22268,19 @@ export interface operations {
             };
         };
     };
+    /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
     archived_histories_api_storage_histories_archived_get: {
-        /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
-        parameters?: {
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+        parameters: {
             query?: {
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
                 order?: components["schemas"]["StoredItemOrderBy"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22269,11 +22299,11 @@ export interface operations {
             };
         };
     };
+    /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
     archived_histories_summary_api_storage_histories_archived_summary_get: {
-        /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22292,19 +22322,19 @@ export interface operations {
             };
         };
     };
+    /** Returns all discarded histories associated with the given user. */
     discarded_histories_api_storage_histories_discarded_get: {
-        /** Returns all discarded histories associated with the given user. */
-        parameters?: {
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+        parameters: {
             query?: {
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
                 order?: components["schemas"]["StoredItemOrderBy"] | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22323,11 +22353,11 @@ export interface operations {
             };
         };
     };
+    /** Returns information with the total storage space taken by discarded histories associated with the given user. */
     discarded_histories_summary_api_storage_histories_discarded_summary_get: {
-        /** Returns information with the total storage space taken by discarded histories associated with the given user. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22346,17 +22376,17 @@ export interface operations {
             };
         };
     };
+    /**
+     * Apply a new set of tags to an item.
+     * @description Replaces the tags associated with an item with the new ones specified in the payload.
+     *
+     * - The previous tags will be __deleted__.
+     * - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
+     */
     update_api_tags_put: {
-        /**
-         * Apply a new set of tags to an item.
-         * @description Replaces the tags associated with an item with the new ones specified in the payload.
-         *
-         * - The previous tags will be __deleted__.
-         * - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22367,7 +22397,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -22376,8 +22408,8 @@ export interface operations {
             };
         };
     };
+    /** Determine state of task ID */
     state_api_tasks__task_id__state_get: {
-        /** Determine state of task ID */
         parameters: {
             path: {
                 task_id: string;
@@ -22398,11 +22430,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Lists all available data tables
+     * @description Get the list of all available data tables.
+     */
     index_api_tool_data_get: {
-        /**
-         * Lists all available data tables
-         * @description Get the list of all available data tables.
-         */
         responses: {
             /** @description A list with details on individual data tables. */
             200: {
@@ -22412,14 +22444,14 @@ export interface operations {
             };
         };
     };
+    /** Import a data manager bundle */
     create_api_tool_data_post: {
-        /** Import a data manager bundle */
-        parameters?: {
+        parameters: {
             query?: {
                 tool_data_file_path?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22443,18 +22475,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get details of a given data table
+     * @description Get details of a given tool data table.
+     */
     show_api_tool_data__table_name__get: {
-        /**
-         * Get details of a given data table
-         * @description Get details of a given tool data table.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The name of the tool data table */
             path: {
+                /** @description The name of the tool data table */
                 table_name: string;
             };
         };
@@ -22473,18 +22505,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes an item from a data table
+     * @description Removes an item from a data table and reloads it to return its updated details.
+     */
     delete_api_tool_data__table_name__delete: {
-        /**
-         * Removes an item from a data table
-         * @description Removes an item from a data table and reloads it to return its updated details.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The name of the tool data table */
             path: {
+                /** @description The name of the tool data table */
                 table_name: string;
             };
         };
@@ -22508,20 +22540,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get information about a particular field in a tool data table
+     * @description Reloads a data table and return its details.
+     */
     show_field_api_tool_data__table_name__fields__field_name__get: {
-        /**
-         * Get information about a particular field in a tool data table
-         * @description Reloads a data table and return its details.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The name of the tool data table */
-            /** @description The name of the tool data table field */
             path: {
+                /** @description The name of the tool data table */
                 table_name: string;
+                /** @description The name of the tool data table field */
                 field_name: string;
             };
         };
@@ -22540,28 +22572,30 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get information about a particular field in a tool data table
+     * @description Download a file associated with the data table field.
+     */
     download_field_file_api_tool_data__table_name__fields__field_name__files__file_name__get: {
-        /**
-         * Get information about a particular field in a tool data table
-         * @description Download a file associated with the data table field.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The name of the tool data table */
-            /** @description The name of the tool data table field */
-            /** @description The name of a file associated with this data table field */
             path: {
+                /** @description The name of the tool data table */
                 table_name: string;
+                /** @description The name of the tool data table field */
                 field_name: string;
+                /** @description The name of a file associated with this data table field */
                 file_name: string;
             };
         };
         responses: {
             /** @description Information about a data table field */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -22570,18 +22604,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Reloads a tool data table
+     * @description Reloads a data table and return its details.
+     */
     reload_api_tool_data__table_name__reload_get: {
-        /**
-         * Reloads a tool data table
-         * @description Reloads a data table and return its details.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The name of the tool data table */
             path: {
+                /** @description The name of the tool data table */
                 table_name: string;
             };
         };
@@ -22600,19 +22634,19 @@ export interface operations {
             };
         };
     };
+    /** Lists installed tool shed repositories. */
     index_api_tool_shed_repositories_get: {
-        /** Lists installed tool shed repositories. */
-        parameters?: {
-            /** @description Filter by repository name. */
-            /** @description Filter by repository owner. */
-            /** @description Filter by changeset revision. */
-            /** @description Filter by whether the repository has been deleted. */
-            /** @description Filter by whether the repository has been uninstalled. */
+        parameters: {
             query?: {
+                /** @description Filter by repository name. */
                 name?: string | null;
+                /** @description Filter by repository owner. */
                 owner?: string | null;
+                /** @description Filter by changeset revision. */
                 changeset?: string | null;
+                /** @description Filter by whether the repository has been deleted. */
                 deleted?: boolean | null;
+                /** @description Filter by whether the repository has been uninstalled. */
                 uninstalled?: boolean | null;
             };
         };
@@ -22631,14 +22665,14 @@ export interface operations {
             };
         };
     };
+    /** Check for updates to the specified repository, or all installed repositories. */
     check_for_updates_api_tool_shed_repositories_check_for_updates_get: {
-        /** Check for updates to the specified repository, or all installed repositories. */
-        parameters?: {
+        parameters: {
             query?: {
                 id?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22657,11 +22691,11 @@ export interface operations {
             };
         };
     };
+    /** Show installed tool shed repository. */
     show_api_tool_shed_repositories__id__get: {
-        /** Show installed tool shed repository. */
         parameters: {
-            /** @description The encoded database identifier of the installed Tool Shed Repository. */
             path: {
+                /** @description The encoded database identifier of the installed Tool Shed Repository. */
                 id: string;
             };
         };
@@ -22680,11 +22714,11 @@ export interface operations {
             };
         };
     };
+    /** Upload files to Galaxy */
     fetch_form_api_tools_fetch_post: {
-        /** Upload files to Galaxy */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22697,7 +22731,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -22708,11 +22742,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Index
+     * @description Return list of available tours.
+     */
     index_api_tours_get: {
-        /**
-         * Index
-         * @description Return list of available tours.
-         */
         responses: {
             /** @description Successful Response */
             200: {
@@ -22722,11 +22756,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Show
+     * @description Return a tour definition.
+     */
     show_api_tours__tour_id__get: {
-        /**
-         * Show
-         * @description Return a tour definition.
-         */
         parameters: {
             path: {
                 tour_id: string;
@@ -22747,14 +22781,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Update Tour
+     * @description Return a tour definition.
+     */
     update_tour_api_tours__tour_id__post: {
-        /**
-         * Update Tour
-         * @description Return a tour definition.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -22776,24 +22810,24 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get Users
+     * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
+     */
     get_users_api_users_get: {
-        /**
-         * Get Users
-         * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
-         */
-        parameters?: {
-            /** @description Indicates if the collection will be about deleted users */
-            /** @description An email address to filter on */
-            /** @description An username address to filter on */
-            /** @description Filter on username OR email */
+        parameters: {
             query?: {
+                /** @description Indicates if the collection will be about deleted users */
                 deleted?: boolean;
+                /** @description An email address to filter on */
                 f_email?: string | null;
+                /** @description An username address to filter on */
                 f_name?: string | null;
+                /** @description Filter on username OR email */
                 f_any?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22815,11 +22849,11 @@ export interface operations {
             };
         };
     };
+    /** Create a new Galaxy user. Only admins can create users for now. */
     create_user_api_users_post: {
-        /** Create a new Galaxy user. Only admins can create users for now. */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22845,16 +22879,16 @@ export interface operations {
             };
         };
     };
+    /**
+     * Triggers a recalculation of the current user disk usage.
+     * @description This route will be removed in a future version.
+     *
+     * Please use `/api/users/current/recalculate_disk_usage` instead.
+     */
     recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
-        /**
-         * Triggers a recalculation of the current user disk usage.
-         * @description This route will be removed in a future version.
-         *
-         * Please use `/api/users/current/recalculate_disk_usage` instead.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22866,7 +22900,9 @@ export interface operations {
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -22875,22 +22911,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get Deleted Users
+     * @description Return a collection of deleted users. Only admins can see deleted users.
+     */
     get_deleted_users_api_users_deleted_get: {
-        /**
-         * Get Deleted Users
-         * @description Return a collection of deleted users. Only admins can see deleted users.
-         */
-        parameters?: {
-            /** @description An email address to filter on */
-            /** @description An username address to filter on */
-            /** @description Filter on username OR email */
+        parameters: {
             query?: {
+                /** @description An email address to filter on */
                 f_email?: string | null;
+                /** @description An username address to filter on */
                 f_name?: string | null;
+                /** @description Filter on username OR email */
                 f_any?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22912,15 +22948,15 @@ export interface operations {
             };
         };
     };
+    /** Return information about a deleted user. Only admins can see deleted users. */
     get_deleted_user_api_users_deleted__user_id__get: {
-        /** Return information about a deleted user. Only admins can see deleted users. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -22941,15 +22977,15 @@ export interface operations {
             };
         };
     };
+    /** Restore a deleted user. Only admins can restore users. */
     undelete_user_api_users_deleted__user_id__undelete_post: {
-        /** Restore a deleted user. Only admins can restore users. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -22968,17 +23004,17 @@ export interface operations {
             };
         };
     };
+    /**
+     * Triggers a recalculation of the current user disk usage.
+     * @deprecated
+     * @description This route will be removed in a future version.
+     *
+     * Please use `/api/users/current/recalculate_disk_usage` instead.
+     */
     recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
-        /**
-         * Triggers a recalculation of the current user disk usage.
-         * @deprecated
-         * @description This route will be removed in a future version.
-         *
-         * Please use `/api/users/current/recalculate_disk_usage` instead.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -22990,7 +23026,9 @@ export interface operations {
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -22999,19 +23037,19 @@ export interface operations {
             };
         };
     };
+    /** Return information about a specified or the current user. Only admin can see deleted or other users */
     get_user_api_users__user_id__get: {
-        /** Return information about a specified or the current user. Only admin can see deleted or other users */
         parameters: {
-            /** @description Indicates if the user is deleted */
             query?: {
+                /** @description Indicates if the user is deleted */
                 deleted?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user to get or 'current'. */
             path: {
+                /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
         };
@@ -23032,19 +23070,19 @@ export interface operations {
             };
         };
     };
+    /** Update the values of a user. Only admin can update others. */
     update_user_api_users__user_id__put: {
-        /** Update the values of a user. Only admin can update others. */
         parameters: {
-            /** @description Indicates if the user is deleted */
             query?: {
+                /** @description Indicates if the user is deleted */
                 deleted?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user to get or 'current'. */
             path: {
+                /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
         };
@@ -23068,19 +23106,19 @@ export interface operations {
             };
         };
     };
+    /** Delete a user. Only admins can delete others or purge users. */
     delete_user_api_users__user_id__delete: {
-        /** Delete a user. Only admins can delete others or purge users. */
         parameters: {
-            /** @description Whether to definitely remove this user. Only deleted users can be purged. */
             query?: {
+                /** @description Whether to definitely remove this user. Only deleted users can be purged. */
                 purge?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23104,15 +23142,15 @@ export interface operations {
             };
         };
     };
+    /** Return the user's API key */
     get_or_create_api_key_api_users__user_id__api_key_get: {
-        /** Return the user's API key */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23131,15 +23169,15 @@ export interface operations {
             };
         };
     };
+    /** Create a new API key for the user */
     create_api_key_api_users__user_id__api_key_post: {
-        /** Create a new API key for the user */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23158,21 +23196,23 @@ export interface operations {
             };
         };
     };
+    /** Delete the current API key of the user */
     delete_api_key_api_users__user_id__api_key_delete: {
-        /** Delete the current API key of the user */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -23181,15 +23221,15 @@ export interface operations {
             };
         };
     };
+    /** Return the user's API key with extra information. */
     get_api_key_detailed_api_users__user_id__api_key_detailed_get: {
-        /** Return the user's API key with extra information. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23201,7 +23241,9 @@ export interface operations {
                 };
             };
             /** @description The user doesn't have an API key. */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -23210,18 +23252,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return information about beacon share settings
+     * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+     */
     get_beacon_settings_api_users__user_id__beacon_get: {
-        /**
-         * Return information about beacon share settings
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23240,18 +23282,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Change beacon setting
+     * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+     */
     set_beacon_settings_api_users__user_id__beacon_post: {
-        /**
-         * Change beacon setting
-         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23275,15 +23317,15 @@ export interface operations {
             };
         };
     };
+    /** Returns collection of custom builds. */
     get_custom_builds_api_users__user_id__custom_builds_get: {
-        /** Returns collection of custom builds. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23302,17 +23344,17 @@ export interface operations {
             };
         };
     };
+    /** Add new custom build. */
     add_custom_builds_api_users__user_id__custom_builds__key__put: {
-        /** Add new custom build. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
-            /** @description The key of the custom build to be deleted. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
+                /** @description The key of the custom build to be deleted. */
                 key: string;
             };
         };
@@ -23325,7 +23367,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -23336,17 +23378,17 @@ export interface operations {
             };
         };
     };
+    /** Delete a custom build */
     delete_custom_build_api_users__user_id__custom_builds__key__delete: {
-        /** Delete a custom build */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
-            /** @description The key of the custom build to be deleted. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
+                /** @description The key of the custom build to be deleted. */
                 key: string;
             };
         };
@@ -23365,17 +23407,17 @@ export interface operations {
             };
         };
     };
+    /** Add the object to user's favorites */
     set_favorite_api_users__user_id__favorites__object_type__put: {
-        /** Add the object to user's favorites */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
-            /** @description The object type the user wants to favorite */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
+                /** @description The object type the user wants to favorite */
                 object_type: components["schemas"]["FavoriteObjectType"];
             };
         };
@@ -23399,19 +23441,19 @@ export interface operations {
             };
         };
     };
+    /** Remove the object from user's favorites */
     remove_favorite_api_users__user_id__favorites__object_type___object_id__delete: {
-        /** Remove the object from user's favorites */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
-            /** @description The object type the user wants to favorite */
-            /** @description The ID of an object the user wants to remove from favorites */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
+                /** @description The object type the user wants to favorite */
                 object_type: components["schemas"]["FavoriteObjectType"];
+                /** @description The ID of an object the user wants to remove from favorites */
                 object_id: string;
             };
         };
@@ -23430,15 +23472,15 @@ export interface operations {
             };
         };
     };
+    /** Return the user's object store usage summary broken down by object store ID */
     get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
-        /** Return the user's object store usage summary broken down by object store ID */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user to get or 'current'. */
             path: {
+                /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
         };
@@ -23457,15 +23499,15 @@ export interface operations {
             };
         };
     };
+    /** Triggers a recalculation of the current user disk usage. */
     recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
-        /** Triggers a recalculation of the current user disk usage. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23477,7 +23519,9 @@ export interface operations {
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -23486,15 +23530,15 @@ export interface operations {
             };
         };
     };
+    /** Sends activation email to user. */
     send_activation_email_api_users__user_id__send_activation_email_post: {
-        /** Sends activation email to user. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
             };
         };
@@ -23502,7 +23546,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -23513,17 +23557,17 @@ export interface operations {
             };
         };
     };
+    /** Set the user's theme choice */
     set_theme_api_users__user_id__theme__theme__put: {
-        /** Set the user's theme choice */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user. */
-            /** @description The theme of the GUI */
             path: {
+                /** @description The ID of the user. */
                 user_id: string;
+                /** @description The theme of the GUI */
                 theme: string;
             };
         };
@@ -23542,15 +23586,15 @@ export interface operations {
             };
         };
     };
+    /** Return the user's quota usage summary broken down by quota source */
     get_user_usage_api_users__user_id__usage_get: {
-        /** Return the user's quota usage summary broken down by quota source */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user to get or 'current'. */
             path: {
+                /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
         };
@@ -23569,17 +23613,17 @@ export interface operations {
             };
         };
     };
+    /** Return the user's quota usage summary for a given quota source label */
     get_user_usage_for_label_api_users__user_id__usage__label__get: {
-        /** Return the user's quota usage summary for a given quota source label */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the user to get or 'current'. */
-            /** @description The label corresponding to the quota source to fetch usage information about. */
             path: {
+                /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
+                /** @description The label corresponding to the quota source to fetch usage information about. */
                 label: string;
             };
         };
@@ -23598,11 +23642,11 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return Galaxy version information: major/minor version, optional extra info
+     * @description Return Galaxy version information: major/minor version, optional extra info.
+     */
     version_api_version_get: {
-        /**
-         * Return Galaxy version information: major/minor version, optional extra info
-         * @description Return Galaxy version information: major/minor version, optional extra info.
-         */
         responses: {
             /** @description Galaxy version information: major/minor version, optional extra info */
             200: {
@@ -23612,64 +23656,64 @@ export interface operations {
             };
         };
     };
+    /** Returns visualizations for the current user. */
     index_api_visualizations_get: {
-        /** Returns visualizations for the current user. */
-        parameters?: {
-            /** @description Whether to include deleted visualizations in the result. */
-            /** @description The maximum number of items to return. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description Sort visualization index by this specified attribute on the visualization model */
-            /** @description Sort in descending order? */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `title`
-             * : The visualization's title.
-             *
-             * `slug`
-             * : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `user`
-             * : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Visualizations: `title`, `slug`, `tag`, `type`.
-             */
+        parameters: {
             query?: {
+                /** @description Whether to include deleted visualizations in the result. */
                 deleted?: boolean;
+                /** @description The maximum number of items to return. */
                 limit?: number | null;
+                /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
                 offset?: number | null;
                 user_id?: string | null;
                 show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
+                /** @description Sort visualization index by this specified attribute on the visualization model */
                 sort_by?: "create_time" | "title" | "update_time" | "username";
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 * ## Query Structure
+                 *
+                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 * being indexed (i.e. a column in the database).
+                 *
+                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 * this means the database operation `ILIKE` will typically be used).
+                 *
+                 * Once the tagged filters are extracted from the search query, the remaining text is just
+                 * used to search various documented attributes of the object.
+                 *
+                 * ## GitHub-style Tags Available
+                 *
+                 * `title`
+                 * : The visualization's title.
+                 *
+                 * `slug`
+                 * : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `tag`
+                 * : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `user`
+                 * : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * ## Free Text
+                 *
+                 * Free text search terms will be searched against the following attributes of the
+                 * Visualizations: `title`, `slug`, `tag`, `type`.
+                 */
                 search?: string | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -23688,18 +23732,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item inaccessible by a URL link.
+     * @description Makes this item inaccessible by a URL link and return the current sharing status.
+     */
     disable_link_access_api_visualizations__id__disable_link_access_put: {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23718,18 +23762,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item accessible by a URL link.
+     * @description Makes this item accessible by a URL link and return the current sharing status.
+     */
     enable_link_access_api_visualizations__id__enable_link_access_put: {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23748,18 +23792,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item public and accessible by a URL link.
+     * @description Makes this item publicly available by a URL link and return the current sharing status.
+     */
     publish_api_visualizations__id__publish_put: {
-        /**
-         * Makes this item public and accessible by a URL link.
-         * @description Makes this item publicly available by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23778,18 +23822,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Share this item with specific users.
+     * @description Shares this item with specific users and return the current sharing status.
+     */
     share_with_users_api_visualizations__id__share_with_users_put: {
-        /**
-         * Share this item with specific users.
-         * @description Shares this item with specific users and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23813,18 +23857,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get the current sharing status of the given Visualization.
+     * @description Return the sharing status of the item.
+     */
     sharing_api_visualizations__id__sharing_get: {
-        /**
-         * Get the current sharing status of the given Visualization.
-         * @description Return the sharing status of the item.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23843,18 +23887,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set a new slug for this shared item.
+     * @description Sets a new slug to access this item by URL. The new slug must be unique.
+     */
     set_slug_api_visualizations__id__slug_put: {
-        /**
-         * Set a new slug for this shared item.
-         * @description Sets a new slug to access this item by URL. The new slug must be unique.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23865,7 +23909,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -23874,18 +23920,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes this item from the published list.
+     * @description Removes this item from the published list and return the current sharing status.
+     */
     unpublish_api_visualizations__id__unpublish_put: {
-        /**
-         * Removes this item from the published list.
-         * @description Removes this item from the published list and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Visualization. */
             path: {
+                /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
         };
@@ -23904,14 +23950,14 @@ export interface operations {
             };
         };
     };
+    /**
+     * Return information about the current authenticated user
+     * @description Return information about the current authenticated user.
+     */
     whoami_api_whoami_get: {
-        /**
-         * Return information about the current authenticated user
-         * @description Return information about the current authenticated user.
-         */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+        parameters: {
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -23930,72 +23976,72 @@ export interface operations {
             };
         };
     };
+    /**
+     * Lists stored workflows viewable by the user.
+     * @description Lists stored workflows viewable by the user.
+     */
     index_api_workflows_get: {
-        /**
-         * Lists stored workflows viewable by the user.
-         * @description Lists stored workflows viewable by the user.
-         */
-        parameters?: {
-            /** @description Whether to restrict result to deleted workflows. */
-            /** @description Whether to restrict result to hidden workflows. */
-            /** @description Whether to include a list of missing tools per workflow entry */
-            /** @description In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time */
-            /** @description Sort in descending order? */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `name`
-             * : The stored workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `user`
-             * : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `is:published`
-             * : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
-             *
-             * `is:share_with_me`
-             * : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Stored Workflows: `name`, `tag`, `user`.
-             */
-            /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */
+        parameters: {
             query?: {
+                /** @description Whether to restrict result to deleted workflows. */
                 show_deleted?: boolean;
+                /** @description Whether to restrict result to hidden workflows. */
                 show_hidden?: boolean;
+                /** @description Whether to include a list of missing tools per workflow entry */
                 missing_tools?: boolean;
                 show_published?: boolean | null;
                 show_shared?: boolean | null;
+                /** @description In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time */
                 sort_by?: ("create_time" | "update_time" | "name") | null;
+                /** @description Sort in descending order? */
                 sort_desc?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
+                /**
+                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                 *
+                 * ## Query Structure
+                 *
+                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 * being indexed (i.e. a column in the database).
+                 *
+                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 * this means the database operation `ILIKE` will typically be used).
+                 *
+                 * Once the tagged filters are extracted from the search query, the remaining text is just
+                 * used to search various documented attributes of the object.
+                 *
+                 * ## GitHub-style Tags Available
+                 *
+                 * `name`
+                 * : The stored workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `tag`
+                 * : The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `user`
+                 * : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *
+                 * `is:published`
+                 * : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
+                 *
+                 * `is:share_with_me`
+                 * : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
+                 *
+                 * ## Free Text
+                 *
+                 * Free text search terms will be searched against the following attributes of the
+                 * Stored Workflows: `name`, `tag`, `user`.
+                 */
                 search?: string | null;
+                /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */
                 skip_step_counts?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -24014,21 +24060,21 @@ export interface operations {
             };
         };
     };
+    /** Get workflows present in the tools panel. */
     get_workflow_menu_api_workflows_menu_get: {
-        /** Get workflows present in the tools panel. */
-        parameters?: {
-            /** @description Whether to restrict result to deleted workflows. */
-            /** @description Whether to restrict result to hidden workflows. */
-            /** @description Whether to include a list of missing tools per workflow entry */
+        parameters: {
             query?: {
+                /** @description Whether to restrict result to deleted workflows. */
                 show_deleted?: boolean | null;
+                /** @description Whether to restrict result to hidden workflows. */
                 show_hidden?: boolean | null;
+                /** @description Whether to include a list of missing tools per workflow entry */
                 missing_tools?: boolean | null;
                 show_published?: boolean | null;
                 show_shared?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
         };
@@ -24036,7 +24082,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -24047,22 +24093,22 @@ export interface operations {
             };
         };
     };
+    /** Displays information needed to run a workflow. */
     show_workflow_api_workflows__workflow_id__get: {
-        /** Displays information needed to run a workflow. */
         parameters: {
-            /** @description Use the legacy workflow format. */
-            /** @description The version of the workflow to fetch. */
             query?: {
                 instance?: boolean | null;
+                /** @description Use the legacy workflow format. */
                 legacy?: boolean | null;
+                /** @description The version of the workflow to fetch. */
                 version?: number | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24081,15 +24127,15 @@ export interface operations {
             };
         };
     };
+    /** Add the deleted flag to a workflow. */
     delete_workflow_api_workflows__workflow_id__delete: {
-        /** Add the deleted flag to a workflow. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24097,7 +24143,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -24108,19 +24154,19 @@ export interface operations {
             };
         };
     };
+    /** Get state counts for accessible workflow. */
     workflows__invocation_counts: {
-        /** Get state counts for accessible workflow. */
         parameters: {
-            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
             query?: {
+                /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
                 instance?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24139,18 +24185,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item inaccessible by a URL link.
+     * @description Makes this item inaccessible by a URL link and return the current sharing status.
+     */
     disable_link_access_api_workflows__workflow_id__disable_link_access_put: {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24169,18 +24215,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item accessible by a URL link.
+     * @description Makes this item accessible by a URL link and return the current sharing status.
+     */
     enable_link_access_api_workflows__workflow_id__enable_link_access_put: {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24199,39 +24245,39 @@ export interface operations {
             };
         };
     };
+    /** Get the list of a user's workflow invocations. */
     index_invocations_api_workflows__workflow_id__invocations_get: {
-        /** Get the list of a user's workflow invocations. */
         parameters: {
-            /** @description Return only invocations for this History ID */
-            /** @description Return only invocations for this Job ID */
-            /** @description Return invocations for this User ID. */
-            /** @description Sort Workflow Invocations by this attribute */
-            /** @description Sort in descending order? */
-            /** @description Set to false to only include terminal Invocations. */
-            /** @description Limit the number of invocations to return. */
-            /** @description Number of invocations to skip. */
-            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
-            /** @description View to be passed to the serializer */
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
             query?: {
+                /** @description Return only invocations for this History ID */
                 history_id?: string | null;
+                /** @description Return only invocations for this Job ID */
                 job_id?: string | null;
+                /** @description Return invocations for this User ID. */
                 user_id?: string | null;
+                /** @description Sort Workflow Invocations by this attribute */
                 sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
+                /** @description Set to false to only include terminal Invocations. */
                 include_terminal?: boolean | null;
+                /** @description Limit the number of invocations to return. */
                 limit?: number | null;
+                /** @description Number of invocations to skip. */
                 offset?: number | null;
+                /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
                 instance?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24250,16 +24296,16 @@ export interface operations {
             };
         };
     };
+    /** Schedule the workflow specified by `workflow_id` to run. */
     Invoke_workflow_api_workflows__workflow_id__invocations_post: {
-        /** Schedule the workflow specified by `workflow_id` to run. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The database identifier - UUID or encoded - of the Workflow. */
             path: {
-                workflow_id: string | string | string;
+                /** @description The database identifier - UUID or encoded - of the Workflow. */
+                workflow_id: string;
             };
         };
         requestBody: {
@@ -24284,31 +24330,31 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get detailed description of a workflow invocation.
+     * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
-        /**
-         * Get detailed description of a workflow invocation.
-         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -24327,31 +24373,31 @@ export interface operations {
             };
         };
     };
+    /**
+     * Cancel the specified workflow invocation.
+     * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+     */
     cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete: {
-        /**
-         * Cancel the specified workflow invocation.
-         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24370,20 +24416,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated across all current jobs of the workflow invocation.
+     * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+     */
     workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated across all current jobs of the workflow invocation.
-         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -24402,20 +24448,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get JSON summarizing invocation for reporting.
+     * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get: {
-        /**
-         * Get JSON summarizing invocation for reporting.
-         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24434,26 +24480,28 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get PDF summarizing invocation for reporting.
+     * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get: {
-        /**
-         * Get PDF summarizing invocation for reporting.
-         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -24462,20 +24510,20 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated per step of the workflow invocation.
+     * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+     */
     workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated per step of the workflow invocation.
-         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -24498,22 +24546,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Show details of workflow invocation step.
+     * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+     */
     workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get: {
-        /**
-         * Show details of workflow invocation step.
-         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -24532,22 +24580,22 @@ export interface operations {
             };
         };
     };
+    /**
+     * Update state of running workflow step invocation.
+     * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+     */
     update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put: {
-        /**
-         * Update state of running workflow step invocation.
-         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -24571,18 +24619,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Makes this item public and accessible by a URL link.
+     * @description Makes this item publicly available by a URL link and return the current sharing status.
+     */
     publish_api_workflows__workflow_id__publish_put: {
-        /**
-         * Makes this item public and accessible by a URL link.
-         * @description Makes this item publicly available by a URL link and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24601,18 +24649,18 @@ export interface operations {
             };
         };
     };
+    /** Updates the workflow stored with the given ID. */
     refactor_api_workflows__workflow_id__refactor_put: {
-        /** Updates the workflow stored with the given ID. */
         parameters: {
             query?: {
                 instance?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24636,18 +24684,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Share this item with specific users.
+     * @description Shares this item with specific users and return the current sharing status.
+     */
     share_with_users_api_workflows__workflow_id__share_with_users_put: {
-        /**
-         * Share this item with specific users.
-         * @description Shares this item with specific users and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24671,18 +24719,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get the current sharing status of the given item.
+     * @description Return the sharing status of the item.
+     */
     sharing_api_workflows__workflow_id__sharing_get: {
-        /**
-         * Get the current sharing status of the given item.
-         * @description Return the sharing status of the item.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24701,18 +24749,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Set a new slug for this shared item.
+     * @description Sets a new slug to access this item by URL. The new slug must be unique.
+     */
     set_slug_api_workflows__workflow_id__slug_put: {
-        /**
-         * Set a new slug for this shared item.
-         * @description Sets a new slug to access this item by URL. The new slug must be unique.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24723,7 +24771,9 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: never;
+            204: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -24732,11 +24782,11 @@ export interface operations {
             };
         };
     };
+    /** Show tags based on workflow_id */
     index_api_workflows__workflow_id__tags_get: {
-        /** Show tags based on workflow_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -24758,11 +24808,11 @@ export interface operations {
             };
         };
     };
+    /** Show tag based on workflow_id */
     show_api_workflows__workflow_id__tags__tag_name__get: {
-        /** Show tag based on workflow_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -24785,11 +24835,11 @@ export interface operations {
             };
         };
     };
+    /** Update tag based on workflow_id */
     update_api_workflows__workflow_id__tags__tag_name__put: {
-        /** Update tag based on workflow_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -24817,11 +24867,11 @@ export interface operations {
             };
         };
     };
+    /** Create tag based on workflow_id */
     create_api_workflows__workflow_id__tags__tag_name__post: {
-        /** Create tag based on workflow_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -24849,11 +24899,11 @@ export interface operations {
             };
         };
     };
+    /** Delete tag based on workflow_id */
     delete_api_workflows__workflow_id__tags__tag_name__delete: {
-        /** Delete tag based on workflow_id */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
@@ -24876,15 +24926,15 @@ export interface operations {
             };
         };
     };
+    /** Remove the deleted flag from a workflow. */
     undelete_workflow_api_workflows__workflow_id__undelete_post: {
-        /** Remove the deleted flag from a workflow. */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24892,7 +24942,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -24903,18 +24953,18 @@ export interface operations {
             };
         };
     };
+    /**
+     * Removes this item from the published list.
+     * @description Removes this item from the published list and return the current sharing status.
+     */
     unpublish_api_workflows__workflow_id__unpublish_put: {
-        /**
-         * Removes this item from the published list.
-         * @description Removes this item from the published list and return the current sharing status.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24933,42 +24983,42 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get the list of a user's workflow invocations.
+     * @deprecated
+     */
     index_invocations_api_workflows__workflow_id__usage_get: {
-        /**
-         * Get the list of a user's workflow invocations.
-         * @deprecated
-         */
         parameters: {
-            /** @description Return only invocations for this History ID */
-            /** @description Return only invocations for this Job ID */
-            /** @description Return invocations for this User ID. */
-            /** @description Sort Workflow Invocations by this attribute */
-            /** @description Sort in descending order? */
-            /** @description Set to false to only include terminal Invocations. */
-            /** @description Limit the number of invocations to return. */
-            /** @description Number of invocations to skip. */
-            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
-            /** @description View to be passed to the serializer */
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
             query?: {
+                /** @description Return only invocations for this History ID */
                 history_id?: string | null;
+                /** @description Return only invocations for this Job ID */
                 job_id?: string | null;
+                /** @description Return invocations for this User ID. */
                 user_id?: string | null;
+                /** @description Sort Workflow Invocations by this attribute */
                 sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                /** @description Sort in descending order? */
                 sort_desc?: boolean;
+                /** @description Set to false to only include terminal Invocations. */
                 include_terminal?: boolean | null;
+                /** @description Limit the number of invocations to return. */
                 limit?: number | null;
+                /** @description Number of invocations to skip. */
                 offset?: number | null;
+                /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
                 instance?: boolean | null;
+                /** @description View to be passed to the serializer */
                 view?: string | null;
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -24987,19 +25037,19 @@ export interface operations {
             };
         };
     };
+    /**
+     * Schedule the workflow specified by `workflow_id` to run.
+     * @deprecated
+     */
     Invoke_workflow_api_workflows__workflow_id__usage_post: {
-        /**
-         * Schedule the workflow specified by `workflow_id` to run.
-         * @deprecated
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The database identifier - UUID or encoded - of the Workflow. */
             path: {
-                workflow_id: string | string | string;
+                /** @description The database identifier - UUID or encoded - of the Workflow. */
+                workflow_id: string;
             };
         };
         requestBody: {
@@ -25024,32 +25074,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get detailed description of a workflow invocation.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get: {
-        /**
-         * Get detailed description of a workflow invocation.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -25068,32 +25118,32 @@ export interface operations {
             };
         };
     };
+    /**
+     * Cancel the specified workflow invocation.
+     * @deprecated
+     * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+     */
     cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete: {
-        /**
-         * Cancel the specified workflow invocation.
-         * @deprecated
-         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
-            /**
-             * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
-             */
             query?: {
+                /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
+                /**
+                 * @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *         are not the mapped over step outputs but the individual job outputs.
+                 */
                 legacy_job_state?: boolean;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -25112,21 +25162,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated across all current jobs of the workflow invocation.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+     */
     workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated across all current jobs of the workflow invocation.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -25145,21 +25195,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get JSON summarizing invocation for reporting.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get: {
-        /**
-         * Get JSON summarizing invocation for reporting.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -25178,27 +25228,29 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get PDF summarizing invocation for reporting.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+     */
     show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get: {
-        /**
-         * Get PDF summarizing invocation for reporting.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
-            200: never;
+            200: {
+                content: never;
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -25207,21 +25259,21 @@ export interface operations {
             };
         };
     };
+    /**
+     * Get job state summary info aggregated per step of the workflow invocation.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+     */
     workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get: {
-        /**
-         * Get job state summary info aggregated per step of the workflow invocation.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
         };
@@ -25244,23 +25296,23 @@ export interface operations {
             };
         };
     };
+    /**
+     * Show details of workflow invocation step.
+     * @deprecated
+     * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+     */
     workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__get: {
-        /**
-         * Show details of workflow invocation step.
-         * @deprecated
-         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -25279,23 +25331,23 @@ export interface operations {
             };
         };
     };
+    /**
+     * Update state of running workflow step invocation.
+     * @deprecated
+     * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+     */
     update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put: {
-        /**
-         * Update state of running workflow step invocation.
-         * @deprecated
-         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
-         */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
-            /** @description The encoded database identifier of the Invocation. */
-            /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
+                /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
+                /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
         };
@@ -25319,18 +25371,18 @@ export interface operations {
             };
         };
     };
+    /** List all versions of a workflow. */
     show_versions_api_workflows__workflow_id__versions_get: {
-        /** List all versions of a workflow. */
         parameters: {
             query?: {
                 instance?: boolean | null;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
+                /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
         };
@@ -25338,7 +25390,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -25349,15 +25401,15 @@ export interface operations {
             };
         };
     };
+    /** Get Object */
     get_object_ga4gh_drs_v1_objects__object_id__get: {
-        /** Get Object */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group */
             path: {
+                /** @description The ID of the group */
                 object_id: string;
             };
         };
@@ -25376,15 +25428,15 @@ export interface operations {
             };
         };
     };
+    /** Get Object */
     get_object_ga4gh_drs_v1_objects__object_id__post: {
-        /** Get Object */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group */
             path: {
+                /** @description The ID of the group */
                 object_id: string;
             };
         };
@@ -25403,17 +25455,17 @@ export interface operations {
             };
         };
     };
+    /** Get Access Url */
     get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__get: {
-        /** Get Access Url */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group */
-            /** @description The access ID of the access method for objects, unused in Galaxy. */
             path: {
+                /** @description The ID of the group */
                 object_id: string;
+                /** @description The access ID of the access method for objects, unused in Galaxy. */
                 access_id: string;
             };
         };
@@ -25421,7 +25473,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -25432,17 +25484,17 @@ export interface operations {
             };
         };
     };
+    /** Get Access Url */
     get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__post: {
-        /** Get Access Url */
         parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
-            /** @description The ID of the group */
-            /** @description The access ID of the access method for objects, unused in Galaxy. */
             path: {
+                /** @description The ID of the group */
                 object_id: string;
+                /** @description The access ID of the access method for objects, unused in Galaxy. */
                 access_id: string;
             };
         };
@@ -25450,7 +25502,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -25461,8 +25513,8 @@ export interface operations {
             };
         };
     };
+    /** Service Info */
     service_info_ga4gh_drs_v1_service_info_get: {
-        /** Service Info */
         responses: {
             /** @description Successful Response */
             200: {
