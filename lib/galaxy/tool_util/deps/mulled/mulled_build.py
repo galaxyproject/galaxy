@@ -352,7 +352,7 @@ def mull_targets(
     with PrintProgress():
         ret = involucro_context.exec_command(involucro_args)
     if singularity:
-        # we can not remove this folder as it contains the image wich is owned by root
+        # we can not remove this folder as it contains the image which is owned by root
         pass
         # shutil.rmtree('./singularity_import')
     return ret
@@ -531,12 +531,7 @@ def target_str_to_targets(targets_raw):
     def parse_target(target_str):
         if "=" in target_str:
             package_name, version = target_str.split("=", 1)
-            build = None
-            if "=" in version:
-                version, build = version.split("=")
-            elif "--" in version:
-                version, build = version.split("--")
-            target = build_target(package_name, version, build)
+            target = build_target(package_name, version)
         else:
             target = build_target(target_str)
         return target
@@ -584,6 +579,8 @@ def args_to_mull_targets_kwds(args):
         kwds["singularity_image_dir"] = args.singularity_image_dir
     if hasattr(args, "invfile"):
         kwds["invfile"] = args.invfile
+    if hasattr(args, "base_image"):
+        kwds["base_image"] = args.base_image
 
     kwds["involucro_context"] = context_from_args(args)
 
