@@ -629,7 +629,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             history_id=history_id,
             input_format="legacy",
         )
-        response = self._post("tools", payload).json()
+        response = self._post("tools", payload, json=True).json()
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
         output_collection = response["output_collections"][0]
         # collection should not inherit tags from input collection elements, only parent collection

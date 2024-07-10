@@ -905,9 +905,7 @@ class BaseDatasetPopulator(BasePopulator):
         if "auto_decompress" in kwds:
             upload_params["files_0|auto_decompress"] = kwds["auto_decompress"]
         upload_params.update(kwds.get("extra_inputs", {}))
-        return self.run_tool_payload(
-            tool_id="upload1", inputs=upload_params, history_id=history_id, upload_type="upload_dataset"
-        )
+        return self.run_tool_payload(tool_id="upload1", inputs=upload_params, history_id=history_id)
 
     def get_remote_files(self, target: str = "ftp") -> dict:
         response = self._get("remote_files", data={"target": target})
@@ -941,7 +939,7 @@ class BaseDatasetPopulator(BasePopulator):
         return tool_response.json()
 
     def tools_post(self, payload: dict, url="tools") -> Response:
-        tool_response = self._post(url, data=payload)
+        tool_response = self._post(url, data=payload, json=True)
         return tool_response
 
     def materialize_dataset_instance(self, history_id: str, id: str, source: str = "hda"):
@@ -1049,7 +1047,7 @@ class BaseDatasetPopulator(BasePopulator):
             },
             history_id=history_id,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self._post("tools", data=payload, json=True)
         api_asserts.assert_status_code_is(create_response, 200)
         create_object = create_response.json()
         api_asserts.assert_has_keys(create_object, "outputs")

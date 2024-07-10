@@ -118,7 +118,7 @@ class TestsTools:
             payload["tool_version"] = tool_version
         if use_cached_job:
             payload["use_cached_job"] = True
-        create_response = self.dataset_populator._post("tools", data=payload)
+        create_response = self.dataset_populator._post("tools", data=payload, json=True)
         if wait_for_job:
             self.dataset_populator.wait_for_job(job_id=create_response.json()["jobs"][0]["id"])
         if assert_ok:
@@ -274,7 +274,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 },
                 history_id=history_id,
             )
-            create_response = self._post("tools", data=payload)
+            create_response = self._post("tools", data=payload, json=True)
             self._assert_status_code_is(create_response, 200)
             create_object = create_response.json()
             self._assert_has_keys(create_object, "outputs")
@@ -298,7 +298,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 },
                 history_id=history_id,
             )
-            create_response = self._post("tools", data=payload)
+            create_response = self._post("tools", data=payload, json=True)
             self._assert_status_code_is(create_response, 200)
             create_object = create_response.json()
             self._assert_has_keys(create_object, "outputs")
@@ -320,7 +320,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 },
                 history_id=history_id,
             )
-            create_response = self._post("tools", data=payload)
+            create_response = self._post("tools", data=payload, json=True)
             self._assert_status_code_is(create_response, 200)
             create_object = create_response.json()
             self._assert_has_keys(create_object, "outputs")

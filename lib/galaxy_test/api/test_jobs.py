@@ -376,7 +376,7 @@ steps:
             inputs=inputs,
             history_id=history_id,
         )
-        return self._post("tools", data=payload).json()
+        return self._post("tools", data=payload, json=True).json()
 
     @skip_without_tool("detect_errors_aggressive")
     def test_unhide_on_error(self):
@@ -491,7 +491,7 @@ steps:
             inputs={"error_bool": "true"},
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload).json()
+        run_response = self._post("tools", data=payload, json=True).json()
         job_id = run_response["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id)
         dataset_id = run_response["outputs"][0]["id"]
@@ -506,7 +506,7 @@ steps:
                 inputs={"error_bool": "true"},
                 history_id=history_id,
             )
-            run_response = self._post("tools", data=payload, key=self.master_api_key)
+            run_response = self._post("tools", data=payload, key=self.master_api_key, json=True)
             self._assert_status_code_is(run_response, 400)
 
     @pytest.mark.require_new_history
@@ -621,7 +621,7 @@ steps:
             ),
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload)
+        run_response = self._post("tools", data=payload, json=True)
         run_response.raise_for_status()
         run_object = run_response.json()
         outputs = run_object["outputs"]
@@ -662,7 +662,7 @@ steps:
             },
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload).json()
+        run_response = self._post("tools", data=payload, json=True).json()
         output = run_response["outputs"][0]
         # Submit second job that waits on job1
         payload = self.dataset_populator.run_tool_payload(
@@ -670,7 +670,7 @@ steps:
             inputs={"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": output["id"]}},
             history_id=history_id,
         )
-        run_response = self._post("tools", data=payload).json()
+        run_response = self._post("tools", data=payload, json=True).json()
         job_id = run_response["jobs"][0]["id"]
         output = run_response["outputs"][0]
         # Delete second jobs input while second job is waiting for first job
@@ -989,7 +989,7 @@ steps:
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         # create a job
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         job_id = tool_response.json()["jobs"][0]["id"]
         # delete the job without message
         delete_job_response = self._delete(f"jobs/{job_id}")
@@ -1039,7 +1039,7 @@ steps:
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         # search for the job and get the corresponding values
         search_response = self._post("jobs/search", data=search_payload, json=True)
@@ -1051,7 +1051,7 @@ steps:
         empty_search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(empty_search_response, 200)
         assert len(empty_search_response.json()) == 0
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         self._search(search_payload, expected_search_count=1)
         return tool_response

@@ -36,7 +36,7 @@ class TestToolsUpload(ApiTestCase):
     def test_upload1_paste(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.upload_payload(history_id, "Hello World")
-            create_response = self._post("tools", data=payload)
+            create_response = self._post("tools", data=payload, json=True)
             self._assert_has_keys(create_response.json(), "outputs")
 
     def test_upload1_paste_bad_datatype(self):
@@ -44,7 +44,7 @@ class TestToolsUpload(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             file_type = "johnsawesomebutfakedatatype"
             payload = self.dataset_populator.upload_payload(history_id, "Hello World", file_type=file_type)
-            create = self._post("tools", data=payload).json()
+            create = self._post("tools", data=payload, json=True).json()
             self._assert_has_keys(create, "err_msg")
             assert file_type in create["err_msg"]
 

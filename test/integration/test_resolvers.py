@@ -80,7 +80,7 @@ class TestCondaResolutionIntegration(integration_util.IntegrationTestCase):
             inputs={},
             history_id=history_id,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self._post("tools", data=payload, json=True)
         self._assert_status_code_is(create_response, 200)
         dataset_populator.wait_for_history(history_id, assert_ok=True)
 
