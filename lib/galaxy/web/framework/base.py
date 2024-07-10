@@ -251,8 +251,13 @@ class WebApplication:
                 raise
         trans.controller = controller_name
         trans.action = action
+
+        # Action can still refer to invalid and/or inaccurate paths here, so we use the actual
+        # controller and method names to set the timing key.
+
+        action_tag = getattr(method, "__name__", "default")
         environ["controller_action_key"] = (
-            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action_tag}"
         )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
