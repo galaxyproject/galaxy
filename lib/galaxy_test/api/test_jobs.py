@@ -63,6 +63,24 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(job, "command_line", "external_id", "handler")
 
     @pytest.mark.require_new_history
+    def test_job_list_collection_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=collection")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
+    def test_job_list_default_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get(f"jobs?history_id={history_id}")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
