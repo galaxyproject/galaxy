@@ -7,6 +7,7 @@ from fastapi import (
     Response,
 )
 
+from galaxy.tool_util.models import ParsedTool
 from galaxy.tool_util.parameters import (
     RequestToolState,
     to_json_schema_string,
@@ -14,7 +15,6 @@ from galaxy.tool_util.parameters import (
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import (
     parsed_tool_model_cached_for,
-    ParsedTool,
     search,
 )
 from tool_shed.managers.trs import (
