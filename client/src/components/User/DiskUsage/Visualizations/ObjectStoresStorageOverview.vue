@@ -20,9 +20,9 @@ const router = useRouter();
 
 const objectStoresBySizeData = ref<DataValuePoint[] | null>(null);
 
-const { isLoading, loadDataOnMount } = useDataLoading();
-
 const { getObjectStoreNameById } = useObjectStoreStore();
+
+const { isLoading, loadDataOnMount } = useDataLoading();
 
 loadDataOnMount(async () => {
     const { data } = await fetchObjectStoreUsages({ user_id: "current" });
