@@ -63,6 +63,24 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(job, "command_line", "external_id", "handler")
 
     @pytest.mark.require_new_history
+    def test_job_list_collection_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs?view=collection")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
+    def test_job_list_default_view(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get(f"jobs?history_id={history_id}")
+        self._assert_status_code_is_ok(jobs_response)
+        jobs = jobs_response.json()
+        job = jobs[0]
+        self._assert_has_keys(job, "id", "tool_id", "state")
+
+    @pytest.mark.require_new_history
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
@@ -575,6 +593,23 @@ steps:
 
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
+
+    def test_submission_on_collection_with_deleted_element(self, history_id):
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id=history_id, wait=True).json()
+        hda_id = hdca["elements"][0]["object"]["elements"][0]["object"]["id"]
+        self.dataset_populator.delete_dataset(history_id=history_id, content_id=hda_id)
+        response = self.dataset_populator.run_tool_raw(
+            "is_of_type",
+            inputs={
+                "collection": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"], "map_over_type": "list"}]},
+            },
+            history_id=history_id,
+        )
+        assert response.status_code == 400
+        assert (
+            response.json()["err_msg"]
+            == "parameter 'collection': the previously selected dataset collection has elements that are deleted."
+        )
 
     @pytest.mark.require_new_history
     @skip_without_tool("create_2")
