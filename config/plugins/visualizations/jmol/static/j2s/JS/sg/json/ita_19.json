@@ -1,0 +1,1 @@
+{ "its": [ { "clegId": "19:a,b,c","det": 1.0,"gen": [ "x,y,z","-x+1/2,-y,z+1/2","-x,y+1/2,-z+1/2" ],"gp": [ "x,y,z","-x+1/2,-y,z+1/2","-x,y+1/2,-z+1/2","x+1/2,-y+1/2,-z" ],"hall": "P 2ac 2ab","hm": "P 21 21 21","id": "P_21_21_21","jmolId": "19","set": 1,"sg": 19,"trm": "a,b,c","wpos": { "pos": [ { "desc": "1","geom": "general","label": "a","mult": 4 } ] } } ],"n": 1,"sg": 19 }

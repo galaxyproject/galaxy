@@ -1,0 +1,39 @@
+// BH 2024.03.28  creates the list of space groups and all their operators for insertion into sg_all.xls
+// this is the starting point for creating sg_all.txt and 
+x = spacegroup("all")
+types = {"all":[1, 230]}
+
+issues = [];
+found = "";
+for (name in types) {
+lat = types[name]
+
+nsg = 0;
+a = ""
+for (var sg in x) {
+print sg.jmolId + " " + sg.ita;
+  key = ";" + sg.jmolId + ";"
+  if (found.find(key) || sg.jmolId.find("*") > 0) { //|| sg.ita < lat[1] || sg.ita > lat[2]) {
+    print "dup " + sg.jmolId
+issues += [sg.jmolId + " " + sg.ita + " " + sg.itaIndex]
+    continue
+  }
+  nsg++;
+  found += key;
+  var s = sg.jmolId.split(":")
+  var post = (s.length == 1 ? "" : ":" + s[2]) 
+  var pre = "\n\"" + s[1].format("%03s")+post + "\"\t\""
+  var list = sg.operationsXYZ
+  var n = sg.operationCount
+  for (var i = 1; i <= n; i++){
+    a +=  pre +  list[i] + "\""
+  }
+}
+
+write var a @{"c:/temp/sg_"+name}
+print issues
+print "" + nsg + " " + issues.length
+}
+
+
+
