@@ -14,9 +14,14 @@ from galaxy.managers.file_source_instances import (
     CreateInstancePayload,
     FileSourceInstancesManager,
     ModifyInstancePayload,
+    TestModifyInstancePayload,
     UserFileSourceModel,
 )
-from galaxy.util.config_templates import PluginStatus
+from galaxy.util.config_templates import (
+    OAuth2Info,
+    PluginStatus,
+)
+from galaxy.work.context import SessionRequestContext
 from . import (
     depends,
     DependsOnTrans,
@@ -30,6 +35,14 @@ router = Router(tags=["file_sources"])
 
 UserFileSourceIdPathParam: str = Path(
     ..., title="User File Source UUID", description="The UUID index for a persisted UserFileSourceStore object."
+)
+
+TemplateIdPathParam: str = Path(
+    ..., title="Template ID", description="The template ID of the target file source template."
+)
+
+TemplateVersionPathParam = Path(
+    ..., title="Template Version", description="The template version of the target file source template."
 )
 
 
@@ -48,6 +61,19 @@ class FastAPIFileSources:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> FileSourceTemplateSummaries:
         return self.file_source_instances_manager.summaries
+
+    @router.get(
+        "/api/file_source_templates/{template_id}/{template_version}/oauth2",
+        response_description="OAuth2 authorization url to redirect user to prior to creation.",
+        operation_id="file_sources__template_oauth2",
+    )
+    def template_oauth2(
+        self,
+        trans: SessionRequestContext = DependsOnTrans,
+        template_id: str = TemplateIdPathParam,
+        template_version: int = TemplateVersionPathParam,
+    ) -> OAuth2Info:
+        return self.file_source_instances_manager.template_oauth2(trans, template_id, template_version)
 
     @router.post(
         "/api/file_source_instances",
@@ -96,6 +122,18 @@ class FastAPIFileSources:
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.show(trans, user_file_source_id)
 
+    @router.get(
+        "/api/file_source_instances/{user_file_source_id}/test",
+        summary="Test a file source instance and return status.",
+        operation_id="file_sources__instances_test_instance",
+    )
+    def instance_test(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_file_source_id: str = UserFileSourceIdPathParam,
+    ) -> PluginStatus:
+        return self.file_source_instances_manager.plugin_status_for_instance(trans, user_file_source_id)
+
     @router.put(
         "/api/file_source_instances/{user_file_source_id}",
         summary="Update or upgrade user file source instance.",
@@ -108,6 +146,19 @@ class FastAPIFileSources:
         payload: ModifyInstancePayload = Body(...),
     ) -> UserFileSourceModel:
         return self.file_source_instances_manager.modify_instance(trans, user_file_source_id, payload)
+
+    @router.post(
+        "/api/file_source_instances/{user_file_source_id}/test",
+        summary="Test updating or upgrading user file source instance.",
+        operation_id="file_sources__test_instances_update",
+    )
+    def test_update_instance(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_file_source_id: str = UserFileSourceIdPathParam,
+        payload: TestModifyInstancePayload = Body(...),
+    ) -> PluginStatus:
+        return self.file_source_instances_manager.test_modify_instance(trans, user_file_source_id, payload)
 
     @router.delete(
         "/api/file_source_instances/{user_file_source_id}",
