@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchObjectStoreUsages } from "@/api/users";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
@@ -21,12 +22,14 @@ const objectStoresBySizeData = ref<DataValuePoint[] | null>(null);
 
 const { isLoading, loadDataOnMount } = useDataLoading();
 
+const { getObjectStoreNameById } = useObjectStoreStore();
+
 loadDataOnMount(async () => {
     const { data } = await fetchObjectStoreUsages({ user_id: "current" });
     const objectStoresBySize = data.sort((a, b) => b.total_disk_usage - a.total_disk_usage);
     objectStoresBySizeData.value = objectStoresBySize.map((objectStore) => ({
         id: objectStore.object_store_id,
-        label: objectStore.object_store_id,
+        label: getObjectStoreNameById(objectStore.object_store_id) ?? objectStore.object_store_id,
         value: objectStore.total_disk_usage,
     }));
 });
