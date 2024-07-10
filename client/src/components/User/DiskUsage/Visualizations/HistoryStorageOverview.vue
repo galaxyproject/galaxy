@@ -51,14 +51,14 @@ const { isLoading, loadDataOnMount } = useDataLoading();
 const { isAdvanced, toggleAdvanced, inputGroupClasses, faAngleDoubleDown, faAngleDoubleUp } = useAdvancedFiltering();
 const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
-const objectStore = ref<string | null>(null);
+const objectStore = ref<string>();
 
 const canEditHistory = computed(() => {
     const history = getHistoryById(props.historyId);
     return (history && !history.purged && !history.archived) ?? false;
 });
 
-function onChangeObjectStore(value: string | null) {
+function onChangeObjectStore(value?: string) {
     objectStore.value = value;
     reloadDataFromServer();
 }
@@ -190,7 +190,7 @@ function onUndelete(datasetId: string) {
                                 </BFormSelect>
                             </BFormGroup>
                             <BFormGroup
-                                v-if="hasSelectableObjectStores"
+                                v-if="selectableObjectStores && hasSelectableObjectStores"
                                 id="input-group-object-store"
                                 label="Storage location:"
                                 label-for="input-object-store"
