@@ -1,6 +1,7 @@
 import { InvocationExportPlugin } from "../model";
 
-export const DEFAULT_FILE_EXPORT_PLUGIN = new InvocationExportPlugin({
+export const DEFAULT_FILE_EXPORT_PLUGIN: InvocationExportPlugin = {
+    id: "default-file",
     title: "File",
     markdownDescription: `Export the invocation to a compressed File containing the invocation data in Galaxy native format.`,
     exportParams: {
@@ -10,4 +11,4 @@ export const DEFAULT_FILE_EXPORT_PLUGIN = new InvocationExportPlugin({
         includeHidden: false,
     },
     additionalActions: [],
-});
+};

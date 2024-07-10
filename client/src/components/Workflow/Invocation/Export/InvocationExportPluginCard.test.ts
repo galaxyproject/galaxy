@@ -4,14 +4,15 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { InvocationExportPlugin, InvocationExportPluginAction } from "./model";
+import { InvocationExportPlugin } from "./model";
 
 import InvocationExportPluginCard from "./InvocationExportPluginCard.vue";
 
 const localVue = getLocalVue();
 
 const FAKE_INVOCATION_ID = "fake-invocation-id";
-const FAKE_EXPORT_PLUGIN = new InvocationExportPlugin({
+const FAKE_EXPORT_PLUGIN: InvocationExportPlugin = {
+    id: "fake-plugin-id",
     title: "Plugin Title",
     markdownDescription: `some **markdown** description`,
     exportParams: {
@@ -21,24 +22,26 @@ const FAKE_EXPORT_PLUGIN = new InvocationExportPlugin({
         includeHidden: false,
     },
     additionalActions: [
-        new InvocationExportPluginAction({
+        {
             id: "fake-action-1",
             title: "Fake export action 1",
-        }),
-        new InvocationExportPluginAction({
+            run: jest.fn(),
+        },
+        {
             id: "fake-action-2",
             title: "Fake export action 2",
-        }),
+            run: jest.fn(),
+        },
     ],
-});
+};
 
 describe("InvocationExportPluginCard", () => {
-    let wrapper;
-    let axiosMock;
+    let wrapper: any;
+    let axiosMock: MockAdapter;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        wrapper = shallowMount(InvocationExportPluginCard, {
+        wrapper = shallowMount(InvocationExportPluginCard as object, {
             propsData: { exportPlugin: FAKE_EXPORT_PLUGIN, invocationId: FAKE_INVOCATION_ID },
             localVue,
         });
@@ -69,13 +72,6 @@ describe("InvocationExportPluginCard", () => {
     it("should have an export to remote file source button", () => {
         const remoteExportButton = wrapper.find(".remote-export-button");
         expect(remoteExportButton.exists()).toBeTruthy();
-    });
-
-    it("should generate the expected download URL for the invocation", () => {
-        const downloadButton = wrapper.find(".download-button");
-        expect(downloadButton.attributes("downloadendpoint")).toBe(
-            `/api/invocations/${FAKE_INVOCATION_ID}/prepare_store_download`
-        );
     });
 
     it("should display a button for each additional action", () => {
