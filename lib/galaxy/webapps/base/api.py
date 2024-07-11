@@ -239,7 +239,7 @@ def add_request_id_middleware(app: FastAPI):
 def include_all_package_routers(app: FastAPI, package_name: str):
     responses: typing.Dict[typing.Union[int, str], typing.Dict[str, typing.Any]] = {
         "4XX": {
-            "description": "Client Error",
+            "description": "Request Error",
             "model": MessageExceptionModel,
         },
         "5XX": {
