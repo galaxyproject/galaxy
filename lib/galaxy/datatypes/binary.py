@@ -4590,6 +4590,7 @@ class FITS(Binary):
         except Exception:
             return f"Binary FITS file size ({nice_size(dataset.get_size())})"
 
+
 class FITSImage(FITS):
     # Fits that contains image data in any of the extensions
 
@@ -4606,6 +4607,7 @@ class FITSImage(FITS):
         except Exception as e:
             log.warning("%s, sniff Exception: %s", self, e)
             return False
+
 
 @build_sniff_from_prefix
 class Numpy(Binary):
