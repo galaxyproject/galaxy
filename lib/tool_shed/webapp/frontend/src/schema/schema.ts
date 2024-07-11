@@ -1045,7 +1045,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1071,7 +1071,7 @@ export interface operations {
                     "application/json": components["schemas"]["Category"][]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1102,7 +1102,7 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1134,7 +1134,7 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1172,7 +1172,7 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoriesByCategory"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1195,7 +1195,7 @@ export interface operations {
                     "application/json": components["schemas"]["Service"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1218,7 +1218,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolClass"][]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1241,7 +1241,7 @@ export interface operations {
                     "application/json": unknown
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1270,7 +1270,7 @@ export interface operations {
                     "application/json": components["schemas"]["Tool"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1299,7 +1299,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolVersion"][]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1337,7 +1337,7 @@ export interface operations {
                         | components["schemas"]["Repository"][]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1368,7 +1368,7 @@ export interface operations {
                     "application/json": components["schemas"]["Repository"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1401,7 +1401,7 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1437,7 +1437,7 @@ export interface operations {
                     "application/json": unknown[]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1473,7 +1473,7 @@ export interface operations {
                     "application/json": components["schemas"]["InstallInfo"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1499,7 +1499,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1530,7 +1530,7 @@ export interface operations {
                     "application/json": unknown
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1559,7 +1559,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedRepository"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1588,7 +1588,7 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1619,7 +1619,7 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1650,7 +1650,7 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1691,7 +1691,7 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryUpdate"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1718,7 +1718,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1745,7 +1745,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1781,7 +1781,7 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1810,7 +1810,7 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryPermissions"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1842,7 +1842,7 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1871,7 +1871,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1900,7 +1900,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1934,7 +1934,7 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1964,7 +1964,7 @@ export interface operations {
                     "application/json": unknown
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -1991,7 +1991,7 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2017,7 +2017,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"][]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2048,7 +2048,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2074,7 +2074,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2106,7 +2106,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2135,7 +2135,7 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2164,7 +2164,7 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2191,7 +2191,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2214,7 +2214,7 @@ export interface operations {
                     "application/json": components["schemas"]["Version"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2243,7 +2243,7 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2274,7 +2274,7 @@ export interface operations {
                     "application/json": components["schemas"]["UiLoginResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2305,7 +2305,7 @@ export interface operations {
                     "application/json": components["schemas"]["UiLogoutResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2336,7 +2336,7 @@ export interface operations {
                     "application/json": components["schemas"]["UiRegisterResponse"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]
@@ -2372,7 +2372,7 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryMetadata"]
                 }
             }
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"]

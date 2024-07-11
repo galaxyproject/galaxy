@@ -13416,7 +13416,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13458,7 +13458,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13496,7 +13496,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13530,7 +13530,7 @@ export interface operations {
                     }[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13568,7 +13568,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13602,7 +13602,7 @@ export interface operations {
                     }[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13634,7 +13634,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13667,7 +13667,7 @@ export interface operations {
                     "application/json": components["schemas"]["DCESummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13701,7 +13701,7 @@ export interface operations {
                     "application/json": components["schemas"]["HDCADetailed"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13744,7 +13744,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetCollectionContentElements"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13783,7 +13783,7 @@ export interface operations {
                     "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13820,7 +13820,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetCollectionAttributesResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13856,7 +13856,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13891,7 +13891,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13933,7 +13933,7 @@ export interface operations {
             501: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -13970,7 +13970,7 @@ export interface operations {
                     "application/json": components["schemas"]["SuitableConverters"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14024,7 +14024,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14063,7 +14063,7 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteDatasetBatchResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14111,7 +14111,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14164,7 +14164,7 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14234,7 +14234,7 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14268,7 +14268,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14304,7 +14304,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConvertedDatasetsMap"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14356,7 +14356,7 @@ export interface operations {
                         | components["schemas"]["HDAInaccessible"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14389,7 +14389,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14422,7 +14422,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetTextContentDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14464,7 +14464,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14501,7 +14501,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetInheritanceChain"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14541,7 +14541,7 @@ export interface operations {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14579,7 +14579,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14622,7 +14622,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14663,7 +14663,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14700,7 +14700,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetStorageDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14748,7 +14748,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14798,7 +14798,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14833,7 +14833,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14870,7 +14870,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14904,7 +14904,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypeDetails"][] | string[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14930,7 +14930,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypeConverterList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14958,7 +14958,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -14985,7 +14985,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15013,7 +15013,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15040,7 +15040,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15066,7 +15066,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesMap"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15092,7 +15092,7 @@ export interface operations {
                     "application/json": string[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15128,7 +15128,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15154,7 +15154,7 @@ export interface operations {
                     "application/json": components["schemas"]["DisplayApplication"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15193,7 +15193,7 @@ export interface operations {
                     "application/json": components["schemas"]["ReloadFeedback"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15224,7 +15224,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15253,7 +15253,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15287,7 +15287,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15321,7 +15321,7 @@ export interface operations {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15354,7 +15354,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15395,7 +15395,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15426,7 +15426,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15455,7 +15455,7 @@ export interface operations {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15515,7 +15515,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderContentsIndexResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15553,7 +15553,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15589,7 +15589,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15630,7 +15630,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15671,7 +15671,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15711,7 +15711,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15752,7 +15752,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15801,7 +15801,7 @@ export interface operations {
                         | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15846,7 +15846,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderCurrentPermissions"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15878,7 +15878,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15910,7 +15910,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -15967,7 +15967,7 @@ export interface operations {
                         | components["schemas"]["ListJstreeResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16000,7 +16000,7 @@ export interface operations {
                     "application/json": string[][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16047,7 +16047,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16086,7 +16086,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16131,7 +16131,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16160,7 +16160,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16194,7 +16194,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16226,7 +16226,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16263,7 +16263,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16295,7 +16295,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16327,7 +16327,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16360,7 +16360,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16395,7 +16395,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16430,7 +16430,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16465,7 +16465,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16497,7 +16497,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16535,7 +16535,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16574,7 +16574,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16613,7 +16613,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16650,7 +16650,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16688,7 +16688,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16727,7 +16727,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16766,7 +16766,7 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16804,7 +16804,7 @@ export interface operations {
                     "application/json": components["schemas"]["HelpForumSearchResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16903,7 +16903,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -16950,7 +16950,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17000,7 +17000,7 @@ export interface operations {
                     "application/json": unknown[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17045,7 +17045,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17089,7 +17089,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17118,7 +17118,7 @@ export interface operations {
                     "application/json": number;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17169,7 +17169,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17211,7 +17211,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17254,7 +17254,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17288,7 +17288,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17326,7 +17326,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17375,7 +17375,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17424,7 +17424,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17466,7 +17466,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17513,7 +17513,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17561,7 +17561,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17615,7 +17615,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17664,7 +17664,7 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17697,7 +17697,7 @@ export interface operations {
                     "application/json": unknown[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17784,7 +17784,7 @@ export interface operations {
                     "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17834,7 +17834,7 @@ export interface operations {
                     "application/json": components["schemas"]["HistoryContentsResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17898,7 +17898,7 @@ export interface operations {
                           )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -17952,7 +17952,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18011,7 +18011,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18060,7 +18060,7 @@ export interface operations {
                     "application/json": components["schemas"]["HistoryContentBulkOperationResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18097,7 +18097,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18132,7 +18132,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18175,7 +18175,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18224,7 +18224,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18275,7 +18275,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18310,7 +18310,7 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18347,7 +18347,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18380,7 +18380,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18414,7 +18414,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18453,7 +18453,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18492,7 +18492,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18526,7 +18526,7 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18583,7 +18583,7 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18641,7 +18641,7 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18715,7 +18715,7 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18753,7 +18753,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18843,7 +18843,7 @@ export interface operations {
                         | components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18906,7 +18906,7 @@ export interface operations {
                           )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -18962,7 +18962,7 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19019,7 +19019,7 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19093,7 +19093,7 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19141,7 +19141,7 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationStateSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19183,7 +19183,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19225,7 +19225,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19282,7 +19282,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19315,7 +19315,7 @@ export interface operations {
                     "application/json": components["schemas"]["CustomBuildsMetadataResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19351,7 +19351,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19387,7 +19387,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19432,7 +19432,7 @@ export interface operations {
                     "application/vnd.galaxy.task.export+json": components["schemas"]["ExportTaskListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19491,7 +19491,7 @@ export interface operations {
             202: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19533,7 +19533,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19584,7 +19584,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19622,7 +19622,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19660,7 +19660,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19696,7 +19696,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19737,7 +19737,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShareHistoryWithStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19773,7 +19773,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19812,7 +19812,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19844,7 +19844,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19877,7 +19877,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19915,7 +19915,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19953,7 +19953,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -19986,7 +19986,7 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20022,7 +20022,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20060,7 +20060,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20116,7 +20116,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20153,7 +20153,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20186,7 +20186,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20230,7 +20230,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20274,7 +20274,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20313,7 +20313,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20351,7 +20351,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20384,7 +20384,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20415,7 +20415,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20458,7 +20458,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20496,7 +20496,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20536,7 +20536,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20574,7 +20574,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20606,7 +20606,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20643,7 +20643,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20745,7 +20745,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20784,7 +20784,7 @@ export interface operations {
                     "application/json": components["schemas"]["EncodedJobDetails"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20823,7 +20823,7 @@ export interface operations {
                         | components["schemas"]["EncodedJobDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20861,7 +20861,7 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20894,7 +20894,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobInputSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20927,7 +20927,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobDestinationParams"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20965,7 +20965,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobErrorSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -20998,7 +20998,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobInputAssociation"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21038,7 +21038,7 @@ export interface operations {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21079,7 +21079,7 @@ export interface operations {
                     "text/plain": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "text/plain": components["schemas"]["MessageExceptionModel"];
@@ -21112,7 +21112,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21157,7 +21157,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21190,7 +21190,7 @@ export interface operations {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21226,7 +21226,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21263,7 +21263,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21295,7 +21295,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21329,7 +21329,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21365,7 +21365,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21411,7 +21411,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21452,7 +21452,7 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21503,7 +21503,7 @@ export interface operations {
                         | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21552,7 +21552,7 @@ export interface operations {
                         | components["schemas"]["LibraryCurrentPermissions"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21578,7 +21578,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseMetadataModel"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21611,7 +21611,7 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseMetadataModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21648,7 +21648,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21686,7 +21686,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21720,7 +21720,7 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21759,7 +21759,7 @@ export interface operations {
                         | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21793,7 +21793,7 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21825,7 +21825,7 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastNotificationListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21873,7 +21873,7 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationCreatedResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21909,7 +21909,7 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastNotificationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21948,7 +21948,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -21983,7 +21983,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22023,7 +22023,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22058,7 +22058,7 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationStatusSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22091,7 +22091,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22127,7 +22127,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22165,7 +22165,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22194,7 +22194,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22228,7 +22228,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22262,7 +22262,7 @@ export interface operations {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22295,7 +22295,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22336,7 +22336,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22367,7 +22367,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22396,7 +22396,7 @@ export interface operations {
                     "application/json": components["schemas"]["ObjectStoreTemplateSummaries"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22432,7 +22432,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22465,7 +22465,7 @@ export interface operations {
                     "application/json": components["schemas"]["ConcreteObjectStoreModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22548,7 +22548,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageSummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22585,7 +22585,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22621,7 +22621,7 @@ export interface operations {
                     "application/json": components["schemas"]["PageDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22655,7 +22655,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22697,7 +22697,7 @@ export interface operations {
             501: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22733,7 +22733,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22769,7 +22769,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22811,7 +22811,7 @@ export interface operations {
             501: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22847,7 +22847,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22888,7 +22888,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22924,7 +22924,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22963,7 +22963,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -22997,7 +22997,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23033,7 +23033,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23065,7 +23065,7 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23102,7 +23102,7 @@ export interface operations {
                     "application/json": components["schemas"]["CreateQuotaResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23134,7 +23134,7 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23170,7 +23170,7 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23206,7 +23206,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23242,7 +23242,7 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23283,7 +23283,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23324,7 +23324,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23357,7 +23357,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23413,7 +23413,7 @@ export interface operations {
                         | components["schemas"]["ListJstreeResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23450,7 +23450,7 @@ export interface operations {
                     "application/json": components["schemas"]["CreatedEntryResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23490,7 +23490,7 @@ export interface operations {
                     "application/json": components["schemas"]["FilesSourcePluginList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23519,7 +23519,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23553,7 +23553,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23585,7 +23585,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23617,7 +23617,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23649,7 +23649,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23681,7 +23681,7 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23711,7 +23711,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23739,7 +23739,7 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23776,7 +23776,7 @@ export interface operations {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23813,7 +23813,7 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23842,7 +23842,7 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23879,7 +23879,7 @@ export interface operations {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23916,7 +23916,7 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23945,7 +23945,7 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -23982,7 +23982,7 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24011,7 +24011,7 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24049,7 +24049,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24077,7 +24077,7 @@ export interface operations {
                     "application/json": components["schemas"]["TaskState"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24103,7 +24103,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataEntryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24140,7 +24140,7 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24176,7 +24176,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24217,7 +24217,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24255,7 +24255,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataField"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24293,7 +24293,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24329,7 +24329,7 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24366,7 +24366,7 @@ export interface operations {
                     "application/json": components["schemas"]["InstalledToolShedRepository"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24398,7 +24398,7 @@ export interface operations {
                     "application/json": components["schemas"]["CheckForUpdatesResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24427,7 +24427,7 @@ export interface operations {
                     "application/json": components["schemas"]["InstalledToolShedRepository"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24461,7 +24461,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24487,7 +24487,7 @@ export interface operations {
                     "application/json": components["schemas"]["TourList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24518,7 +24518,7 @@ export interface operations {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24553,7 +24553,7 @@ export interface operations {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24598,7 +24598,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24634,7 +24634,7 @@ export interface operations {
                     "application/json": components["schemas"]["CreatedUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24672,7 +24672,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24715,7 +24715,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24750,7 +24750,7 @@ export interface operations {
                         | components["schemas"]["AnonUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24783,7 +24783,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24822,7 +24822,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24861,7 +24861,7 @@ export interface operations {
                         | components["schemas"]["AnonUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24903,7 +24903,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24945,7 +24945,7 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -24978,7 +24978,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25011,7 +25011,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25042,7 +25042,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25079,7 +25079,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25115,7 +25115,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25156,7 +25156,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25189,7 +25189,7 @@ export interface operations {
                     "application/json": components["schemas"]["CustomBuildsCollection"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25229,7 +25229,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25264,7 +25264,7 @@ export interface operations {
                     "application/json": components["schemas"]["DeletedCustomBuild"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25304,7 +25304,7 @@ export interface operations {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25341,7 +25341,7 @@ export interface operations {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25374,7 +25374,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25411,7 +25411,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25444,7 +25444,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25479,7 +25479,7 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25512,7 +25512,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserQuotaUsage"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25547,7 +25547,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserQuotaUsage"] | null;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25573,7 +25573,7 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25655,7 +25655,7 @@ export interface operations {
                     "application/json": components["schemas"]["VisualizationSummaryList"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25691,7 +25691,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25727,7 +25727,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25763,7 +25763,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25804,7 +25804,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25840,7 +25840,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25879,7 +25879,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25915,7 +25915,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -25947,7 +25947,7 @@ export interface operations {
                     "application/json": components["schemas"]["UserModel"] | null;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26037,7 +26037,7 @@ export interface operations {
                     "application/json": Record<string, never>[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26076,7 +26076,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26116,7 +26116,7 @@ export interface operations {
                     "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26149,7 +26149,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26186,7 +26186,7 @@ export interface operations {
                     "application/json": components["schemas"]["RootModel_Dict_str__int__"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26222,7 +26222,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26258,7 +26258,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26315,7 +26315,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26355,7 +26355,7 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26404,7 +26404,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26453,7 +26453,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26491,7 +26491,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26529,7 +26529,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26565,7 +26565,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26607,7 +26607,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26647,7 +26647,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26692,7 +26692,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26728,7 +26728,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26769,7 +26769,7 @@ export interface operations {
                     "application/json": components["schemas"]["RefactorResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26810,7 +26810,7 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26846,7 +26846,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26885,7 +26885,7 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26917,7 +26917,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26950,7 +26950,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -26988,7 +26988,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27026,7 +27026,7 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27059,7 +27059,7 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27092,7 +27092,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27128,7 +27128,7 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27188,7 +27188,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27231,7 +27231,7 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27281,7 +27281,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27331,7 +27331,7 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27370,7 +27370,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27409,7 +27409,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27446,7 +27446,7 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27489,7 +27489,7 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27530,7 +27530,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27576,7 +27576,7 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27612,7 +27612,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27645,7 +27645,7 @@ export interface operations {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27678,7 +27678,7 @@ export interface operations {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27713,7 +27713,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27748,7 +27748,7 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
@@ -27771,7 +27771,7 @@ export interface operations {
                     "application/json": components["schemas"]["Service"];
                 };
             };
-            /** @description Client Error */
+            /** @description Request Error */
             "4XX": {
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
