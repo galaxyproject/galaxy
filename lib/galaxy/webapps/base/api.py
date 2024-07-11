@@ -37,7 +37,6 @@ if typing.TYPE_CHECKING:
         Send,
     )
 
-from galaxy.exceptions.error_codes import error_codes_by_int_code
 from galaxy.schema.schema import MessageExceptionModel
 
 log = getLogger(__name__)
