@@ -20,8 +20,8 @@
 
 
 Info = {
-	width: 500,
-	height: 500,
+    width: window.innerWidth*.8,
+    height: window.innerHeight*.8,
 	debug: false,
     j2sPath: '${j2s}',
 	color: "0xC0C0C0",
