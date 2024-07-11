@@ -1,0 +1,79 @@
+<!-- same as mulled_example_multi_1, but requirements use builds
+     used to show that this does not yield the same mulled v2 hash,
+     i.e. the build is considered as part of version -->
+<tool id="mulled_example_multi_2" name="mulled_example_multi_2" version="0.1.0" license="AFL-3.0">
+    <xrefs>
+        <xref type="bio.tools">bedtools</xref>
+        <xref type="bio.tools">samtools</xref>
+    </xrefs>
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            url="https://github.com/bgruening"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
+    <requirements>
+        <requirement type="package" version="1.3.1=h9071d68_10">samtools</requirement>
+        <requirement type="package" version="2.26.0=0">bedtools</requirement>
+    </requirements>
+    <command><![CDATA[
+bedtools --version > '$out_file1' &&
+echo "Moo" >> '$out_file1' &&
+samtools >> '$out_file1' 2>&1 &&
+echo "Cow" >> '$out_file1' &&
+
+touch "\${TMP:-/tmp}/job_tmp" &&
+touch "\${TEMP:-/tmp}/job_temp" &&
+touch "\${TMPDIR:-/tmp}/job_tmpdir"
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" optional="true" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+This is an example mulled tool that combines bedtools and samtools in one
+command-line invocation.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1093/bioinformatics/btq033</citation>
+        <citation type="bibtex">
+            @misc{SAM_def,
+            title={Definition of SAM/BAM format},
+            url = {https://samtools.github.io/hts-specs/},}
+        </citation>
+        <citation type="doi">10.1093/bioinformatics/btp352</citation>
+        <citation type="doi">10.1093/bioinformatics/btr076</citation>
+        <citation type="doi">10.1093/bioinformatics/btr509</citation>
+        <citation type="bibtex">
+            @misc{Danecek_et_al,
+            Author={Danecek, P., Schiffels, S., Durbin, R.},
+            title={Multiallelic calling model in bcftools (-m)},
+            url = {http://samtools.github.io/bcftools/call-m.pdf},}
+        </citation>
+        <citation type="bibtex">
+            @misc{Durbin_VCQC,
+            Author={Durbin, R.},
+            title={Segregation based metric for variant call QC},
+            url = {http://samtools.github.io/bcftools/rd-SegBias.pdf},}
+        </citation>
+        <citation type="bibtex">
+            @misc{Li_SamMath,
+            Author={Li, H.},
+            title={Mathematical Notes on SAMtools Algorithms},
+            url = {http://www.broadinstitute.org/gatk/media/docs/Samtools.pdf},}
+        </citation>
+        <citation type="bibtex">
+            @misc{SamTools_github,
+            title={SAMTools GitHub page},
+            url = {https://github.com/samtools/samtools},}
+        </citation>
+    </citations>
+</tool>
