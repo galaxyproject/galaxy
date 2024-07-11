@@ -1,7 +1,11 @@
 from typing import (
     Any,
+    cast,
     Dict,
     Iterable,
+    Optional,
+    TypeVar,
+    Union,
 )
 
 from typing_extensions import Protocol
@@ -54,3 +58,23 @@ def _visit_input_values(
         else:
             new_input_values[name] = input_value
     return new_input_values
+
+
+def flat_state_path(has_name: Union[str, ToolParameterT], prefix: Optional[str] = None) -> str:
+    """Given a parameter name or model and an optional prefix, give 'flat' name for parameter in tree."""
+    if hasattr(has_name, "name"):
+        name = cast(ToolParameterT, has_name).name
+    else:
+        name = cast(str, has_name)
+    return name if prefix is None else f"{prefix}|{name}"
+
+
+KVT = TypeVar("KVT")
+
+
+def keys_starting_with(flat_tree: Dict[str, KVT], flat_state_path: str) -> Dict[str, KVT]:
+    subset: Dict[str, KVT] = {}
+    for key, value in flat_tree.items():
+        if key.startswith(flat_state_path):
+            subset[key] = value
+    return subset

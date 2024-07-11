@@ -42,6 +42,8 @@ from .models import (
     validate_internal_request,
     validate_request,
     validate_test_case,
+    validate_workflow_step,
+    validate_workflow_step_linked,
 )
 from .state import (
     JobInternalToolState,
@@ -49,8 +51,14 @@ from .state import (
     RequestToolState,
     TestCaseToolState,
     ToolState,
+    WorkflowStepLinkedToolState,
+    WorkflowStepToolState,
 )
-from .visitor import visit_input_values
+from .visitor import (
+    flat_state_path,
+    keys_starting_with,
+    visit_input_values,
+)
 
 __all__ = (
     "from_input_source",
@@ -89,13 +97,19 @@ __all__ = (
     "validate_internal_request",
     "validate_request",
     "validate_test_case",
+    "validate_workflow_step",
+    "validate_workflow_step_linked",
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",
     "to_json_schema_string",
     "RequestToolState",
     "RequestInternalToolState",
+    "flat_state_path",
+    "keys_starting_with",
     "visit_input_values",
     "decode",
     "encode",
+    "WorkflowStepToolState",
+    "WorkflowStepLinkedToolState",
 )

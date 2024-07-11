@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: int
+outputs:
+  output:
+    outputSource: the_step/output
+steps:
+  the_step:
+    tool_id: gx_int
+    tool_version: "1.0.0"
+    in:
+      parameterx: input
