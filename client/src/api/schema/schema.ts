@@ -5,117 +5,343 @@
 
 export interface paths {
     "/api/authenticate/baseauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         get: operations["get_api_key_api_authenticate_baseauth_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return an object containing exposable configuration settings
          * @description Return an object containing exposable configuration settings.
          *
-         * A more complete list is returned if the user is an admin.
-         * Pass in `view` and a comma-seperated list of keys to control which
-         * configuration settings are returned.
+         *     A more complete list is returned if the user is an admin.
+         *     Pass in `view` and a comma-seperated list of keys to control which
+         *     configuration settings are returned.
          */
         get: operations["index_api_configuration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration/decode/{encoded_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Decode a given id
          * @description Decode a given id.
          */
         get: operations["decode_id_api_configuration_decode__encoded_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration/dynamic_tool_confs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return dynamic tool configuration files
          * @description Return dynamic tool configuration files.
          */
         get: operations["dynamic_tool_confs_api_configuration_dynamic_tool_confs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration/encode/{decoded_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Encode a given id
          * @description Decode a given id.
          */
         get: operations["encode_id_api_configuration_encode__decoded_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration/tool_lineages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return tool lineages for tools that have them
          * @description Return tool lineages for tools that have them.
          */
         get: operations["tool_lineages_api_configuration_tool_lineages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/configuration/toolbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Reload the Galaxy toolbox (but not individual tools)
          * @description Reload the Galaxy toolbox (but not individual tools).
          */
         put: operations["reload_toolbox_api_configuration_toolbox_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collection_element/{dce_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Content */
         get: operations["content_api_dataset_collection_element__dce_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Create a new dataset collection instance. */
         post: operations["create_api_dataset_collections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{hdca_id}/contents/{parent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns direct child contents of indicated dataset collection parent ID. */
         get: operations["contents_dataset_collection_api_dataset_collections__hdca_id__contents__parent_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns detailed information about the given collection. */
         get: operations["show_api_dataset_collections__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}/attributes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns `dbkey`/`extension` attributes for all the collection elements. */
         get: operations["attributes_api_dataset_collections__id__attributes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Copy the given collection datasets to a new collection using a new `dbkey` attribute. */
         post: operations["copy_api_dataset_collections__id__copy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Download the content of a dataset collection as a `zip` archive.
          * @description Download the content of a history dataset collection as a `zip` archive
-         * while maintaining approximate collection structure.
+         *     while maintaining approximate collection structure.
          */
         get: operations["dataset_collections__download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}/prepare_download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Prepare an short term storage object that the collection will be downloaded to.
          * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
+         *     returned short term storage object. Progress tracking this file's creation
+         *     can be tracked with the short_term_storage API.
          */
         post: operations["prepare_collection_download_api_dataset_collections__id__prepare_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/dataset_collections/{id}/suitable_converters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns a list of applicable converters for all datatypes in the given collection. */
         get: operations["suitable_converters_api_dataset_collections__id__suitable_converters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Search datasets or collections using a query system. */
         get: operations["index_api_datasets_get"];
+        put?: never;
+        post?: never;
         /**
          * Deletes or purges a batch of datasets.
          * @description Deletes or purges a batch of datasets.
-         * **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
-         * no other checks or restrictions are made.
+         *     **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
+         *     no other checks or restrictions are made.
          */
         delete: operations["delete_batch_api_datasets_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays information about and/or content of a dataset.
          * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
-         * and return different kinds of responses, the documentation here will be limited.
-         * To get more information please check the source code.
+         *     and return different kinds of responses, the documentation here will be limited.
+         *     To get more information please check the source code.
          */
         get: operations["show_api_datasets__dataset_id__get"];
         /**
@@ -123,229 +349,637 @@ export interface paths {
          * @description Updates the values for the history content item with the given ``ID``.
          */
         put: operations["datasets__update_dataset"];
+        post?: never;
         /**
          * Delete the history dataset content with the given ``ID``.
          * @description Delete the history content with the given ``ID`` and path specified type.
          *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         *     **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
         delete: operations["datasets__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/content/{content_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Retrieve information about the content of a dataset. */
         get: operations["get_structured_content_api_datasets__dataset_id__content__content_type__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/converted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return a a map with all the existing converted datasets associated with this instance.
          * @description Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
          */
         get: operations["converted_api_datasets__dataset_id__converted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/converted/{ext}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return information about datasets made by converting this dataset to a new format.
          * @description Return information about datasets made by converting this dataset to a new format.
          *
-         * If there is no existing converted dataset for the format in `ext`, one will be created.
+         *     If there is no existing converted dataset for the format in `ext`, one will be created.
          *
-         * **Note**: `view` and `keys` are also available to control the serialization of the dataset.
+         *     **Note**: `view` and `keys` are also available to control the serialization of the dataset.
          */
         get: operations["converted_ext_api_datasets__dataset_id__converted__ext__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/extra_files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get the list of extra files/directories associated with a dataset. */
         get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/get_content_as_text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns dataset content as Text. */
         get: operations["get_content_as_text_api_datasets__dataset_id__get_content_as_text_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/hash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Compute dataset hash for dataset and update model */
         put: operations["compute_hash_api_datasets__dataset_id__hash_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/inheritance_chain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** For internal use, this endpoint may change without warning. */
         get: operations["show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return job metrics for specified job.
          * @deprecated
          */
         get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/object_store_id": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Update an object store ID for a dataset you own. */
         put: operations["datasets__update_object_store_id"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/parameters_display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Resolve parameters as a list for nested display.
          * @deprecated
          * @description Resolve parameters as a list for nested display.
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
          */
         get: operations["resolve_parameters_display_api_datasets__dataset_id__parameters_display_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set permissions of the given history dataset to the given role ids.
          * @description Set permissions of the given history dataset to the given role ids.
          */
         put: operations["update_permissions_api_datasets__dataset_id__permissions_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{dataset_id}/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Display user-facing storage details related to the objectstore a dataset resides in. */
         get: operations["show_storage_api_datasets__dataset_id__storage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{history_content_id}/display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays (preview) or downloads dataset content.
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         get: operations["display_api_datasets__history_content_id__display_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
         /**
          * Check if dataset content can be previewed or downloaded.
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         head: operations["display_api_datasets__history_content_id__display_head"];
+        patch?: never;
+        trace?: never;
     };
     "/api/datasets/{history_content_id}/metadata_file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns the metadata file associated with this history item. */
         get: operations["datasets__get_metadata_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
         /** Check if metadata file can be downloaded. */
         head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Lists all available data types
          * @description Gets the list of all available data types.
          */
         get: operations["index_api_datatypes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/converters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the list of all installed converters
          * @description Gets the list of all installed converters.
          */
         get: operations["converters_api_datatypes_converters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/edam_data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a dictionary/map of datatypes and EDAM data
          * @description Gets a map of datatypes and their corresponding EDAM data.
          */
         get: operations["edam_data_api_datatypes_edam_data_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/edam_data/detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a dictionary of datatypes and EDAM data details
          * @description Gets a map of datatypes and their corresponding EDAM data.
-         * EDAM data contains the EDAM iri, label, and definition.
+         *     EDAM data contains the EDAM iri, label, and definition.
          */
         get: operations["edam_data_detailed_api_datatypes_edam_data_detailed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/edam_formats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a dictionary/map of datatypes and EDAM formats
          * @description Gets a map of datatypes and their corresponding EDAM formats.
          */
         get: operations["edam_formats_api_datatypes_edam_formats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/edam_formats/detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a dictionary of datatypes and EDAM format details
          * @description Gets a map of datatypes and their corresponding EDAM formats.
-         * EDAM formats contain the EDAM iri, label, and definition.
+         *     EDAM formats contain the EDAM iri, label, and definition.
          */
         get: operations["edam_formats_detailed_api_datatypes_edam_formats_detailed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns mappings for data types and their implementing classes
          * @description Gets mappings for data types.
          */
         get: operations["mapping_api_datatypes_mapping_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/sniffers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the list of all installed sniffers
          * @description Gets the list of all installed data type sniffers.
          */
         get: operations["sniffers_api_datatypes_sniffers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/datatypes/types_and_mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns all the data types extensions and their mappings
          * @description Combines the datatype information from (/api/datatypes) and the
-         * mapping information from (/api/datatypes/mapping) into a single
-         * response.
+         *     mapping information from (/api/datatypes/mapping) into a single
+         *     response.
          */
         get: operations["types_and_mapping_api_datatypes_types_and_mapping_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/display_applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the list of display applications.
          * @description Returns the list of display applications.
          */
         get: operations["display_applications_index_api_display_applications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/display_applications/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Reloads the list of display applications.
          * @description Reloads the list of display applications.
          */
         post: operations["display_applications_reload_api_display_applications_reload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/drs_download/{object_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Download */
         get: operations["download_api_drs_download__object_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/file_source_instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a list of persisted file source instances defined by the requesting user. */
         get: operations["file_sources__instances_index"];
+        put?: never;
         /** Create a user-bound file source. */
         post: operations["file_sources__create_instance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/file_source_instances/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Test payload for creating user-bound file source. */
         post: operations["file_sources__test_new_instance_configuration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/file_source_instances/{user_file_source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a persisted user file source instance. */
         get: operations["file_sources__instances_get"];
         /** Update or upgrade user file source instance. */
         put: operations["file_sources__instances_update"];
+        post?: never;
         /** Purge user file source instance. */
         delete: operations["file_sources__instances_purge"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/file_source_templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a list of file source templates available to build user defined file sources from */
         get: operations["file_sources__templates_index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/folders/{folder_id}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
          * @description Returns a list of a folder's contents (files and sub-folders).
          *
-         * Additional metadata for the folder is provided in the response as a separate object containing data
-         * for breadcrumb path building, permissions and other folder's details.
+         *     Additional metadata for the folder is provided in the response as a separate object containing data
+         *     for breadcrumb path building, permissions and other folder's details.
          *
-         * *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
+         *     *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
          *
-         * **Security note**:
-         * - Accessing a library folder or sub-folder requires only access to the parent library.
-         * - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
-         * - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
+         *     **Security note**:
+         *     - Accessing a library folder or sub-folder requires only access to the parent library.
+         *     - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
+         *     - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
          */
         get: operations["index_api_folders__folder_id__contents_get"];
+        put?: never;
         /** Creates a new library file from an existing HDA/HDCA. */
         post: operations["add_history_datasets_to_library_api_folders__folder_id__contents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/folders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays information about a particular library folder.
          * @description Returns detailed information about the library folder with the given ID.
@@ -366,94 +1000,279 @@ export interface paths {
          * @description Marks the specified library folder as deleted (or undeleted).
          */
         delete: operations["delete_api_folders__id__delete"];
+        options?: never;
+        head?: never;
         /**
          * Update
          * @description Updates the information of an existing library folder.
          */
         patch: operations["update_api_folders__id__patch"];
+        trace?: never;
     };
     "/api/folders/{id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Gets the current or available permissions of a particular library folder.
          * @description Gets the current or available permissions of a particular library.
-         * The results can be paginated and additionally filtered by a query.
+         *     The results can be paginated and additionally filtered by a query.
          */
         get: operations["get_permissions_api_folders__id__permissions_get"];
+        put?: never;
         /**
          * Sets the permissions to manage a library folder.
          * @description Sets the permissions to manage a library folder.
          */
         post: operations["set_permissions_api_folders__id__permissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /** Delete */
         delete: operations["delete_api_forms__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/forms/{id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Undelete */
         post: operations["undelete_api_forms__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/ftp_files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays remote files available to the user. Please use /api/remote_files instead.
          * @deprecated
          * @description Lists all remote files available to the user from different sources.
          *
-         * The total count of files and directories is returned in the 'total_matches' header.
+         *     The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_ftp_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/genomes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return a list of installed genomes */
         get: operations["index_api_genomes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/genomes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return information about build <id> */
         get: operations["show_api_genomes__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/genomes/{id}/indexes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return all available indexes for a genome id for provided type */
         get: operations["indexes_api_genomes__id__indexes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/genomes/{id}/sequences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return raw sequence data */
         get: operations["sequences_api_genomes__id__sequences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays a collection (list) of groups. */
         get: operations["index_api_groups_get"];
+        put?: never;
         /** Creates a new group. */
         post: operations["create_api_groups_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays information about a group. */
         get: operations["show_group_api_groups__group_id__get"];
         /** Modifies a group. */
         put: operations["update_api_groups__group_id__put"];
+        post?: never;
         /** Delete */
         delete: operations["delete_api_groups__group_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Purge */
         post: operations["purge_api_groups__group_id__purge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays a collection (list) of groups. */
         get: operations["group_roles_api_groups__group_id__roles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/roles/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays information about a group role. */
         get: operations["group_role_api_groups__group_id__roles__role_id__get"];
         /** Adds a role to a group */
         put: operations["update_api_groups__group_id__roles__role_id__put"];
+        post?: never;
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Undelete */
         post: operations["undelete_api_groups__group_id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/user/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays information about a group user.
          * @description Displays information about a group user.
@@ -462,25 +1281,49 @@ export interface paths {
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Adds a user to a group
+         *     Adds a user to a group
          */
         put: operations["update_api_groups__group_id__user__user_id__put"];
+        post?: never;
         /**
          * Removes a user from a group
          * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Removes a user from a group
+         *     Removes a user from a group
          */
         delete: operations["delete_api_groups__group_id__user__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays a collection (list) of groups.
          * @description GET /api/groups/{encoded_group_id}/users
-         * Displays a collection (list) of groups.
+         *     Displays a collection (list) of groups.
          */
         get: operations["group_users_api_groups__group_id__users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/groups/{group_id}/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays information about a group user.
          * @description Displays information about a group user.
@@ -489,145 +1332,374 @@ export interface paths {
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Adds a user to a group
+         *     Adds a user to a group
          */
         put: operations["update_api_groups__group_id__users__user_id__put"];
+        post?: never;
         /**
          * Removes a user from a group
          * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Removes a user from a group
+         *     Removes a user from a group
          */
         delete: operations["delete_api_groups__group_id__users__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/help/forum/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Search the Galaxy Help forum.
          * @description Search the Galaxy Help forum using the Discourse API.
          *
-         * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+         *     **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
          */
         get: operations["search_forum_api_help_forum_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns histories available to the current user. */
         get: operations["index_api_histories_get"];
+        put?: never;
         /**
          * Creates a new history.
          * @description The new history can also be copied form a existing history or imported from an archive or URL.
          */
         post: operations["create_api_histories_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get a list of all archived histories for the current user.
          * @description Get a list of all archived histories for the current user.
          *
-         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+         *     Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
          */
         get: operations["get_archived_histories_api_histories_archived_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/batch/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Marks several histories with the given IDs as deleted. */
         put: operations["batch_delete_api_histories_batch_delete_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/batch/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Marks several histories with the given IDs as undeleted. */
         put: operations["batch_undelete_api_histories_batch_undelete_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns number of histories for the current user. */
         get: operations["count_api_histories_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns deleted histories for the current user. */
         get: operations["index_deleted_api_histories_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/deleted/{history_id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Restores a deleted history with the given ID (that hasn't been purged). */
         post: operations["undelete_api_histories_deleted__history_id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/from_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Create histories from a model store. */
         post: operations["create_from_store_api_histories_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/from_store_async": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Launch a task to create histories from a model store. */
         post: operations["create_from_store_async_api_histories_from_store_async_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/most_recently_used": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns the most recently used history of the user. */
         get: operations["show_recent_api_histories_most_recently_used_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/published": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return all histories that are published. */
         get: operations["published_api_histories_published_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/shared_with_me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return all histories that are shared with the current user. */
         get: operations["shared_with_me_api_histories_shared_with_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns the history with the given ID. */
         get: operations["history_api_histories__history_id__get"];
         /** Updates the values for the history with the given ID. */
         put: operations["update_api_histories__history_id__put"];
+        post?: never;
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Archive a history.
          * @description Marks the given history as 'archived' and returns the history.
          *
-         * Archiving a history will remove it from the list of active histories of the user but it will still be
-         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+         *     Archiving a history will remove it from the list of active histories of the user but it will still be
+         *     accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
          *
-         * Associating an export record:
+         *     Associating an export record:
          *
-         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
-         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
-         * must be in the ready state.
-         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+         *     - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+         *     archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+         *     must be in the ready state.
+         *     - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
          *
-         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
-         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+         *     If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+         *     If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
          */
         post: operations["archive_history_api_histories__history_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/archive/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Restore an archived history.
          * @description Restores an archived history and returns it.
          *
-         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+         *     Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
          *
-         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
-         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+         *     **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+         *     will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
+         *     record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
          */
         put: operations["restore_archived_history_api_histories__history_id__archive_restore_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/citations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return all the citations for the tools used to produce the datasets in the history. */
         get: operations["citations_api_histories__history_id__citations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the contents of the given history.
          * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
          *
-         * - The contents can be filtered and queried using the appropriate parameters.
-         * - The amount of information returned for each item can be customized.
+         *     - The contents can be filtered and queried using the appropriate parameters.
+         *     - The amount of information returned for each item can be customized.
          *
-         * **Note**: Anonymous users are allowed to get their current history contents.
+         *     **Note**: Anonymous users are allowed to get their current history contents.
          */
         get: operations["history_contents__index"];
         /**
          * Batch update specific properties of a set items contained in the given History.
          * @description Batch update specific properties of a set items contained in the given History.
          *
-         * If you provide an invalid/unknown property key the request will not fail, but no changes
-         * will be made to the items.
+         *     If you provide an invalid/unknown property key the request will not fail, but no changes
+         *     will be made to the items.
          */
         put: operations["update_batch_api_histories__history_id__contents_put"];
         /**
@@ -636,78 +1708,218 @@ export interface paths {
          * @description Create a new `HDA` or `HDCA` in the given History.
          */
         post: operations["history_contents__create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
          *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
+         *     **Note**: this is a volatile endpoint and settings and behavior may change.
          */
         get: operations["history_contents__archive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/archive/{filename}.{format}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
          *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
+         *     **Note**: this is a volatile endpoint and settings and behavior may change.
          */
         get: operations["history_contents__archive_named"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Executes an operation on a set of items contained in the given History.
          * @description Executes an operation on a set of items contained in the given History.
          *
-         * The items to be processed can be explicitly set or determined by a dynamic query.
+         *     The items to be processed can be explicitly set or determined by a dynamic query.
          */
         put: operations["bulk_operation_api_histories__history_id__contents_bulk_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/dataset_collections/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Download the content of a dataset collection as a `zip` archive.
          * @description Download the content of a history dataset collection as a `zip` archive
-         * while maintaining approximate collection structure.
+         *     while maintaining approximate collection structure.
          */
         get: operations["history_contents__download_collection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/datasets/{id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Materialize a deferred dataset into real, usable dataset. */
         post: operations["materialize_dataset_api_histories__history_id__contents_datasets__id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{dataset_id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set permissions of the given history dataset to the given role ids.
          * @description Set permissions of the given history dataset to the given role ids.
          */
         put: operations["update_permissions_api_histories__history_id__contents__dataset_id__permissions_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{history_content_id}/display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays (preview) or downloads dataset content.
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         get: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
         /**
          * Check if dataset content can be previewed or downloaded.
          * @description Streams the dataset for download or the contents preview to be displayed in a browser.
          */
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{history_content_id}/extra_files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get the list of extra files/directories associated with a dataset. */
         get: operations["extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns the metadata file associated with this history item. */
         get: operations["history_contents__get_metadata_file"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{history_content_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tags based on history_content_id */
         get: operations["index_api_histories__history_id__contents__history_content_id__tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{history_content_id}/tags/{tag_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tag based on history_content_id */
         get: operations["show_api_histories__history_id__contents__history_content_id__tags__tag_name__get"];
         /** Update tag based on history_content_id */
@@ -716,14 +1928,24 @@ export interface paths {
         post: operations["create_api_histories__history_id__contents__history_content_id__tags__tag_name__post"];
         /** Delete tag based on history_content_id */
         delete: operations["delete_api_histories__history_id__contents__history_content_id__tags__tag_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Return detailed information about an `HDA` or `HDCA` within a history.
          *
-         * **Note**: Anonymous users are allowed to get their current history contents.
+         *     **Note**: Anonymous users are allowed to get their current history contents.
          */
         get: operations["history_contents__show_legacy"];
         /**
@@ -732,44 +1954,80 @@ export interface paths {
          * @description Updates the values for the history content item with the given ``ID``.
          */
         put: operations["history_contents__update_legacy"];
+        post?: never;
         /**
          * Delete the history dataset with the given ``ID``.
          * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
          *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         *     **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
         delete: operations["history_contents__delete_legacy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Validates the metadata associated with a dataset within a History.
          * @description Validates the metadata associated with a dataset within a History.
          */
         put: operations["validate_api_histories__history_id__contents__id__validate_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{type}s": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the contents of the given history filtered by type.
          * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
          *
-         * - The contents can be filtered and queried using the appropriate parameters.
-         * - The amount of information returned for each item can be customized.
+         *     - The contents can be filtered and queried using the appropriate parameters.
+         *     - The amount of information returned for each item can be customized.
          *
-         * **Note**: Anonymous users are allowed to get their current history contents.
+         *     **Note**: Anonymous users are allowed to get their current history contents.
          */
         get: operations["history_contents__index_typed"];
+        put?: never;
         /**
          * Create a new `HDA` or `HDCA` in the given History.
          * @description Create a new `HDA` or `HDCA` in the given History.
          */
         post: operations["history_contents__create_typed"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{type}s/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return detailed information about a specific HDA or HDCA with the given `ID` within a history.
          * @description Return detailed information about an `HDA` or `HDCA` within a history.
          *
-         * **Note**: Anonymous users are allowed to get their current history contents.
+         *     **Note**: Anonymous users are allowed to get their current history contents.
          */
         get: operations["history_contents__show"];
         /**
@@ -777,68 +2035,170 @@ export interface paths {
          * @description Updates the values for the history content item with the given ``ID``.
          */
         put: operations["history_contents__update_typed"];
+        post?: never;
         /**
          * Delete the history content with the given ``ID`` and path specified type.
          * @description Delete the history content with the given ``ID`` and path specified type.
          *
-         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         *     **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
         delete: operations["history_contents__delete_typed"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return detailed information about an `HDA` or `HDCAs` jobs.
          * @description Return detailed information about an `HDA` or `HDCAs` jobs.
          *
-         * **Warning**: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
+         *     **Warning**: We allow anyone to fetch job state information about any object they
+         *     can guess an encoded ID for - it isn't considered protected data. This keeps
+         *     polling IDs as part of state calculation for large histories and collections as
+         *     efficient as possible.
          */
         get: operations["show_jobs_summary_api_histories__history_id__contents__type_s__id__jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store_download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Prepare a dataset or dataset collection for export-style download. */
         post: operations["prepare_store_download_api_histories__history_id__contents__type_s__id__prepare_store_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents/{type}s/{id}/write_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Prepare a dataset or dataset collection for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__contents__type_s__id__write_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/contents_from_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Create contents from store.
          * @description Create history contents from model store.
-         * Input can be a tarfile created with build_objects script distributed
-         * with galaxy-data, from an exported history with files stripped out,
-         * or hand-crafted JSON dictionary.
+         *     Input can be a tarfile created with build_objects script distributed
+         *     with galaxy-data, from an exported history with files stripped out,
+         *     or hand-crafted JSON dictionary.
          */
         post: operations["create_from_store_api_histories__history_id__contents_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/custom_builds_metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns meta data for custom builds. */
         get: operations["get_custom_builds_metadata_api_histories__history_id__custom_builds_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/disable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item inaccessible by a URL link.
          * @description Makes this item inaccessible by a URL link and return the current sharing status.
          */
         put: operations["disable_link_access_api_histories__history_id__disable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/enable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item accessible by a URL link.
          * @description Makes this item accessible by a URL link and return the current sharing status.
          */
         put: operations["enable_link_access_api_histories__history_id__enable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get previous history exports.
          * @description By default the legacy job-based history exports (jeha) are returned.
          *
-         * Change the `accept` content type header to return the new task-based history exports.
+         *     Change the `accept` content type header to return the new task-based history exports.
          */
         get: operations["get_history_exports_api_histories__history_id__exports_get"];
         /**
@@ -846,85 +2206,214 @@ export interface paths {
          * @deprecated
          * @description This will start a job to create a history export archive.
          *
-         * Calling this endpoint multiple times will return the 202 status code until the archive
-         * has been completely generated and is ready to download. When ready, it will return
-         * the 200 status code along with the download link information.
+         *     Calling this endpoint multiple times will return the 202 status code until the archive
+         *     has been completely generated and is ready to download. When ready, it will return
+         *     the 200 status code along with the download link information.
          *
-         * If the history will be exported to a `directory_uri`, instead of returning the download
-         * link information, the Job ID will be returned so it can be queried to determine when
-         * the file has been written.
+         *     If the history will be exported to a `directory_uri`, instead of returning the download
+         *     link information, the Job ID will be returned so it can be queried to determine when
+         *     the file has been written.
          *
-         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-         * `/api/histories/{id}/write_store` instead.
+         *     **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         *     `/api/histories/{id}/write_store` instead.
          */
         put: operations["archive_export_api_histories__history_id__exports_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/exports/{jeha_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * If ready and available, return raw contents of exported history as a downloadable archive.
          * @deprecated
          * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
-         * of the history export - when ready, that route will return 200 status
-         * code (instead of 202) and this route can be used to download the archive.
+         *     of the history export - when ready, that route will return 200 status
+         *     code (instead of 202) and this route can be used to download the archive.
          *
-         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-         * `/api/histories/{id}/write_store` instead.
+         *     **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         *     `/api/histories/{id}/write_store` instead.
          */
         get: operations["history_archive_download_api_histories__history_id__exports__jeha_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
          * @description Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
          *
-         * **Warning**: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
+         *     **Warning**: We allow anyone to fetch job state information about any object they
+         *     can guess an encoded ID for - it isn't considered protected data. This keeps
+         *     polling IDs as part of state calculation for large histories and collections as
+         *     efficient as possible.
          */
         get: operations["index_jobs_summary_api_histories__history_id__jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
         post: operations["materialize_to_history_api_histories__history_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/prepare_store_download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Return a short term storage token to monitor download of the history. */
         post: operations["prepare_store_download_api_histories__history_id__prepare_store_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
          */
         put: operations["publish_api_histories__history_id__publish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/share_with_users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
          */
         put: operations["share_with_users_api_histories__history_id__share_with_users_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get the current sharing status of the given item.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_histories__history_id__sharing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
         put: operations["set_slug_api_histories__history_id__slug_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tags based on history_id */
         get: operations["index_api_histories__history_id__tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/tags/{tag_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tag based on history_id */
         get: operations["show_api_histories__history_id__tags__tag_name__get"];
         /** Update tag based on history_id */
@@ -933,72 +2422,224 @@ export interface paths {
         post: operations["create_api_histories__history_id__tags__tag_name__post"];
         /** Delete tag based on history_id */
         delete: operations["delete_api_histories__history_id__tags__tag_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_histories__history_id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/histories/{history_id}/write_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_invocations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/from_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Create Invocations From Store
          * @description Create invocation(s) from a supplied model store.
          */
         post: operations["create_invocations_from_store_api_invocations_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show details of workflow invocation step. */
         get: operations["step_api_invocations_steps__step_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get detailed description of a workflow invocation. */
         get: operations["show_invocation_api_invocations__invocation_id__get"];
+        put?: never;
+        post?: never;
         /** Cancel the specified workflow invocation. */
         delete: operations["cancel_invocation_api_invocations__invocation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
          * @description Warning: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
+         *     can guess an encoded ID for - it isn't considered protected data. This keeps
+         *     polling IDs as part of state calculation for large histories and collections as
+         *     efficient as possible.
          */
         get: operations["invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/prepare_store_download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Prepare a workflow invocation export-style download. */
         post: operations["prepare_store_download_api_invocations__invocation_id__prepare_store_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get JSON summarizing invocation for reporting. */
         get: operations["show_invocation_report_api_invocations__invocation_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/report.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get PDF summarizing invocation for reporting. */
         get: operations["show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/step_jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
          * @description Warning: We allow anyone to fetch job state information about any object they
-         * can guess an encoded ID for - it isn't considered protected data. This keeps
-         * polling IDs as part of state calculation for large histories and collections as
-         * efficient as possible.
+         *     can guess an encoded ID for - it isn't considered protected data. This keeps
+         *     polling IDs as part of state calculation for large histories and collections as
+         *     efficient as possible.
          */
         get: operations["invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Show details of workflow invocation step.
          * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
@@ -1006,12 +2647,37 @@ export interface paths {
         get: operations["invocation_step_api_invocations__invocation_id__steps__step_id__get"];
         /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
         put: operations["update_invocation_step_api_invocations__invocation_id__steps__step_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/invocations/{invocation_id}/write_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Prepare a workflow invocation export-style download and write to supplied URI. */
         post: operations["write_store_api_invocations__invocation_id__write_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/job_lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Job Lock Status
          * @description Get job lock status.
@@ -1022,152 +2688,419 @@ export interface paths {
          * @description Set job lock status.
          */
         put: operations["update_job_lock_api_job_lock_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Index */
         get: operations["index_api_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Return jobs for current user
          * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
-         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-         * recycle the old results.
+         *     the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+         *     recycle the old results.
          */
         post: operations["search_jobs_api_jobs_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return dictionary containing description of job data. */
         get: operations["show_job_api_jobs__job_id__get"];
+        put?: never;
+        post?: never;
         /** Cancels specified job */
         delete: operations["cancel_job_api_jobs__job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/common_problems": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Check inputs and job for common potential problems to aid in error reporting */
         get: operations["check_common_problems_api_jobs__job_id__common_problems_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/destination_params": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return destination parameters for specified job. */
         get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/error": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Submits a bug report via the API. */
         post: operations["report_error_api_jobs__job_id__error_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns input datasets created by a job. */
         get: operations["get_inputs_api_jobs__job_id__inputs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return job metrics for specified job. */
         get: operations["get_metrics_api_jobs__job_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/oidc-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get a fresh OIDC token
          * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
          */
         get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/outputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns output datasets created by a job. */
         get: operations["get_outputs_api_jobs__job_id__outputs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/parameters_display": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Resolve parameters as a list for nested display.
          * @description Resolve parameters as a list for nested display.
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
          */
         get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/jobs/{job_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Resumes a paused job. */
         put: operations["resume_paused_job_api_jobs__job_id__resume_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/libraries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a list of summary data for all libraries.
          * @description Returns a list of summary data for all libraries.
          */
         get: operations["index_api_libraries_get"];
+        put?: never;
         /**
          * Creates a new library and returns its summary information.
          * @description Creates a new library and returns its summary information. Currently, only admin users can create libraries.
          */
         post: operations["create_api_libraries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/libraries/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns a list of summary data for all libraries marked as deleted.
          * @description Returns a list of summary data for all libraries marked as deleted.
          */
         get: operations["index_deleted_api_libraries_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/libraries/from_store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Create libraries from a model store. */
         post: operations["create_from_store_api_libraries_from_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/libraries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns summary information about a particular library.
          * @description Returns summary information about a particular library.
          */
         get: operations["show_api_libraries__id__get"];
+        put?: never;
+        post?: never;
         /**
          * Marks the specified library as deleted (or undeleted).
          * @description Marks the specified library as deleted (or undeleted).
-         * Currently, only admin users can delete or restore libraries.
+         *     Currently, only admin users can delete or restore libraries.
          */
         delete: operations["delete_api_libraries__id__delete"];
+        options?: never;
+        head?: never;
         /**
          * Updates the information of an existing library.
          * @description Updates the information of an existing library.
          */
         patch: operations["update_api_libraries__id__patch"];
+        trace?: never;
     };
     "/api/libraries/{id}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Gets the current or available permissions of a particular library.
          * @description Gets the current or available permissions of a particular library.
-         * The results can be paginated and additionally filtered by a query.
+         *     The results can be paginated and additionally filtered by a query.
          */
         get: operations["get_permissions_api_libraries__id__permissions_get"];
+        put?: never;
         /**
          * Sets the permissions to access and manipulate a library.
          * @description Sets the permissions to access and manipulate a library.
          */
         post: operations["set_permissions_api_libraries__id__permissions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/licenses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Lists all available SPDX licenses
          * @description Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/).
          */
         get: operations["index_api_licenses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/licenses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Gets the SPDX license metadata associated with the short identifier
          * @description Returns the license metadata associated with the given
-         * [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
+         *     [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
          */
         get: operations["get_api_licenses__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Records a collection of metrics.
          * @description Record any metrics sent and return some status object.
          */
         post: operations["create_api_metrics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the list of notifications associated with the user.
          * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
          *
-         * You can use the `limit` and `offset` parameters to paginate through the notifications.
+         *     You can use the `limit` and `offset` parameters to paginate through the notifications.
          */
         get: operations["get_user_notifications_api_notifications_get"];
         /** Updates a list of notifications with the requested values in a single request. */
@@ -1179,31 +3112,53 @@ export interface paths {
         post: operations["send_notification_api_notifications_post"];
         /** Deletes a list of notifications received by the user in a single request. */
         delete: operations["delete_user_notifications_api_notifications_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications/broadcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns all currently active broadcasted notifications.
          * @description Only Admin users can access inactive notifications (scheduled or recently expired).
          */
         get: operations["get_all_broadcasted_api_notifications_broadcast_get"];
+        put?: never;
         /**
          * Broadcasts a notification to every user in the system.
          * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
-         * They are typically used to display important information such as maintenance windows or new features.
-         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+         *     They are typically used to display important information such as maintenance windows or new features.
+         *     These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
          *
-         * Broadcasted notifications can include action links that are displayed as buttons.
-         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+         *     Broadcasted notifications can include action links that are displayed as buttons.
+         *     This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
          *
-         * Some key features of broadcasted notifications include:
-         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
-         * - They can be scheduled to be displayed in the future or to expire after a certain time.
-         * - By default, broadcasted notifications are published immediately and expire six months after publication.
-         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+         *     Some key features of broadcasted notifications include:
+         *     - They are not associated with a specific user, so they cannot be deleted or marked as read.
+         *     - They can be scheduled to be displayed in the future or to expire after a certain time.
+         *     - By default, broadcasted notifications are published immediately and expire six months after publication.
+         *     - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
          */
         post: operations["broadcast_notification_api_notifications_broadcast_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications/broadcast/{notification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the information of a specific broadcasted notification.
          * @description Only Admin users can access inactive notifications (scheduled or recently expired).
@@ -1214,209 +3169,537 @@ export interface paths {
          * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
          */
         put: operations["update_broadcasted_notification_api_notifications_broadcast__notification_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
          *
-         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
-         *   The supported channels are returned in the `supported-channels` header.
+         *     - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *       The supported channels are returned in the `supported-channels` header.
          */
         get: operations["get_notification_preferences_api_notifications_preferences_get"];
         /**
          * Updates the user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
          *
-         * - Can be used to completely enable/disable notifications for a particular type (category)
-         * or to enable/disable a particular channel on each category.
+         *     - Can be used to completely enable/disable notifications for a particular type (category)
+         *     or to enable/disable a particular channel on each category.
          */
         put: operations["update_notification_preferences_api_notifications_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Returns the current status summary of the user's notifications since a particular date.
          * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
          */
         get: operations["get_notifications_status_api_notifications_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/notifications/{notification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays information about a notification received by the user. */
         get: operations["show_notification_api_notifications__notification_id__get"];
         /** Updates the state of a notification received by the user. */
         put: operations["update_user_notification_api_notifications__notification_id__put"];
+        post?: never;
         /**
          * Deletes a notification received by the user.
          * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
          *
-         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
-         * - It will be eventually removed from the database by a background task after the expiration time.
-         * - Deleted notifications will be permanently deleted when the expiration time is reached.
+         *     - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+         *     - It will be eventually removed from the database by a background task after the expiration time.
+         *     - Deleted notifications will be permanently deleted when the expiration time is reached.
          */
         delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_store_instances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a list of persisted object store instances defined by the requesting user. */
         get: operations["object_stores__instances_index"];
+        put?: never;
         /** Create a user-bound object store. */
         post: operations["object_stores__create_instance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_store_instances/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Test payload for creating user-bound object store. */
         post: operations["object_stores__test_new_instance_configuration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_store_instances/{user_object_store_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a persisted user object store instance. */
         get: operations["object_stores__instances_get"];
         /** Update or upgrade user object store instance. */
         put: operations["object_stores__instances_update"];
+        post?: never;
         /** Purge user object store instance. */
         delete: operations["object_stores__instances_purge"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_store_templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a list of object store templates available to build user defined object stores from */
         get: operations["object_stores__templates_index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         get: operations["index_api_object_stores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/object_stores/{object_store_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get information about a concrete object store configured with Galaxy. */
         get: operations["show_info_api_object_stores__object_store_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Lists all Pages viewable by the user.
          * @description Get a list with summary information of all Pages available to the user.
          */
         get: operations["index_api_pages_get"];
+        put?: never;
         /**
          * Create a page and return summary information.
          * @description Get a list with details of all Pages available to the user.
          */
         post: operations["create_api_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return a page summary and the content of the last revision.
          * @description Return summary information about a specific Page and the content of the last revision.
          */
         get: operations["show_api_pages__id__get"];
+        put?: never;
+        post?: never;
         /**
          * Marks the specific Page as deleted.
          * @description Marks the Page with the given ID as deleted.
          */
         delete: operations["delete_api_pages__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return a PDF document of the last revision of the Page.
          * @description Return a PDF document of the last revision of the Page.
          *
-         * This feature may not be available in this Galaxy.
+         *     This feature may not be available in this Galaxy.
          */
         get: operations["show_pdf_api_pages__id__pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/disable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item inaccessible by a URL link.
          * @description Makes this item inaccessible by a URL link and return the current sharing status.
          */
         put: operations["disable_link_access_api_pages__id__disable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/enable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item accessible by a URL link.
          * @description Makes this item accessible by a URL link and return the current sharing status.
          */
         put: operations["enable_link_access_api_pages__id__enable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/prepare_download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Return a PDF document of the last revision of the Page.
          * @description Return a STS download link for this page to be downloaded as a PDF.
          *
-         * This feature may not be available in this Galaxy.
+         *     This feature may not be available in this Galaxy.
          */
         post: operations["prepare_pdf_api_pages__id__prepare_download_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
          */
         put: operations["publish_api_pages__id__publish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/share_with_users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
          */
         put: operations["share_with_users_api_pages__id__share_with_users_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get the current sharing status of the given Page.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_pages__id__sharing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
         put: operations["set_slug_api_pages__id__slug_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Undelete the specific Page.
          * @description Marks the Page with the given ID as undeleted.
          */
         put: operations["undelete_api_pages__id__undelete_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/pages/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_pages__id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays a list with information of quotas that are currently active.
          * @description Displays a list with information of quotas that are currently active.
          */
         get: operations["index_api_quotas_get"];
+        put?: never;
         /**
          * Creates a new quota.
          * @description Creates a new quota.
          */
         post: operations["create_api_quotas_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays a list with information of quotas that have been deleted.
          * @description Displays a list with information of quotas that have been deleted.
          */
         get: operations["index_deleted_api_quotas_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas/deleted/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays details on a particular quota that has been deleted.
          * @description Displays details on a particular quota that has been deleted.
          */
         get: operations["deleted_quota_api_quotas_deleted__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas/deleted/{id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /**
          * Restores a previously deleted quota.
          * @description Restores a previously deleted quota.
          */
         post: operations["undelete_api_quotas_deleted__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays details on a particular active quota.
          * @description Displays details on a particular active quota.
@@ -1427,460 +3710,1391 @@ export interface paths {
          * @description Updates an existing quota.
          */
         put: operations["update_api_quotas__id__put"];
+        post?: never;
         /**
          * Deletes an existing quota.
          * @description Deletes an existing quota.
          */
         delete: operations["delete_api_quotas__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/quotas/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Purges a previously deleted quota. */
         post: operations["purge_api_quotas__id__purge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/remote_files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Displays remote files available to the user.
          * @description Lists all remote files available to the user from different sources.
          *
-         * The total count of files and directories is returned in the 'total_matches' header.
+         *     The total count of files and directories is returned in the 'total_matches' header.
          */
         get: operations["index_api_remote_files_get"];
+        put?: never;
         /**
          * Creates a new entry (directory/record) on the remote files source.
          * @description Creates a new entry on the remote files source.
          */
         post: operations["create_entry_api_remote_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/remote_files/plugins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Display plugin information for each of the gxfiles:// URI targets available.
          * @description Display plugin information for each of the gxfiles:// URI targets available.
          */
         get: operations["plugins_api_remote_files_plugins_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Index */
         get: operations["index_api_roles_get"];
+        put?: never;
         /** Create */
         post: operations["create_api_roles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/roles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show */
         get: operations["show_api_roles__id__get"];
+        put?: never;
+        post?: never;
         /** Delete */
         delete: operations["delete_api_roles__id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/roles/{id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Purge */
         post: operations["purge_api_roles__id__purge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/roles/{id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Undelete */
         post: operations["undelete_api_roles__id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/short_term_storage/{storage_request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Serve the staged download specified by request ID. */
         get: operations["serve_api_short_term_storage__storage_request_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/short_term_storage/{storage_request_id}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Determine if specified storage request ID is ready for download. */
         get: operations["is_ready_api_short_term_storage__storage_request_id__ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /**
          * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
          * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
          */
         delete: operations["cleanup_datasets_api_storage_datasets_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/datasets/discarded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns discarded datasets owned by the given user. The results can be paginated. */
         get: operations["discarded_datasets_api_storage_datasets_discarded_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/datasets/discarded/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
         get: operations["discarded_datasets_summary_api_storage_datasets_discarded_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/histories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /**
          * Purges a set of histories by ID. The histories must be owned by the user.
          * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
          */
         delete: operations["cleanup_histories_api_storage_histories_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/histories/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
         get: operations["archived_histories_api_storage_histories_archived_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/histories/archived/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
         get: operations["archived_histories_summary_api_storage_histories_archived_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/histories/discarded": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns all discarded histories associated with the given user. */
         get: operations["discarded_histories_api_storage_histories_discarded_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/storage/histories/discarded/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns information with the total storage space taken by discarded histories associated with the given user. */
         get: operations["discarded_histories_summary_api_storage_histories_discarded_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Apply a new set of tags to an item.
          * @description Replaces the tags associated with an item with the new ones specified in the payload.
          *
-         * - The previous tags will be __deleted__.
-         * - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
+         *     - The previous tags will be __deleted__.
+         *     - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
          */
         put: operations["update_api_tags_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tasks/{task_id}/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Determine state of task ID */
         get: operations["state_api_tasks__task_id__state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Lists all available data tables
          * @description Get the list of all available data tables.
          */
         get: operations["index_api_tool_data_get"];
+        put?: never;
         /** Import a data manager bundle */
         post: operations["create_api_tool_data_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_data/{table_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get details of a given data table
          * @description Get details of a given tool data table.
          */
         get: operations["show_api_tool_data__table_name__get"];
+        put?: never;
+        post?: never;
         /**
          * Removes an item from a data table
          * @description Removes an item from a data table and reloads it to return its updated details.
          */
         delete: operations["delete_api_tool_data__table_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_data/{table_name}/fields/{field_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get information about a particular field in a tool data table
          * @description Reloads a data table and return its details.
          */
         get: operations["show_field_api_tool_data__table_name__fields__field_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get information about a particular field in a tool data table
          * @description Download a file associated with the data table field.
          */
         get: operations["download_field_file_api_tool_data__table_name__fields__field_name__files__file_name__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_data/{table_name}/reload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Reloads a tool data table
          * @description Reloads a data table and return its details.
          */
         get: operations["reload_api_tool_data__table_name__reload_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_shed_repositories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Lists installed tool shed repositories. */
         get: operations["index_api_tool_shed_repositories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_shed_repositories/check_for_updates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Check for updates to the specified repository, or all installed repositories. */
         get: operations["check_for_updates_api_tool_shed_repositories_check_for_updates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tool_shed_repositories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show installed tool shed repository. */
         get: operations["show_api_tool_shed_repositories__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tools/fetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Upload files to Galaxy */
         post: operations["fetch_form_api_tools_fetch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Index
          * @description Return list of available tours.
          */
         get: operations["index_api_tours_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/tours/{tour_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Show
          * @description Return a tour definition.
          */
         get: operations["show_api_tours__tour_id__get"];
+        put?: never;
         /**
          * Update Tour
          * @description Return a tour definition.
          */
         post: operations["update_tour_api_tours__tour_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get Users
          * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
          */
         get: operations["get_users_api_users_get"];
+        put?: never;
         /** Create a new Galaxy user. Only admins can create users for now. */
         post: operations["create_user_api_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/current/recalculate_disk_usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Triggers a recalculation of the current user disk usage.
          * @description This route will be removed in a future version.
          *
-         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         *     Please use `/api/users/current/recalculate_disk_usage` instead.
          */
         put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/deleted": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get Deleted Users
          * @description Return a collection of deleted users. Only admins can see deleted users.
          */
         get: operations["get_deleted_users_api_users_deleted_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/deleted/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return information about a deleted user. Only admins can see deleted users. */
         get: operations["get_deleted_user_api_users_deleted__user_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/deleted/{user_id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Restore a deleted user. Only admins can restore users. */
         post: operations["undelete_user_api_users_deleted__user_id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/recalculate_disk_usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Triggers a recalculation of the current user disk usage.
          * @deprecated
          * @description This route will be removed in a future version.
          *
-         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         *     Please use `/api/users/current/recalculate_disk_usage` instead.
          */
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return information about a specified or the current user. Only admin can see deleted or other users */
         get: operations["get_user_api_users__user_id__get"];
         /** Update the values of a user. Only admin can update others. */
         put: operations["update_user_api_users__user_id__put"];
+        post?: never;
         /** Delete a user. Only admins can delete others or purge users. */
         delete: operations["delete_user_api_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/api_key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return the user's API key */
         get: operations["get_or_create_api_key_api_users__user_id__api_key_get"];
+        put?: never;
         /** Create a new API key for the user */
         post: operations["create_api_key_api_users__user_id__api_key_post"];
         /** Delete the current API key of the user */
         delete: operations["delete_api_key_api_users__user_id__api_key_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/api_key/detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return the user's API key with extra information. */
         get: operations["get_api_key_detailed_api_users__user_id__api_key_detailed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/beacon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return information about beacon share settings
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         get: operations["get_beacon_settings_api_users__user_id__beacon_get"];
+        put?: never;
         /**
          * Change beacon setting
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         post: operations["set_beacon_settings_api_users__user_id__beacon_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/custom_builds": {
-        /** Returns collection of custom builds. */
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**  Returns collection of custom builds. */
         get: operations["get_custom_builds_api_users__user_id__custom_builds_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/custom_builds/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Add new custom build. */
         put: operations["add_custom_builds_api_users__user_id__custom_builds__key__put"];
+        post?: never;
         /** Delete a custom build */
         delete: operations["delete_custom_build_api_users__user_id__custom_builds__key__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/favorites/{object_type}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Add the object to user's favorites */
         put: operations["set_favorite_api_users__user_id__favorites__object_type__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/favorites/{object_type}/{object_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/objectstore_usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return the user's object store usage summary broken down by object store ID */
         get: operations["get_user_objectstore_usage_api_users__user_id__objectstore_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/recalculate_disk_usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Triggers a recalculation of the current user disk usage. */
         put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/send_activation_email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Sends activation email to user. */
         post: operations["send_activation_email_api_users__user_id__send_activation_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/theme/{theme}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Set the user's theme choice */
         put: operations["set_theme_api_users__user_id__theme__theme__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return the user's quota usage summary broken down by quota source */
         get: operations["get_user_usage_api_users__user_id__usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/users/{user_id}/usage/{label}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Return the user's quota usage summary for a given quota source label */
         get: operations["get_user_usage_for_label_api_users__user_id__usage__label__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return Galaxy version information: major/minor version, optional extra info
          * @description Return Galaxy version information: major/minor version, optional extra info.
          */
         get: operations["version_api_version_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Returns visualizations for the current user. */
         get: operations["index_api_visualizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/disable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item inaccessible by a URL link.
          * @description Makes this item inaccessible by a URL link and return the current sharing status.
          */
         put: operations["disable_link_access_api_visualizations__id__disable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/enable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item accessible by a URL link.
          * @description Makes this item accessible by a URL link and return the current sharing status.
          */
         put: operations["enable_link_access_api_visualizations__id__enable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
          */
         put: operations["publish_api_visualizations__id__publish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/share_with_users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
          */
         put: operations["share_with_users_api_visualizations__id__share_with_users_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get the current sharing status of the given Visualization.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_visualizations__id__sharing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
         put: operations["set_slug_api_visualizations__id__slug_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/visualizations/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_visualizations__id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/whoami": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Return information about the current authenticated user
          * @description Return information about the current authenticated user.
          */
         get: operations["whoami_api_whoami_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Lists stored workflows viewable by the user.
          * @description Lists stored workflows viewable by the user.
          */
         get: operations["index_api_workflows_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Displays information needed to run a workflow. */
         get: operations["show_workflow_api_workflows__workflow_id__get"];
+        put?: never;
+        post?: never;
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get state counts for accessible workflow. */
         get: operations["workflows__invocation_counts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/disable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item inaccessible by a URL link.
          * @description Makes this item inaccessible by a URL link and return the current sharing status.
          */
         put: operations["disable_link_access_api_workflows__workflow_id__disable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/enable_link_access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item accessible by a URL link.
          * @description Makes this item accessible by a URL link and return the current sharing status.
          */
         put: operations["enable_link_access_api_workflows__workflow_id__enable_link_access_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
+        put?: never;
         /** Schedule the workflow specified by `workflow_id` to run. */
         post: operations["Invoke_workflow_api_workflows__workflow_id__invocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get detailed description of a workflow invocation.
          * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get"];
+        put?: never;
+        post?: never;
         /**
          * Cancel the specified workflow invocation.
          * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
          * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get JSON summarizing invocation for reporting.
          * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get PDF summarizing invocation for reporting.
          * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
          * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Show details of workflow invocation step.
          * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
@@ -1891,44 +5105,134 @@ export interface paths {
          * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         put: operations["update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
          */
         put: operations["publish_api_workflows__workflow_id__publish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/refactor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /** Updates the workflow stored with the given ID. */
         put: operations["refactor_api_workflows__workflow_id__refactor_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/share_with_users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
          */
         put: operations["share_with_users_api_workflows__workflow_id__share_with_users_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get the current sharing status of the given item.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_workflows__workflow_id__sharing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/slug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
         put: operations["set_slug_api_workflows__workflow_id__slug_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tags based on workflow_id */
         get: operations["index_api_workflows__workflow_id__tags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/tags/{tag_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Show tag based on workflow_id */
         get: operations["show_api_workflows__workflow_id__tags__tag_name__get"];
         /** Update tag based on workflow_id */
@@ -1937,77 +5241,189 @@ export interface paths {
         post: operations["create_api_workflows__workflow_id__tags__tag_name__post"];
         /** Delete tag based on workflow_id */
         delete: operations["delete_api_workflows__workflow_id__tags__tag_name__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/undelete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         /** Remove the deleted flag from a workflow. */
         post: operations["undelete_workflow_api_workflows__workflow_id__undelete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_workflows__workflow_id__unpublish_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get the list of a user's workflow invocations.
          * @deprecated
          */
         get: operations["index_invocations_api_workflows__workflow_id__usage_get"];
+        put?: never;
         /**
          * Schedule the workflow specified by `workflow_id` to run.
          * @deprecated
          */
         post: operations["Invoke_workflow_api_workflows__workflow_id__usage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get detailed description of a workflow invocation.
          * @deprecated
          * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get"];
+        put?: never;
+        post?: never;
         /**
          * Cancel the specified workflow invocation.
          * @deprecated
          * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}/jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
          * @deprecated
          * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get JSON summarizing invocation for reporting.
          * @deprecated
          * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}/report.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get PDF summarizing invocation for reporting.
          * @deprecated
          * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}/step_jobs_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
          * @deprecated
          * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /**
          * Show details of workflow invocation step.
          * @deprecated
@@ -2020,31 +5436,85 @@ export interface paths {
          * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         put: operations["update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/api/workflows/{workflow_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** List all versions of a workflow. */
         get: operations["show_versions_api_workflows__workflow_id__versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/ga4gh/drs/v1/objects/{object_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get Object */
         get: operations["get_object_ga4gh_drs_v1_objects__object_id__get"];
+        put?: never;
         /** Get Object */
         post: operations["get_object_ga4gh_drs_v1_objects__object_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/ga4gh/drs/v1/objects/{object_id}/access/{access_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Get Access Url */
         get: operations["get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__get"];
+        put?: never;
         /** Get Access Url */
         post: operations["get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
     "/ga4gh/drs/v1/service-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         /** Service Info */
         get: operations["service_info_ga4gh_drs_v1_service_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
 }
-
 export type webhooks = Record<string, never>;
-
 export interface components {
     schemas: {
         /** APIKeyModel */
@@ -2120,22 +5590,21 @@ export interface components {
         /** AddInputAction */
         AddInputAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "add_input";
             /** Collection Type */
             collection_type?: string | null;
             /** Default */
-            default?: unknown;
+            default?: unknown | null;
             /** Label */
             label?: string | null;
             /**
              * Optional
              * @default false
              */
-            optional?: boolean | null;
+            optional: boolean | null;
             position?: components["schemas"]["Position"] | null;
             /** Restrict On Connections */
             restrict_on_connections?: boolean | null;
@@ -2150,14 +5619,13 @@ export interface components {
          * AddStepAction
          * @description Add a new action to the workflow.
          *
-         * After the workflow is updated, an order_index will be assigned
-         * and this step may cause other steps to have their output_index
-         * adjusted.
+         *     After the workflow is updated, an order_index will be assigned
+         *     and this step may cause other steps to have their output_index
+         *     adjusted.
          */
         AddStepAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "add_step";
@@ -2206,7 +5674,7 @@ export interface components {
              * @description Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.
              * @default false
              */
-            purge_history?: boolean;
+            purge_history: boolean;
         };
         /** ArchivedHistoryDetailed */
         ArchivedHistoryDetailed: {
@@ -2251,7 +5719,7 @@ export interface components {
              * @description TODO
              * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -2309,14 +5777,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[];
+                [key: string]: string[] | undefined;
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -2513,7 +5981,7 @@ export interface components {
              * All Datasets
              * @default true
              */
-            all_datasets?: unknown;
+            all_datasets: unknown;
             /** Archive File */
             archive_file?: unknown;
             /** Archive Source */
@@ -2522,7 +5990,7 @@ export interface components {
              * Archive Type
              * @default url
              */
-            archive_type?: unknown;
+            archive_type: unknown;
             /** History Id */
             history_id?: unknown;
             /** Name */
@@ -2545,12 +6013,10 @@ export interface components {
              */
             action_links?: components["schemas"]["ActionLink"][] | null;
             /**
-             * Category
-             * @default broadcast
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            category?: "broadcast";
+            category: "broadcast";
             /**
              * Message
              * @description The message of the notification (supports Markdown).
@@ -2573,7 +6039,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            category?: "broadcast";
+            category: "broadcast";
             /**
              * Content
              * @description The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.
@@ -2616,7 +6082,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            category?: "broadcast";
+            category: "broadcast";
             content: components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -2694,12 +6160,12 @@ export interface components {
             /**
              * @description Features supported by this file source.
              * @default {
-             *   "pagination": false,
-             *   "search": false,
-             *   "sorting": false
-             * }
+             *       "pagination": false,
+             *       "search": false,
+             *       "sorting": false
+             *     }
              */
-            supports?: components["schemas"]["FilesSourceSupports"];
+            supports: components["schemas"]["FilesSourceSupports"];
             /**
              * Type
              * @description The type of the plugin.
@@ -2773,8 +6239,8 @@ export interface components {
             /**
              * Type
              * @description The digest method used to create the checksum.
-             * The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
-             * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
+             *     The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
+             *     GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.
              */
             type: string;
         };
@@ -2843,7 +6309,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             composite: components["schemas"]["CompositeItems"];
@@ -2853,12 +6319,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -2866,7 +6332,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -2876,10 +6342,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "composite";
@@ -2889,7 +6354,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** CompositeFileInfo */
         CompositeFileInfo: {
@@ -2945,7 +6410,7 @@ export interface components {
              * @description Hash function name to use to compute dataset hashes.
              * @default MD5
              */
-            hash_function?: components["schemas"]["HashFunctionNameEnum"] | null;
+            hash_function: components["schemas"]["HashFunctionNameEnum"] | null;
         };
         /** ConcreteObjectStoreModel */
         ConcreteObjectStoreModel: {
@@ -2979,8 +6444,7 @@ export interface components {
         /** ConnectAction */
         ConnectAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "connect";
@@ -3018,11 +6482,11 @@ export interface components {
          * ConvertedDatasetsMap
          * @description Map of `file extension` -> `converted dataset encoded id`
          * @example {
-         *   "csv": "dataset_id"
-         * }
+         *       "csv": "dataset_id"
+         *     }
          */
         ConvertedDatasetsMap: {
-            [key: string]: string;
+            [key: string]: string | undefined;
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -3055,10 +6519,11 @@ export interface components {
             /**
              * Content
              * @description Depending on the `source` it can be:
-             * - The encoded id from the library dataset
-             * - The encoded id from the library folder
-             * - The encoded id from the HDA
-             * - The encoded id from the HDCA
+             *     - The encoded id from the library dataset
+             *     - The encoded id from the library folder
+             *     - The encoded id from the HDA
+             *     - The encoded id from the HDCA
+             *
              */
             content?: string | null;
             /**
@@ -3066,7 +6531,7 @@ export interface components {
              * @description If the source is a collection, whether to copy child HDAs into the target history as well. Prior to the galaxy release 23.1 this defaulted to false.
              * @default true
              */
-            copy_elements?: boolean | null;
+            copy_elements: boolean | null;
             /**
              * DBKey
              * @description TODO
@@ -3087,7 +6552,7 @@ export interface components {
              * @description Whether to mark the original HDAs as hidden.
              * @default false
              */
-            hide_source_items?: boolean | null;
+            hide_source_items: boolean | null;
             /**
              * History Id
              * @description The ID of the history that will contain the collection. Required if `instance_type=history`.
@@ -3098,7 +6563,7 @@ export interface components {
              * @description The type of the instance, either `history` (default) or `library`.
              * @default history
              */
-            instance_type?: ("history" | "library") | null;
+            instance_type: ("history" | "library") | null;
             /**
              * Name
              * @description The name of the new collection.
@@ -3114,7 +6579,7 @@ export interface components {
              * @description The type of content to be created in the history.
              * @default dataset
              */
-            type?: components["schemas"]["HistoryContentType"] | null;
+            type: components["schemas"]["HistoryContentType"] | null;
             [key: string]: unknown;
         };
         /** CreateHistoryFromStore */
@@ -3133,7 +6598,7 @@ export interface components {
             name: string;
             /** Secrets */
             secrets: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             };
             /** Template Id */
             template_id: string;
@@ -3141,7 +6606,7 @@ export interface components {
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: string | boolean | number;
+                [key: string]: (string | boolean | number) | undefined;
             };
         };
         /** CreateInvocationsFromStorePayload */
@@ -3156,19 +6621,19 @@ export interface components {
              * Legacy Job State
              * @deprecated
              * @description Populate the invocation step state with the job state instead of the invocation step state.
-             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-             *         are not the mapped over step outputs but the individual job outputs.
+             *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *             are not the mapped over step outputs but the individual job outputs.
              * @default false
              */
-            legacy_job_state?: boolean;
+            legacy_job_state: boolean;
             model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
             /**
              * Include step details
              * @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary
              * @default false
              */
-            step_details?: boolean;
+            step_details: boolean;
             /** Store Content Uri */
             store_content_uri?: string | null;
             /** Store Dict */
@@ -3204,7 +6669,7 @@ export interface components {
              * @description The new message attribute of the LDDA created.
              * @default
              */
-            ldda_message?: string | null;
+            ldda_message: string | null;
         };
         /** CreateLibraryFolderPayload */
         CreateLibraryFolderPayload: {
@@ -3213,7 +6678,7 @@ export interface components {
              * @description A detailed description of the library folder.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * Name
              * @description The name of the library folder.
@@ -3227,7 +6692,7 @@ export interface components {
              * @description A detailed description of the Library.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * Name
              * @description The name of the Library.
@@ -3238,7 +6703,7 @@ export interface components {
              * @description A short text describing the contents of the Library.
              * @default
              */
-            synopsis?: string | null;
+            synopsis: string | null;
         };
         /** CreateMetricsPayload */
         CreateMetricsPayload: {
@@ -3246,7 +6711,7 @@ export interface components {
              * List of metrics to be recorded.
              * @default []
              */
-            metrics?: components["schemas"]["Metric"][];
+            metrics: components["schemas"]["Metric"][];
         };
         /** CreateNewCollectionPayload */
         CreateNewCollectionPayload: {
@@ -3260,7 +6725,7 @@ export interface components {
              * @description Whether to create a copy of the source HDAs for the new collection.
              * @default true
              */
-            copy_elements?: boolean | null;
+            copy_elements: boolean | null;
             /**
              * Element Identifiers
              * @description List of elements that should be in the new collection.
@@ -3276,7 +6741,7 @@ export interface components {
              * @description Whether to mark the original HDAs as hidden.
              * @default false
              */
-            hide_source_items?: boolean | null;
+            hide_source_items: boolean | null;
             /**
              * History Id
              * @description The ID of the history that will contain the collection. Required if `instance_type=history`.
@@ -3287,7 +6752,7 @@ export interface components {
              * @description The type of the instance, either `history` (default) or `library`.
              * @default history
              */
-            instance_type?: ("history" | "library") | null;
+            instance_type: ("history" | "library") | null;
             /**
              * Name
              * @description The name of the new collection.
@@ -3306,13 +6771,13 @@ export interface components {
              * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
-            content?: string | null;
+            content: string | null;
             /**
              * Content format
              * @description Either `markdown` or `html`.
              * @default html
              */
-            content_format?: components["schemas"]["PageContentFormat"];
+            content_format: components["schemas"]["PageContentFormat"];
             /**
              * Workflow invocation ID
              * @description Encoded ID used by workflow generated reports.
@@ -3342,7 +6807,7 @@ export interface components {
              * @description Whether or not this is a default quota. Valid values are ``no``, ``unregistered``, ``registered``. None is equivalent to ``no``.
              * @default no
              */
-            default?: components["schemas"]["DefaultQuotaValues"];
+            default: components["schemas"]["DefaultQuotaValues"];
             /**
              * Description
              * @description Detailed text description for this Quota.
@@ -3353,13 +6818,13 @@ export interface components {
              * @description A list of group IDs or names to associate with this quota.
              * @default []
              */
-            in_groups?: string[] | null;
+            in_groups: string[] | null;
             /**
              * Users
              * @description A list of user IDs or user emails to associate with this quota.
              * @default []
              */
-            in_users?: string[] | null;
+            in_users: string[] | null;
             /**
              * Name
              * @description The name of the quota. This must be unique within a Galaxy instance.
@@ -3370,7 +6835,7 @@ export interface components {
              * @description Quotas can have one of three `operations`:- `=` : The quota is exactly the amount specified- `+` : The amount specified will be added to the amounts of the user's other associated quota definitions- `-` : The amount specified will be subtracted from the amounts of the user's other associated quota definitions
              * @default =
              */
-            operation?: components["schemas"]["QuotaOperation"];
+            operation: components["schemas"]["QuotaOperation"];
             /**
              * Quota Source Label
              * @description If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.
@@ -3507,7 +6972,7 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             contents_states?: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             } | null;
             /**
              * Contents URL
@@ -3600,14 +7065,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details?: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             } | null;
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids?: {
-                [key: string]: string[];
+                [key: string]: string[] | undefined;
             } | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
@@ -3704,8 +7169,9 @@ export interface components {
             /**
              * Fasta HDAs
              * @description A list of label/value pairs with all the datasets of type `FASTA` contained in the History.
-             *  - `label` is item position followed by the name of the dataset.
-             *  - `value` is the encoded database ID of the dataset.
+             *      - `label` is item position followed by the name of the dataset.
+             *      - `value` is the encoded database ID of the dataset.
+             *
              */
             fasta_hdas: components["schemas"]["LabelValuePair"][];
             /**
@@ -3736,7 +7202,7 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             contents_states?: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             } | null;
             /**
              * Contents URL
@@ -3824,14 +7290,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details?: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             } | null;
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids?: {
-                [key: string]: string[];
+                [key: string]: string[] | undefined;
             } | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
@@ -3931,7 +7397,7 @@ export interface components {
              * @description The summary information of each of the elements inside the dataset collection.
              * @default []
              */
-            elements?: components["schemas"]["DCESummary"][];
+            elements: components["schemas"]["DCESummary"][];
             /**
              * Dataset Collection ID
              * @example 0123456789ABCDEF
@@ -3957,7 +7423,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Destination */
             destination:
                 | components["schemas"]["HdaDestination"]
@@ -3981,7 +7447,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Destination */
             destination:
                 | components["schemas"]["HdaDestination"]
@@ -4013,19 +7479,19 @@ export interface components {
              * @description A list of roles that can access the dataset. The user has to **have all these roles** in order to access this dataset. Users without access permission **cannot** have other permissions on this dataset. If there are no access roles set on the dataset it is considered **unrestricted**.
              * @default []
              */
-            access_dataset_roles?: string[][];
+            access_dataset_roles: string[][];
             /**
              * Manage Roles
              * @description A list of roles that can manage permissions on the dataset. Users with **any** of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability to manage this dataset unless you are an admin.
              * @default []
              */
-            manage_dataset_roles?: string[][];
+            manage_dataset_roles: string[][];
             /**
              * Modify Roles
              * @description A list of roles that can modify the library item. This is a library related permission. User with **any** of these roles can modify name, metadata, and other information about this library item.
              * @default []
              */
-            modify_item_roles?: string[][];
+            modify_item_roles: string[][];
         };
         /** DatasetCollectionAttributesResult */
         DatasetCollectionAttributesResult: {
@@ -4147,13 +7613,13 @@ export interface components {
              * @description The set of roles (encoded IDs) that can access this dataset.
              * @default []
              */
-            access?: string[];
+            access: string[];
             /**
              * Management
              * @description The set of roles (encoded IDs) that can manage this dataset.
              * @default []
              */
-            manage?: string[];
+            manage: string[];
         };
         /** DatasetSource */
         DatasetSource: {
@@ -4337,7 +7803,7 @@ export interface components {
              * @description If True, the associated file extension will be displayed in the `File Format` select list in the `Upload File from your computer` tool in the `Get Data` tool section of the tool panel
              * @default false
              */
-            display_in_upload?: boolean;
+            display_in_upload: boolean;
             /**
              * Extension
              * @description The data type’s Dataset file extension
@@ -4385,7 +7851,7 @@ export interface components {
          * @default {}
          */
         DatatypesEDAMDetailsDict: {
-            [key: string]: components["schemas"]["DatatypeEDAMDetails"];
+            [key: string]: components["schemas"]["DatatypeEDAMDetails"] | undefined;
         };
         /** DatatypesMap */
         DatatypesMap: {
@@ -4394,16 +7860,18 @@ export interface components {
              * @description Dictionary mapping datatype's classes with their base classes
              */
             class_to_classes: {
-                [key: string]: {
-                    [key: string]: boolean;
-                };
+                [key: string]:
+                    | {
+                          [key: string]: boolean | undefined;
+                      }
+                    | undefined;
             };
             /**
              * Extension Map
              * @description Dictionary mapping datatype's extensions with implementation classes
              */
             ext_to_class_name: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             };
         };
         /** DefaultQuota */
@@ -4418,8 +7886,9 @@ export interface components {
             /**
              * Type
              * @description The type of the default quota. Either one of:
-             *  - `registered`: the associated quota will affect registered users.
-             *  - `unregistered`: the associated quota will affect unregistered users.
+             *      - `registered`: the associated quota will affect registered users.
+             *      - `unregistered`: the associated quota will affect unregistered users.
+             *
              */
             type: components["schemas"]["DefaultQuotaTypes"];
         };
@@ -4445,7 +7914,7 @@ export interface components {
              * @description Whether to permanently delete from disk the specified datasets. *Warning*: this is a destructive operation.
              * @default false
              */
-            purge?: boolean | null;
+            purge: boolean | null;
         };
         /** DeleteDatasetBatchResult */
         DeleteDatasetBatchResult: {
@@ -4472,7 +7941,7 @@ export interface components {
              * @description Whether to definitely remove this history from disk.
              * @default false
              */
-            purge?: boolean;
+            purge: boolean;
         };
         /** DeleteHistoryContentPayload */
         DeleteHistoryContentPayload: {
@@ -4481,25 +7950,25 @@ export interface components {
              * @description Whether to remove the dataset from storage. Datasets will only be removed from storage once all HDAs or LDDAs that refer to this datasets are deleted.
              * @default false
              */
-            purge?: boolean;
+            purge: boolean;
             /**
              * Recursive
              * @description When deleting a dataset collection, whether to also delete containing datasets.
              * @default false
              */
-            recursive?: boolean;
+            recursive: boolean;
             /**
              * Stop Job
              * @description Whether to stop the creating job if all the job's outputs are deleted.
              * @default false
              */
-            stop_job?: boolean;
+            stop_job: boolean;
         };
         /**
          * DeleteHistoryContentResult
          * @description Contains minimum information about the deletion state of a history item.
          *
-         * Can also contain any other properties of the item.
+         *     Can also contain any other properties of the item.
          */
         DeleteHistoryContentResult: {
             /**
@@ -4526,7 +7995,7 @@ export interface components {
              * @description Whether to definitely remove this history from disk.
              * @default false
              */
-            purge?: boolean;
+            purge: boolean;
         };
         /** DeleteJobPayload */
         DeleteJobPayload: {
@@ -4551,7 +8020,7 @@ export interface components {
              * @description Whether to also purge the Quota after deleting it.
              * @default false
              */
-            purge?: boolean;
+            purge: boolean;
         };
         /** DeletedCustomBuild */
         DeletedCustomBuild: {
@@ -4638,8 +8107,7 @@ export interface components {
         /** DisconnectAction */
         DisconnectAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "disconnect";
@@ -4668,7 +8136,7 @@ export interface components {
         };
         /** DisplayApplication */
         DisplayApplication: {
-            /** Filename */
+            /** Filename  */
             filename_: string;
             /** Id */
             id: string;
@@ -4684,7 +8152,7 @@ export interface components {
             /**
              * Access Methods
              * @description The list of access methods that can be used to fetch the `DrsObject`.
-             * Required for single blobs; optional for bundles.
+             *     Required for single blobs; optional for bundles.
              */
             access_methods?: components["schemas"]["AccessMethod"][] | null;
             /**
@@ -4695,30 +8163,30 @@ export interface components {
             /**
              * Checksums
              * @description The checksum of the `DrsObject`. At least one checksum must be provided.
-             * For blobs, the checksum is computed over the bytes in the blob.
-             * For bundles, the checksum is computed over a sorted concatenation of the checksums of its top-level contained objects (not recursive, names not included). The list of checksums is sorted alphabetically (hex-code) before concatenation and a further checksum is performed on the concatenated checksum value.
-             * For example, if a bundle contains blobs with the following checksums:
-             * md5(blob1) = 72794b6d
-             * md5(blob2) = 5e089d29
-             * Then the checksum of the bundle is:
-             * md5( concat( sort( md5(blob1), md5(blob2) ) ) )
-             * = md5( concat( sort( 72794b6d, 5e089d29 ) ) )
-             * = md5( concat( 5e089d29, 72794b6d ) )
-             * = md5( 5e089d2972794b6d )
-             * = f7a29a04
+             *     For blobs, the checksum is computed over the bytes in the blob.
+             *     For bundles, the checksum is computed over a sorted concatenation of the checksums of its top-level contained objects (not recursive, names not included). The list of checksums is sorted alphabetically (hex-code) before concatenation and a further checksum is performed on the concatenated checksum value.
+             *     For example, if a bundle contains blobs with the following checksums:
+             *     md5(blob1) = 72794b6d
+             *     md5(blob2) = 5e089d29
+             *     Then the checksum of the bundle is:
+             *     md5( concat( sort( md5(blob1), md5(blob2) ) ) )
+             *     = md5( concat( sort( 72794b6d, 5e089d29 ) ) )
+             *     = md5( concat( 5e089d29, 72794b6d ) )
+             *     = md5( 5e089d2972794b6d )
+             *     = f7a29a04
              */
             checksums: components["schemas"]["Checksum"][];
             /**
              * Contents
              * @description If not set, this `DrsObject` is a single blob.
-             * If set, this `DrsObject` is a bundle containing the listed `ContentsObject` s (some of which may be further nested).
+             *     If set, this `DrsObject` is a bundle containing the listed `ContentsObject` s (some of which may be further nested).
              */
             contents?: components["schemas"]["ContentsObject"][] | null;
             /**
              * Created Time
              * Format: date-time
              * @description Timestamp of content creation in RFC3339.
-             * (This is the creation time of the underlying content, not of the JSON object.)
+             *     (This is the creation time of the underlying content, not of the JSON object.)
              */
             created_time: string;
             /**
@@ -4739,19 +8207,19 @@ export interface components {
             /**
              * Name
              * @description A string that can be used to name a `DrsObject`.
-             * This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             *     This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name?: string | null;
             /**
              * Self Uri
              * @description A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.
-             * The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
+             *     The intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.
              */
             self_uri: string;
             /**
              * Size
              * @description For blobs, the blob size in bytes.
-             * For bundles, the cumulative size, in bytes, of items in the `contents` field.
+             *     For bundles, the cumulative size, in bytes, of items in the `contents` field.
              */
             size: number;
             /**
@@ -4762,7 +8230,7 @@ export interface components {
             /**
              * Version
              * @description A string representing a version.
-             * (Some systems may use checksum, a RFC3339 timestamp, or an incrementing version number.)
+             *     (Some systems may use checksum, a RFC3339 timestamp, or an incrementing version number.)
              */
             version?: string | null;
         };
@@ -4902,8 +8370,8 @@ export interface components {
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
              * @default {}
              */
-            inputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
+            inputs: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
             };
             /**
              * Job Runner Name
@@ -4921,16 +8389,16 @@ export interface components {
              * Output collections
              * @default {}
              */
-            output_collections?: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
+            output_collections: {
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
             };
             /**
              * Outputs
              * @description Dictionary mapping all the tool outputs (by name) to the corresponding data references.
              * @default {}
              */
-            outputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
+            outputs: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
             };
             /**
              * Parameters
@@ -4998,19 +8466,19 @@ export interface components {
              * @description Whether to export as gzip archive.
              * @default true
              */
-            gzip?: boolean | null;
+            gzip: boolean | null;
             /**
              * Include Deleted
              * @description Whether to include deleted datasets in the exported archive.
              * @default false
              */
-            include_deleted?: boolean | null;
+            include_deleted: boolean | null;
             /**
              * Include Hidden
              * @description Whether to include hidden datasets in the exported archive.
              * @default false
              */
-            include_hidden?: boolean | null;
+            include_hidden: boolean | null;
         };
         /** ExportObjectMetadata */
         ExportObjectMetadata: {
@@ -5055,24 +8523,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
             /**
              * Target URI
              * @description Galaxy Files URI to write mode store content to.
@@ -5098,7 +8566,7 @@ export interface components {
              * @description Prevent Galaxy from checking for a single file in a directory and re-interpreting the archive
              * @default true
              */
-            fuzzy_root?: boolean | null;
+            fuzzy_root: boolean | null;
             /** Items From */
             items_from?: string | null;
             src: components["schemas"]["Src"];
@@ -5111,8 +8579,7 @@ export interface components {
         /** ExtractInputAction */
         ExtractInputAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "extract_input";
@@ -5125,8 +8592,7 @@ export interface components {
         /** ExtractUntypedParameter */
         ExtractUntypedParameter: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "extract_untyped_parameter";
@@ -5184,7 +8650,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -5193,12 +8659,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -5206,7 +8672,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -5216,10 +8682,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "files";
@@ -5229,13 +8694,12 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** FileDefaultsAction */
         FileDefaultsAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "fill_defaults";
@@ -5288,8 +8752,7 @@ export interface components {
             state: components["schemas"]["DatasetState"];
             tags: components["schemas"]["TagCollection"];
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "file";
@@ -5310,7 +8773,7 @@ export interface components {
              * Hidden
              * @default false
              */
-            hidden?: boolean;
+            hidden: boolean;
             /** Id */
             id: string;
             /** Name */
@@ -5335,7 +8798,7 @@ export interface components {
              * Version
              * @default 0
              */
-            version?: number;
+            version: number;
         };
         /** FilesSourcePlugin */
         FilesSourcePlugin: {
@@ -5372,12 +8835,12 @@ export interface components {
             /**
              * @description Features supported by this file source.
              * @default {
-             *   "pagination": false,
-             *   "search": false,
-             *   "sorting": false
-             * }
+             *       "pagination": false,
+             *       "search": false,
+             *       "sorting": false
+             *     }
              */
-            supports?: components["schemas"]["FilesSourceSupports"];
+            supports: components["schemas"]["FilesSourceSupports"];
             /**
              * Type
              * @description The type of the plugin.
@@ -5409,25 +8872,24 @@ export interface components {
              * @description Whether this file source supports server-side pagination.
              * @default false
              */
-            pagination?: boolean;
+            pagination: boolean;
             /**
              * Search
              * @description Whether this file source supports server-side search.
              * @default false
              */
-            search?: boolean;
+            search: boolean;
             /**
              * Sorting
              * @description Whether this file source supports server-side sorting.
              * @default false
              */
-            sorting?: boolean;
+            sorting: boolean;
         };
         /** FillStepDefaultsAction */
         FillStepDefaultsAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "fill_step_defaults";
@@ -5453,7 +8915,7 @@ export interface components {
              * @description A detailed description of the library folder.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * Id
              * @example 0123456789ABCDEF
@@ -5462,8 +8924,7 @@ export interface components {
             /** Name */
             name: string;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "folder";
@@ -5483,7 +8944,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -5492,12 +8953,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -5505,7 +8966,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Ftp Path */
             ftp_path: string;
@@ -5517,10 +8978,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "ftp_import";
@@ -5530,7 +8990,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** FtpImportTarget */
         FtpImportTarget: {
@@ -5539,7 +8999,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
@@ -5568,12 +9028,12 @@ export interface components {
              * role IDs
              * @default []
              */
-            role_ids?: string[];
+            role_ids: string[];
             /**
              * user IDs
              * @default []
              */
-            user_ids?: string[];
+            user_ids: string[];
         };
         /**
          * GroupListResponse
@@ -5842,7 +9302,7 @@ export interface components {
              * Metadata
              * @description The metadata associated with this dataset.
              */
-            metadata?: unknown;
+            metadata?: unknown | null;
             /**
              * Miscellaneous Blurb
              * @description TODO
@@ -5968,7 +9428,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            api_type?: "file";
+            api_type: "file";
             /** Copied From Ldda Id */
             copied_from_ldda_id?: string | null;
             /**
@@ -6047,7 +9507,7 @@ export interface components {
              * @description TODO
              * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * Hashes
              * @description The list of hashes associated with this dataset.
@@ -6058,7 +9518,7 @@ export interface components {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"];
+            hda_ldda: components["schemas"]["DatasetSourceType"];
             /**
              * HID
              * @description The index position of this item in the History.
@@ -6090,7 +9550,7 @@ export interface components {
              * Metadata
              * @description The metadata associated with this dataset.
              */
-            metadata?: unknown;
+            metadata?: unknown | null;
             /**
              * Miscellaneous Blurb
              * @description TODO
@@ -6156,7 +9616,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            type?: "file";
+            type: "file";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
@@ -6292,7 +9752,7 @@ export interface components {
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              * @default hda
              */
-            hda_ldda?: components["schemas"]["DatasetSourceType"];
+            hda_ldda: components["schemas"]["DatasetSourceType"];
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -6354,7 +9814,7 @@ export interface components {
              * @description TODO
              * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * HID
              * @description The index position of this item in the History.
@@ -6460,7 +9920,7 @@ export interface components {
              * @description The summary information of each of the elements inside the dataset collection.
              * @default []
              */
-            elements?: components["schemas"]["DCESummary"][];
+            elements: components["schemas"]["DCESummary"][];
             /**
              * Elements Datatypes
              * @description A set containing all the different element datatypes in the collection.
@@ -6543,7 +10003,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            type?: "collection";
+            type: "collection";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
@@ -6668,7 +10128,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            type?: "collection";
+            type: "collection";
             /**
              * Type - ID
              * @description The type and the encoded ID of this item. Used for caching.
@@ -6701,85 +10161,85 @@ export interface components {
              * @description Total number of jobs associated with a dataset collection.
              * @default 0
              */
-            all_jobs?: number;
+            all_jobs: number;
             /**
              * Deleted jobs
              * @description Number of jobs in the `deleted` state.
              * @default 0
              */
-            deleted?: number;
+            deleted: number;
             /**
              * Deleted new jobs
              * @description Number of jobs in the `deleted_new` state.
              * @default 0
              */
-            deleted_new?: number;
+            deleted_new: number;
             /**
              * Jobs with errors
              * @description Number of jobs in the `error` state.
              * @default 0
              */
-            error?: number;
+            error: number;
             /**
              * Failed jobs
              * @description Number of jobs in the `failed` state.
              * @default 0
              */
-            failed?: number;
+            failed: number;
             /**
              * New jobs
              * @description Number of jobs in the `new` state.
              * @default 0
              */
-            new?: number;
+            new: number;
             /**
              * OK jobs
              * @description Number of jobs in the `ok` state.
              * @default 0
              */
-            ok?: number;
+            ok: number;
             /**
              * Paused jobs
              * @description Number of jobs in the `paused` state.
              * @default 0
              */
-            paused?: number;
+            paused: number;
             /**
              * Queued jobs
              * @description Number of jobs in the `queued` state.
              * @default 0
              */
-            queued?: number;
+            queued: number;
             /**
              * Resubmitted jobs
              * @description Number of jobs in the `resubmitted` state.
              * @default 0
              */
-            resubmitted?: number;
+            resubmitted: number;
             /**
              * Running jobs
              * @description Number of jobs in the `running` state.
              * @default 0
              */
-            running?: number;
+            running: number;
             /**
              * Skipped jobs
              * @description Number of jobs that were skipped due to conditional workflow step execution.
              * @default 0
              */
-            skipped?: number;
+            skipped: number;
             /**
              * Upload jobs
              * @description Number of jobs in the `upload` state.
              * @default 0
              */
-            upload?: number;
+            upload: number;
             /**
              * Waiting jobs
              * @description Number of jobs in the `waiting` state.
              * @default 0
              */
-            waiting?: number;
+            waiting: number;
         };
         /**
          * HashFunctionNameEnum
@@ -6796,8 +10256,7 @@ export interface components {
         /** HdaDestination */
         HdaDestination: {
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "hdas";
@@ -6809,7 +10268,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
@@ -6835,7 +10294,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             destination: components["schemas"]["HdcaDestination"];
@@ -6943,7 +10402,7 @@ export interface components {
          * HelpForumSearchResponse
          * @description Response model for the help search API endpoint.
          *
-         * This model is based on the Discourse API response for the search endpoint.
+         *     This model is based on the Discourse API response for the search endpoint.
          */
         HelpForumSearchResponse: {
             /**
@@ -7090,7 +10549,7 @@ export interface components {
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.
              */
-            tags_descriptions?: unknown;
+            tags_descriptions?: unknown | null;
             /**
              * Title
              * @description The title of the topic.
@@ -7208,7 +10667,7 @@ export interface components {
         /**
          * HistoryContentsResult
          * @description List of history content items.
-         * Can contain different views and kinds of items.
+         *     Can contain different views and kinds of items.
          */
         HistoryContentsResult: (
             | components["schemas"]["HDACustom"]
@@ -7282,7 +10741,7 @@ export interface components {
              * @description TODO
              * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -7340,14 +10799,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[];
+                [key: string]: string[] | undefined;
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -7478,9 +10937,7 @@ export interface components {
              */
             id: string;
             /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
+             * @description The name of the database model class. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             model: "ImplicitCollectionJobs";
@@ -7494,8 +10951,8 @@ export interface components {
              * @description A dictionary of job states and the number of jobs in that state.
              * @default {}
              */
-            states?: {
-                [key: string]: number;
+            states: {
+                [key: string]: number | undefined;
             };
         };
         /** ImportToolDataBundle */
@@ -7513,8 +10970,7 @@ export interface components {
              */
             id: string;
             /**
-             * src
-             * @description Indicates that the tool data should be resolved from a dataset.
+             * @description Indicates that the tool data should be resolved from a dataset. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             src: "hda" | "ldda";
@@ -7522,9 +10978,7 @@ export interface components {
         /** ImportToolDataBundleUriSource */
         ImportToolDataBundleUriSource: {
             /**
-             * src
-             * @description Indicates that the tool data should be resolved by a URI.
-             * @constant
+             * @description Indicates that the tool data should be resolved by a URI. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             src: "uri";
@@ -7551,7 +11005,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -7594,7 +11048,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -7637,7 +11091,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -7739,7 +11193,7 @@ export interface components {
              * Error Message
              * @default Installation error message, the empty string means no error was recorded
              */
-            error_message?: string;
+            error_message: string;
             /**
              * ID
              * @description Encoded ID of the install tool shed repository.
@@ -7789,8 +11243,7 @@ export interface components {
              */
             history_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "history_deleted";
@@ -7798,8 +11251,7 @@ export interface components {
         /** InvocationCancellationReviewFailedResponse */
         InvocationCancellationReviewFailedResponse: {
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "cancelled_on_review";
@@ -7812,8 +11264,7 @@ export interface components {
         /** InvocationCancellationUserRequestResponse */
         InvocationCancellationUserRequestResponse: {
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "user_request";
@@ -7826,8 +11277,7 @@ export interface components {
              */
             output_name: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "workflow_output_not_found";
@@ -7848,8 +11298,7 @@ export interface components {
              */
             hdca_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "collection_failed";
@@ -7873,8 +11322,7 @@ export interface components {
              */
             hda_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "dataset_failed";
@@ -7892,8 +11340,7 @@ export interface components {
              */
             details?: string | null;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "expression_evaluation_failed";
@@ -7917,8 +11364,7 @@ export interface components {
              */
             job_id: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "job_failed";
@@ -7938,8 +11384,7 @@ export interface components {
             /** Tool or module output name that was referenced but not produced */
             output_name: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "output_not_found";
@@ -7957,8 +11402,7 @@ export interface components {
              */
             details: string;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "when_not_boolean";
@@ -8035,7 +11479,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
         };
         /** InvocationOutput */
@@ -8155,7 +11599,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            render_format?: "markdown";
+            render_format: "markdown";
             /**
              * Title
              * @description The name of the report.
@@ -8214,7 +11658,7 @@ export interface components {
              * @description Jobs associated with the workflow invocation step.
              * @default []
              */
-            jobs?: components["schemas"]["JobBaseModel"][];
+            jobs: components["schemas"]["JobBaseModel"][];
             /**
              * Model class
              * @description The name of the database model class.
@@ -8232,16 +11676,16 @@ export interface components {
              * @description The dataset collection outputs of the workflow invocation step.
              * @default {}
              */
-            output_collections?: {
-                [key: string]: components["schemas"]["InvocationStepCollectionOutput"];
+            output_collections: {
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
             };
             /**
              * Outputs
              * @description The outputs of the workflow invocation step.
              * @default {}
              */
-            outputs?: {
-                [key: string]: components["schemas"]["InvocationStepOutput"];
+            outputs: {
+                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
             };
             /**
              * State of the invocation step
@@ -8287,7 +11731,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            src?: "hdca";
+            src: "hdca";
         };
         /** InvocationStepJobsResponseCollectionJobsModel */
         InvocationStepJobsResponseCollectionJobsModel: {
@@ -8313,7 +11757,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
         };
         /** InvocationStepJobsResponseJobModel */
@@ -8340,7 +11784,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
         };
         /** InvocationStepJobsResponseStepModel */
@@ -8367,7 +11811,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
         };
         /** InvocationStepOutput */
@@ -8385,7 +11829,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            src?: "hda";
+            src: "hda";
             /**
              * UUID
              * @description Universal unique identifier of the workflow step output dataset.
@@ -8405,8 +11849,7 @@ export interface components {
              */
             details?: string | null;
             /**
-             * Reason
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             reason: "unexpected_failure";
@@ -8431,26 +11874,26 @@ export interface components {
              * @description Indicates if tool state corrections are allowed for workflow invocation.
              * @default false
              */
-            allow_tool_state_corrections?: boolean | null;
+            allow_tool_state_corrections: boolean | null;
             /**
              * Batch
              * @description Indicates if the workflow is invoked as a batch.
              * @default false
              */
-            batch?: boolean | null;
+            batch: boolean | null;
             /**
              * Dataset Map
              * @description TODO
              * @default {}
              */
-            ds_map?: {
-                [key: string]: Record<string, never>;
+            ds_map: {
+                [key: string]: Record<string, never> | undefined;
             } | null;
             /**
              * Effective Outputs
              * @description TODO
              */
-            effective_outputs?: unknown;
+            effective_outputs?: unknown | null;
             /**
              * History
              * @description The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.
@@ -8476,13 +11919,13 @@ export interface components {
              * @description True when fetching by Workflow ID, False when fetching by StoredWorkflow ID
              * @default false
              */
-            instance?: boolean | null;
+            instance: boolean | null;
             /**
              * Legacy
              * @description Indicating if to use legacy workflow invocation.
              * @default false
              */
-            legacy?: boolean | null;
+            legacy: boolean | null;
             /**
              * New History Name
              * @description The name of the new history into which to import.
@@ -8493,19 +11936,19 @@ export interface components {
              * @description Indicates if the workflow invocation should not be added to the history.
              * @default false
              */
-            no_add_to_history?: boolean | null;
+            no_add_to_history: boolean | null;
             /**
              * Parameters
              * @description The raw parameters for the workflow invocation.
              * @default {}
              */
-            parameters?: Record<string, never> | null;
+            parameters: Record<string, never> | null;
             /**
              * Parameters Normalized
              * @description Indicates if parameters are already normalized for workflow invocation.
              * @default false
              */
-            parameters_normalized?: boolean | null;
+            parameters_normalized: boolean | null;
             /**
              * Preferred Intermediate Object Store ID
              * @description The ID of the ? object store that should be used to store ? datasets in this history.
@@ -8526,19 +11969,19 @@ export interface components {
              * @description TODO
              * @default {}
              */
-            replacement_params?: Record<string, never> | null;
+            replacement_params: Record<string, never> | null;
             /**
              * Require Exact Tool Versions
              * @description If true, exact tool versions are required for workflow invocation.
              * @default true
              */
-            require_exact_tool_versions?: boolean | null;
+            require_exact_tool_versions: boolean | null;
             /**
              * Resource Parameters
              * @description TODO
              * @default {}
              */
-            resource_params?: Record<string, never> | null;
+            resource_params: Record<string, never> | null;
             /**
              * Scheduler
              * @description Scheduler to use for workflow invocation.
@@ -8554,7 +11997,7 @@ export interface components {
              * @description Indicated whether to use a cached job for workflow invocation.
              * @default false
              */
-            use_cached_job?: boolean | null;
+            use_cached_job: boolean | null;
             /**
              * Version
              * @description The version of the workflow to invoke.
@@ -8698,7 +12141,7 @@ export interface components {
              * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.
              */
             outputs: {
-                [key: string]: components["schemas"]["JobOutput"][];
+                [key: string]: components["schemas"]["JobOutput"][] | undefined;
             };
             /**
              * Parameters
@@ -8878,12 +12321,12 @@ export interface components {
         /**
          * JobMetric
          * @example {
-         *   "name": "start_epoch",
-         *   "plugin": "core",
-         *   "raw_value": "1614261340.0000000",
-         *   "title": "Job Start Time",
-         *   "value": "2021-02-25 14:55:40"
-         * }
+         *       "name": "start_epoch",
+         *       "plugin": "core",
+         *       "raw_value": "1614261340.0000000",
+         *       "title": "Job Start Time",
+         *       "value": "2021-02-25 14:55:40"
+         *     }
          */
         JobMetric: {
             /**
@@ -9001,9 +12444,7 @@ export interface components {
              */
             id: string;
             /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
+             * @description The name of the database model class. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             model: "Job";
@@ -9017,8 +12458,8 @@ export interface components {
              * @description A dictionary of job states and the number of jobs in that state.
              * @default {}
              */
-            states?: {
-                [key: string]: number;
+            states: {
+                [key: string]: number | undefined;
             };
         };
         /**
@@ -9124,25 +12565,25 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should have access permission on the library.
              * @default []
              */
-            LIBRARY_ACCESS_in?: string[] | string | null;
+            LIBRARY_ACCESS_in: string[] | string | null;
             /**
              * Manage IDs
              * @description A list of role encoded IDs defining roles that should have manage permission on the library.
              * @default []
              */
-            LIBRARY_ADD_in?: string[] | string | null;
+            LIBRARY_ADD_in: string[] | string | null;
             /**
              * Modify IDs
              * @description A list of role encoded IDs defining roles that should have modify permission on the library.
              * @default []
              */
-            LIBRARY_MANAGE_in?: string[] | string | null;
+            LIBRARY_MANAGE_in: string[] | string | null;
             /**
              * Add IDs
              * @description A list of role encoded IDs defining roles that should be able to add items to the library.
              * @default []
              */
-            LIBRARY_MODIFY_in?: string[] | string | null;
+            LIBRARY_MODIFY_in: string[] | string | null;
         };
         /** LibraryAvailablePermissions */
         LibraryAvailablePermissions: {
@@ -9208,8 +12649,7 @@ export interface components {
              */
             synopsis?: string | null;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "library";
@@ -9249,8 +12689,7 @@ export interface components {
              */
             library_folder_id: string;
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             type: "library_folder";
@@ -9267,13 +12706,13 @@ export interface components {
              * @description A detailed description of the library folder.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * Genome Build
              * @description TODO
              * @default ?
              */
-            genome_build?: string | null;
+            genome_build: string | null;
             /**
              * ID
              * @description Encoded ID of the library folder.
@@ -9290,7 +12729,7 @@ export interface components {
              * @description The list of folder names composing the path to this folder.
              * @default []
              */
-            library_path?: string[];
+            library_path: string[];
             /**
              * Model class
              * @description The name of the database model class.
@@ -9359,19 +12798,19 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should be able to add items to the library.
              * @default []
              */
-            "add_ids[]"?: string[] | string | null;
+            "add_ids[]": string[] | string | null;
             /**
              * Manage IDs
              * @description A list of role encoded IDs defining roles that should have manage permission on the library.
              * @default []
              */
-            "manage_ids[]"?: string[] | string | null;
+            "manage_ids[]": string[] | string | null;
             /**
              * Modify IDs
              * @description A list of role encoded IDs defining roles that should have modify permission on the library.
              * @default []
              */
-            "modify_ids[]"?: string[] | string | null;
+            "modify_ids[]": string[] | string | null;
         };
         /** LibraryLegacySummary */
         LibraryLegacySummary: {
@@ -9391,7 +12830,7 @@ export interface components {
              * @description A detailed description of the Library.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * ID
              * @description Encoded ID of the Library.
@@ -9439,7 +12878,7 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should have access permission on the library.
              * @default []
              */
-            "access_ids[]"?: string[] | string | null;
+            "access_ids[]": string[] | string | null;
             /**
              * Action
              * @description Indicates what action should be performed on the Library.
@@ -9450,19 +12889,19 @@ export interface components {
              * @description A list of role encoded IDs defining roles that should be able to add items to the library.
              * @default []
              */
-            "add_ids[]"?: string[] | string | null;
+            "add_ids[]": string[] | string | null;
             /**
              * Manage IDs
              * @description A list of role encoded IDs defining roles that should have manage permission on the library.
              * @default []
              */
-            "manage_ids[]"?: string[] | string | null;
+            "manage_ids[]": string[] | string | null;
             /**
              * Modify IDs
              * @description A list of role encoded IDs defining roles that should have modify permission on the library.
              * @default []
              */
-            "modify_ids[]"?: string[] | string | null;
+            "modify_ids[]": string[] | string | null;
         };
         /** LibrarySummary */
         LibrarySummary: {
@@ -9502,7 +12941,7 @@ export interface components {
              * @description A detailed description of the Library.
              * @default
              */
-            description?: string | null;
+            description: string | null;
             /**
              * ID
              * @description Encoded ID of the Library.
@@ -9641,7 +13080,7 @@ export interface components {
          * MandatoryNotificationCategory
          * @description These notification categories cannot be opt-out by the user.
          *
-         * The user will always receive notifications from these categories.
+         *     The user will always receive notifications from these categories.
          * @constant
          * @enum {string}
          */
@@ -9651,8 +13090,8 @@ export interface components {
             /**
              * Content
              * @description Depending on the `source` it can be:
-             * - The encoded id of the source library dataset
-             * - The encoded id of the HDA
+             *     - The encoded id of the source library dataset
+             *     - The encoded id of the HDA
              *
              * @example 0123456789ABCDEF
              */
@@ -9673,12 +13112,10 @@ export interface components {
         /** MessageNotificationContent */
         MessageNotificationContent: {
             /**
-             * Category
-             * @default message
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            category?: "message";
+            category: "message";
             /**
              * Message
              * @description The message of the notification (supports Markdown).
@@ -9744,7 +13181,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -9753,12 +13190,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             /** Elements */
@@ -9779,7 +13216,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -9789,24 +13226,22 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /** Tags */
             tags?: string[] | null;
             /**
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** NewSharedItemNotificationContent */
         NewSharedItemNotificationContent: {
             /**
-             * Category
-             * @default new_shared_item
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
-            category?: "new_shared_item";
+            category: "new_shared_item";
             /**
              * Item name
              * @description The name of the shared item.
@@ -9869,17 +13304,17 @@ export interface components {
              * Channels
              * @description The channels that the user wants to receive notifications from for this category.
              * @default {
-             *   "email": true,
-             *   "push": true
-             * }
+             *       "email": true,
+             *       "push": true
+             *     }
              */
-            channels?: components["schemas"]["NotificationChannelSettings"];
+            channels: components["schemas"]["NotificationChannelSettings"];
             /**
              * Enabled
              * @description Whether the user wants to receive notifications for this category.
              * @default true
              */
-            enabled?: boolean;
+            enabled: boolean;
         };
         /**
          * NotificationChannelSettings
@@ -9891,13 +13326,13 @@ export interface components {
              * @description Whether the user wants to receive email notifications for this category. This setting will be ignored unless the server supports asynchronous tasks.
              * @default true
              */
-            email?: boolean;
+            email: boolean;
             /**
              * Push
              * @description Whether the user wants to receive push notifications in the browser for this category.
              * @default true
              */
-            push?: boolean;
+            push: boolean;
         };
         /**
          * NotificationCreateData
@@ -9973,19 +13408,19 @@ export interface components {
              * @description The list of encoded group IDs of the groups that should receive the notification.
              * @default []
              */
-            group_ids?: string[];
+            group_ids: string[];
             /**
              * Role IDs
              * @description The list of encoded role IDs of the roles that should receive the notification.
              * @default []
              */
-            role_ids?: string[];
+            role_ids: string[];
             /**
              * User IDs
              * @description The list of encoded user IDs of the users that should receive the notification.
              * @default []
              */
-            user_ids?: string[];
+            user_ids: string[];
         };
         /**
          * NotificationResponse
@@ -10142,7 +13577,7 @@ export interface components {
              * Hidden
              * @default false
              */
-            hidden?: boolean;
+            hidden: boolean;
             /** Id */
             id: string;
             /** Name */
@@ -10167,7 +13602,7 @@ export interface components {
              * Version
              * @default 0
              */
-            version?: number;
+            version: number;
         };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
@@ -10181,7 +13616,7 @@ export interface components {
              * @description The output name as defined by the workflow module corresponding to the step being referenced. The default is 'output', corresponding to the output defined by input step types.
              * @default output
              */
-            output_name?: string | null;
+            output_name: string | null;
         };
         /** OutputReferenceByOrderIndex */
         OutputReferenceByOrderIndex: {
@@ -10195,7 +13630,7 @@ export interface components {
              * @description The output name as defined by the workflow module corresponding to the step being referenced. The default is 'output', corresponding to the output defined by input step types.
              * @default output
              */
-            output_name?: string | null;
+            output_name: string | null;
         };
         /**
          * PageContentFormat
@@ -10209,13 +13644,13 @@ export interface components {
              * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
-            content?: string | null;
+            content: string | null;
             /**
              * Content format
              * @description Either `markdown` or `html`.
              * @default html
              */
-            content_format?: components["schemas"]["PageContentFormat"];
+            content_format: components["schemas"]["PageContentFormat"];
             /**
              * Create Time
              * Format: date-time
@@ -10389,7 +13824,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -10398,12 +13833,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -10411,7 +13846,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -10426,10 +13861,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "pasted";
@@ -10439,7 +13873,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** PathDataElement */
         PathDataElement: {
@@ -10450,7 +13884,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -10459,12 +13893,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -10472,7 +13906,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -10486,10 +13920,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "path";
@@ -10499,7 +13932,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** PauseStep */
         PauseStep: {
@@ -10518,7 +13951,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -10554,7 +13987,7 @@ export interface components {
              * Class
              * @default Person
              */
-            class?: string;
+            class: string;
             /** Email */
             email?: string | null;
             /** Family Name */
@@ -10595,7 +14028,7 @@ export interface components {
         /**
          * PersonalNotificationCategory
          * @description These notification categories can be opt-out by the user and will be
-         * displayed in the notification preferences.
+         *     displayed in the notification preferences.
          * @enum {string}
          */
         PersonalNotificationCategory: "message" | "new_shared_item";
@@ -10635,27 +14068,27 @@ export interface components {
              * @description When reading tags/annotations to generate BCO object include history metadata.
              * @default false
              */
-            bco_merge_history_metadata?: boolean;
+            bco_merge_history_metadata: boolean;
             /**
              * Bco Override Algorithmic Error
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Xref
@@ -10667,24 +14100,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
         };
         /** QuotaDetails */
         QuotaDetails: {
@@ -10698,7 +14131,7 @@ export interface components {
              * @description A list indicating which types of default user quotas, if any, are associated with this quota.
              * @default []
              */
-            default?: components["schemas"]["DefaultQuota"][];
+            default: components["schemas"]["DefaultQuota"][];
             /**
              * Description
              * @description Detailed text description for this Quota.
@@ -10714,7 +14147,7 @@ export interface components {
              * @description A list of specific groups of users associated with this quota.
              * @default []
              */
-            groups?: components["schemas"]["GroupQuota"][];
+            groups: components["schemas"]["GroupQuota"][];
             /**
              * ID
              * @description The `encoded identifier` of the quota.
@@ -10738,7 +14171,7 @@ export interface components {
              * @description Quotas can have one of three `operations`:- `=` : The quota is exactly the amount specified- `+` : The amount specified will be added to the amounts of the user's other associated quota definitions- `-` : The amount specified will be subtracted from the amounts of the user's other associated quota definitions
              * @default =
              */
-            operation?: components["schemas"]["QuotaOperation"];
+            operation: components["schemas"]["QuotaOperation"];
             /**
              * Quota Source Label
              * @description Quota source label
@@ -10749,7 +14182,7 @@ export interface components {
              * @description A list of specific users associated with this quota.
              * @default []
              */
-            users?: components["schemas"]["UserQuota"][];
+            users: components["schemas"]["UserQuota"][];
         };
         /** QuotaModel */
         QuotaModel: {
@@ -10835,19 +14268,19 @@ export interface components {
             /**
              * From Order Index
              * @description For dropped connections these optional attributes refer to the output
-             * side of the connection that was dropped.
+             *     side of the connection that was dropped.
              */
             from_order_index?: number | null;
             /**
              * From Step Label
              * @description For dropped connections these optional attributes refer to the output
-             * side of the connection that was dropped.
+             *     side of the connection that was dropped.
              */
             from_step_label?: string | null;
             /**
              * Input Name
              * @description If this message is about an input to a step,
-             * this field describes the target input name. $The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input').
+             *     this field describes the target input name. $The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input').
              */
             input_name?: string | null;
             /** Message */
@@ -10857,12 +14290,13 @@ export interface components {
              * Order Index
              * @description Reference to the step the message refers to. $
              *
-             * Messages don't have to be bound to a step, but if they are they will
-             * have a step_label and order_index included in the execution message.
-             * These are the label and order_index before applying the refactoring,
-             * the result of applying the action may change one or both of these.
-             * If connections are dropped this step reference will refer to the
-             * step with the previously connected input.
+             *     Messages don't have to be bound to a step, but if they are they will
+             *     have a step_label and order_index included in the execution message.
+             *     These are the label and order_index before applying the refactoring,
+             *     the result of applying the action may change one or both of these.
+             *     If connections are dropped this step reference will refer to the
+             *     step with the previously connected input.
+             *
              */
             order_index?: number | null;
             /**
@@ -10873,19 +14307,21 @@ export interface components {
             /**
              * Output Name
              * @description If this message is about an output to a step,
-             * this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
+             *     this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
+             *
              */
             output_name?: string | null;
             /**
              * Step Label
              * @description Reference to the step the message refers to. $
              *
-             * Messages don't have to be bound to a step, but if they are they will
-             * have a step_label and order_index included in the execution message.
-             * These are the label and order_index before applying the refactoring,
-             * the result of applying the action may change one or both of these.
-             * If connections are dropped this step reference will refer to the
-             * step with the previously connected input.
+             *     Messages don't have to be bound to a step, but if they are they will
+             *     have a step_label and order_index included in the execution message.
+             *     These are the label and order_index before applying the refactoring,
+             *     the result of applying the action may change one or both of these.
+             *     If connections are dropped this step reference will refer to the
+             *     step with the previously connected input.
+             *
              */
             step_label?: string | null;
         };
@@ -10927,12 +14363,12 @@ export interface components {
              * Dry Run
              * @default false
              */
-            dry_run?: boolean;
+            dry_run: boolean;
             /**
              * Style
              * @default export
              */
-            style?: string;
+            style: string;
         };
         /** RefactorResponse */
         RefactorResponse: {
@@ -10955,8 +14391,7 @@ export interface components {
         /** RemoteDirectory */
         RemoteDirectory: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             class: "Directory";
@@ -10979,8 +14414,7 @@ export interface components {
         /** RemoteFile */
         RemoteFile: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             class: "File";
@@ -11031,8 +14465,7 @@ export interface components {
         /** RemoveUnlabeledWorkflowOutputs */
         RemoveUnlabeledWorkflowOutputs: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "remove_unlabeled_workflow_outputs";
@@ -11092,7 +14525,7 @@ export interface components {
              * Group IDs
              * @default []
              */
-            group_ids?: string[] | null;
+            group_ids: string[] | null;
             /**
              * Name
              * @description Name of the role
@@ -11102,7 +14535,7 @@ export interface components {
              * User IDs
              * @default []
              */
-            user_ids?: string[] | null;
+            user_ids: string[] | null;
         };
         /** RoleListResponse */
         RoleListResponse: components["schemas"]["RoleModelResponse"][];
@@ -11142,7 +14575,7 @@ export interface components {
         };
         /** RootModel[Dict[str, int]] */
         RootModel_Dict_str__int__: {
-            [key: string]: number;
+            [key: string]: number | undefined;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -11172,7 +14605,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -11181,12 +14614,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -11194,7 +14627,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -11208,10 +14641,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "server_dir";
@@ -11221,7 +14653,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
         };
         /** Service */
         Service: {
@@ -11307,25 +14739,25 @@ export interface components {
              * @description The number of datasets in the history that are public or accessible by all the target users.
              * @default 0
              */
-            accessible_count?: number;
+            accessible_count: number;
             /**
              * Can Change
              * @description A collection of datasets that are not accessible by one or more of the target users and that can be made accessible for others by the user sharing the history.
              * @default []
              */
-            can_change?: components["schemas"]["HDABasicInfo"][];
+            can_change: components["schemas"]["HDABasicInfo"][];
             /**
              * Can Share
              * @description Indicates whether the resource can be directly shared or requires further actions.
              * @default false
              */
-            can_share?: boolean;
+            can_share: boolean;
             /**
              * Cannot Change
              * @description A collection of datasets that are not accessible by one or more of the target users and that cannot be made accessible for others by the user sharing the history.
              * @default []
              */
-            cannot_change?: components["schemas"]["HDABasicInfo"][];
+            cannot_change: components["schemas"]["HDABasicInfo"][];
         };
         /** ShareHistoryWithStatus */
         ShareHistoryWithStatus: {
@@ -11339,7 +14771,7 @@ export interface components {
              * @description Collection of messages indicating that the resource was not shared with some (or all users) due to an error.
              * @default []
              */
-            errors?: string[];
+            errors: string[];
             /**
              * Extra
              * @description Optional extra information about this shareable resource that may be of interest. The contents of this field depend on the particular resource.
@@ -11381,7 +14813,7 @@ export interface components {
              * @description The list of encoded ids for users the resource has been shared.
              * @default []
              */
-            users_shared_with?: components["schemas"]["UserEmail"][];
+            users_shared_with: components["schemas"]["UserEmail"][];
         };
         /** ShareWithExtra */
         ShareWithExtra: {
@@ -11390,17 +14822,18 @@ export interface components {
              * @description Indicates whether the resource can be directly shared or requires further actions.
              * @default false
              */
-            can_share?: boolean;
+            can_share: boolean;
         };
         /** ShareWithPayload */
         ShareWithPayload: {
             /**
              * Share Option
              * @description User choice for sharing resources which its contents may be restricted:
-             *  - None: The user did not choose anything yet or no option is needed.
-             *  - make_public: The contents of the resource will be made publicly accessible.
-             *  - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
-             *  - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
+             *      - None: The user did not choose anything yet or no option is needed.
+             *      - make_public: The contents of the resource will be made publicly accessible.
+             *      - make_accessible_to_shared: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.
+             *      - no_changes: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.
+             *
              */
             share_option?: components["schemas"]["SharingOptions"] | null;
             /**
@@ -11421,7 +14854,7 @@ export interface components {
              * @description Collection of messages indicating that the resource was not shared with some (or all users) due to an error.
              * @default []
              */
-            errors?: string[];
+            errors: string[];
             /**
              * Extra
              * @description Optional extra information about this shareable resource that may be of interest. The contents of this field depend on the particular resource.
@@ -11463,7 +14896,7 @@ export interface components {
              * @description The list of encoded ids for users the resource has been shared.
              * @default []
              */
-            users_shared_with?: components["schemas"]["UserEmail"][];
+            users_shared_with: components["schemas"]["UserEmail"][];
         };
         /**
          * SharingOptions
@@ -11514,7 +14947,7 @@ export interface components {
              * @description The list of encoded ids for users the resource has been shared.
              * @default []
              */
-            users_shared_with?: components["schemas"]["UserEmail"][];
+            users_shared_with: components["schemas"]["UserEmail"][];
         };
         /** ShortTermStoreExportPayload */
         ShortTermStoreExportPayload: {
@@ -11525,24 +14958,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
             /**
              * Short Term Storage Request Id
              * Format: uuid
@@ -11612,8 +15045,8 @@ export interface components {
              * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
              * @default {}
              */
-            inputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
+            inputs: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
             };
             /**
              * Job Messages
@@ -11651,16 +15084,16 @@ export interface components {
              * Output collections
              * @default {}
              */
-            output_collections?: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
+            output_collections: {
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
             };
             /**
              * Outputs
              * @description Dictionary mapping all the tool outputs (by name) to the corresponding data references.
              * @default {}
              */
-            outputs?: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
+            outputs: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
             };
             /**
              * Parameters
@@ -11758,24 +15191,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
         };
         /** StoredItem */
         StoredItem: {
@@ -11858,8 +15291,8 @@ export interface components {
              * @description A dictionary containing information about all the inputs of the workflow.
              * @default {}
              */
-            inputs?: {
-                [key: string]: components["schemas"]["WorkflowInput"];
+            inputs: {
+                [key: string]: components["schemas"]["WorkflowInput"] | undefined;
             };
             /**
              * Latest workflow UUID
@@ -11918,14 +15351,17 @@ export interface components {
              * @description A dictionary with information about all the steps of the workflow.
              * @default {}
              */
-            steps?: {
+            steps: {
                 [key: string]:
-                    | components["schemas"]["InputDataStep"]
-                    | components["schemas"]["InputDataCollectionStep"]
-                    | components["schemas"]["InputParameterStep"]
-                    | components["schemas"]["PauseStep"]
-                    | components["schemas"]["ToolStep"]
-                    | components["schemas"]["SubworkflowStep"];
+                    | (
+                          | components["schemas"]["InputDataStep"]
+                          | components["schemas"]["InputDataCollectionStep"]
+                          | components["schemas"]["InputParameterStep"]
+                          | components["schemas"]["PauseStep"]
+                          | components["schemas"]["ToolStep"]
+                          | components["schemas"]["SubworkflowStep"]
+                      )
+                    | undefined;
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -11963,7 +15399,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -12073,7 +15509,7 @@ export interface components {
              * Default
              * @default false
              */
-            default?: boolean;
+            default: boolean;
             /** Help */
             help: string | null;
             /** Label */
@@ -12093,7 +15529,7 @@ export interface components {
              * Default
              * @default 0
              */
-            default?: number;
+            default: number;
             /** Help */
             help: string | null;
             /** Label */
@@ -12130,7 +15566,7 @@ export interface components {
              * Default
              * @default
              */
-            default?: string;
+            default: string;
             /** Help */
             help: string | null;
             /** Label */
@@ -12155,7 +15591,7 @@ export interface components {
              * Fields
              * @default []
              */
-            fields?: string[][];
+            fields: string[][];
             /**
              * Model class
              * @description The name of class modelling this tool data
@@ -12191,14 +15627,14 @@ export interface components {
             base_dir: string[];
             /** Fields */
             fields: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             };
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
              */
             files: {
-                [key: string]: number;
+                [key: string]: number | undefined;
             };
             /**
              * Fingerprint
@@ -12241,7 +15677,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"];
+                [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
              * Tool ID
@@ -12382,8 +15818,7 @@ export interface components {
         /** UpdateAnnotationAction */
         UpdateAnnotationAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_annotation";
@@ -12421,8 +15856,7 @@ export interface components {
         /** UpdateCreatorAction */
         UpdateCreatorAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_creator";
@@ -12438,7 +15872,7 @@ export interface components {
              * @description Indicates what action should be performed on the dataset.
              * @default set_permissions
              */
-            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            action: components["schemas"]["DatasetPermissionAction"] | null;
             /** Manage Ids[] */
             "manage_ids[]"?: string[] | string | null;
             /** Modify Ids[] */
@@ -12456,7 +15890,7 @@ export interface components {
              * @description Indicates what action should be performed on the dataset.
              * @default set_permissions
              */
-            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            action: components["schemas"]["DatasetPermissionAction"] | null;
             /**
              * Manage IDs
              * @description A list of role encoded IDs defining roles that should have manage permission on the dataset.
@@ -12480,7 +15914,7 @@ export interface components {
              * @description Indicates what action should be performed on the dataset.
              * @default set_permissions
              */
-            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            action: components["schemas"]["DatasetPermissionAction"] | null;
             /**
              * Manage IDs
              * @description A list of role encoded IDs defining roles that should have manage permission on the dataset.
@@ -12496,14 +15930,14 @@ export interface components {
          * UpdateHistoryContentsBatchPayload
          * @description Contains property values that will be updated for all the history `items` provided.
          * @example {
-         *   "items": [
-         *     {
-         *       "history_content_type": "dataset",
-         *       "id": "string"
+         *       "items": [
+         *         {
+         *           "history_content_type": "dataset",
+         *           "id": "string"
+         *         }
+         *       ],
+         *       "visible": false
          *     }
-         *   ],
-         *   "visible": false
-         * }
          */
         UpdateHistoryContentsBatchPayload: {
             /**
@@ -12517,9 +15951,9 @@ export interface components {
          * UpdateHistoryContentsPayload
          * @description Can contain arbitrary/dynamic fields that will be updated for a particular history item.
          * @example {
-         *   "annotation": "Test",
-         *   "visible": false
-         * }
+         *       "annotation": "Test",
+         *       "visible": false
+         *     }
          */
         UpdateHistoryContentsPayload: {
             /**
@@ -12581,7 +16015,7 @@ export interface components {
             name?: string | null;
             /** Variables */
             variables?: {
-                [key: string]: string | boolean | number;
+                [key: string]: (string | boolean | number) | undefined;
             } | null;
         };
         /** UpdateInstanceSecretPayload */
@@ -12625,8 +16059,7 @@ export interface components {
         /** UpdateLicenseAction */
         UpdateLicenseAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_license";
@@ -12636,8 +16069,7 @@ export interface components {
         /** UpdateNameAction */
         UpdateNameAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_name";
@@ -12655,8 +16087,7 @@ export interface components {
         /** UpdateOutputLabelAction */
         UpdateOutputLabelAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_output_label";
@@ -12704,13 +16135,12 @@ export interface components {
              * @description One of (``+``, ``-``, ``=``). If you wish to change this value, you must also provide the ``amount``, otherwise it will not take effect.
              * @default =
              */
-            operation?: components["schemas"]["QuotaOperation"];
+            operation: components["schemas"]["QuotaOperation"];
         };
         /** UpdateReportAction */
         UpdateReportAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_report";
@@ -12719,8 +16149,7 @@ export interface components {
         /** UpdateStepLabelAction */
         UpdateStepLabelAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_step_label";
@@ -12738,8 +16167,7 @@ export interface components {
         /** UpdateStepPositionAction */
         UpdateStepPositionAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "update_step_position";
@@ -12760,14 +16188,13 @@ export interface components {
              * @description The new notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"];
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
             };
         };
         /** UpgradeAllStepsAction */
         UpgradeAllStepsAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "upgrade_all_steps";
@@ -12776,20 +16203,19 @@ export interface components {
         UpgradeInstancePayload: {
             /** Secrets */
             secrets: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             };
             /** Template Version */
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: string | boolean | number;
+                [key: string]: (string | boolean | number) | undefined;
             };
         };
         /** UpgradeSubworkflowAction */
         UpgradeSubworkflowAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "upgrade_subworkflow";
@@ -12804,8 +16230,7 @@ export interface components {
         /** UpgradeToolAction */
         UpgradeToolAction: {
             /**
-             * Action Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             action_type: "upgrade_tool";
@@ -12826,7 +16251,7 @@ export interface components {
              * @description Decompress compressed data before sniffing?
              * @default false
              */
-            auto_decompress?: boolean;
+            auto_decompress: boolean;
             /** Collection Type */
             collection_type?: string | null;
             /** Created From Basename */
@@ -12835,12 +16260,12 @@ export interface components {
              * Dbkey
              * @default ?
              */
-            dbkey?: string;
+            dbkey: string;
             /**
              * Deferred
              * @default false
              */
-            deferred?: boolean;
+            deferred: boolean;
             /** Description */
             description?: string | null;
             elements_from?: components["schemas"]["ElementsFromType"] | null;
@@ -12848,7 +16273,7 @@ export interface components {
              * Ext
              * @default auto
              */
-            ext?: string;
+            ext: string;
             extra_files?: components["schemas"]["ExtraFiles"] | null;
             /** Info */
             info?: string | null;
@@ -12858,10 +16283,9 @@ export interface components {
              * Space To Tab
              * @default false
              */
-            space_to_tab?: boolean;
+            space_to_tab: boolean;
             /**
-             * Src
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             src: "url";
@@ -12871,7 +16295,7 @@ export interface components {
              * To Posix Lines
              * @default false
              */
-            to_posix_lines?: boolean;
+            to_posix_lines: boolean;
             /**
              * Url
              * @description URL to upload
@@ -12925,7 +16349,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: string | boolean | number;
+                [key: string]: (string | boolean | number) | undefined;
             } | null;
         };
         /** UserCreationPayload */
@@ -12954,7 +16378,7 @@ export interface components {
              * @description Purge the user. Deprecated, please use the `purge` query parameter instead.
              * @default false
              */
-            purge?: boolean;
+            purge: boolean;
         };
         /** UserEmail */
         UserEmail: {
@@ -13002,7 +16426,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: string | boolean | number;
+                [key: string]: (string | boolean | number) | undefined;
             } | null;
         };
         /**
@@ -13061,7 +16485,7 @@ export interface components {
              * @description The notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"];
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
             };
         };
         /**
@@ -13304,7 +16728,7 @@ export interface components {
              * Value
              * @description TODO
              */
-            value: unknown;
+            value: unknown | null;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
@@ -13381,14 +16805,14 @@ export interface components {
              * @description Input step parameters of the workflow invocation.
              */
             input_step_parameters: {
-                [key: string]: components["schemas"]["InvocationInputParameter"];
+                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
             };
             /**
              * Inputs
              * @description Input datasets/dataset collections of the workflow invocation.
              */
             inputs: {
-                [key: string]: components["schemas"]["InvocationInput"];
+                [key: string]: components["schemas"]["InvocationInput"] | undefined;
             };
             /**
              * Messages
@@ -13419,7 +16843,7 @@ export interface components {
              * @description Output dataset collections of the workflow invocation.
              */
             output_collections: {
-                [key: string]: components["schemas"]["InvocationOutputCollection"];
+                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
             };
             /**
              * Output values
@@ -13431,7 +16855,7 @@ export interface components {
              * @description Output datasets of the workflow invocation.
              */
             outputs: {
-                [key: string]: components["schemas"]["InvocationOutput"];
+                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
             };
             /**
              * Invocation state
@@ -13473,9 +16897,7 @@ export interface components {
              */
             id: string;
             /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
+             * @description The name of the database model class. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             model: "WorkflowInvocation";
@@ -13489,8 +16911,8 @@ export interface components {
              * @description A dictionary of job states and the number of jobs in that state.
              * @default {}
              */
-            states?: {
-                [key: string]: number;
+            states: {
+                [key: string]: number | undefined;
             };
         };
         /** WriteInvocationStoreToPayload */
@@ -13500,27 +16922,27 @@ export interface components {
              * @description When reading tags/annotations to generate BCO object include history metadata.
              * @default false
              */
-            bco_merge_history_metadata?: boolean;
+            bco_merge_history_metadata: boolean;
             /**
              * Bco Override Algorithmic Error
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string;
+                [key: string]: string | undefined;
             } | null;
             /**
              * Bco Override Xref
@@ -13532,24 +16954,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
             /**
              * Target URI
              * @description Galaxy Files URI to write mode store content to.
@@ -13563,24 +16985,24 @@ export interface components {
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
              */
-            include_deleted?: boolean;
+            include_deleted: boolean;
             /**
              * Include Files
              * @description include materialized files in export when available
              * @default true
              */
-            include_files?: boolean;
+            include_files: boolean;
             /**
              * Include hidden
              * @description Include file contents for hidden datasets (if include_files is True).
              * @default false
              */
-            include_hidden?: boolean;
+            include_hidden: boolean;
             /**
              * @description format of model store to export
              * @default tar.gz
              */
-            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            model_store_format: components["schemas"]["ModelStoreFormat"];
             /**
              * Target URI
              * @description Galaxy Files URI to write mode store content to.
@@ -13635,7 +17057,7 @@ export interface components {
              * Class
              * @default Organization
              */
-            class?: string;
+            class: string;
             /** Email */
             email?: string | null;
             /** Fax Number */
@@ -13664,43 +17086,46 @@ export interface components {
     headers: never;
     pathItems: never;
 }
-
 export type $defs = Record<string, never>;
-
-export type external = Record<string, never>;
-
 export interface operations {
-    /** Returns returns an API key for authenticated user based on BaseAuth headers. */
     get_api_key_api_authenticate_baseauth_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["APIKeyResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return an object containing exposable configuration settings
-     * @description Return an object containing exposable configuration settings.
-     *
-     * A more complete list is returned if the user is an admin.
-     * Pass in `view` and a comma-seperated list of keys to control which
-     * configuration settings are returned.
-     */
     index_api_configuration_get: {
         parameters: {
             query?: {
@@ -13713,34 +17138,43 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Object containing exposable configuration settings */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": Record<string, never>;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Decode a given id
-     * @description Decode a given id.
-     */
     decode_id_api_configuration_decode__encoded_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -13749,70 +17183,87 @@ export interface operations {
                 /** @description Encoded id to be decoded */
                 encoded_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Decoded id */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: number;
+                        [key: string]: number | undefined;
                     };
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return dynamic tool configuration files
-     * @description Return dynamic tool configuration files.
-     */
     dynamic_tool_confs_api_configuration_dynamic_tool_confs_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Dynamic tool configuration files */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: string | undefined;
                     }[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Encode a given id
-     * @description Decode a given id.
-     */
     encode_id_api_configuration_encode__decoded_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -13821,99 +17272,128 @@ export interface operations {
                 /** @description Decoded id to be encoded */
                 decoded_id: number;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Encoded id */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: string | undefined;
                     };
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return tool lineages for tools that have them
-     * @description Return tool lineages for tools that have them.
-     */
     tool_lineages_api_configuration_tool_lineages_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Tool lineages for tools that have them */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: Record<string, never>;
+                        [key: string]: Record<string, never> | undefined;
                     }[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Reload the Galaxy toolbox (but not individual tools)
-     * @description Reload the Galaxy toolbox (but not individual tools).
-     */
     reload_toolbox_api_configuration_toolbox_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Content */
     content_api_dataset_collection_element__dce_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -13922,35 +17402,48 @@ export interface operations {
                 /** @description The encoded ID of the dataset collection element. */
                 dce_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DCESummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create a new dataset collection instance. */
     create_api_dataset_collections_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -13960,25 +17453,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HDCADetailed"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns direct child contents of indicated dataset collection parent ID. */
     contents_dataset_collection_api_dataset_collections__hdca_id__contents__parent_id__get: {
         parameters: {
             query?: {
@@ -13999,29 +17500,39 @@ export interface operations {
                 /** @description Parent collection ID describing what collection the contents belongs to. */
                 parent_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetCollectionContentElements"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns detailed information about the given collection. */
     show_api_dataset_collections__id__get: {
         parameters: {
             query?: {
@@ -14038,29 +17549,39 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns `dbkey`/`extension` attributes for all the collection elements. */
     attributes_api_dataset_collections__id__attributes_get: {
         parameters: {
             query?: {
@@ -14075,31 +17596,42 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetCollectionAttributesResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Copy the given collection datasets to a new collection using a new `dbkey` attribute. */
     copy_api_dataset_collections__id__copy_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14108,6 +17640,7 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14117,29 +17650,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Download the content of a dataset collection as a `zip` archive.
-     * @description Download the content of a history dataset collection as a `zip` archive
-     * while maintaining approximate collection structure.
-     */
     dataset_collections__download: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14148,34 +17686,40 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Prepare an short term storage object that the collection will be downloaded to.
-     * @description The history dataset collection will be written as a `zip` archive to the
-     * returned short term storage object. Progress tracking this file's creation
-     * can be tracked with the short_term_storage API.
-     */
     prepare_collection_download_api_dataset_collections__id__prepare_download_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14184,33 +17728,46 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Short term storage reference for async monitoring of this download. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
             /** @description Required asynchronous tasks required for this operation not available. */
             501: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns a list of applicable converters for all datatypes in the given collection. */
     suitable_converters_api_dataset_collections__id__suitable_converters_get: {
         parameters: {
             query?: {
@@ -14225,29 +17782,39 @@ export interface operations {
                 /** @description The ID of the `HDCA`. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SuitableConverters"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Search datasets or collections using a query system. */
     index_api_datasets_get: {
         parameters: {
             query?: {
@@ -14272,10 +17839,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["HDACustom"]
@@ -14289,30 +17862,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Deletes or purges a batch of datasets.
-     * @description Deletes or purges a batch of datasets.
-     * **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
-     * no other checks or restrictions are made.
-     */
     delete_batch_api_datasets_delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14322,30 +17898,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteDatasetBatchResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays information about and/or content of a dataset.
-     * @description **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
-     * and return different kinds of responses, the documentation here will be limited.
-     * To get more information please check the source code.
-     */
     show_api_datasets__dataset_id__get: {
         parameters: {
             query?: {
@@ -14366,32 +17945,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the values for the history dataset (HDA) item with the given ``ID``.
-     * @description Updates the values for the history content item with the given ``ID``.
-     */
     datasets__update_dataset: {
         parameters: {
             query?: {
@@ -14408,6 +17994,7 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14417,6 +18004,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -14429,24 +18019,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Delete the history dataset content with the given ``ID``.
-     * @description Delete the history content with the given ``ID`` and path specified type.
-     *
-     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-     */
     datasets__delete: {
         parameters: {
             query?: {
@@ -14478,6 +18068,7 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -14487,33 +18078,45 @@ export interface operations {
         responses: {
             /** @description Request has been executed. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request accepted, processing will finish later. */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Retrieve information about the content of a dataset. */
     get_structured_content_api_datasets__dataset_id__content__content_type__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14523,34 +18126,42 @@ export interface operations {
                 dataset_id: string;
                 content_type: components["schemas"]["DatasetContentType"];
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return a a map with all the existing converted datasets associated with this instance.
-     * @description Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
-     */
     converted_api_datasets__dataset_id__converted_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14559,36 +18170,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ConvertedDatasetsMap"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return information about datasets made by converting this dataset to a new format.
-     * @description Return information about datasets made by converting this dataset to a new format.
-     *
-     * If there is no existing converted dataset for the format in `ext`, one will be created.
-     *
-     * **Note**: `view` and `keys` are also available to control the serialization of the dataset.
-     */
     converted_ext_api_datasets__dataset_id__converted__ext__get: {
         parameters: {
             query?: {
@@ -14607,10 +18221,15 @@ export interface operations {
                 /** @description File extension of the new format to convert this dataset to. */
                 ext: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -14621,21 +18240,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get the list of extra files/directories associated with a dataset. */
     extra_files_api_datasets__dataset_id__extra_files_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14644,31 +18269,42 @@ export interface operations {
                 /** @description The encoded database identifier of the dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns dataset content as Text. */
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14677,29 +18313,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetTextContentDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Compute dataset hash for dataset and update model */
     compute_hash_api_datasets__dataset_id__hash_put: {
         parameters: {
             query?: {
@@ -14714,6 +18360,7 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14723,25 +18370,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** For internal use, this endpoint may change without warning. */
     show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get: {
         parameters: {
             query?: {
@@ -14756,32 +18411,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetInheritanceChain"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return job metrics for specified job.
-     * @deprecated
-     */
     get_metrics_api_datasets__dataset_id__metrics_get: {
         parameters: {
             query?: {
@@ -14796,31 +18458,42 @@ export interface operations {
                 /** @description The ID of the dataset */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update an object store ID for a dataset you own. */
     datasets__update_object_store_id: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14829,6 +18502,7 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14838,31 +18512,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Resolve parameters as a list for nested display.
-     * @deprecated
-     * @description Resolve parameters as a list for nested display.
-     * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-     * this endpoint will change frequently.
-     */
     resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
         parameters: {
             query?: {
@@ -14877,34 +18553,42 @@ export interface operations {
                 /** @description The ID of the dataset */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set permissions of the given history dataset to the given role ids.
-     * @description Set permissions of the given history dataset to the given role ids.
-     */
     update_permissions_api_datasets__dataset_id__permissions_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -14913,6 +18597,7 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -14925,25 +18610,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Display user-facing storage details related to the objectstore a dataset resides in. */
     show_storage_api_datasets__dataset_id__storage_get: {
         parameters: {
             query?: {
@@ -14958,32 +18651,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 dataset_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetStorageDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays (preview) or downloads dataset content.
-     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-     */
     display_api_datasets__history_content_id__display_get: {
         parameters: {
             query?: {
@@ -14997,7 +18697,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
                 ck_size?: number | null;
             };
             header?: {
@@ -15008,30 +18708,37 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Check if dataset content can be previewed or downloaded.
-     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-     */
     display_api_datasets__history_content_id__display_head: {
         parameters: {
             query?: {
@@ -15045,7 +18752,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
                 ck_size?: number | null;
             };
             header?: {
@@ -15056,29 +18763,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns the metadata file associated with this history item. */
     datasets__get_metadata_file: {
         parameters: {
             query: {
@@ -15093,27 +18810,37 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Check if metadata file can be downloaded. */
     get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head: {
         parameters: {
             query: {
@@ -15128,32 +18855,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Lists all available data types
-     * @description Gets the list of all available data types.
-     */
     index_api_datatypes_get: {
         parameters: {
             query?: {
@@ -15162,222 +18896,311 @@ export interface operations {
                 /** @description Whether to return only datatypes which can be uploaded */
                 upload_only?: boolean | null;
             };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description List of data types */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypeDetails"][] | string[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the list of all installed converters
-     * @description Gets the list of all installed converters.
-     */
     converters_api_datatypes_converters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of all datatype converters */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypeConverterList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a dictionary/map of datatypes and EDAM data
-     * @description Gets a map of datatypes and their corresponding EDAM data.
-     */
     edam_data_api_datatypes_edam_data_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Dictionary/map of datatypes and EDAM data */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: string | undefined;
                     };
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a dictionary of datatypes and EDAM data details
-     * @description Gets a map of datatypes and their corresponding EDAM data.
-     * EDAM data contains the EDAM iri, label, and definition.
-     */
     edam_data_detailed_api_datatypes_edam_data_detailed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Dictionary of EDAM data details containing the EDAM iri, label, and definition */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a dictionary/map of datatypes and EDAM formats
-     * @description Gets a map of datatypes and their corresponding EDAM formats.
-     */
     edam_formats_api_datatypes_edam_formats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Dictionary/map of datatypes and EDAM formats */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": {
-                        [key: string]: string;
+                        [key: string]: string | undefined;
                     };
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a dictionary of datatypes and EDAM format details
-     * @description Gets a map of datatypes and their corresponding EDAM formats.
-     * EDAM formats contain the EDAM iri, label, and definition.
-     */
     edam_formats_detailed_api_datatypes_edam_formats_detailed_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Dictionary of EDAM format details containing the EDAM iri, label, and definition */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns mappings for data types and their implementing classes
-     * @description Gets mappings for data types.
-     */
     mapping_api_datatypes_mapping_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Dictionary to map data types with their classes */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypesMap"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the list of all installed sniffers
-     * @description Gets the list of all installed data type sniffers.
-     */
     sniffers_api_datatypes_sniffers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of datatype sniffers */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns all the data types extensions and their mappings
-     * @description Combines the datatype information from (/api/datatypes) and the
-     * mapping information from (/api/datatypes/mapping) into a single
-     * response.
-     */
     types_and_mapping_api_datatypes_types_and_mapping_get: {
         parameters: {
             query?: {
@@ -15386,96 +19209,129 @@ export interface operations {
                 /** @description Whether to return only datatypes which can be uploaded */
                 upload_only?: boolean | null;
             };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Dictionary to map data types with their classes */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the list of display applications.
-     * @description Returns the list of display applications.
-     */
     display_applications_index_api_display_applications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DisplayApplication"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Reloads the list of display applications.
-     * @description Reloads the list of display applications.
-     */
     display_applications_reload_api_display_applications_reload_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody?: {
             content: {
                 "application/json": {
-                    [key: string]: string[];
+                    [key: string]: string[] | undefined;
                 } | null;
             };
         };
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ReloadFeedback"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Download */
     download_api_drs_download__object_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15484,62 +19340,87 @@ export interface operations {
                 /** @description The ID of the group */
                 object_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a list of persisted file source instances defined by the requesting user. */
     file_sources__instances_index: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserFileSourceModel"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create a user-bound file source. */
     file_sources__create_instance: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15549,31 +19430,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Test payload for creating user-bound file source. */
     file_sources__test_new_instance_configuration: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15583,27 +19475,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a persisted user file source instance. */
     file_sources__instances_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15612,31 +19513,42 @@ export interface operations {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update or upgrade user file source instance. */
     file_sources__instances_update: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15645,6 +19557,7 @@ export interface operations {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15657,27 +19570,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Purge user file source instance. */
     file_sources__instances_purge: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15686,69 +19608,78 @@ export interface operations {
                 /** @description The UUID index for a persisted UserFileSourceStore object. */
                 user_file_source_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a list of file source templates available to build user defined file sources from */
     file_sources__templates_index: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list of the configured file source templates. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.
-     * @description Returns a list of a folder's contents (files and sub-folders).
-     *
-     * Additional metadata for the folder is provided in the response as a separate object containing data
-     * for breadcrumb path building, permissions and other folder's details.
-     *
-     * *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
-     *
-     * **Security note**:
-     * - Accessing a library folder or sub-folder requires only access to the parent library.
-     * - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
-     * - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
-     */
     index_api_folders__folder_id__contents_get: {
         parameters: {
             query?: {
@@ -15773,31 +19704,42 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 folder_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The contents of the folder that match the query parameters. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderContentsIndexResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Creates a new library file from an existing HDA/HDCA. */
     add_history_datasets_to_library_api_folders__folder_id__contents_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15806,6 +19748,7 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 folder_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15815,30 +19758,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays information about a particular library folder.
-     * @description Returns detailed information about the library folder with the given ID.
-     */
     show_api_folders__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15847,34 +19796,42 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the information of an existing library folder.
-     * @description Updates the information of an existing library folder.
-     */
     update_api_folders__id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15883,6 +19840,7 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15892,30 +19850,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create a new library folder underneath the one specified by the ID.
-     * @description Returns detailed information about the newly created library folder.
-     */
     create_api_folders__id__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -15924,6 +19888,7 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -15933,28 +19898,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Marks the specified library folder as deleted (or undeleted).
-     * @description Marks the specified library folder as deleted (or undeleted).
-     */
     delete_api_folders__id__delete: {
         parameters: {
             query?: {
@@ -15969,34 +19939,42 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Update
-     * @description Updates the information of an existing library folder.
-     */
     update_api_folders__id__patch: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16005,6 +19983,7 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -16014,29 +19993,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Gets the current or available permissions of a particular library folder.
-     * @description Gets the current or available permissions of a particular library.
-     * The results can be paginated and additionally filtered by a query.
-     */
     get_permissions_api_folders__id__permissions_get: {
         parameters: {
             query?: {
@@ -16057,10 +20040,15 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["LibraryFolderCurrentPermissions"]
@@ -16069,22 +20057,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Sets the permissions to manage a library folder.
-     * @description Sets the permissions to manage a library folder.
-     */
     set_permissions_api_folders__id__permissions_post: {
         parameters: {
             query?: {
@@ -16099,6 +20089,7 @@ export interface operations {
                 /** @description The encoded identifier of the library folder. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -16108,27 +20099,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibraryFolderCurrentPermissions"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete */
     delete_api_forms__id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16136,31 +20136,42 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Undelete */
     undelete_api_forms__id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16168,35 +20179,39 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays remote files available to the user. Please use /api/remote_files instead.
-     * @deprecated
-     * @description Lists all remote files available to the user from different sources.
-     *
-     * The total count of files and directories is returned in the 'total_matches' header.
-     */
     index_api_ftp_files_get: {
         parameters: {
             query?: {
@@ -16223,10 +20238,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["ListUriResponse"]
@@ -16235,19 +20256,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return a list of installed genomes */
     index_api_genomes_get: {
         parameters: {
             query?: {
@@ -16258,29 +20284,40 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Installed genomes */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string[][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return information about build <id> */
     show_api_genomes__id__get: {
         parameters: {
             query?: {
@@ -16305,29 +20342,39 @@ export interface operations {
                 /** @description Genome ID */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Information about genome build <id> */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return all available indexes for a genome id for provided type */
     indexes_api_genomes__id__indexes_get: {
         parameters: {
             query?: {
@@ -16344,29 +20391,39 @@ export interface operations {
                 /** @description Genome ID */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Indexes for a genome id for provided type */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return raw sequence data */
     sequences_api_genomes__id__sequences_get: {
         parameters: {
             query?: {
@@ -16389,64 +20446,89 @@ export interface operations {
                 /** @description Genome ID */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Raw sequence data */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays a collection (list) of groups. */
     index_api_groups_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Creates a new group. */
     create_api_groups_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -16456,27 +20538,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays information about a group. */
     show_group_api_groups__group_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16484,31 +20575,42 @@ export interface operations {
             path: {
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Modifies a group. */
     update_api_groups__group_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16516,6 +20618,7 @@ export interface operations {
             path: {
                 group_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -16525,27 +20628,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete */
     delete_api_groups__group_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16553,31 +20665,42 @@ export interface operations {
             path: {
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Purge */
     purge_api_groups__group_id__purge_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16585,31 +20708,42 @@ export interface operations {
             path: {
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays a collection (list) of groups. */
     group_roles_api_groups__group_id__roles_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16618,31 +20752,42 @@ export interface operations {
                 /** @description The ID of the group. */
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays information about a group role. */
     group_role_api_groups__group_id__roles__role_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16653,31 +20798,42 @@ export interface operations {
                 /** @description The ID of the role. */
                 role_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Adds a role to a group */
     update_api_groups__group_id__roles__role_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16688,31 +20844,42 @@ export interface operations {
                 /** @description The ID of the role. */
                 role_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Removes a role from a group */
     delete_api_groups__group_id__roles__role_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16723,31 +20890,42 @@ export interface operations {
                 /** @description The ID of the role. */
                 role_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Undelete */
     undelete_api_groups__group_id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16755,34 +20933,42 @@ export interface operations {
             path: {
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays information about a group user.
-     * @description Displays information about a group user.
-     */
     group_user_api_groups__group_id__user__user_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16793,35 +20979,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Adds a user to a group
-     * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-     * Adds a user to a group
-     */
     update_api_groups__group_id__user__user_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16832,35 +21025,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes a user from a group
-     * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-     * Removes a user from a group
-     */
     delete_api_groups__group_id__user__user_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16871,35 +21071,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays a collection (list) of groups.
-     * @description GET /api/groups/{encoded_group_id}/users
-     * Displays a collection (list) of groups.
-     */
     group_users_api_groups__group_id__users_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16908,34 +21115,42 @@ export interface operations {
                 /** @description The ID of the group. */
                 group_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays information about a group user.
-     * @description Displays information about a group user.
-     */
     group_user_api_groups__group_id__users__user_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16946,35 +21161,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Adds a user to a group
-     * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-     * Adds a user to a group
-     */
     update_api_groups__group_id__users__user_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -16985,35 +21207,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes a user from a group
-     * @description DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-     * Removes a user from a group
-     */
     delete_api_groups__group_id__users__user_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -17024,34 +21253,39 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Search the Galaxy Help forum.
-     * @description Search the Galaxy Help forum using the Discourse API.
-     *
-     * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
-     */
     search_forum_api_help_forum_search_get: {
         parameters: {
             query: {
@@ -17062,29 +21296,40 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HelpForumSearchResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns histories available to the current user. */
     index_api_histories_get: {
         parameters: {
             query?: {
@@ -17101,39 +21346,39 @@ export interface operations {
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /**
-                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
-                 * ## Query Structure
+                 *     ## Query Structure
                  *
-                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-                 * being indexed (i.e. a column in the database).
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
                  *
-                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-                 * this means the database operation `ILIKE` will typically be used).
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
                  *
-                 * Once the tagged filters are extracted from the search query, the remaining text is just
-                 * used to search various documented attributes of the object.
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
                  *
-                 * ## GitHub-style Tags Available
+                 *     ## GitHub-style Tags Available
                  *
-                 * `name`
-                 * : The history's name.
+                 *     `name`
+                 *     : The history's name.
                  *
-                 * `annotation`
-                 * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `annotation`
+                 *     : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `tag`
-                 * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `tag`
+                 *     : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * ## Free Text
+                 *     ## Free Text
                  *
-                 * Free text search terms will be searched against the following attributes of the
-                 * Historys: `title`, `description`, `slug`, `tag`.
-                 */
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Historys: `title`, `description`, `slug`, `tag`.
+                 *
+                 *      */
                 search?: string | null;
                 /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
                 all?: boolean | null;
@@ -17157,10 +21402,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17171,22 +21422,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Creates a new history.
-     * @description The new history can also be copied form a existing history or imported from an archive or URL.
-     */
     create_api_histories_post: {
         parameters: {
             query?: {
@@ -17199,6 +21452,8 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -17208,6 +21463,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
@@ -17218,24 +21476,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get a list of all archived histories for the current user.
-     * @description Get a list of all archived histories for the current user.
-     *
-     * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
-     */
     get_archived_histories_api_histories_archived_get: {
         parameters: {
             query?: {
@@ -17258,10 +21516,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomArchivedHistoryView"]
@@ -17272,19 +21536,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Marks several histories with the given IDs as deleted. */
     batch_delete_api_histories_batch_delete_put: {
         parameters: {
             query?: {
@@ -17298,6 +21567,8 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -17307,6 +21578,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17317,19 +21591,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Marks several histories with the given IDs as undeleted. */
     batch_undelete_api_histories_batch_undelete_put: {
         parameters: {
             query?: {
@@ -17342,6 +21621,8 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -17351,6 +21632,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17361,48 +21645,65 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns number of histories for the current user. */
     count_api_histories_count_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": number;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns deleted histories for the current user. */
     index_deleted_api_histories_deleted_get: {
         parameters: {
             query?: {
@@ -17427,10 +21728,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17441,19 +21748,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Restores a deleted history with the given ID (that hasn't been purged). */
     undelete_api_histories_deleted__history_id__undelete_post: {
         parameters: {
             query?: {
@@ -17470,10 +21782,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17483,19 +21800,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create histories from a model store. */
     create_from_store_api_histories_from_store_post: {
         parameters: {
             query?: {
@@ -17508,6 +21830,8 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -17517,6 +21841,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17526,25 +21853,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Launch a task to create histories from a model store. */
     create_from_store_async_api_histories_from_store_async_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -17554,25 +21889,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns the most recently used history of the user. */
     show_recent_api_histories_most_recently_used_get: {
         parameters: {
             query?: {
@@ -17585,10 +21928,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17598,19 +21947,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return all histories that are published. */
     published_api_histories_published_get: {
         parameters: {
             query?: {
@@ -17633,10 +21987,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17647,19 +22007,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return all histories that are shared with the current user. */
     shared_with_me_api_histories_shared_with_me_get: {
         parameters: {
             query?: {
@@ -17682,10 +22047,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
@@ -17696,19 +22067,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns the history with the given ID. */
     history_api_histories__history_id__get: {
         parameters: {
             query?: {
@@ -17725,10 +22101,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17738,19 +22119,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Updates the values for the history with the given ID. */
     update_api_histories__history_id__put: {
         parameters: {
             query?: {
@@ -17767,6 +22153,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -17776,6 +22163,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17785,19 +22175,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Marks the history with the given ID as deleted. */
     delete_api_histories__history_id__delete: {
         parameters: {
             query?: {
@@ -17815,6 +22210,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -17824,6 +22220,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17833,37 +22232,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Archive a history.
-     * @description Marks the given history as 'archived' and returns the history.
-     *
-     * Archiving a history will remove it from the list of active histories of the user but it will still be
-     * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
-     *
-     * Associating an export record:
-     *
-     * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
-     * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
-     * must be in the ready state.
-     * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
-     *
-     * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
-     * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
-     */
     archive_history_api_histories__history_id__archive_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -17872,6 +22261,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -17881,6 +22271,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomArchivedHistoryView"]
@@ -17890,28 +22283,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Restore an archived history.
-     * @description Restores an archived history and returns it.
-     *
-     * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
-     *
-     * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
-     * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
-     * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
-     */
     restore_archived_history_api_histories__history_id__archive_restore_put: {
         parameters: {
             query?: {
@@ -17926,10 +22315,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
@@ -17939,21 +22333,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return all the citations for the tools used to produce the datasets in the history. */
     citations_api_histories__history_id__citations_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -17962,37 +22362,39 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the contents of the given history.
-     * @description Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
-     *
-     * - The contents can be filtered and queried using the appropriate parameters.
-     * - The amount of information returned for each item can be customized.
-     *
-     * **Note**: Anonymous users are allowed to get their current history contents.
-     */
     history_contents__index: {
         parameters: {
             query?: {
@@ -18050,10 +22452,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The contents of the history that match the query. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HistoryContentsResult"];
                     "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
@@ -18061,25 +22468,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Batch update specific properties of a set items contained in the given History.
-     * @description Batch update specific properties of a set items contained in the given History.
-     *
-     * If you provide an invalid/unknown property key the request will not fail, but no changes
-     * will be made to the items.
-     */
     update_batch_api_histories__history_id__contents_put: {
         parameters: {
             query?: {
@@ -18096,6 +22502,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18105,29 +22512,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HistoryContentsResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create a new `HDA` or `HDCA` in the given History.
-     * @deprecated
-     * @description Create a new `HDA` or `HDCA` in the given History.
-     */
     history_contents__create: {
         parameters: {
             query?: {
@@ -18146,6 +22557,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18155,6 +22567,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -18175,24 +22590,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Build and return a compressed archive of the selected history contents.
-     * @description Build and return a compressed archive of the selected history contents.
-     *
-     * **Note**: this is a volatile endpoint and settings and behavior may change.
-     */
     history_contents__archive: {
         parameters: {
             query?: {
@@ -18219,34 +22634,39 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Build and return a compressed archive of the selected history contents.
-     * @description Build and return a compressed archive of the selected history contents.
-     *
-     * **Note**: this is a volatile endpoint and settings and behavior may change.
-     */
     history_contents__archive_named: {
         parameters: {
             query?: {
@@ -18278,34 +22698,39 @@ export interface operations {
                  */
                 format: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Executes an operation on a set of items contained in the given History.
-     * @description Executes an operation on a set of items contained in the given History.
-     *
-     * The items to be processed can be explicitly set or determined by a dynamic query.
-     */
     bulk_operation_api_histories__history_id__contents_bulk_put: {
         parameters: {
             query?: {
@@ -18322,6 +22747,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18331,31 +22757,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HistoryContentBulkOperationResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Download the content of a dataset collection as a `zip` archive.
-     * @description Download the content of a history dataset collection as a `zip` archive
-     * while maintaining approximate collection structure.
-     */
     history_contents__download_collection: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18366,29 +22797,40 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string | null;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Materialize a deferred dataset into real, usable dataset. */
     materialize_dataset_api_histories__history_id__contents_datasets__id__materialize_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18399,34 +22841,42 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set permissions of the given history dataset to the given role ids.
-     * @description Set permissions of the given history dataset to the given role ids.
-     */
     update_permissions_api_histories__history_id__contents__dataset_id__permissions_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18437,6 +22887,7 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 dataset_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18449,28 +22900,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays (preview) or downloads dataset content.
-     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-     */
     history_contents_display_api_histories__history_id__contents__history_content_id__display_get: {
         parameters: {
             query?: {
@@ -18484,7 +22940,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
                 ck_size?: number | null;
             };
             header?: {
@@ -18496,30 +22952,37 @@ export interface operations {
                 history_content_id: string;
                 history_id: string | null;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Check if dataset content can be previewed or downloaded.
-     * @description Streams the dataset for download or the contents preview to be displayed in a browser.
-     */
     history_contents_display_api_histories__history_id__contents__history_content_id__display_head: {
         parameters: {
             query?: {
@@ -18533,7 +22996,7 @@ export interface operations {
                 raw?: boolean;
                 /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
                 offset?: number | null;
-                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
+                /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes.  */
                 ck_size?: number | null;
             };
             header?: {
@@ -18545,31 +23008,42 @@ export interface operations {
                 history_content_id: string;
                 history_id: string | null;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get the list of extra files/directories associated with a dataset. */
     extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18580,29 +23054,39 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns the metadata file associated with this history item. */
     history_contents__get_metadata_file: {
         parameters: {
             query: {
@@ -18619,29 +23103,40 @@ export interface operations {
                 /** @description The ID of the History Dataset. */
                 history_content_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tags based on history_content_id */
     index_api_histories__history_id__contents__history_content_id__tags_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18650,31 +23145,42 @@ export interface operations {
                 history_content_id: string;
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tag based on history_content_id */
     show_api_histories__history_id__contents__history_content_id__tags__tag_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18684,31 +23190,42 @@ export interface operations {
                 tag_name: string;
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update tag based on history_content_id */
     update_api_histories__history_id__contents__history_content_id__tags__tag_name__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18718,6 +23235,7 @@ export interface operations {
                 tag_name: string;
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18727,27 +23245,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create tag based on history_content_id */
     create_api_histories__history_id__contents__history_content_id__tags__tag_name__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18757,6 +23284,7 @@ export interface operations {
                 tag_name: string;
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -18766,27 +23294,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete tag based on history_content_id */
     delete_api_histories__history_id__contents__history_content_id__tags__tag_name__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -18796,35 +23333,39 @@ export interface operations {
                 tag_name: string;
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": boolean;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
-     * @deprecated
-     * @description Return detailed information about an `HDA` or `HDCA` within a history.
-     *
-     * **Note**: Anonymous users are allowed to get their current history contents.
-     */
     history_contents__show_legacy: {
         parameters: {
             query?: {
@@ -18847,10 +23388,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -18863,23 +23409,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
-     * @deprecated
-     * @description Updates the values for the history content item with the given ``ID``.
-     */
     history_contents__update_legacy: {
         parameters: {
             query?: {
@@ -18900,6 +23447,7 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -18909,6 +23457,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -18921,24 +23472,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Delete the history dataset with the given ``ID``.
-     * @description Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
-     *
-     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-     */
     history_contents__delete_legacy: {
         parameters: {
             query?: {
@@ -18974,6 +23525,7 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -18983,36 +23535,45 @@ export interface operations {
         responses: {
             /** @description Request has been executed. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request accepted, processing will finish later. */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Validates the metadata associated with a dataset within a History.
-     * @description Validates the metadata associated with a dataset within a History.
-     */
     validate_api_histories__history_id__contents__id__validate_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19023,37 +23584,39 @@ export interface operations {
                 /** @description The ID of the item (`HDA`/`HDCA`) */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": Record<string, never>;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the contents of the given history filtered by type.
-     * @description Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
-     *
-     * - The contents can be filtered and queried using the appropriate parameters.
-     * - The amount of information returned for each item can be customized.
-     *
-     * **Note**: Anonymous users are allowed to get their current history contents.
-     */
     history_contents__index_typed: {
         parameters: {
             query?: {
@@ -19113,10 +23676,15 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The contents of the history that match the query. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["HistoryContentsResult"];
                     "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
@@ -19124,22 +23692,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create a new `HDA` or `HDCA` in the given History.
-     * @description Create a new `HDA` or `HDCA` in the given History.
-     */
     history_contents__create_typed: {
         parameters: {
             query?: {
@@ -19158,6 +23728,7 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19167,6 +23738,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -19187,24 +23761,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return detailed information about a specific HDA or HDCA with the given `ID` within a history.
-     * @description Return detailed information about an `HDA` or `HDCA` within a history.
-     *
-     * **Note**: Anonymous users are allowed to get their current history contents.
-     */
     history_contents__show: {
         parameters: {
             query?: {
@@ -19227,10 +23801,15 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -19243,22 +23822,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the values for the history content item with the given ``ID`` and path specified type.
-     * @description Updates the values for the history content item with the given ``ID``.
-     */
     history_contents__update_typed: {
         parameters: {
             query?: {
@@ -19279,6 +23860,7 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19288,6 +23870,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["HDACustom"]
@@ -19300,24 +23885,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Delete the history content with the given ``ID`` and path specified type.
-     * @description Delete the history content with the given ``ID`` and path specified type.
-     *
-     * **Note**: Currently does not stop any active jobs for which this dataset is an output.
-     */
     history_contents__delete_typed: {
         parameters: {
             query?: {
@@ -19353,6 +23938,7 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -19362,41 +23948,45 @@ export interface operations {
         responses: {
             /** @description Request has been executed. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request accepted, processing will finish later. */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return detailed information about an `HDA` or `HDCAs` jobs.
-     * @description Return detailed information about an `HDA` or `HDCAs` jobs.
-     *
-     * **Warning**: We allow anyone to fetch job state information about any object they
-     * can guess an encoded ID for - it isn't considered protected data. This keeps
-     * polling IDs as part of state calculation for large histories and collections as
-     * efficient as possible.
-     */
     show_jobs_summary_api_histories__history_id__contents__type_s__id__jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19409,10 +23999,15 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["JobStateSummary"]
@@ -19422,21 +24017,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Prepare a dataset or dataset collection for export-style download. */
     prepare_store_download_api_histories__history_id__contents__type_s__id__prepare_store_download_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19449,6 +24050,7 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19458,27 +24060,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Prepare a dataset or dataset collection for export-style download and write to supplied URI. */
     write_store_api_histories__history_id__contents__type_s__id__write_store_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19491,6 +24102,7 @@ export interface operations {
                 /** @description The type of the target history element. */
                 type: components["schemas"]["HistoryContentType"];
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19500,31 +24112,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create contents from store.
-     * @description Create history contents from model store.
-     * Input can be a tarfile created with build_objects script distributed
-     * with galaxy-data, from an exported history with files stripped out,
-     * or hand-crafted JSON dictionary.
-     */
     create_from_store_api_histories__history_id__contents_from_store_post: {
         parameters: {
             query?: {
@@ -19541,6 +24155,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19550,6 +24165,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["HDACustom"]
@@ -19563,21 +24181,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns meta data for custom builds. */
     get_custom_builds_metadata_api_histories__history_id__custom_builds_metadata_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19586,34 +24210,42 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CustomBuildsMetadataResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item inaccessible by a URL link.
-     * @description Makes this item inaccessible by a URL link and return the current sharing status.
-     */
     disable_link_access_api_histories__history_id__disable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19622,34 +24254,42 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item accessible by a URL link.
-     * @description Makes this item accessible by a URL link and return the current sharing status.
-     */
     enable_link_access_api_histories__history_id__enable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19658,34 +24298,39 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get previous history exports.
-     * @description By default the legacy job-based history exports (jeha) are returned.
-     *
-     * Change the `accept` content type header to return the new task-based history exports.
-     */
     get_history_exports_api_histories__history_id__exports_get: {
         parameters: {
             query?: {
@@ -19704,10 +24349,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list of history exports */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobExportHistoryArchiveListResponse"];
                     "application/vnd.galaxy.task.export+json": components["schemas"]["ExportTaskListResponse"];
@@ -19715,36 +24365,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Start job (if needed) to create history export for corresponding history.
-     * @deprecated
-     * @description This will start a job to create a history export archive.
-     *
-     * Calling this endpoint multiple times will return the 202 status code until the archive
-     * has been completely generated and is ready to download. When ready, it will return
-     * the 200 status code along with the download link information.
-     *
-     * If the history will be exported to a `directory_uri`, instead of returning the download
-     * link information, the Job ID will be returned so it can be queried to determine when
-     * the file has been written.
-     *
-     * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-     * `/api/histories/{id}/write_store` instead.
-     */
     archive_export_api_histories__history_id__exports_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19753,6 +24394,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -19762,6 +24404,9 @@ export interface operations {
         responses: {
             /** @description Object containing url to fetch export from. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["JobExportHistoryArchiveModel"]
@@ -19770,34 +24415,34 @@ export interface operations {
             };
             /** @description The exported archive file is not ready yet. */
             202: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * If ready and available, return raw contents of exported history as a downloadable archive.
-     * @deprecated
-     * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
-     * of the history export - when ready, that route will return 200 status
-     * code (instead of 202) and this route can be used to download the archive.
-     *
-     * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
-     * `/api/histories/{id}/write_store` instead.
-     */
     history_archive_download_api_histories__history_id__exports__jeha_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19808,35 +24453,37 @@ export interface operations {
                 /** @description The ID of the specific Job Export History Association or `latest` (default) to download the last generated archive. */
                 jeha_id: string | "latest";
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The archive file containing the History. */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
-     * @description Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
-     *
-     * **Warning**: We allow anyone to fetch job state information about any object they
-     * can guess an encoded ID for - it isn't considered protected data. This keeps
-     * polling IDs as part of state calculation for large histories and collections as
-     * efficient as possible.
-     */
     index_jobs_summary_api_histories__history_id__jobs_summary_get: {
         parameters: {
             query?: {
@@ -19853,10 +24500,15 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["JobStateSummary"]
@@ -19867,21 +24519,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
     materialize_to_history_api_histories__history_id__materialize_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19890,6 +24548,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19899,27 +24558,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return a short term storage token to monitor download of the history. */
     prepare_store_download_api_histories__history_id__prepare_store_download_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19928,6 +24596,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -19937,30 +24606,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item public and accessible by a URL link.
-     * @description Makes this item publicly available by a URL link and return the current sharing status.
-     */
     publish_api_histories__history_id__publish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -19969,34 +24644,42 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Share this item with specific users.
-     * @description Shares this item with specific users and return the current sharing status.
-     */
     share_with_users_api_histories__history_id__share_with_users_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20005,6 +24688,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20014,30 +24698,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ShareHistoryWithStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get the current sharing status of the given item.
-     * @description Return the sharing status of the item.
-     */
     sharing_api_histories__history_id__sharing_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20046,34 +24736,42 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set a new slug for this shared item.
-     * @description Sets a new slug to access this item by URL. The new slug must be unique.
-     */
     set_slug_api_histories__history_id__slug_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20082,6 +24780,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20091,25 +24790,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tags based on history_id */
     index_api_histories__history_id__tags_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20117,31 +24825,42 @@ export interface operations {
             path: {
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tag based on history_id */
     show_api_histories__history_id__tags__tag_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20150,31 +24869,42 @@ export interface operations {
                 history_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update tag based on history_id */
     update_api_histories__history_id__tags__tag_name__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20183,6 +24913,7 @@ export interface operations {
                 history_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20192,27 +24923,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create tag based on history_id */
     create_api_histories__history_id__tags__tag_name__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20221,6 +24961,7 @@ export interface operations {
                 history_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -20230,27 +24971,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete tag based on history_id */
     delete_api_histories__history_id__tags__tag_name__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20259,34 +25009,42 @@ export interface operations {
                 history_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": boolean;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes this item from the published list.
-     * @description Removes this item from the published list and return the current sharing status.
-     */
     unpublish_api_histories__history_id__unpublish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20295,31 +25053,42 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Prepare history for export-style download and write to supplied URI. */
     write_store_api_histories__history_id__write_store_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20328,6 +25097,7 @@ export interface operations {
                 /** @description The encoded database identifier of the History. */
                 history_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20337,25 +25107,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get the list of a user's workflow invocations. */
     index_invocations_api_invocations_get: {
         parameters: {
             query?: {
@@ -20389,38 +25167,49 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create Invocations From Store
-     * @description Create invocation(s) from a supplied model store.
-     */
     create_invocations_from_store_api_invocations_from_store_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20430,27 +25219,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show details of workflow invocation step. */
     step_api_invocations_steps__step_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20459,40 +25257,48 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get detailed description of a workflow invocation. */
     show_invocation_api_invocations__invocation_id__get: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -20503,40 +25309,48 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Cancel the specified workflow invocation. */
     cancel_invocation_api_invocations__invocation_id__delete: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -20547,37 +25361,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated across all current jobs of the workflow invocation.
-     * @description Warning: We allow anyone to fetch job state information about any object they
-     * can guess an encoded ID for - it isn't considered protected data. This keeps
-     * polling IDs as part of state calculation for large histories and collections as
-     * efficient as possible.
-     */
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20586,31 +25405,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Prepare a workflow invocation export-style download. */
     prepare_store_download_api_invocations__invocation_id__prepare_store_download_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20619,6 +25449,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20628,27 +25459,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get JSON summarizing invocation for reporting. */
     show_invocation_report_api_invocations__invocation_id__report_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20657,31 +25497,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get PDF summarizing invocation for reporting. */
     show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20690,35 +25541,40 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated per step of the workflow invocation.
-     * @description Warning: We allow anyone to fetch job state information about any object they
-     * can guess an encoded ID for - it isn't considered protected data. This keeps
-     * polling IDs as part of state calculation for large histories and collections as
-     * efficient as possible.
-     */
     invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20727,10 +25583,15 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["InvocationStepJobsResponseStepModel"]
@@ -20741,24 +25602,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Show details of workflow invocation step.
-     * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
-     */
     invocation_step_api_invocations__invocation_id__steps__step_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20769,31 +25633,42 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
     update_invocation_step_api_invocations__invocation_id__steps__step_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20804,6 +25679,7 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20813,27 +25689,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Prepare a workflow invocation export-style download and write to supplied URI. */
     write_store_api_invocations__invocation_id__write_store_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -20842,6 +25727,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20851,66 +25737,83 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Job Lock Status
-     * @description Get job lock status.
-     */
     job_lock_status_api_job_lock_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Update Job Lock
-     * @description Set job lock status.
-     */
     update_job_lock_api_job_lock_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -20920,25 +25823,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Index */
     index_api_jobs_get: {
         parameters: {
             query?: {
@@ -20962,42 +25873,42 @@ export interface operations {
                 implicit_collection_jobs_id?: string | null;
                 /** @description Sort results by specified field. */
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
-                /**
-                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
-                 * ## Query Structure
+                 *     ## Query Structure
                  *
-                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-                 * being indexed (i.e. a column in the database).
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
                  *
-                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-                 * this means the database operation `ILIKE` will typically be used).
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
                  *
-                 * Once the tagged filters are extracted from the search query, the remaining text is just
-                 * used to search various documented attributes of the object.
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
                  *
-                 * ## GitHub-style Tags Available
+                 *     ## GitHub-style Tags Available
                  *
-                 * `user`
-                 * : The user email of the user that executed the Job. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `user`
+                 *     : The user email of the user that executed the Job. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `tool_id`
-                 * : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `tool_id`
+                 *     : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `runner`
-                 * : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+                 *     `runner`
+                 *     : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
                  *
-                 * `handler`
-                 * : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+                 *     `handler`
+                 *     : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
                  *
-                 * ## Free Text
+                 *     ## Free Text
                  *
-                 * Free text search terms will be searched against the following attributes of the
-                 * Jobs: `user`, `tool`, `handler`, `runner`.
-                 */
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Jobs: `user`, `tool`, `handler`, `runner`.
+                 *
+                 *      */
                 search?: string | null;
                 /** @description Maximum number of jobs to return. */
                 limit?: number;
@@ -21014,10 +25925,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["ShowFullJobResponse"]
@@ -21028,30 +25945,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return jobs for current user
-     * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
-     * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-     * recycle the old results.
-     */
     search_jobs_api_jobs_search_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21061,25 +25981,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["EncodedJobDetails"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return dictionary containing description of job data. */
     show_job_api_jobs__job_id__get: {
         parameters: {
             query?: {
@@ -21094,10 +26022,15 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["ShowFullJobResponse"]
@@ -21106,21 +26039,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Cancels specified job */
     cancel_job_api_jobs__job_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21129,6 +26068,7 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -21138,27 +26078,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": boolean;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Check inputs and job for common potential problems to aid in error reporting */
     check_common_problems_api_jobs__job_id__common_problems_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21167,31 +26116,42 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobInputSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return destination parameters for specified job. */
     destination_params_job_api_jobs__job_id__destination_params_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21200,31 +26160,42 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobDestinationParams"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Submits a bug report via the API. */
     report_error_api_jobs__job_id__error_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21233,6 +26204,7 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21242,27 +26214,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobErrorSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns input datasets created by a job. */
     get_inputs_api_jobs__job_id__inputs_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21271,29 +26252,39 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobInputAssociation"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return job metrics for specified job. */
     get_metrics_api_jobs__job_id__metrics_get: {
         parameters: {
             query?: {
@@ -21311,32 +26302,39 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get a fresh OIDC token
-     * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
-     */
     get_token_api_jobs__job_id__oidc_tokens_get: {
         parameters: {
             query: {
@@ -21352,31 +26350,42 @@ export interface operations {
             path: {
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "text/plain": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns output datasets created by a job. */
     get_outputs_api_jobs__job_id__outputs_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21385,34 +26394,39 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Resolve parameters as a list for nested display.
-     * @description Resolve parameters as a list for nested display.
-     * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-     * this endpoint will change frequently.
-     */
     resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
         parameters: {
             query?: {
@@ -21430,31 +26444,42 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Resumes a paused job. */
     resume_paused_job_api_jobs__job_id__resume_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21463,32 +26488,39 @@ export interface operations {
                 /** @description The ID of the job */
                 job_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a list of summary data for all libraries.
-     * @description Returns a list of summary data for all libraries.
-     */
     index_api_libraries_get: {
         parameters: {
             query?: {
@@ -21499,38 +26531,49 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Creates a new library and returns its summary information.
-     * @description Creates a new library and returns its summary information. Currently, only admin users can create libraries.
-     */
     create_api_libraries_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21540,63 +26583,83 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns a list of summary data for all libraries marked as deleted.
-     * @description Returns a list of summary data for all libraries marked as deleted.
-     */
     index_deleted_api_libraries_deleted_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create libraries from a model store. */
     create_from_store_api_libraries_from_store_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21606,30 +26669,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummary"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns summary information about a particular library.
-     * @description Returns summary information about a particular library.
-     */
     show_api_libraries__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21638,33 +26707,39 @@ export interface operations {
                 /** @description The ID of the Library. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Marks the specified library as deleted (or undeleted).
-     * @description Marks the specified library as deleted (or undeleted).
-     * Currently, only admin users can delete or restore libraries.
-     */
     delete_api_libraries__id__delete: {
         parameters: {
             query?: {
@@ -21679,6 +26754,7 @@ export interface operations {
                 /** @description The ID of the Library. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -21688,30 +26764,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the information of an existing library.
-     * @description Updates the information of an existing library.
-     */
     update_api_libraries__id__patch: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -21720,6 +26802,7 @@ export interface operations {
                 /** @description The ID of the Library. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21729,29 +26812,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Gets the current or available permissions of a particular library.
-     * @description Gets the current or available permissions of a particular library.
-     * The results can be paginated and additionally filtered by a query.
-     */
     get_permissions_api_libraries__id__permissions_get: {
         parameters: {
             query?: {
@@ -21774,10 +26861,15 @@ export interface operations {
                 /** @description The ID of the Library. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["LibraryCurrentPermissions"]
@@ -21786,22 +26878,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Sets the permissions to access and manipulate a library.
-     * @description Sets the permissions to access and manipulate a library.
-     */
     set_permissions_api_libraries__id__permissions_post: {
         parameters: {
             query?: {
@@ -21816,6 +26910,7 @@ export interface operations {
                 /** @description The ID of the Library. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21827,6 +26922,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["LibraryLegacySummary"]
@@ -21835,87 +26933,112 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Lists all available SPDX licenses
-     * @description Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/).
-     */
     index_api_licenses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description List of SPDX licenses */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LicenseMetadataModel"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Gets the SPDX license metadata associated with the short identifier
-     * @description Returns the license metadata associated with the given
-     * [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/).
-     */
     get_api_licenses__id__get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 /** @description The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/) */
                 id: unknown;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description SPDX license metadata */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["LicenseMetadataModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Records a collection of metrics.
-     * @description Record any metrics sent and return some status object.
-     */
     create_api_metrics_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21925,30 +27048,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the list of notifications associated with the user.
-     * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
-     *
-     * You can use the `limit` and `offset` parameters to paginate through the notifications.
-     */
     get_user_notifications_api_notifications_get: {
         parameters: {
             query?: {
@@ -21959,35 +27085,49 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserNotificationListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Updates a list of notifications with the requested values in a single request. */
     update_user_notifications_api_notifications_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -21997,34 +27137,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Sends a notification to a list of recipients (users, groups or roles).
-     * @description Sends a notification to a list of recipients (users, groups or roles).
-     */
     send_notification_api_notifications_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22034,6 +27182,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["NotificationCreatedResponse"]
@@ -22042,25 +27193,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Deletes a list of notifications received by the user in a single request. */
     delete_user_notifications_api_notifications_delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22070,77 +27229,83 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns all currently active broadcasted notifications.
-     * @description Only Admin users can access inactive notifications (scheduled or recently expired).
-     */
     get_all_broadcasted_api_notifications_broadcast_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["BroadcastNotificationListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Broadcasts a notification to every user in the system.
-     * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
-     * They are typically used to display important information such as maintenance windows or new features.
-     * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
-     *
-     * Broadcasted notifications can include action links that are displayed as buttons.
-     * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
-     *
-     * Some key features of broadcasted notifications include:
-     * - They are not associated with a specific user, so they cannot be deleted or marked as read.
-     * - They can be scheduled to be displayed in the future or to expire after a certain time.
-     * - By default, broadcasted notifications are published immediately and expire six months after publication.
-     * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
-     */
     broadcast_notification_api_notifications_broadcast_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22150,30 +27315,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["NotificationCreatedResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the information of a specific broadcasted notification.
-     * @description Only Admin users can access inactive notifications (scheduled or recently expired).
-     */
     get_broadcasted_api_notifications_broadcast__notification_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22182,34 +27353,42 @@ export interface operations {
                 /** @description The ID of the Notification. */
                 notification_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["BroadcastNotificationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the state of a broadcasted notification.
-     * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
-     */
     update_broadcasted_notification_api_notifications_broadcast__notification_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22218,6 +27397,7 @@ export interface operations {
                 /** @description The ID of the Notification. */
                 notification_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22227,70 +27407,81 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the current user's preferences for notifications.
-     * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
-     *
-     * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
-     *   The supported channels are returned in the `supported-channels` header.
-     */
     get_notification_preferences_api_notifications_preferences_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates the user's preferences for notifications.
-     * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
-     *
-     * - Can be used to completely enable/disable notifications for a particular type (category)
-     * or to enable/disable a particular channel on each category.
-     */
     update_notification_preferences_api_notifications_preferences_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22300,28 +27491,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Returns the current status summary of the user's notifications since a particular date.
-     * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
-     */
     get_notifications_status_api_notifications_status_get: {
         parameters: {
             query: {
@@ -22331,31 +27527,43 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["NotificationStatusSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays information about a notification received by the user. */
     show_notification_api_notifications__notification_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22364,31 +27572,42 @@ export interface operations {
                 /** @description The ID of the Notification. */
                 notification_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserNotificationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Updates the state of a notification received by the user. */
     update_user_notification_api_notifications__notification_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22397,6 +27616,7 @@ export interface operations {
                 /** @description The ID of the Notification. */
                 notification_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22406,32 +27626,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Deletes a notification received by the user.
-     * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
-     *
-     * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
-     * - It will be eventually removed from the database by a background task after the expiration time.
-     * - Deleted notifications will be permanently deleted when the expiration time is reached.
-     */
     delete_user_notification_api_notifications__notification_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22440,62 +27662,87 @@ export interface operations {
                 /** @description The ID of the Notification. */
                 notification_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a list of persisted object store instances defined by the requesting user. */
     object_stores__instances_index: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create a user-bound object store. */
     object_stores__create_instance: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22505,31 +27752,42 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Test payload for creating user-bound object store. */
     object_stores__test_new_instance_configuration: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22539,27 +27797,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a persisted user object store instance. */
     object_stores__instances_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22568,31 +27835,42 @@ export interface operations {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update or upgrade user object store instance. */
     object_stores__instances_update: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22601,6 +27879,7 @@ export interface operations {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22613,27 +27892,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Purge user object store instance. */
     object_stores__instances_purge: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22642,56 +27930,78 @@ export interface operations {
                 /** @description The UUID used to identify a persisted UserObjectStore object. */
                 user_object_store_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a list of object store templates available to build user defined object stores from */
     object_stores__templates_index: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list of the configured object store templates. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ObjectStoreTemplateSummaries"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
     index_api_object_stores_get: {
         parameters: {
             query?: {
@@ -22702,10 +28012,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list of the configured object stores. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["ConcreteObjectStoreModel"]
@@ -22715,21 +28031,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get information about a concrete object store configured with Galaxy. */
     show_info_api_object_stores__object_store_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22738,32 +28060,39 @@ export interface operations {
                 /** @description The concrete object store ID. */
                 object_store_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ConcreteObjectStoreModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Lists all Pages viewable by the user.
-     * @description Get a list with summary information of all Pages available to the user.
-     */
     index_api_pages_get: {
         parameters: {
             query?: {
@@ -22771,42 +28100,42 @@ export interface operations {
                 deleted?: boolean;
                 limit?: number;
                 offset?: number;
-                /**
-                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
-                 * ## Query Structure
+                 *     ## Query Structure
                  *
-                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-                 * being indexed (i.e. a column in the database).
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
                  *
-                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-                 * this means the database operation `ILIKE` will typically be used).
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
                  *
-                 * Once the tagged filters are extracted from the search query, the remaining text is just
-                 * used to search various documented attributes of the object.
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
                  *
-                 * ## GitHub-style Tags Available
+                 *     ## GitHub-style Tags Available
                  *
-                 * `title`
-                 * : The page's title.
+                 *     `title`
+                 *     : The page's title.
                  *
-                 * `slug`
-                 * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `slug`
+                 *     : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `tag`
-                 * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `tag`
+                 *     : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `user`
-                 * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `user`
+                 *     : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * ## Free Text
+                 *     ## Free Text
                  *
-                 * Free text search terms will be searched against the following attributes of the
-                 * Pages: `title`, `slug`, `tag`, `user`.
-                 */
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Pages: `title`, `slug`, `tag`, `user`.
+                 *
+                 *      */
                 search?: string | null;
                 show_own?: boolean;
                 show_published?: boolean;
@@ -22821,38 +28150,49 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list with summary page information. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PageSummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Create a page and return summary information.
-     * @description Get a list with details of all Pages available to the user.
-     */
     create_api_pages_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -22862,30 +28202,36 @@ export interface operations {
         responses: {
             /** @description The page summary information. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PageSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return a page summary and the content of the last revision.
-     * @description Return summary information about a specific Page and the content of the last revision.
-     */
     show_api_pages__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22894,34 +28240,42 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The page summary information. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["PageDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Marks the specific Page as deleted.
-     * @description Marks the Page with the given ID as deleted.
-     */
     delete_api_pages__id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22930,34 +28284,40 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return a PDF document of the last revision of the Page.
-     * @description Return a PDF document of the last revision of the Page.
-     *
-     * This feature may not be available in this Galaxy.
-     */
     show_pdf_api_pages__id__pdf_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -22966,38 +28326,49 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description PDF document with the last revision of the page. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/pdf": unknown;
                 };
             };
             /** @description PDF conversion service not available. */
             501: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item inaccessible by a URL link.
-     * @description Makes this item inaccessible by a URL link and return the current sharing status.
-     */
     disable_link_access_api_pages__id__disable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23006,34 +28377,42 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item accessible by a URL link.
-     * @description Makes this item accessible by a URL link and return the current sharing status.
-     */
     enable_link_access_api_pages__id__enable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23042,36 +28421,42 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return a PDF document of the last revision of the Page.
-     * @description Return a STS download link for this page to be downloaded as a PDF.
-     *
-     * This feature may not be available in this Galaxy.
-     */
     prepare_pdf_api_pages__id__prepare_download_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23080,38 +28465,49 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Short term storage reference for async monitoring of this download. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
             /** @description PDF conversion service not available. */
             501: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item public and accessible by a URL link.
-     * @description Makes this item publicly available by a URL link and return the current sharing status.
-     */
     publish_api_pages__id__publish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23120,34 +28516,42 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Share this item with specific users.
-     * @description Shares this item with specific users and return the current sharing status.
-     */
     share_with_users_api_pages__id__share_with_users_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23156,6 +28560,7 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23165,30 +28570,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get the current sharing status of the given Page.
-     * @description Return the sharing status of the item.
-     */
     sharing_api_pages__id__sharing_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23197,34 +28608,42 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set a new slug for this shared item.
-     * @description Sets a new slug to access this item by URL. The new slug must be unique.
-     */
     set_slug_api_pages__id__slug_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23233,6 +28652,7 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23242,28 +28662,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Undelete the specific Page.
-     * @description Marks the Page with the given ID as undeleted.
-     */
     undelete_api_pages__id__undelete_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23272,32 +28698,40 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes this item from the published list.
-     * @description Removes this item from the published list and return the current sharing status.
-     */
     unpublish_api_pages__id__unpublish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23306,70 +28740,89 @@ export interface operations {
                 /** @description The ID of the Page. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays a list with information of quotas that are currently active.
-     * @description Displays a list with information of quotas that are currently active.
-     */
     index_api_quotas_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Creates a new quota.
-     * @description Creates a new quota.
-     */
     create_api_quotas_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23379,62 +28832,77 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CreateQuotaResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays a list with information of quotas that have been deleted.
-     * @description Displays a list with information of quotas that have been deleted.
-     */
     index_deleted_api_quotas_deleted_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays details on a particular quota that has been deleted.
-     * @description Displays details on a particular quota that has been deleted.
-     */
     deleted_quota_api_quotas_deleted__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23443,34 +28911,42 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Restores a previously deleted quota.
-     * @description Restores a previously deleted quota.
-     */
     undelete_api_quotas_deleted__id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23479,34 +28955,42 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays details on a particular active quota.
-     * @description Displays details on a particular active quota.
-     */
     quota_api_quotas__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23515,34 +28999,42 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Updates an existing quota.
-     * @description Updates an existing quota.
-     */
     update_api_quotas__id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23551,6 +29043,7 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23560,30 +29053,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Deletes an existing quota.
-     * @description Deletes an existing quota.
-     */
     delete_api_quotas__id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23592,6 +29091,7 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -23601,27 +29101,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Purges a previously deleted quota. */
     purge_api_quotas__id__purge_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23630,34 +29139,39 @@ export interface operations {
                 /** @description The ID of the Quota. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Displays remote files available to the user.
-     * @description Lists all remote files available to the user from different sources.
-     *
-     * The total count of files and directories is returned in the 'total_matches' header.
-     */
     index_api_remote_files_get: {
         parameters: {
             query?: {
@@ -23684,10 +29198,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list with details about the remote files available to the user. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["ListUriResponse"]
@@ -23696,28 +29216,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Creates a new entry (directory/record) on the remote files source.
-     * @description Creates a new entry on the remote files source.
-     */
     create_entry_api_remote_files_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23727,28 +29252,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CreatedEntryResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Display plugin information for each of the gxfiles:// URI targets available.
-     * @description Display plugin information for each of the gxfiles:// URI targets available.
-     */
     plugins_api_remote_files_plugins_get: {
         parameters: {
             query?: {
@@ -23763,64 +29293,90 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list with details about each plugin. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["FilesSourcePluginList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Index */
     index_api_roles_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create */
     create_api_roles_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -23830,27 +29386,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show */
     show_api_roles__id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23858,31 +29423,42 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete */
     delete_api_roles__id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23890,31 +29466,42 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Purge */
     purge_api_roles__id__purge_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23922,31 +29509,42 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Undelete */
     undelete_api_roles__id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -23954,96 +29552,133 @@ export interface operations {
             path: {
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Serve the staged download specified by request ID. */
     serve_api_short_term_storage__storage_request_id__get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 storage_request_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The archive file containing the History. */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request was cancelled without an exception condition recorded. */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Determine if specified storage request ID is ready for download. */
     is_ready_api_short_term_storage__storage_request_id__ready_get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 storage_request_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Boolean indicating if the storage is ready. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": boolean;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
-     * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
-     */
     cleanup_datasets_api_storage_datasets_delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24053,25 +29688,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns discarded datasets owned by the given user. The results can be paginated. */
     discarded_datasets_api_storage_datasets_discarded_get: {
         parameters: {
             query?: {
@@ -24086,67 +29729,90 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
     discarded_datasets_summary_api_storage_datasets_discarded_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Purges a set of histories by ID. The histories must be owned by the user.
-     * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
-     */
     cleanup_histories_api_storage_histories_delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24156,25 +29822,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
     archived_histories_api_storage_histories_archived_get: {
         parameters: {
             query?: {
@@ -24189,58 +29863,81 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
     archived_histories_summary_api_storage_histories_archived_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns all discarded histories associated with the given user. */
     discarded_histories_api_storage_histories_discarded_get: {
         parameters: {
             query?: {
@@ -24255,70 +29952,90 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns information with the total storage space taken by discarded histories associated with the given user. */
     discarded_histories_summary_api_storage_histories_discarded_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Apply a new set of tags to an item.
-     * @description Replaces the tags associated with an item with the new ones specified in the payload.
-     *
-     * - The previous tags will be __deleted__.
-     * - If no tags are provided in the request body, the currently associated tags will also be __deleted__.
-     */
     update_api_tags_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24328,77 +30045,109 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Determine state of task ID */
     state_api_tasks__task_id__state_get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 task_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description String indicating task state. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["TaskState"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Lists all available data tables
-     * @description Get the list of all available data tables.
-     */
     index_api_tool_data_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description A list with details on individual data tables. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ToolDataEntryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Import a data manager bundle */
     create_api_tool_data_post: {
         parameters: {
             query?: {
@@ -24408,6 +30157,8 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24417,30 +30168,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get details of a given data table
-     * @description Get details of a given tool data table.
-     */
     show_api_tool_data__table_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24449,34 +30206,42 @@ export interface operations {
                 /** @description The name of the tool data table */
                 table_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A description of the given data table and its content */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes an item from a data table
-     * @description Removes an item from a data table and reloads it to return its updated details.
-     */
     delete_api_tool_data__table_name__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24485,6 +30250,7 @@ export interface operations {
                 /** @description The name of the tool data table */
                 table_name: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24494,30 +30260,36 @@ export interface operations {
         responses: {
             /** @description A description of the affected data table and its content */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get information about a particular field in a tool data table
-     * @description Reloads a data table and return its details.
-     */
     show_field_api_tool_data__table_name__fields__field_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24528,34 +30300,42 @@ export interface operations {
                 /** @description The name of the tool data table field */
                 field_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Information about a data table field */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ToolDataField"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get information about a particular field in a tool data table
-     * @description Download a file associated with the data table field.
-     */
     download_field_file_api_tool_data__table_name__fields__field_name__files__file_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24568,32 +30348,40 @@ export interface operations {
                 /** @description The name of a file associated with this data table field */
                 file_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Information about a data table field */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Reloads a tool data table
-     * @description Reloads a data table and return its details.
-     */
     reload_api_tool_data__table_name__reload_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24602,29 +30390,39 @@ export interface operations {
                 /** @description The name of the tool data table */
                 table_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A description of the reloaded data table and its content */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Lists installed tool shed repositories. */
     index_api_tool_shed_repositories_get: {
         parameters: {
             query?: {
@@ -24639,29 +30437,41 @@ export interface operations {
                 /** @description Filter by whether the repository has been uninstalled. */
                 uninstalled?: boolean | null;
             };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list of installed tool shed repository objects. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InstalledToolShedRepository"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Check for updates to the specified repository, or all installed repositories. */
     check_for_updates_api_tool_shed_repositories_check_for_updates_get: {
         parameters: {
             query?: {
@@ -24671,64 +30481,90 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A description of the state and updates message. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CheckForUpdatesResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show installed tool shed repository. */
     show_api_tool_shed_repositories__id__get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 /** @description The encoded database identifier of the installed Tool Shed Repository. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InstalledToolShedRepository"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Upload files to Galaxy */
     fetch_form_api_tools_fetch_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24738,87 +30574,114 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Index
-     * @description Return list of available tours.
-     */
     index_api_tours_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["TourList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Show
-     * @description Return a tour definition.
-     */
     show_api_tours__tour_id__get: {
         parameters: {
+            query?: never;
+            header?: never;
             path: {
                 tour_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Update Tour
-     * @description Return a tour definition.
-     */
     update_tour_api_tours__tour_id__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -24826,32 +30689,39 @@ export interface operations {
             path: {
                 tour_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get Users
-     * @description Return a collection of users. Filters will only work if enabled in config or user is admin.
-     */
     get_users_api_users_get: {
         parameters: {
             query?: {
@@ -24868,10 +30738,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["UserModel"]
@@ -24881,25 +30757,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create a new Galaxy user. Only admins can create users for now. */
     create_user_api_users_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -24911,66 +30795,81 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CreatedUserModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Triggers a recalculation of the current user disk usage.
-     * @description This route will be removed in a future version.
-     *
-     * Please use `/api/users/current/recalculate_disk_usage` instead.
-     */
     recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The asynchronous task summary to track the task state. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get Deleted Users
-     * @description Return a collection of deleted users. Only admins can see deleted users.
-     */
     get_deleted_users_api_users_deleted_get: {
         parameters: {
             query?: {
@@ -24985,10 +30884,16 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["UserModel"]
@@ -24998,21 +30903,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return information about a deleted user. Only admins can see deleted users. */
     get_deleted_user_api_users_deleted__user_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25021,10 +30932,15 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["DetailedUserModel"]
@@ -25033,21 +30949,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Restore a deleted user. Only admins can restore users. */
     undelete_user_api_users_deleted__user_id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25056,68 +30978,87 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Triggers a recalculation of the current user disk usage.
-     * @deprecated
-     * @description This route will be removed in a future version.
-     *
-     * Please use `/api/users/current/recalculate_disk_usage` instead.
-     */
     recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The asynchronous task summary to track the task state. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return information about a specified or the current user. Only admin can see deleted or other users */
     get_user_api_users__user_id__get: {
         parameters: {
             query?: {
@@ -25132,10 +31073,15 @@ export interface operations {
                 /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["DetailedUserModel"]
@@ -25144,19 +31090,24 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update the values of a user. Only admin can update others. */
     update_user_api_users__user_id__put: {
         parameters: {
             query?: {
@@ -25171,6 +31122,7 @@ export interface operations {
                 /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -25180,25 +31132,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete a user. Only admins can delete others or purge users. */
     delete_user_api_users__user_id__delete: {
         parameters: {
             query?: {
@@ -25213,6 +31173,7 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -25222,27 +31183,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return the user's API key */
     get_or_create_api_key_api_users__user_id__api_key_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25251,31 +31221,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create a new API key for the user */
     create_api_key_api_users__user_id__api_key_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25284,31 +31265,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete the current API key of the user */
     delete_api_key_api_users__user_id__api_key_delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25317,29 +31309,40 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return the user's API key with extra information. */
     get_api_key_detailed_api_users__user_id__api_key_detailed_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25348,38 +31351,49 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The API key of the user. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["APIKeyModel"];
                 };
             };
             /** @description The user doesn't have an API key. */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return information about beacon share settings
-     * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
-     */
     get_beacon_settings_api_users__user_id__beacon_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25388,34 +31402,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Change beacon setting
-     * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
-     */
     set_beacon_settings_api_users__user_id__beacon_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25424,6 +31446,7 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -25433,27 +31456,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns collection of custom builds. */
     get_custom_builds_api_users__user_id__custom_builds_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25462,31 +31494,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["CustomBuildsCollection"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Add new custom build. */
     add_custom_builds_api_users__user_id__custom_builds__key__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25497,6 +31540,7 @@ export interface operations {
                 /** @description The key of the custom build to be deleted. */
                 key: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -25506,27 +31550,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete a custom build */
     delete_custom_build_api_users__user_id__custom_builds__key__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25537,31 +31590,42 @@ export interface operations {
                 /** @description The key of the custom build to be deleted. */
                 key: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DeletedCustomBuild"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Add the object to user's favorites */
     set_favorite_api_users__user_id__favorites__object_type__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25572,6 +31636,7 @@ export interface operations {
                 /** @description The object type the user wants to favorite */
                 object_type: components["schemas"]["FavoriteObjectType"];
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -25581,27 +31646,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Remove the object from user's favorites */
     remove_favorite_api_users__user_id__favorites__object_type___object_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25614,31 +31688,42 @@ export interface operations {
                 /** @description The ID of an object the user wants to remove from favorites */
                 object_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return the user's object store usage summary broken down by object store ID */
     get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25647,31 +31732,42 @@ export interface operations {
                 /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Triggers a recalculation of the current user disk usage. */
     recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25680,35 +31776,49 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description The asynchronous task summary to track the task state. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description The background task was submitted but there is no status tracking ID available. */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Sends activation email to user. */
     send_activation_email_api_users__user_id__send_activation_email_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25717,31 +31827,42 @@ export interface operations {
                 /** @description The ID of the user. */
                 user_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Set the user's theme choice */
     set_theme_api_users__user_id__theme__theme__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25752,31 +31873,42 @@ export interface operations {
                 /** @description The theme of the GUI */
                 theme: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": string;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return the user's quota usage summary broken down by quota source */
     get_user_usage_api_users__user_id__usage_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25785,31 +31917,42 @@ export interface operations {
                 /** @description The ID of the user to get or 'current'. */
                 user_id: string | "current";
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserQuotaUsage"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Return the user's quota usage summary for a given quota source label */
     get_user_usage_for_label_api_users__user_id__usage__label__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25820,55 +31963,77 @@ export interface operations {
                 /** @description The label corresponding to the quota source to fetch usage information about. */
                 label: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserQuotaUsage"] | null;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return Galaxy version information: major/minor version, optional extra info
-     * @description Return Galaxy version information: major/minor version, optional extra info.
-     */
     version_api_version_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Galaxy version information: major/minor version, optional extra info */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": Record<string, never>;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Returns visualizations for the current user. */
     index_api_visualizations_get: {
         parameters: {
             query?: {
@@ -25886,76 +32051,85 @@ export interface operations {
                 sort_by?: "create_time" | "title" | "update_time" | "username";
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
-                /**
-                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
-                 * ## Query Structure
+                 *     ## Query Structure
                  *
-                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-                 * being indexed (i.e. a column in the database).
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
                  *
-                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-                 * this means the database operation `ILIKE` will typically be used).
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
                  *
-                 * Once the tagged filters are extracted from the search query, the remaining text is just
-                 * used to search various documented attributes of the object.
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
                  *
-                 * ## GitHub-style Tags Available
+                 *     ## GitHub-style Tags Available
                  *
-                 * `title`
-                 * : The visualization's title.
+                 *     `title`
+                 *     : The visualization's title.
                  *
-                 * `slug`
-                 * : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `slug`
+                 *     : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `tag`
-                 * : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `tag`
+                 *     : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `user`
-                 * : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `user`
+                 *     : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * ## Free Text
+                 *     ## Free Text
                  *
-                 * Free text search terms will be searched against the following attributes of the
-                 * Visualizations: `title`, `slug`, `tag`, `type`.
-                 */
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Visualizations: `title`, `slug`, `tag`, `type`.
+                 *
+                 *      */
                 search?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["VisualizationSummaryList"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item inaccessible by a URL link.
-     * @description Makes this item inaccessible by a URL link and return the current sharing status.
-     */
     disable_link_access_api_visualizations__id__disable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -25964,34 +32138,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item accessible by a URL link.
-     * @description Makes this item accessible by a URL link and return the current sharing status.
-     */
     enable_link_access_api_visualizations__id__enable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26000,34 +32182,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item public and accessible by a URL link.
-     * @description Makes this item publicly available by a URL link and return the current sharing status.
-     */
     publish_api_visualizations__id__publish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26036,34 +32226,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Share this item with specific users.
-     * @description Shares this item with specific users and return the current sharing status.
-     */
     share_with_users_api_visualizations__id__share_with_users_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26072,6 +32270,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -26081,30 +32280,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get the current sharing status of the given Visualization.
-     * @description Return the sharing status of the item.
-     */
     sharing_api_visualizations__id__sharing_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26113,34 +32318,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set a new slug for this shared item.
-     * @description Sets a new slug to access this item by URL. The new slug must be unique.
-     */
     set_slug_api_visualizations__id__slug_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26149,6 +32362,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -26158,28 +32372,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes this item from the published list.
-     * @description Removes this item from the published list and return the current sharing status.
-     */
     unpublish_api_visualizations__id__unpublish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26188,64 +32408,80 @@ export interface operations {
                 /** @description The encoded database identifier of the Visualization. */
                 id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Return information about the current authenticated user
-     * @description Return information about the current authenticated user.
-     */
     whoami_api_whoami_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Information about the current authenticated user */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["UserModel"] | null;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Lists stored workflows viewable by the user.
-     * @description Lists stored workflows viewable by the user.
-     */
     index_api_workflows_get: {
         parameters: {
             query?: {
@@ -26263,45 +32499,45 @@ export interface operations {
                 sort_desc?: boolean | null;
                 limit?: number | null;
                 offset?: number | null;
-                /**
-                 * @description A mix of free text and GitHub-style tags used to filter the index operation.
+                /** @description A mix of free text and GitHub-style tags used to filter the index operation.
                  *
-                 * ## Query Structure
+                 *     ## Query Structure
                  *
-                 * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-                 * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-                 * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-                 * being indexed (i.e. a column in the database).
+                 *     GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+                 *     `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+                 *     *generally* (but not exclusively) corresponds to the name of an attribute on the model
+                 *     being indexed (i.e. a column in the database).
                  *
-                 * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-                 * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-                 * this means the database operation `ILIKE` will typically be used).
+                 *     If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+                 *     generally a partial match will be used to filter the query (i.e. in terms of the implementation
+                 *     this means the database operation `ILIKE` will typically be used).
                  *
-                 * Once the tagged filters are extracted from the search query, the remaining text is just
-                 * used to search various documented attributes of the object.
+                 *     Once the tagged filters are extracted from the search query, the remaining text is just
+                 *     used to search various documented attributes of the object.
                  *
-                 * ## GitHub-style Tags Available
+                 *     ## GitHub-style Tags Available
                  *
-                 * `name`
-                 * : The stored workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `name`
+                 *     : The stored workflow's name. (The tag `n` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `tag`
-                 * : The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `tag`
+                 *     : The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `user`
-                 * : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+                 *     `user`
+                 *     : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
-                 * `is:published`
-                 * : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
+                 *     `is:published`
+                 *     : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
                  *
-                 * `is:share_with_me`
-                 * : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
+                 *     `is:share_with_me`
+                 *     : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
                  *
-                 * ## Free Text
+                 *     ## Free Text
                  *
-                 * Free text search terms will be searched against the following attributes of the
-                 * Stored Workflows: `name`, `tag`, `user`.
-                 */
+                 *     Free text search terms will be searched against the following attributes of the
+                 *     Stored Workflows: `name`, `tag`, `user`.
+                 *
+                 *      */
                 search?: string | null;
                 /** @description Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts. */
                 skip_step_counts?: boolean;
@@ -26310,29 +32546,40 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description A list with summary stored workflow information per viewable entry. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": Record<string, never>[];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get workflows present in the tools panel. */
     get_workflow_menu_api_workflows_menu_get: {
         parameters: {
             query?: {
@@ -26349,29 +32596,40 @@ export interface operations {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
+            path?: never;
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Displays information needed to run a workflow. */
     show_workflow_api_workflows__workflow_id__get: {
         parameters: {
             query?: {
@@ -26389,31 +32647,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Add the deleted flag to a workflow. */
     delete_workflow_api_workflows__workflow_id__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26422,29 +32691,39 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get state counts for accessible workflow. */
     workflows__invocation_counts: {
         parameters: {
             query?: {
@@ -26459,34 +32738,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RootModel_Dict_str__int__"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item inaccessible by a URL link.
-     * @description Makes this item inaccessible by a URL link and return the current sharing status.
-     */
     disable_link_access_api_workflows__workflow_id__disable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26495,34 +32782,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item accessible by a URL link.
-     * @description Makes this item accessible by a URL link and return the current sharing status.
-     */
     enable_link_access_api_workflows__workflow_id__enable_link_access_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26531,29 +32826,39 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get the list of a user's workflow invocations. */
     index_invocations_api_workflows__workflow_id__invocations_get: {
         parameters: {
             query?: {
@@ -26588,31 +32893,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Schedule the workflow specified by `workflow_id` to run. */
     Invoke_workflow_api_workflows__workflow_id__invocations_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26621,6 +32937,7 @@ export interface operations {
                 /** @description The database identifier - UUID or encoded - of the Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -26630,6 +32947,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["WorkflowInvocationResponse"]
@@ -26638,33 +32958,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get detailed description of a workflow invocation.
-     * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -26677,43 +32997,48 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Cancel the specified workflow invocation.
-     * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-     */
     cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -26726,34 +33051,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated across all current jobs of the workflow invocation.
-     * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
-     */
     workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26764,34 +33097,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get JSON summarizing invocation for reporting.
-     * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26802,34 +33143,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get PDF summarizing invocation for reporting.
-     * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26840,32 +33189,40 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated per step of the workflow invocation.
-     * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
-     */
     workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26876,10 +33233,15 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["InvocationStepJobsResponseStepModel"]
@@ -26890,24 +33252,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Show details of workflow invocation step.
-     * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
-     */
     workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26920,34 +33285,42 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Update state of running workflow step invocation.
-     * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
-     */
     update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -26960,6 +33333,7 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -26969,30 +33343,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Makes this item public and accessible by a URL link.
-     * @description Makes this item publicly available by a URL link and return the current sharing status.
-     */
     publish_api_workflows__workflow_id__publish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27001,29 +33381,39 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Updates the workflow stored with the given ID. */
     refactor_api_workflows__workflow_id__refactor_put: {
         parameters: {
             query?: {
@@ -27037,6 +33427,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27046,30 +33437,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["RefactorResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Share this item with specific users.
-     * @description Shares this item with specific users and return the current sharing status.
-     */
     share_with_users_api_workflows__workflow_id__share_with_users_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27078,6 +33475,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27087,30 +33485,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get the current sharing status of the given item.
-     * @description Return the sharing status of the item.
-     */
     sharing_api_workflows__workflow_id__sharing_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27119,34 +33523,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Set a new slug for this shared item.
-     * @description Sets a new slug to access this item by URL. The new slug must be unique.
-     */
     set_slug_api_workflows__workflow_id__slug_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27155,6 +33567,7 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27164,25 +33577,34 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tags based on workflow_id */
     index_api_workflows__workflow_id__tags_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27190,31 +33612,42 @@ export interface operations {
             path: {
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Show tag based on workflow_id */
     show_api_workflows__workflow_id__tags__tag_name__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27223,31 +33656,42 @@ export interface operations {
                 workflow_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Update tag based on workflow_id */
     update_api_workflows__workflow_id__tags__tag_name__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27256,6 +33700,7 @@ export interface operations {
                 workflow_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27265,27 +33710,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Create tag based on workflow_id */
     create_api_workflows__workflow_id__tags__tag_name__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27294,6 +33748,7 @@ export interface operations {
                 workflow_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
         requestBody?: {
             content: {
@@ -27303,27 +33758,36 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Delete tag based on workflow_id */
     delete_api_workflows__workflow_id__tags__tag_name__delete: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27332,31 +33796,42 @@ export interface operations {
                 workflow_id: string;
                 tag_name: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": boolean;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Remove the deleted flag from a workflow. */
     undelete_workflow_api_workflows__workflow_id__undelete_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27365,34 +33840,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Removes this item from the published list.
-     * @description Removes this item from the published list and return the current sharing status.
-     */
     unpublish_api_workflows__workflow_id__unpublish_put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27401,32 +33884,39 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get the list of a user's workflow invocations.
-     * @deprecated
-     */
     index_invocations_api_workflows__workflow_id__usage_get: {
         parameters: {
             query?: {
@@ -27461,34 +33951,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Schedule the workflow specified by `workflow_id` to run.
-     * @deprecated
-     */
     Invoke_workflow_api_workflows__workflow_id__usage_post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27497,6 +33995,7 @@ export interface operations {
                 /** @description The database identifier - UUID or encoded - of the Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27506,6 +34005,9 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json":
                         | components["schemas"]["WorkflowInvocationResponse"]
@@ -27514,34 +34016,33 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get detailed description of a workflow invocation.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -27554,44 +34055,48 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Cancel the specified workflow invocation.
-     * @deprecated
-     * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
-     */
     cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete: {
         parameters: {
             query?: {
                 /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
                 step_details?: boolean;
-                /**
-                 * @description Populate the invocation step state with the job state instead of the invocation step state.
-                 *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-                 *         Partially scheduled steps may provide incomplete information and the listed steps outputs
-                 *         are not the mapped over step outputs but the individual job outputs.
-                 */
+                /** @description Populate the invocation step state with the job state instead of the invocation step state.
+                 *             This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+                 *             Partially scheduled steps may provide incomplete information and the listed steps outputs
+                 *             are not the mapped over step outputs but the individual job outputs. */
                 legacy_job_state?: boolean;
             };
             header?: {
@@ -27604,35 +34109,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated across all current jobs of the workflow invocation.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
-     */
     workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27643,35 +34155,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get JSON summarizing invocation for reporting.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27682,35 +34201,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get PDF summarizing invocation for reporting.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
-     */
     show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27721,33 +34247,40 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
-                content: never;
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Get job state summary info aggregated per step of the workflow invocation.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
-     */
     workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27758,10 +34291,15 @@ export interface operations {
                 /** @description The encoded database identifier of the Invocation. */
                 invocation_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": (
                         | components["schemas"]["InvocationStepJobsResponseStepModel"]
@@ -27772,25 +34310,27 @@ export interface operations {
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Show details of workflow invocation step.
-     * @deprecated
-     * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
-     */
     workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27803,35 +34343,42 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /**
-     * Update state of running workflow step invocation.
-     * @deprecated
-     * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
-     */
     update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27844,6 +34391,7 @@ export interface operations {
                 /** @description The encoded database identifier of the WorkflowInvocationStep. */
                 step_id: string;
             };
+            cookie?: never;
         };
         requestBody: {
             content: {
@@ -27853,25 +34401,33 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** List all versions of a workflow. */
     show_versions_api_workflows__workflow_id__versions_get: {
         parameters: {
             query?: {
@@ -27885,31 +34441,42 @@ export interface operations {
                 /** @description The encoded database identifier of the Stored Workflow. */
                 workflow_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get Object */
     get_object_ga4gh_drs_v1_objects__object_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27918,31 +34485,42 @@ export interface operations {
                 /** @description The ID of the group */
                 object_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get Object */
     get_object_ga4gh_drs_v1_objects__object_id__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27951,31 +34529,42 @@ export interface operations {
                 /** @description The ID of the group */
                 object_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get Access Url */
     get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__get: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -27986,31 +34575,42 @@ export interface operations {
                 /** @description The access ID of the access method for objects, unused in Galaxy. */
                 access_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Get Access Url */
     get_access_url_ga4gh_drs_v1_objects__object_id__access__access_id__post: {
         parameters: {
+            query?: never;
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
@@ -28021,45 +34621,71 @@ export interface operations {
                 /** @description The access ID of the access method for objects, unused in Galaxy. */
                 access_id: string;
             };
+            cookie?: never;
         };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": unknown;
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
     };
-    /** Service Info */
     service_info_ga4gh_drs_v1_service_info_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["Service"];
                 };
             };
             /** @description Request Error */
             "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
             /** @description Server Error */
             "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
                 };
