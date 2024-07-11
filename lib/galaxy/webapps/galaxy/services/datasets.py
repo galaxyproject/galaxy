@@ -845,7 +845,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             data_provider = self.data_provider_registry.get_data_provider(
                 trans, original_dataset=dataset, source="index"
             )
-            if not data_provider.has_data(chrom):
+            if not dataset.has_data() or not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here
