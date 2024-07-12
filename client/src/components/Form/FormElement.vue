@@ -3,8 +3,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { sanitize } from "dompurify";
 import type { ComputedRef } from "vue";
 import { computed, ref, useAttrs } from "vue";
+
+import { linkify } from "@/utils/utils";
 
 import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
 
@@ -124,7 +127,7 @@ function onConnect() {
 
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
-const hasAlert = computed(() => Boolean(props.error || props.warning));
+const hasAlert = computed(() => alerts.value.length > 0);
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 const showField = computed(() => !collapsed.value && !props.disabled);
 
@@ -171,6 +174,16 @@ const isEmpty = computed(() => {
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
 const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
+const formAlert = ref<string>();
+const alerts = computed(() => {
+    return [formAlert.value, props.error, props.warning]
+        .filter((v) => v !== undefined && v !== null)
+        .map((v) => linkify(sanitize(v!, { USE_PROFILES: { html: true } })));
+});
+
+function onAlert(value: string | undefined) {
+    formAlert.value = value;
+}
 </script>
 
 <template>
@@ -179,9 +192,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         :id="elementId"
         class="ui-form-element section-row"
         :class="{ alert: hasAlert, 'alert-info': hasAlert }">
-        <div v-if="hasAlert" class="ui-form-error">
+        <div v-for="(alert, index) in alerts" :key="index" class="ui-form-error">
             <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
-            <span class="ui-form-error-text" v-html="props.error || props.warning" />
+            <span class="ui-form-error-text" v-html="alert" />
         </div>
 
         <div class="ui-form-title">
@@ -283,7 +296,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :optional="attrs.optional"
                 :options="attrs.options"
                 :tag="attrs.tag"
-                :type="props.type" />
+                :type="props.type"
+                :collection-types="attrs.collection_types"
+                @alert="onAlert" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
@@ -312,62 +327,5 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
 </template>
 
 <style lang="scss" scoped>
-@import "theme/blue.scss";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-
-.ui-form-element {
-    margin-top: $margin-v * 0.25;
-    margin-bottom: $margin-v * 0.5;
-    overflow: visible;
-    clear: both;
-
-    .ui-form-title {
-        word-wrap: break-word;
-        font-weight: bold;
-
-        .ui-form-title-message {
-            font-size: $font-size-base * 0.7;
-            font-weight: 300;
-            vertical-align: text-top;
-            color: $text-light;
-            cursor: default;
-        }
-
-        .ui-form-title-star {
-            color: $text-light;
-            font-weight: 300;
-            cursor: default;
-        }
-
-        .warning {
-            color: $brand-danger;
-        }
-    }
-
-    .ui-form-field {
-        position: relative;
-        margin-top: $margin-v * 0.25;
-    }
-
-    &:deep(.ui-form-collapsible-icon),
-    &:deep(.ui-form-connected-icon) {
-        border: none;
-        background: none;
-        padding: 0;
-        line-height: 1;
-        font-size: 1.2em;
-
-        &:hover {
-            color: $brand-info;
-        }
-
-        &:focus {
-            color: $brand-primary;
-        }
-
-        &:active {
-            background: none;
-        }
-    }
-}
+@import "./_form-elements.scss";
 </style>

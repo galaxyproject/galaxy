@@ -9,10 +9,11 @@ import traceback
 from functools import partial
 from typing import Callable
 
-import requests
-
 from galaxy.tool_util.deps import docker_util
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.util.sockets import get_ip
 
 GetIpCallable = Callable[[], str]

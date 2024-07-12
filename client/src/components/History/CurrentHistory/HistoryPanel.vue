@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistoryItemSummary, HistorySummaryExtended } from "@/api";
+import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -15,6 +15,7 @@ import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
 import { useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setDrag } from "@/utils/setDrag";
 
@@ -49,7 +50,6 @@ interface Props {
     listOffset?: number;
     history: HistorySummaryExtended;
     filter?: string;
-    canEditHistory?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
@@ -59,7 +59,6 @@ type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
-    canEditHistory: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -90,6 +89,14 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const { currentUser } = storeToRefs(useUserStore());
+
+const currentUserOwnsHistory = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
+});
+const canEditHistory = computed(() => {
+    return currentUserOwnsHistory.value && !props.history.deleted && !props.history.archived;
+});
 
 const historyUpdateTime = computed(() => {
     return props.history.update_time;
@@ -218,28 +225,11 @@ function dragSameHistory() {
 
 function getDragData() {
     const eventStore = useEventStore();
-    const multiple = eventStore.multipleDragData;
-    let data: HistoryItemSummary[] | undefined;
-    let historyId: string | undefined;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
-            // set historyId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                historyId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItemSummary];
-            if (data[0]) {
-                historyId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-    return { data, sameHistory: historyId === props.history.id, multiple };
+    const dragItems = eventStore.getDragItems();
+    // Filter out any non-history items
+    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
+    const historyId = historyItems?.[0]?.history_id;
+    return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
 }
 
 function getHighlight(item: HistoryItemSummary) {
@@ -425,7 +415,7 @@ function updateFilterValue(filterKey: string, newValue: any) {
 }
 
 function getItemKey(item: HistoryItemSummary) {
-    return item.type_id;
+    return itemUniqueKey(item);
 }
 
 function itemUniqueKey(item: HistoryItemSummary) {
@@ -519,6 +509,7 @@ function setItemDragstart(
 
                 <FilterMenu
                     v-if="filterable"
+                    :key="props.history.id"
                     class="content-operations-filters mx-3"
                     name="History Items"
                     placeholder="search datasets"
@@ -535,13 +526,14 @@ function setItemDragstart(
                         :summarized="isMultiViewItem"
                         @update:history="historyStore.updateHistory($event)" />
 
-                    <HistoryMessages :history="history" />
+                    <HistoryMessages :history="history" :current-user="currentUser" />
 
                     <HistoryCounter
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastCheckedTime"
                         :show-controls="canEditHistory"
+                        :owned-by-current-user="userOwnsHistory(currentUser, history)"
                         :filter-text.sync="filterText"
                         :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />

@@ -289,18 +289,18 @@ class Interval(Tabular):
                     if t < len(elems):
                         strand = cast(str, elems[t])
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             elif n >= 0:  # name column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             else:
                 for elems in compression_utils.file_iter(dataset.get_file_name()):
                     tmp = [elems[c], elems[s], elems[e]]
-                    fh.write("%s\n" % "\t".join(tmp))
+                    fh.write("{}\n".format("\t".join(tmp)))
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
@@ -509,8 +509,8 @@ class Bed(Interval):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
+        i = 0
         if dataset.has_data():
-            i = 0
             for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -526,7 +526,7 @@ class Bed(Interval):
                             if overwrite or not dataset.metadata.element_is_set("strandCol"):
                                 dataset.metadata.strandCol = 6
                         break
-            Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
+        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""

@@ -113,11 +113,11 @@ class TestUsersApi(ApiTestCase):
         user = self._setup_user(TEST_USER_EMAIL_PURGE)
         response = self._delete(f"users/{user['id']}", admin=True)
         self._assert_status_code_is_ok(response)
-        data = dict(purge="True")
-        response = self._delete(f"users/{user['id']}", data=data, admin=True, json=True)
+        params = dict(purge="True")
+        response = self._delete(f"users/{user['id']}", params=params, admin=True, json=True)
         self._assert_status_code_is_ok(response)
-        payload = {"deleted": "True"}
-        purged_user = self._get(f"users/{user['id']}", payload, admin=True).json()
+        params = {"deleted": "True"}
+        purged_user = self._get(f"users/{user['id']}", params, admin=True).json()
         assert purged_user["deleted"] is True, purged_user
         assert purged_user["purged"] is True, purged_user
 

@@ -5,6 +5,7 @@ import logging
 import os
 import threading
 import time
+from math import inf
 from typing import (
     List,
     Optional,
@@ -74,6 +75,11 @@ def check_cache(cache_target: CacheTarget):
         # For now, delete enough to leave at least 10% of the total cache free
         delete_this_much = total_size - cache_limit
         _clean_cache(file_list, delete_this_much)
+
+
+def reset_cache(cache_target: CacheTarget):
+    _, file_list = _get_cache_size_files(cache_target.path)
+    _clean_cache(file_list, inf)
 
 
 def _clean_cache(file_list: FileListT, delete_this_much: float) -> None:

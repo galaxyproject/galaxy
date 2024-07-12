@@ -24,7 +24,6 @@ from typing import (
     Union,
 )
 
-import requests
 from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
@@ -41,6 +40,7 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
 )
+from galaxy.util import requests
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import (
     memory_bound_hexdigest,
@@ -937,10 +937,10 @@ class GalaxyInteractorApi:
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.post(url, **kwd)
 
-    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
+    def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False, params=None):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
-        kwd = self._prepare_request_params(data=data, as_json=json, headers=headers)
+        kwd = self._prepare_request_params(data=data, as_json=json, params=params, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.delete(url, **kwd)
 

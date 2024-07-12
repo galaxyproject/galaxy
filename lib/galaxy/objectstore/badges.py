@@ -9,6 +9,7 @@ from typing import (
 
 from typing_extensions import (
     Literal,
+    NotRequired,
     TypedDict,
 )
 
@@ -34,6 +35,7 @@ BadgeT = Union[
         "quota",
         "no_quota",
         "restricted",
+        "user_defined",
     ],
 ]
 
@@ -69,11 +71,11 @@ class BadgeDict(TypedDict):
 
 class StoredBadgeDict(TypedDict):
     type: AdminBadgeT
-    message: Optional[str]
+    message: NotRequired[Optional[str]]
 
 
 def read_badges(config_dict: Dict[str, Any]) -> List[StoredBadgeDict]:
-    raw_badges = config_dict.get("badges", [])
+    raw_badges = config_dict.get("badges") or []
     badges: List[StoredBadgeDict] = []
     badge_types: Set[str] = set()
     badge_conflicts: Dict[str, str] = {}
@@ -101,7 +103,9 @@ def read_badges(config_dict: Dict[str, Any]) -> List[StoredBadgeDict]:
     return badges
 
 
-def serialize_badges(stored_badges: List[StoredBadgeDict], quota_enabled: bool, private: bool) -> List[BadgeDict]:
+def serialize_badges(
+    stored_badges: List[StoredBadgeDict], quota_enabled: bool, private: bool, user_defined: bool, cloud: bool
+) -> List[BadgeDict]:
     """Produce blended, unified list of badges for target object store entity.
 
     Combine more free form admin information stored about badges with Galaxy tracked
@@ -113,7 +117,7 @@ def serialize_badges(stored_badges: List[StoredBadgeDict], quota_enabled: bool, 
         badge_dict: BadgeDict = {
             "source": "admin",
             "type": badge["type"],
-            "message": badge["message"],
+            "message": badge.get("message"),
         }
         badge_dicts.append(badge_dict)
 
@@ -138,4 +142,18 @@ def serialize_badges(stored_badges: List[StoredBadgeDict], quota_enabled: bool, 
             "source": "galaxy",
         }
         badge_dicts.append(restricted_badge_dict)
+    if user_defined:
+        user_defined_badge_dict: BadgeDict = {
+            "type": "user_defined",
+            "message": None,
+            "source": "galaxy",
+        }
+        badge_dicts.append(user_defined_badge_dict)
+    if cloud:
+        cloud_badge_dict: BadgeDict = {
+            "type": "cloud",
+            "message": None,
+            "source": "galaxy",
+        }
+        badge_dicts.append(cloud_badge_dict)
     return badge_dicts

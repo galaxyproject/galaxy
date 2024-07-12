@@ -1,6 +1,8 @@
 import os
 import stat
 import typing
+import uuid
+from logging import getLogger
 
 import anyio
 from fastapi import (
@@ -15,8 +17,12 @@ from starlette.responses import (
     FileResponse,
     Response,
 )
+from starlette_context import context
 from starlette_context.middleware import RawContextMiddleware
-from starlette_context.plugins import RequestIdPlugin
+from starlette_context.plugins import (
+    Plugin,
+    RequestIdPlugin,
+)
 
 from galaxy.exceptions import MessageException
 from galaxy.exceptions.utils import api_error_to_dict
@@ -30,6 +36,9 @@ if typing.TYPE_CHECKING:
         Scope,
         Send,
     )
+
+
+log = getLogger(__name__)
 
 
 # Copied from https://github.com/tiangolo/fastapi/issues/1240#issuecomment-1055396884
@@ -189,7 +198,37 @@ def add_exception_handler(app: FastAPI) -> None:
 
     @app.exception_handler(MessageException)
     async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
+        # Intentionally not logging traceback here as the full context will be
+        # dispatched to Sentry if configured.  This just makes logs less opaque
+        # when one sees a 500.
+        if exc.status_code >= 500:
+            log.info(f"MessageException: {exc}")
         return get_error_response_for_request(request, exc)
+
+
+class AccessLoggingMiddleware(Plugin):
+
+    key = "access_line"
+
+    async def process_request(self, request):
+        scope = request.scope
+        path = scope["root_path"] + scope["path"]
+        if scope["query_string"]:
+            path = f"{path}?{scope['query_string'].decode('ascii')}"
+        access_line = f"{scope['method']} {path} {uuid.uuid4()}"
+        log.debug(access_line)
+        return access_line
+
+    async def enrich_response(self, response) -> None:
+        access_line = context.get("access_line")
+        if status := response.get("status"):
+            log.debug(f"{access_line} {status}")
+
+
+def add_raw_context_middlewares(app: FastAPI):
+    getLogger("uvicorn.access").handlers = []
+    plugins = (RequestIdPlugin(force_new_uuid=True), AccessLoggingMiddleware())
+    app.add_middleware(RawContextMiddleware, plugins=plugins)
 
 
 def add_request_id_middleware(app: FastAPI):

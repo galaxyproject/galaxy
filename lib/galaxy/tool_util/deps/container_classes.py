@@ -338,6 +338,7 @@ class HasDockerLikeVolumes:
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
+        add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
@@ -376,6 +377,8 @@ class HasDockerLikeVolumes:
             defaults += ",$library_import_dir:default_ro"
         if self.app_info.tool_data_path:
             defaults += ",$tool_data_path:default_ro"
+        if self.app_info.galaxy_data_manager_data_path:
+            defaults += ",$galaxy_data_manager_data_path:default_ro"
         if self.app_info.shed_tool_data_path:
             defaults += ",$shed_tool_data_path:default_ro"
 

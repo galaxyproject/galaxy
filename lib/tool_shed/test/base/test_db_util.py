@@ -9,7 +9,7 @@ from sqlalchemy import (
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
-from galaxy.managers.users import (
+from galaxy.model.db.user import (
     get_user_by_email,
     get_user_by_username,
 )
@@ -18,7 +18,7 @@ log = logging.getLogger("test.tool_shed.test_db_util")
 
 
 def sa_session():
-    from galaxy_test.driver.driver_util import tool_shed_context as sa_session
+    from .driver import tool_shed_context as sa_session
 
     return sa_session
 

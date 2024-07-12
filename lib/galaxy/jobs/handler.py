@@ -568,7 +568,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                         self.sa_session.add(dataset_assoc.dataset.dataset)
                     self.sa_session.add(job)
                 elif job_state == JOB_ERROR:
-                    log.error("(%d) Error checking job readiness" % job.id)
+                    # A more informative message is shown wherever the job state is set to error
+                    pass
                 else:
                     log.error("(%d) Job in unknown state '%s'" % (job.id, job_state))
                     new_waiting_jobs.append(job.id)
@@ -998,7 +999,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.destination_id)
             )
-            for row in result:
+            for row in result.mappings():
                 self.total_job_count_per_destination[row["destination_id"]] = row["job_count"]
 
     def get_total_job_count_per_destination(self):

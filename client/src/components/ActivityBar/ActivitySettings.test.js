@@ -19,7 +19,7 @@ function testActivity(id, newOptions = {}) {
         description: "activity-test-description",
         icon: "activity-test-icon",
         mutable: true,
-        optional: false,
+        optional: true,
         title: "activity-test-title",
         to: null,
         tooltip: "activity-test-tooltip",
@@ -29,10 +29,7 @@ function testActivity(id, newOptions = {}) {
 }
 
 async function testSearch(wrapper, query, result) {
-    const searchField = wrapper.find("input");
-    searchField.element.value = query;
-    searchField.trigger("change");
-    await wrapper.vm.$nextTick();
+    await wrapper.setProps({ query });
     const filtered = wrapper.findAll(activityItemSelector);
     expect(filtered.length).toBe(result);
 }
@@ -48,6 +45,9 @@ describe("ActivitySettings", () => {
         wrapper = mount(mountTarget, {
             localVue,
             pinia,
+            props: {
+                query: "",
+            },
             stubs: {
                 icon: { template: "<div></div>" },
             },
@@ -56,22 +56,23 @@ describe("ActivitySettings", () => {
 
     it("availability of built-in activities", async () => {
         const items = wrapper.findAll(activityItemSelector);
-        expect(items.length).toBe(Activities.length);
+        const nOptional = Activities.filter((x) => x.optional).length;
+        expect(items.length).toBe(nOptional);
     });
 
-    it("visible but non-optional activity", async () => {
+    it("visible and optional activity", async () => {
         activityStore.setAll([testActivity("1")]);
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const pinnedCheckbox = items.at(0).find("[data-icon='thumbtack']");
-        expect(pinnedCheckbox.exists()).toBeTruthy();
-        const pinnedIcon = wrapper.find("[icon='activity-test-icon'");
-        expect(pinnedIcon.exists()).toBeTruthy();
+        const checkbox = items.at(0).find("[title='Hide in Activity Bar']");
+        expect(checkbox.exists()).toBeTruthy();
+        const icon = wrapper.find("[icon='activity-test-icon'");
+        expect(icon.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
-        pinnedCheckbox.trigger("click");
+        checkbox.trigger("click");
         await wrapper.vm.$nextTick();
-        expect(activityStore.getAll()[0].visible).toBeTruthy();
+        expect(activityStore.getAll()[0].visible).toBeFalsy();
     });
 
     it("non-visible but optional activity", async () => {
@@ -84,12 +85,12 @@ describe("ActivitySettings", () => {
         await wrapper.vm.$nextTick();
         const items = wrapper.findAll(activityItemSelector);
         expect(items.length).toBe(1);
-        const hiddenCheckbox = items.at(0).find("[data-icon='square']");
-        expect(hiddenCheckbox.exists()).toBeTruthy();
+        const checkbox = items.at(0).find("[title='Show in Activity Bar']");
+        expect(checkbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeFalsy();
-        hiddenCheckbox.trigger("click");
+        checkbox.trigger("click");
         await wrapper.vm.$nextTick();
-        const visibleCheckbox = items.at(0).find("[data-icon='check-square']");
+        const visibleCheckbox = items.at(0).find("[title='Hide in Activity Bar']");
         expect(visibleCheckbox.exists()).toBeTruthy();
         expect(activityStore.getAll()[0].visible).toBeTruthy();
     });

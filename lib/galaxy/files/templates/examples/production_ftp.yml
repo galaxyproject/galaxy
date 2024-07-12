@@ -1,0 +1,39 @@
+- id: ftp
+  version: 0
+  name: An FTP Server
+  description: |
+    This template allows connecting to FTP servers. This file source plugin should
+    support FTP and FTPS servers.
+  configuration:
+    type: ftp
+    host: "{{ variables.host }}"
+    user: "{{ variables.user }}"
+    port: "{{ variables.port }}"
+    passwd: "{{ secrets.password }}"
+    writable: "{{ variables.writable }}"
+  variables:
+    host:
+      label: FTP Host
+      type: string
+      help: Host of FTP Server to connect to.
+    user:
+      label: FTP User
+      type: string
+      help: |
+        Username to connect with. Leave this blank to connect to the server
+        anonymously (if allowed by target server).
+    writable:
+      label: Writable?
+      type: boolean
+      help: Is this an FTP server you have permission to write to?
+    port:
+      label: FTP Port
+      type: integer
+      help: Port used to connect to the FTP server.
+      default: 21
+  secrets:
+    password:
+      label: FTP Password
+      help: |
+        Password to connect to FTP server with. Leave this blank to connect
+        to the server anonymously (if allowed by target server).

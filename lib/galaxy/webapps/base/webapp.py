@@ -144,7 +144,7 @@ class WebApplication(base.WebApplication):
             if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
                 continue
             # Try to replace routes various ways to encode variables with simple swagger {form}
-            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            swagger_path = "/{}".format(RE_URL.sub(r"{\1}", rule.routepath))
             controller = rule.defaults.get("controller", "")
             action = rule.defaults.get("action", "")
             # Get the list of methods for the route
@@ -948,6 +948,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 if history.empty:
                     self.set_history(history)
                     return history
+
+        # Don't create new history if login required and user is anonymous
+        if self.app.config.require_login and not self.user:
+            return None
 
         # No suitable history found, create a new one.
         return self.new_history()

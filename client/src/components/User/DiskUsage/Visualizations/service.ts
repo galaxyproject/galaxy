@@ -35,7 +35,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
 
 export async function fetchHistoryContentsSizeSummary(
     historyId: string,
-    limit: number = 5000,
+    limit = 5000,
     objectStoreId: string | null = null
 ) {
     const q = ["purged", "history_content_type"];

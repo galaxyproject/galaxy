@@ -40,6 +40,15 @@ export type ErrorType = {
 type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
+export type FilterType =
+    | typeof String
+    | typeof Number
+    | typeof Boolean
+    | typeof Date
+    | "MultiTags"
+    | "ObjectStore"
+    | "QuotaSource"
+    | "Dropdown";
 
 /** A ValidFilter<T> with a `handler` for the `Filtering<T>` class,
  * and remaining properties for the `FilterMenu` component
@@ -48,7 +57,7 @@ export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | typeof Date | "MultiTags" | "ObjectStore" | "QuotaSource";
+    type?: FilterType;
     /** If type: Boolean:
      * - booleanType: 'default' creates: `filter:true|false|any`
      * - booleanType: 'is' creates: `is:filter`
@@ -60,7 +69,7 @@ export type ValidFilter<T> = {
      * (if `false` the filter is still valid for the search bar `filterText`)
      */
     menuItem: boolean;
-    /** Is there a datalist of values for this field */
+    /** The datalist of values for this field */
     datalist?:
         | string[]
         | {
@@ -76,6 +85,12 @@ export type ValidFilter<T> = {
     helpInfo?: DefineComponent | string;
     /** A default value (will make this a default filter for an empty `filterText`) */
     default?: T;
+    /** A dict of filters and corresponding values for this filter that disable them.
+     * Note: if value is null, the filter is disabled for any value of this filter.
+     */
+    disablesFilters?: {
+        [filter: string]: T[] | null;
+    };
 };
 
 /** Converts user input to backend compatible date

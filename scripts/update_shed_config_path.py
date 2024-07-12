@@ -40,7 +40,7 @@ def create_database(config_file):
     if database_connection is None:
         database_connection = parser.get("app:main", "database_connection")
     if database_connection is None:
-        database_connection = "sqlite:///%s" % parser.get("app:main", "database_file")
+        database_connection = "sqlite:///{}".format(parser.get("app:main", "database_file"))
     if database_connection is None:
         print("Unable to determine correct database connection.")
         exit(1)
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     )
     opts = parser.parse_args()
     if not os.path.exists(opts.good_filename) and not opts.force:
-        print("The file %s does not exist, use the --force option to proceed." % opts.good_filename)
+        print(f"The file {opts.good_filename} does not exist, use the --force option to proceed.")
         exit(1)
     session, model = create_database(opts.config_file)
     exit(main(opts, session, model))

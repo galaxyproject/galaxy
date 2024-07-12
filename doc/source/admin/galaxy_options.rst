@@ -748,6 +748,81 @@
 :Type: seq
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_templates_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured Object Store templates configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``object_store_templates.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_templates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured Object Store templates embedded into Galaxy's config.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_templates_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured user file source templates configuration file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``file_source_templates.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``file_source_templates``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Configured user file source templates embedded into Galaxy's
+    config.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_config_templates_use_saved_configuration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    User defined object stores and file sources are saved in the
+    database with their last valid configuration. It may be the case
+    that the admin changes file source and object store templates over
+    time such that the variables and secrets an instance is saved with
+    no longer match the configuration's expected values. For this
+    reason, admins should always add new versions of templates instead
+    of just changing them - however people take shortcuts and
+    divergences might happen. If a template is changed in such a way
+    it breaks or if a template disappears from the library of
+    templates this parameter controls how and if the database version
+    will be used.
+    By default, it will simply be used as a 'fallback' if a
+    configuration cannot be resolved against the template version in
+    the configuration file. Using 'preferred' instead will mean the
+    stored database version is always used. This ensures a greater
+    degree of reproducibility without effort on the part of the admin
+    but also means that small issues are not easy to fix. Using
+    'never' instead will ensure the config templates are always only
+    loaded from the template library files - this might make sense for
+    admins who want to disable templates without worrying about the
+    contents of the database.
+:Default: ``fallback``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1515,8 +1590,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default cache size for caching object stores if cache not
-    configured for that object store entry.
+    Default cache size, in GB, for caching object stores if the cache
+    is not configured for that object store entry.
 :Default: ``-1``
 :Type: int
 
@@ -1969,7 +2044,7 @@
     defaults to "GLOBAL" if not set or the
     `geographical_server_location_code` value is invalid or
     unsupported. To see a full list of supported locations, visit
-    https://galaxyproject.org/admin/carbon_emissions
+    https://docs.galaxyproject.org/en/master/admin/carbon_emissions.html
 :Default: ``GLOBAL``
 :Type: str
 
@@ -2156,7 +2231,7 @@
     Allow import of workflows from the TRS servers configured in the
     specified YAML or JSON file. The file should be a list with 'id',
     'label', and 'api_url' for each entry. Optionally, 'link_url' and
-    'doc' may be be specified as well for each entry.
+    'doc' may be specified as well for each entry.
     If this is null (the default), a simple configuration containing
     just Dockstore will be used.
     The value of this option will be resolved with respect to
@@ -3026,6 +3101,17 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``use_access_logging_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log request start as well as request end. Disables uvicorn access
+    log handler.
 :Default: ``false``
 :Type: bool
 
@@ -5495,6 +5581,3 @@
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
-
-
-

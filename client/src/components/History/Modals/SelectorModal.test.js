@@ -7,6 +7,8 @@ import { createPinia } from "pinia";
 import { useHistoryStore } from "stores/historyStore";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useUserStore } from "@/stores/userStore";
+
 import SelectorModal from "./SelectorModal";
 
 const localVue = getLocalVue();
@@ -35,6 +37,14 @@ const PROPS_FOR_MODAL_MULTIPLE_SELECT = {
 
 const CURRENT_HISTORY_INDICATION_TEXT = "(Current)";
 
+const CURRENT_USER = {
+    email: "email",
+    id: "user_id",
+    tags_used: [],
+    isAnonymous: false,
+    total_disk_usage: 0,
+};
+
 describe("History SelectorModal.vue", () => {
     let wrapper;
     let axiosMock;
@@ -60,6 +70,10 @@ describe("History SelectorModal.vue", () => {
                 icon: { template: "<div></div>" },
             },
         });
+
+        const userStore = useUserStore();
+        userStore.setCurrentUser(CURRENT_USER);
+
         historyStore = useHistoryStore();
         axiosMock = new MockAdapter(axios);
         getUpdatedAxiosMock();

@@ -16,7 +16,6 @@ from typing import (
 from urllib.parse import quote
 
 import jwt
-import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
@@ -30,6 +29,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.util import requests
 from . import IdentityProvider
 
 try:

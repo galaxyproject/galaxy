@@ -71,10 +71,10 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "invocation_inputs": [],
 }
 GALAXY_FLAVORED_MARKDOWN_CONTAINERS = list(VALID_ARGUMENTS.keys())
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>%s)" % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = r"(?P<container>{})".format("|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS))
 
 ARG_VAL_REGEX = r"""[\w_\-]+|\"[^\"]+\"|\'[^\']+\'"""
-FUNCTION_ARG = r"\s*[\w\|]+\s*=\s*(?:%s)\s*" % ARG_VAL_REGEX
+FUNCTION_ARG = rf"\s*[\w\|]+\s*=\s*(?:{ARG_VAL_REGEX})\s*"
 # embed commas between arguments
 FUNCTION_MULTIPLE_ARGS = rf"(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)"
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)

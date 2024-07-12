@@ -4,12 +4,14 @@ from operator import itemgetter
 from typing import (
     Optional,
     Set,
+    Tuple,
 )
 
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
+    FileSourcePath,
+    ProvidesFileSourcesUserContext,
 )
 from galaxy.files.sources import (
     FilesSourceOptions,
@@ -49,10 +51,14 @@ class RemoteFilesManager:
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
         writeable: Optional[bool] = False,
-    ) -> AnyRemoteFilesListResponse:
-        """Returns a list of remote files available to the user."""
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[AnyRemoteFilesListResponse, int]:
+        """Returns a list of remote files and directories available to the user and the total count of them."""
 
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         default_recursive = False
         default_format = RemoteFilesFormat.uri
 
@@ -87,17 +93,21 @@ class RemoteFilesManager:
         opts = FilesSourceOptions()
         opts.writeable = writeable or False
         try:
-            index = file_source.list(
+            index, count = file_source.list(
                 file_source_path.path,
                 recursive=recursive,
                 user_context=user_file_source_context,
                 opts=opts,
+                limit=limit,
+                offset=offset,
+                query=query,
+                sort_by=sort_by,
             )
         except exceptions.MessageException:
-            log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
+            log.warning(self._get_error_message(file_source_path), exc_info=True)
             raise
         except Exception:
-            message = f"Problem listing file source path {file_source_path}"
+            message = self._get_error_message(file_source_path)
             log.warning(message, exc_info=True)
             raise exceptions.InternalServerError(message)
         if format == RemoteFilesFormat.flat:
@@ -129,7 +139,10 @@ class RemoteFilesManager:
             userdir_jstree = jstree.JSTree(jstree_paths)
             index = userdir_jstree.jsonData()
 
-        return index
+        return index, count
+
+    def _get_error_message(self, file_source_path: FileSourcePath) -> str:
+        return f"Problem listing file source path {file_source_path.file_source.get_uri_root()}{file_source_path.path}"
 
     def get_files_source_plugins(
         self,
@@ -139,7 +152,7 @@ class RemoteFilesManager:
         exclude_kind: Optional[Set[PluginKind]] = None,
     ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_context)
         browsable_only = True if browsable_only is None else browsable_only
         plugins_dict = self._file_sources.plugins_to_dict(
             user_context=user_file_source_context,
@@ -156,12 +169,15 @@ class RemoteFilesManager:
     def create_entry(self, user_ctx: ProvidesUserContext, entry_data: CreateEntryPayload) -> CreatedEntryResponse:
         """Create an entry (directory or record) in a remote files location."""
         target = entry_data.target
-        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        user_file_source_context = ProvidesFileSourcesUserContext(user_ctx)
         self._file_sources.validate_uri_root(target, user_context=user_file_source_context)
         file_source_path = self._file_sources.get_file_source_path(target)
         file_source = file_source_path.file_source
         try:
             result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+        except exceptions.MessageException:
+            log.warning(f"Problem creating entry {entry_data.name} in file source {entry_data.target}", exc_info=True)
+            raise
         except Exception:
             message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
             log.warning(message, exc_info=True)

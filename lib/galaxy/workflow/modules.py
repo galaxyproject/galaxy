@@ -131,14 +131,14 @@ def to_cwl(value, hda_references, step):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
-    if isinstance(value, model.DatasetCollectionElement) and value.hda:
+    if isinstance(value, model.DatasetCollectionElement):
         element_identifier = value.element_identifier
-        value = value.hda
+        value = value.element_object
     if isinstance(value, model.HistoryDatasetAssociation):
         # I think the following two checks are needed but they may
         # not be needed.
         if not value.dataset.in_ready_state():
-            why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+            why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
             raise DelayedWorkflowEvaluation(why=why)
         if not value.is_ok:
             raise FailWorkflowEvaluation(
@@ -190,7 +190,7 @@ def from_cwl(value, hda_references, progress: "WorkflowProgress"):
             # This is going to re-file -> HDA this each iteration I think, not a good
             # implementation.
             return progress.raw_to_galaxy(value)
-        assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+        assert value["location"].startswith("step_input://"), f"Invalid location {value}"
         return hda_references[int(value["location"][len("step_input://") :]) - 1]
     elif isinstance(value, dict):
         raise NotImplementedError()
@@ -746,7 +746,8 @@ class SubWorkflowModule(WorkflowModule):
                         # This can happen when importing workflows with missing tools.
                         # We can't raise an exception here, as that would prevent loading
                         # the workflow.
-                        log.error(
+                        # This is also listed when opening such a workflow in the workflow editor.
+                        log.warning(
                             f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs"
                         )
                         continue
@@ -2573,11 +2574,13 @@ def populate_module_and_state(
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
-            raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
+            raise exceptions.MessageException(
+                "Error computing workflow step runtime state", err_data={step.order_index: step_errors}
+            )
         if step.upgrade_messages:
             if allow_tool_state_corrections:
                 log.debug('Workflow step "%i" had upgrade messages: %s', step.id, step.upgrade_messages)
             else:
                 raise exceptions.MessageException(
-                    step.upgrade_messages, err_data={step.order_index: step.upgrade_messages}
+                    "Workflow step has upgrade messages", err_data={step.order_index: step.upgrade_messages}
                 )

@@ -3,7 +3,6 @@
   <command>
     mkdir '$output.files_path';
     mkdir '$output.files_path/output';
-    touch '$output';
     cp '$input.extra_files_path'/* '$output.files_path';
     echo "1 2 3" > '$output.files_path/md5out';
     echo "1" > '$output.extra_files_path/output/1';

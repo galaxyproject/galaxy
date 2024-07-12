@@ -697,7 +697,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         self._validate_bulk_operation_params(payload, trans.user, trans)
-        contents: List["HistoryItem"]
+        contents: List[HistoryItem]
         if payload.items:
             contents = self._get_contents_by_item_list(
                 trans,
@@ -1366,7 +1366,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def _get_contents_by_item_list(
         self, trans, history: History, items: List[HistoryContentItem]
     ) -> List["HistoryItem"]:
-        contents: List["HistoryItem"] = []
+        contents: List[HistoryItem] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
         datasets_ids = (dataset.id for dataset in dataset_items)
@@ -1452,6 +1452,9 @@ class HistoryItemOperator:
             raise exceptions.ItemDeletionException("This item has been permanently deleted and cannot be recovered.")
         manager = self._get_item_manager(item)
         manager.undelete(item, flush=self.flush)
+        # Again, we need to force an update in the edge case where all selected items are already undeleted
+        # or when the item was purged as undelete will not trigger an update
+        item.update()
 
     def _purge(self, item: "HistoryItem", trans: ProvidesHistoryContext):
         if getattr(item, "purged", False):

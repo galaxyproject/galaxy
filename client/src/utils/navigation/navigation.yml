@@ -9,9 +9,11 @@
 _:  # global stuff
 
   selectors:
+    center_panel: '#center'
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
+    left_panel: '#left'
     left_panel_drag: '.flex-panel.left .drag-handle'
     left_panel_collapse: '.collapse-button.left'
     right_panel_drag: '.flex-panel.right .drag-handle'
@@ -38,46 +40,28 @@ masthead:
   selectors:
     _: '#masthead'
 
-    # bootstrap-vue a tag doesn't work as link target, need to hit span inside
-    user: '#user.loggedin-only > a.nav-link.dropdown-toggle > span'
-    register_or_login: '#user.loggedout-only > .nav-link'
-
-    user_menu: '#user .dropdown-menu a'
-    workflow: '#workflow .nav-link'
-
-    username:
-      type: xpath
-      selector: '//a[contains(text(), "Signed in as")]'
-
+    help: '#help'
+    home: '#analysis'
+    login: '#user'
+    logout: '.dropdown-menu > li > a > .fa-sign-out-alt'
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    preferences: '.dropdown-menu > li > a > .fa-gear'
+    register_or_login: '#user.loggedout-only > .nav-link'
     storage_dashboard_link:
       selector: 'storage dashboard link'
       type: data-description
-
-  labels:
-    # top-level menus
-    admin: 'Admin'
-    analyze: 'Analyze Data'
-    data: 'Data'
-    help: 'Help'
-    user: 'User'
-    visualization: 'Visualization'
-    workflow: 'Workflow'
-
-    # user menu
-    logout: 'Sign Out'
-    preferences: 'Preferences'
-
-    # data menu
-    libraries: 'Data Libraries'
-    histories: 'Histories'
-    invocations: 'Workflow Invocations'
-    pages: 'Pages'
-    workflows: 'Workflows'
+    user: '#user.loggedin-only > a.nav-link > .fa'
+    username:
+      type: xpath
+      selector: '//a[contains(text(), "Signed in as")]'
+    window_manager: '#enable-window-manager'
+    workflow: '#workflow .nav-link'
 
 preferences:
   selectors:
+    activity: "#activity-settings"
+    activity_expand: ".activity-panel-footer"
     sign_out: "#edit-preferences-sign-out"
     change_password: "#edit-preferences-password"
     manage_information: '#edit-preferences-information'
@@ -94,11 +78,37 @@ preferences:
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '.preferred-storage'
+    manage_object_stores: '#manage-object-stores'
+    manage_file_sources: '#manage-file-sources'
 
   object_store_selection:
     selectors:
       option_buttons: '.preferred-object-store-select-button'
       option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
+
+object_store_instances:
+  index:
+    selectors:
+      create_button: '#object-store-create'
+      _: '#user-object-stores-index'
+
+  create: 
+    selectors:
+      select: '.object-store-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-object-store-landing'      
+      submit: '#submit'
+
+file_source_instances:
+  index:
+    selectors:
+      create_button: '#file-source-create'
+      _: '#user-file-sources-index'
+
+  create: 
+    selectors:
+      select: '.file-source-template-select-button[data-template-id="${template_id}"]'
+      _: '#create-file-source-landing'      
+      submit: '#submit'
 
 toolbox_filters:
   selectors:
@@ -180,7 +190,6 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .rerun-btn'
       alltags: '${_} .stateless-tags .tag'
 
@@ -432,6 +441,7 @@ collection_builders:
 
 histories:
   selectors:
+    activity: '#activity-histories'
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
     advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
@@ -507,6 +517,7 @@ history_import:
 
 pages:
   selectors:
+    activity: "#activity-pages"
     create: '#page-create'
     submit: '#submit'
     create_title_input: '#form-element-title input'
@@ -568,13 +579,14 @@ tool_form:
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
-    drilldown_expand: '.fa-plus-square'
+    drilldown_expand: '.fa-caret-down'
 
   labels:
     generate_tour: 'Generate Tour'
 
 workflows:
   selectors:
+    activity: '#activity-workflows'
     shared_with_me_tab: '#shared-with-me'
     published_tab: '#published a'
     new_button: '#workflow-create'
@@ -593,13 +605,6 @@ workflows:
     workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
-    pager: '.gx-workflows-grid-pager'
-    pager_page: '.gx-workflows-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
-    pager_page_next: '.gx-workflows-grid-pager .gx-grid-pager-next button'
-    pager_page_first: '.gx-workflows-grid-pager .gx-grid-pager-first button'
-    pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
-    pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
-    pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
     dropdown: '[data-workflow-actions-dropdown="${id}"]'
     share_button: '#workflow-share-button'
     download_button: '#workflow-download-button'
@@ -608,8 +613,8 @@ workflows:
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[data-workflow-actions-dropdown]'
     delete_button: '.workflow-delete-button'
-    view_button: '.workflow-view-button'
-    workflow_preview_container: '.workflow-preview-container'
+    view_button: '.workflow-name-preview'
+    workflow_preview_container: '.workflow-card-preview-modal .workflow-published .published-workflow'
     workflow_preview_information: '.workflow-information'
     view_external_link: ".workflow-view-external-link-button"
     bookmark_link: '.workflow-bookmark-button-${action}'
@@ -632,6 +637,7 @@ workflows:
 visualization:
   selectors:
     _: '#center div.plugin-list'
+    activity: '#activity-visualizations'
     plugin_item: '[data-plugin-name*="${id}"]'
 
 trs_search:
@@ -663,7 +669,7 @@ trs_import:
 
 workflow_run:
   selectors:
-    warning: ".ui-form-composite-messages .alert-warning"
+    warning: '[data-description="workflow run warning"]'
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
@@ -714,6 +720,12 @@ workflow_editor:
       line_thickness: "[data-option='line-thickness']"
       smoothing: "[data-option='smoothing']"
       remove_freehand: "[data-option='remove-freehand']"
+      select_mode_add: "[data-option='select-mode-add']"
+      select_mode_remove: "[data-option='select-mode-remove']"
+      selection_count: ".selection-options > span"
+      clear_selection: "[title='clear selection']"
+      duplicate_selection: "[title='duplicate selected']"
+      delete_selection: "[title='delete selected']"
   comment:
     selectors:
       _: ".workflow-editor-comment"
@@ -831,19 +843,22 @@ workflow_show:
 
 invocations:
   selectors:
-    invocations_table: '.invocations-list table'
-    invocations_table_rows: '.invocations-list table tbody tr:not(.b-table-empty-row, [style*="display: none"])'
-    pager: '.gx-invocations-grid-pager'
-    pager_page: '.gx-invocations-grid-pager .gx-grid-pager-page [aria-posinset=${page}]'
-    pager_page_next: '.gx-invocations-grid-pager .gx-grid-pager-next button'
-    pager_page_last: '.gx-invocations-grid-pager .gx-grid-pager-last button'
-    pager_page_first: '.gx-invocations-grid-pager .gx-grid-pager-first button'
-    pager_page_previous: '.gx-invocations-grid-pager .gx-grid-pager-prev button'
-    pager_page_active: '.gx-invocations-grid-pager .gx-grid-pager-page.active button'
+    activity: "#activity-invocation"
+    activity_expand: ".activity-panel-footer"
+    invocations_table: '#invocations-grid .grid-table'
+    invocations_table_rows: '#invocations-grid .grid-table [data-description="grid item"]'
+    pager: '[data-description="grid pager"]'
+    pager_page: '[data-description="grid pager"] .gx-grid-pager-page [aria-posinset=${page}]'
+    pager_page_next: '[data-description="grid pager"] .gx-grid-pager-next button'
+    pager_page_last: '[data-description="grid pager"] .gx-grid-pager-last button'
+    pager_page_first: '[data-description="grid pager"] .gx-grid-pager-first button'
+    pager_page_previous: '[data-description="grid pager"] .gx-grid-pager-prev button'
+    pager_page_active: '[data-description="grid pager"] .gx-grid-pager-page.active button'
     state_details: '.workflow-invocation-state-component'
-    toggle_invocation_details: '.toggle-invocation-details'
+    toggle_invocation_details: '[data-description="toggle row details"]'
     progress_steps_note: '.workflow-invocation-state-component .steps-progress .progressNote'
     progress_jobs_note: '.workflow-invocation-state-component .jobs-progress .progressNote'
+    hide_invocation_graph: '.workflow-invocation-state-component [data-description="hide invocation graph"]'
     invocation_tab:
       type: xpath
       selector: '//a[text()="${label}"]'
@@ -874,6 +889,15 @@ tour:
       content: '${_} .tour-content'
       next: '${_} .tour-next'
       end: '${_} .tour-end'
+
+tools:
+  selectors:
+    activity: '#activity-tools'
+    body: '#center #tool-card-body'
+    execute: '#execute'
+    help: 'div.form-help'
+    search: '.search-query'
+    title: '.toolSectionTitle'
 
 admin:
   allowlist:
@@ -983,6 +1007,7 @@ libraries:
 
   selectors:
     _: '#libraries_list'
+    activity: '#activity-libraries'
     create_new_library_btn: '#create-new-lib'
     permission_library_btn: '.permission_library_btn'
     toolbtn_save_permissions: '.toolbtn_save_permissions'
@@ -1103,6 +1128,7 @@ upload:
     source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
     start_button: '#btn-start'
+    local_button: '#btn-local'
 
 new_user_welcome:
   selectors:

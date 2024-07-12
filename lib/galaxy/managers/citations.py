@@ -1,12 +1,14 @@
 import functools
 import logging
 
-import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class DoiCache:
         # content encoding from the Content-Type header (res.encoding), and if
         # that fails, falls back to guessing from the content itself (res.apparent_encoding).
         # The guessed encoding is sometimes wrong, better to default to utf-8.
+        res.raise_for_status()
         if res.encoding is None:
             res.encoding = "utf-8"
         return res.text
@@ -149,7 +152,7 @@ class DoiCitation(BaseCitation):
             try:
                 self.raw_bibtex = self.doi_cache.get_bibtex(self.__doi)
             except Exception:
-                log.exception("Failed to fetch bibtex for DOI %s", self.__doi)
+                log.debug("Failed to fetch bibtex for DOI %s", self.__doi)
 
         if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
             return f"""@MISC{{{self.__doi},

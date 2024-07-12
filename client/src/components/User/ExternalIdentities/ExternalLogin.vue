@@ -6,6 +6,7 @@ import Multiselect from "vue-multiselect";
 
 import { useConfig } from "@/composables/config";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -82,10 +83,8 @@ async function submitOIDCLogin(idp: string) {
             window.location = data.redirect_uri;
         }
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Login failed for an unknown reason.";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
     } finally {
         loading.value = false;
     }
@@ -113,10 +112,8 @@ async function submitCILogon(idp: string | null) {
             window.location = data.redirect_uri;
         }
     } catch (e) {
-        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const message = error.response?.data && error.response.data.err_msg;
-        messageText.value = message || "Login failed for an unknown reason.";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
     } finally {
         loading.value = false;
     }

@@ -189,7 +189,7 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
 
-    def update_column_maker_repo(self, repository: HasRepositoryId) -> requests.Response:
+    def update_column_maker_repo(self, repository: HasRepositoryId) -> RepositoryUpdate:
         response = self.upload_revision(
             repository,
             COLUMN_MAKER_1_1_1_PATH,
@@ -211,7 +211,7 @@ class ToolShedPopulator:
 
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
-    ):
+    ) -> RepositoryUpdate:
         response = self.upload_revision_raw(repository, path, commit_message=commit_message)
         if response.status_code != 200:
             response_json = None

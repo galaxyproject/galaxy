@@ -178,7 +178,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         item = trans.sa_session.query(item_class).get(decoded_id)
         assert item is not None
     except Exception:
-        log.exception(f"Invalid {class_name} id ( {id} ) specified.")
+        log.warning(f"Invalid {class_name} id ( {id} ) specified.")
         raise exceptions.MessageException(f"Invalid {class_name} id ( {id} ) specified", type="error")
 
     if check_ownership or check_accessible:

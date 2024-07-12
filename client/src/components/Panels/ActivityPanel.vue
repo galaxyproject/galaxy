@@ -1,13 +1,29 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue";
+import { computed } from "vue";
+import { useRoute } from "vue-router/composables";
+
 interface Props {
     title: string;
     goToAllTitle?: string;
     href?: string;
+    /** Show GoTo button when on `href`? */
+    goToOnHref?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    goToAllTitle: undefined,
+    href: undefined,
+    goToOnHref: true,
+});
+
+const route = useRoute();
 
 const emit = defineEmits(["goToAll"]);
+
+const hasGoToAll = computed(
+    () => props.goToAllTitle && props.href && (props.goToOnHref || (!props.goToOnHref && route.path !== props.href))
+);
 </script>
 
 <template>
@@ -20,21 +36,21 @@ const emit = defineEmits(["goToAll"]);
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />
+            <BButton
+                v-if="hasGoToAll"
+                class="activity-panel-footer"
+                variant="primary"
+                :data-description="`props.mainButtonText button`"
+                :to="props.href"
+                size="sm"
+                @click="emit('goToAll')">
+                {{ props.goToAllTitle }}
+            </BButton>
         </div>
 
         <div class="activity-panel-body">
             <slot />
         </div>
-
-        <BButton
-            v-if="props.goToAllTitle"
-            class="activity-panel-footer"
-            variant="primary"
-            :data-description="`props.mainButtonText button`"
-            :to="props.href"
-            @click="emit('goToAll')">
-            {{ props.goToAllTitle }}
-        </BButton>
     </div>
 </template>
 
@@ -83,6 +99,7 @@ const emit = defineEmits(["goToAll"]);
 
     .activity-panel-footer {
         margin-top: 0.5rem;
+        width: 100%;
         font-weight: bold;
     }
 }

@@ -11,6 +11,7 @@ import { setAttributes } from "@/components/DatasetInformation/services";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import Heading from "../Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -25,7 +26,8 @@ const props = defineProps<Props>();
 const historyStore = useHistoryStore();
 
 const loading = ref(false);
-const messageText = ref("");
+const loadingFailed = ref(false);
+const messageText = ref<string>();
 const messageVariant = ref("danger");
 const formData = ref<Record<string, any>>({});
 const datasetAttributes = ref<Record<string, any>>({});
@@ -75,7 +77,7 @@ async function loadDatasetAttributes() {
         datasetAttributes.value = data;
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
-
+        loadingFailed.value = true;
         onError(error.response?.data?.err_msg || "Unable to fetch available dataset attributes.");
     } finally {
         loading.value = false;
@@ -89,7 +91,9 @@ onMounted(async () => {
 
 <template>
     <div aria-labelledby="dataset-attributes-heading">
-        <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
+        <Heading id="dataset-attributes-heading" h1 separator inline size="xl">
+            {{ localize("Edit Dataset Attributes") }}
+        </Heading>
 
         <BAlert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ localize(messageText) }}
@@ -98,7 +102,7 @@ onMounted(async () => {
         <BAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset attributes..." />
         </BAlert>
-        <div v-else class="mt-3">
+        <div v-else-if="!loadingFailed" class="mt-3">
             <BTabs>
                 <BTab v-if="!datasetAttributes['attribute_disable']">
                     <template v-slot:title>

@@ -36,13 +36,13 @@ watch(
     }
 );
 fetch();
-const loadingMessage = "Loading object store details";
-const forWhat = "This object store is";
+const loadingMessage = "Loading storage location details";
+const forWhat = "This storage location is";
 </script>
 
 <template>
     <div style="width: 300px">
-        <LoadingSpan v-if="loading" :message="loadingMessage | localize" />
+        <LoadingSpan v-if="loading" v-localize :message="loadingMessage" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
         <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>

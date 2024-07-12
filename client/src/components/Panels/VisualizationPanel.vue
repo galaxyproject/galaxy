@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { BAlert, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
@@ -21,13 +23,25 @@ interface Plugin {
     target?: string;
 }
 
+interface Dataset {
+    id: string;
+    name: string;
+}
+
+interface CompatibleDatasetsResponse {
+    hdas: Dataset[];
+}
+
 const { currentHistoryId } = storeToRefs(useHistoryStore());
+const router = useRouter();
 
 const plugins: Ref<Array<Plugin>> = ref([]);
 const query = ref("");
 const isLoading = ref(true);
 const currentPlugin: Ref<Plugin | null> = ref(null);
+const compatibleDatasetIdKeys = ref<string[]>([]);
 const showDataDialog = ref(false);
+const showNoCompatibleDatasetsModal = ref(false);
 
 const filteredPlugins = computed(() => {
     const queryLower = query.value.toLowerCase();
@@ -42,21 +56,36 @@ const filteredPlugins = computed(() => {
 function createVisualization(dataset: any) {
     showDataDialog.value = false;
     if (currentPlugin.value) {
-        const href = `${currentPlugin.value.href}?dataset_id=${dataset.id}`;
-        if (currentPlugin.value.target == "_top") {
-            window.location.href = href;
-        } else {
-            const galaxyMainElement = document.getElementById("galaxy_main");
-            if (galaxyMainElement) {
-                galaxyMainElement.setAttribute("src", href);
-            }
-        }
+        router.push(`/visualizations/display?visualization=${currentPlugin.value.name}&dataset_id=${dataset.id}`, {
+            // @ts-ignore
+            title: dataset.name,
+        });
     }
 }
 
-function selectVisualization(plugin: Plugin) {
+async function selectVisualization(plugin: Plugin) {
     currentPlugin.value = plugin;
+    compatibleDatasetIdKeys.value = await getCompatibleDatasetsInCurrentHistory();
+    if (compatibleDatasetIdKeys.value.length === 0) {
+        showNoCompatibleDatasetsModal.value = true;
+        return;
+    }
     showDataDialog.value = true;
+}
+
+/**
+ * Get compatible datasets in the current history for the selected visualization.
+ * @returns {Promise<string[]>} List of compatible datasets as "type-id" strings. In this case, type will be always "dataset".
+ */
+async function getCompatibleDatasetsInCurrentHistory(): Promise<string[]> {
+    if (!currentPlugin.value || !currentHistoryId.value) {
+        return [];
+    }
+    const result = (await urlData({
+        url: `/api/plugins/${currentPlugin.value.name}`,
+        params: { history_id: currentHistoryId.value },
+    })) as CompatibleDatasetsResponse;
+    return result.hdas.map((dataset: Dataset) => `dataset-${dataset.id}`);
 }
 
 async function getPlugins() {
@@ -71,8 +100,10 @@ onMounted(() => {
 
 <template>
     <ActivityPanel title="Visualizations" go-to-all-title="Saved Visualizations" href="/visualizations/list">
-        <h3>Create Visualization</h3>
-        <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
+        <template v-slot:header>
+            <h3>Create Visualization</h3>
+            <DelayedInput :delay="100" placeholder="Search visualizations" @change="query = $event" />
+        </template>
         <div class="overflow-y mt-2">
             <LoadingSpan v-if="isLoading" message="Loading visualizations" />
             <div v-else-if="filteredPlugins.length > 0">
@@ -94,11 +125,20 @@ onMounted(() => {
             <BAlert v-else v-localize variant="info" show> No matching visualization found. </BAlert>
         </div>
         <DataDialog
-            v-if="showDataDialog"
+            v-if="currentHistoryId && showDataDialog"
             format=""
             :history="currentHistoryId"
+            :filter-ok-state="true"
+            :filter-by-type-ids="compatibleDatasetIdKeys"
             @onOk="createVisualization"
             @onCancel="showDataDialog = false" />
+        <BModal v-model="showNoCompatibleDatasetsModal" title="No compatible datasets found" title-tag="h2" ok-only>
+            <p v-localize>
+                No datasets found in your current history that are compatible with
+                <b>{{ currentPlugin?.name ?? "this visualization" }}</b
+                >. Please upload a compatible dataset or select a different visualization.
+            </p>
+        </BModal>
     </ActivityPanel>
 </template>
 

@@ -55,14 +55,14 @@ def _dump_option(option, current_section_desc):
             type = "str"
     if default == "None":
         default = None
-    print_line("%s:" % key)
-    print_line("  type: %s" % type)
+    print_line(f"{key}:")
+    print_line(f"  type: {type}")
     if default is not None:
-        print_line("  default: %s" % default)
+        print_line(f"  default: {default}")
     # print_line("  required: false")
     print_line("  desc: |")
     for line in current_section_desc:
-        print_line("    %s" % line)
+        print_line(f"    {line}")
     print_line("")
 
 

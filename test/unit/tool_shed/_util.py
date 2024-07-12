@@ -46,6 +46,7 @@ class TestToolShedConfig:
     file_path: str
     id_secret: str = "thisistheshedunittestsecret"
     smtp_server: Optional[str] = None
+    hgweb_repo_prefix = "repos/"
     config_hg_for_dev = False
 
     def __init__(self, temp_directory):
@@ -75,6 +76,7 @@ class TestToolShedApp(ToolShedApp):
         hgweb_config_dir = os.path.join(temp_directory, "hgweb")
         safe_makedirs(hgweb_config_dir)
         self.hgweb_config_manager.hgweb_config_dir = hgweb_config_dir
+        self.hgweb_config_manager.hgweb_repo_prefix = "repos/"
         self.config = TestToolShedConfig(temp_directory)
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.repository_registry = tool_shed.repository_registry.Registry(self)
@@ -132,7 +134,7 @@ def repository_fixture(app: ToolShedApp, user: User, name: str, category: Option
         type,
         description,
         long_description,
-        user.id,
+        user,
         category_ids=category_ids,
         remote_repository_url=None,
         homepage_url=None,

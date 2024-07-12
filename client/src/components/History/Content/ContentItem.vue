@@ -91,7 +91,9 @@ const contentId = computed(() => {
 
 const contentCls = computed(() => {
     const status = contentState.value && contentState.value.status;
-    if (props.selected) {
+    if (props.item.accessible === false) {
+        return "alert-inaccessible";
+    } else if (props.selected) {
         return "alert-info";
     } else if (!status) {
         return `alert-success`;
@@ -99,7 +101,6 @@ const contentCls = computed(() => {
         return `alert-${status}`;
     }
 });
-
 const contentState = computed(() => {
     return STATES[state.value] && STATES[state.value];
 });
@@ -115,6 +116,9 @@ const hasStateIcon = computed(() => {
 const state = computed<keyof StateMap>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
+    }
+    if (props.item.accessible === false) {
+        return "inaccessible";
     }
     if (props.item.populated_state === "failed") {
         return "failed_populated_state";
@@ -135,7 +139,13 @@ const state = computed<keyof StateMap>(() => {
 });
 
 const dataState = computed(() => {
-    return state.value === "new_populated_state" ? "new" : state.value;
+    if (props.item.accessible === false) {
+        return "inaccessible";
+    } else if (state.value === "new_populated_state") {
+        return "new";
+    } else {
+        return state.value;
+    }
 });
 
 const tags = computed(() => {
@@ -334,7 +344,7 @@ function unexpandedClick(event: Event) {
         :data-state="dataState"
         tabindex="0"
         role="button"
-        draggable
+        :draggable="props.item.accessible === false ? false : true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
         @keydown="onKeyDown">
@@ -428,8 +438,9 @@ function unexpandedClick(event: Event) {
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <BCollapse :visible="expandDataset" class="px-2 pb-2">
+            <div v-if="item.accessible === false">You are not allowed to access this dataset</div>
             <DatasetDetails
-                v-if="expandDataset && item.id"
+                v-else-if="expandDataset && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"

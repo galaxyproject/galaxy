@@ -7,13 +7,20 @@
             @onZoom="onZoom"
             @update:pan="panBy" />
         <ToolBar v-if="!readonly" />
-        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
+        <div
+            id="canvas-container"
+            ref="canvas"
+            class="canvas-content"
+            :class="props.isInvocation ? 'fixed-window-height' : 'h-100'"
+            @drop.prevent
+            @dragover.prevent>
             <AdaptiveGrid
                 :viewport-bounds="elementBounding"
                 :viewport-bounding-box="viewportBoundingBox"
                 :transform="transform" />
             <div class="node-area" :style="canvasStyle">
                 <InputCatcher :transform="transform" />
+                <BoxSelectPreview />
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
@@ -31,6 +38,7 @@
                     :scroll="scroll"
                     :scale="scale"
                     :readonly="readonly"
+                    :is-invocation="props.isInvocation"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -76,6 +84,7 @@ import { maxZoom, minZoom } from "./modules/zoomLevels";
 
 import AdaptiveGrid from "./AdaptiveGrid.vue";
 import WorkflowComment from "./Comments/WorkflowComment.vue";
+import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
@@ -91,6 +100,7 @@ const props = defineProps({
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
+    isInvocation: { type: Boolean, default: false },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
 });
@@ -198,11 +208,15 @@ const { comments } = storeToRefs(commentStore);
 
     .canvas-content {
         width: 100%;
-        height: 100%;
         position: relative;
         left: 0px;
         top: 0px;
         overflow: hidden;
+
+        /* TODO: w/out this, canvas height = 0 when width goes beyond a point (invocation graph) */
+        &.fixed-window-height {
+            height: 60vh;
+        }
     }
 
     .node-area {

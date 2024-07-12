@@ -1,0 +1,26 @@
+type: distributed
+backends:
+   - id: files1
+     quota:
+       source: 1files
+     type: disk
+     weight: 2
+     device: primary_disk
+     files_dir: "${temp_directory}/files1"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp1"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory1"
+   - id: files2
+     quota:
+       source: 2files
+     type: disk
+     weight: 1
+     device: primary_disk
+     files_dir: "${temp_directory}/files2"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp2"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory2"

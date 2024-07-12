@@ -37,9 +37,8 @@ BOTO3_IMPORT_MSG = (
 
 try:
     import boto3
-
 except ImportError as e:
-    boto3 = None
+    boto3 = None  # type: ignore[assignment]
     BOTO3_IMPORT_MSG.format(msg=unicodify(e))
 
 
@@ -399,7 +398,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         log.debug(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
-        msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
+        msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
@@ -528,7 +527,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
-                "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
+                "AWSBatchJobRunner requires the following params to be provided: {}.".format(", ".join(check_required))
             )
 
         # parse Platform

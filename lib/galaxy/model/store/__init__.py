@@ -57,7 +57,7 @@ from galaxy.exceptions import (
 )
 from galaxy.files import (
     ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.base import (
@@ -186,8 +186,6 @@ class ImportDiscardedDataType(Enum):
 
 class DatasetAttributeImportModel(BaseModel):
     state: Optional[DatasetStateField] = None
-    deleted: Optional[bool] = None
-    purged: Optional[bool] = None
     external_filename: Optional[str] = None
     _extra_files_path: Optional[str] = None
     file_size: Optional[int] = None
@@ -473,6 +471,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 )
                 for attribute, value in dataset_attributes.items():
                     setattr(dataset_instance.dataset, attribute, value)
+                if dataset_instance.dataset.purged:
+                    dataset_instance.dataset.full_delete()
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
@@ -657,17 +657,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_instance.state = dataset_state
                         if not self.object_store:
                             raise Exception(f"self.object_store is missing from {self}.")
-                        self.object_store.update_from_file(
-                            dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
-                        )
+                        if not dataset_instance.dataset.purged:
+                            self.object_store.update_from_file(
+                                dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
+                            )
 
-                        # Import additional files if present. Histories exported previously might not have this attribute set.
-                        dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
-                        if dataset_extra_files_path:
-                            assert file_source_root
-                            dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
-                            persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
-                        # Don't trust serialized file size
+                            # Import additional files if present. Histories exported previously might not have this attribute set.
+                            dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
+                            if dataset_extra_files_path:
+                                assert file_source_root
+                                dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
+                                persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
+                            # Don't trust serialized file size
                         dataset_instance.dataset.file_size = None
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 
@@ -1621,7 +1622,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             attrs = load(open(file_name))
         else:
             if required:
-                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+                raise Exception(f"Failed to find file [{file_name}] in model store archive")
             attrs = []
         return attrs
 
@@ -1902,7 +1903,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
-        self.user_context = ProvidesUserFileSourcesUserContext(user_context)
+        self.user_context = ProvidesFileSourcesUserContext(user_context)
         self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
@@ -1971,8 +1972,6 @@ class DirectoryModelExportStore(ModelExportStore):
 
         dir_name = "datasets"
         dir_path = os.path.join(export_directory, dir_name)
-        dataset_hid = as_dict["hid"]
-        assert dataset_hid, as_dict
 
         if dataset.dataset.id in self.dataset_id_to_path:
             file_name, extra_files_path = self.dataset_id_to_path[dataset.dataset.id]
@@ -1991,7 +1990,7 @@ class DirectoryModelExportStore(ModelExportStore):
                 self.serialization_options.get_identifier(self.security, conversion) if conversion else None
             )
             target_filename = get_export_dataset_filename(
-                as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                as_dict["name"], as_dict["extension"], as_dict["encoded_id"], conversion_key=conversion_key
             )
             arcname = os.path.join(dir_name, target_filename)
             src = file_name
@@ -2007,7 +2006,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
             if len(file_list):
                 extra_files_target_filename = get_export_dataset_extra_files_dir_name(
-                    as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                    as_dict["encoded_id"], conversion_key=conversion_key
                 )
                 arcname = os.path.join(dir_name, extra_files_target_filename)
                 add(extra_files_path, os.path.join(export_directory, arcname))
@@ -2978,22 +2977,22 @@ def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: boo
             store_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
 
 
-def get_export_dataset_filename(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion_key: Optional[str]) -> str:
     """
     Builds a filename for a dataset using its name an extension.
     """
     base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)
     if not conversion_key:
-        return f"{base}_{hid}.{ext}"
+        return f"{base}_{encoded_id}.{ext}"
     else:
-        return f"{base}_{hid}_conversion_{conversion_key}.{ext}"
+        return f"{base}_{encoded_id}_conversion_{conversion_key}.{ext}"
 
 
-def get_export_dataset_extra_files_dir_name(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+def get_export_dataset_extra_files_dir_name(encoded_id: str, conversion_key: Optional[str]) -> str:
     if not conversion_key:
-        return f"extra_files_path_{hid}"
+        return f"extra_files_path_{encoded_id}"
     else:
-        return f"extra_files_path_{hid}_conversion_{conversion_key}"
+        return f"extra_files_path_{encoded_id}_conversion_{conversion_key}"
 
 
 def imported_store_for_metadata(
@@ -3033,7 +3032,7 @@ def source_to_import_store(
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
-            user_context = ProvidesUserFileSourcesUserContext(user_context)
+            user_context = ProvidesFileSourcesUserContext(user_context)
             source_uri = stream_url_to_file(
                 source_uri, app.file_sources, prefix="gx_import_model_store", user_context=user_context
             )

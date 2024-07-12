@@ -26,7 +26,6 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
 from galaxy.model.base import transaction
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -162,8 +161,3 @@ class RoleManager(base.ModelManager[model.Role]):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return role
-
-
-def get_roles_by_ids(session: galaxy_scoped_session, role_ids):
-    stmt = select(Role).where(Role.id.in_(role_ids))
-    return session.scalars(stmt).all()

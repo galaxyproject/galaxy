@@ -13,9 +13,9 @@ from galaxy.managers.pages import (
     PageManager,
 )
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.managers.users import get_user_by_username
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.base import transaction
+from galaxy.model.db.user import get_user_by_username
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
@@ -100,7 +100,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             }
         else:
             page = self.page_manager.create_page(trans, CreatePagePayload(**payload))
-            return {"message": "Page '%s' successfully created." % page.title, "status": "success"}
+            return {"message": f"Page '{page.title}' successfully created.", "status": "success"}
 
     @web.legacy_expose_api
     @web.require_login("edit pages")
@@ -159,7 +159,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 trans.sa_session.add(p)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-            return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
+            return {"message": f"Attributes of '{p.title}' successfully saved.", "status": "success"}
 
     @web.expose
     @web.require_login()

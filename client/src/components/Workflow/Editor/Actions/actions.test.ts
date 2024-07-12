@@ -14,7 +14,7 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
-    LazyMoveMultipleAction,
+    ToggleCommentSelectedAction,
 } from "./commentActions";
 import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
 import {
@@ -24,9 +24,19 @@ import {
     LazySetLabelAction,
     LazySetOutputLabelAction,
     RemoveStepAction,
+    ToggleStepSelectedAction,
     UpdateStepAction,
 } from "./stepActions";
-import { CopyIntoWorkflowAction, LazySetValueAction } from "./workflowActions";
+import {
+    AddToSelectionAction,
+    ClearSelectionAction,
+    CopyIntoWorkflowAction,
+    DeleteSelectionAction,
+    DuplicateSelectionAction,
+    LazyMoveMultipleAction,
+    LazySetValueAction,
+    RemoveFromSelectionAction,
+} from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -74,13 +84,19 @@ describe("Workflow Undo Redo Actions", () => {
 
     const { commentStore, undoRedoStore, stepStore, stateStore, connectionStore } = stores;
 
-    describe("Comment Actions", () => {
-        function addComment() {
-            const comment = mockComment(commentStore.highestCommentId + 1);
-            commentStore.addComments([comment]);
-            return comment;
-        }
+    function addComment() {
+        const comment = mockComment(commentStore.highestCommentId + 1);
+        commentStore.addComments([comment]);
+        return comment;
+    }
 
+    function addStep() {
+        const step = mockToolStep(stepStore.getStepIndex + 1);
+        stepStore.addStep(step);
+        return step;
+    }
+
+    describe("Comment Actions", () => {
         it("AddCommentAction", () => {
             expect(commentStore.comments.length).toBe(0);
 
@@ -120,16 +136,9 @@ describe("Workflow Undo Redo Actions", () => {
             testUndoRedo(action);
         });
 
-        it("LazyMoveMultipleAction", () => {
-            addComment();
-            const action = new LazyMoveMultipleAction(
-                commentStore,
-                stores.stepStore,
-                commentStore.comments,
-                Object.values(stores.stepStore.steps) as any,
-                { x: 0, y: 0 },
-                { x: 500, y: 500 }
-            );
+        it("ToggleCommentSelectedAction", () => {
+            const comment = addComment();
+            const action = new ToggleCommentSelectedAction(commentStore, comment);
             testUndoRedo(action);
         });
     });
@@ -153,15 +162,61 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
             testUndoRedo(action);
         });
+
+        it("LazyMoveMultipleAction", () => {
+            addComment();
+            const action = new LazyMoveMultipleAction(
+                commentStore,
+                stores.stepStore,
+                commentStore.comments,
+                Object.values(stores.stepStore.steps) as any,
+                { x: 0, y: 0 },
+                { x: 500, y: 500 }
+            );
+            testUndoRedo(action);
+        });
+
+        function setupSelected() {
+            addComment();
+            addComment();
+            addStep();
+            addStep();
+            commentStore.setCommentMultiSelected(0, true);
+            stateStore.setStepMultiSelected(2, true);
+        }
+
+        it("ClearSelectionAction", () => {
+            setupSelected();
+            const action = new ClearSelectionAction(commentStore, stateStore);
+            testUndoRedo(action);
+        });
+
+        it("AddToSelectionAction", () => {
+            setupSelected();
+            const action = new AddToSelectionAction(commentStore, stateStore, { comments: [1], steps: [0] });
+            testUndoRedo(action);
+        });
+
+        it("RemoveFromSelectionAction", () => {
+            setupSelected();
+            const action = new RemoveFromSelectionAction(commentStore, stateStore, { comments: [0], steps: [2] });
+            testUndoRedo(action);
+        });
+
+        it("DuplicateSelectionAction", () => {
+            setupSelected();
+            const action = new DuplicateSelectionAction(workflowId);
+            testUndoRedo(action);
+        });
+
+        it("DeleteSelectionAction", () => {
+            setupSelected();
+            const action = new DeleteSelectionAction(workflowId);
+            testUndoRedo(action);
+        });
     });
 
     describe("Step Actions", () => {
-        function addStep() {
-            const step = mockToolStep(stepStore.getStepIndex + 1);
-            stepStore.addStep(step);
-            return step;
-        }
-
         it("LazyMutateStepAction", () => {
             const step = addStep();
             const action = new LazyMutateStepAction(stepStore, step.id, "annotation", "", "hello world");
@@ -228,6 +283,12 @@ describe("Workflow Undo Redo Actions", () => {
 
             testUndoRedo(action);
         });
+
+        it("ToggleStepSelectedAction", () => {
+            const step = addStep();
+            const action = new ToggleStepSelectedAction(stateStore, stepStore, step.id);
+            testUndoRedo(action);
+        });
     });
 });
 
@@ -277,6 +338,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "stepPosition",
             "stepLoadingState",
             "report",
+            "multiSelectedStepIds",
         ]),
         connectionStoreState: extractKeys(connectionStore, [
             "connections",
@@ -285,7 +347,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "terminalToConnection",
             "stepToConnections",
         ]),
-        commentStoreState: extractKeys(commentStore, ["commentsRecord"]),
+        commentStoreState: extractKeys(commentStore, ["commentsRecord", "multiSelectedCommentIds"]),
         workflowState: workflow,
     });
 

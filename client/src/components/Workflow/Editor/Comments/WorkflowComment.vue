@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { type UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
@@ -11,6 +11,7 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
+    ToggleCommentSelectedAction,
 } from "../Actions/commentActions";
 
 import FrameComment from "./FrameComment.vue";
@@ -34,6 +35,7 @@ const cssVariables = computed(() => ({
     "--position-top": `${props.comment.position[1]}px`,
     "--width": `${props.comment.size[0]}px`,
     "--height": `${props.comment.size[1]}px`,
+    "--pointer-events": props.comment.type === "freehand" ? "none" : "unset",
 }));
 
 const { commentStore, undoRedoStore } = useWorkflowStores();
@@ -77,10 +79,21 @@ function onRemove() {
 function onSetColor(color: WorkflowCommentColor) {
     undoRedoStore.applyAction(new ChangeColorAction(commentStore, props.comment, color));
 }
+
+function toggleSelect(e: MouseEvent) {
+    if (!props.readonly && !(props.comment.type === "freehand")) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            undoRedoStore.applyAction(new ToggleCommentSelectedAction(commentStore, props.comment));
+        }
+    }
+}
 </script>
 
 <template>
-    <div class="workflow-editor-comment" :style="cssVariables">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
+    <div class="workflow-editor-comment" :style="cssVariables" @click.capture="toggleSelect">
         <TextComment
             v-if="props.comment.type === 'text'"
             :comment="props.comment"
@@ -128,5 +141,6 @@ function onSetColor(color: WorkflowCommentColor) {
     height: var(--height);
     top: var(--position-top);
     left: var(--position-left);
+    pointer-events: var(--pointer-events);
 }
 </style>

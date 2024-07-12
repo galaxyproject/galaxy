@@ -590,7 +590,7 @@ class HistoryContentsFilters(
                     if val == "__null__":
                         val = None
                     if val not in ids:
-                        raise KeyError(f"Could not find key {val} in object store keys {list(ids.keys())}")
+                        raise ValueError(f"Could not find key {val} in object store keys {list(ids.keys())}")
                     object_store_ids = ids[val]
                     return sql.column("object_store_id").in_(object_store_ids)
 

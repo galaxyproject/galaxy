@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
@@ -22,10 +22,13 @@ interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
-    fields?: Array<FieldEntry>;
+    fields?: FieldEntry[];
     isBusy?: boolean;
     isEncoded?: boolean;
-    items?: Array<SelectionItem>;
+    items?: SelectionItem[];
+    itemsProvider?: ItemsProvider;
+    providerUrl?: string;
+    totalItems?: number;
     leafIcon?: string;
     modalShow?: boolean;
     modalStatic?: boolean;
@@ -45,6 +48,9 @@ const props = withDefaults(defineProps<Props>(), {
     isBusy: false,
     isEncoded: false,
     items: () => [],
+    itemsProvider: undefined,
+    providerUrl: undefined,
+    totalItems: 0,
     leafIcon: "fa fa-file-o",
     modalShow: true,
     modalStatic: false,
@@ -67,8 +73,7 @@ const emit = defineEmits<{
 
 const filter = ref("");
 const currentPage = ref(1);
-const nItems = ref(0);
-const perPage = ref(100);
+const perPage = ref(25);
 
 const fieldDetails = computed(() => {
     const fields = props.fields.slice().map((x) => {
@@ -97,8 +102,9 @@ function selectionIcon(variant: string) {
 
 /** Resets pagination when a filter/search word is entered **/
 function filtered(items: Array<SelectionItem>) {
-    nItems.value = items.length;
-    currentPage.value = 1;
+    if (props.itemsProvider === undefined) {
+        currentPage.value = 1;
+    }
 }
 
 /** Format time stamp */
@@ -121,6 +127,16 @@ watch(
     () => props.items,
     () => {
         filtered(props.items);
+    }
+);
+
+watch(
+    () => props.providerUrl,
+    () => {
+        // We need to reset the current page when drilling down sub-folders
+        if (props.itemsProvider !== undefined) {
+            currentPage.value = 1;
+        }
     }
 );
 </script>
@@ -148,7 +164,7 @@ watch(
                     primary-key="id"
                     :busy="isBusy"
                     :current-page="currentPage"
-                    :items="items"
+                    :items="itemsProvider ?? items"
                     :fields="fieldDetails"
                     :filter="filter"
                     :per-page="perPage"
@@ -200,7 +216,7 @@ watch(
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                 </div>
-                <div v-if="nItems === 0">
+                <div v-if="totalItems === 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ filter }}</b
                         >.
@@ -223,12 +239,12 @@ watch(
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <BPagination
-                    v-if="nItems > perPage"
+                    v-if="totalItems > perPage"
                     v-model="currentPage"
                     class="justify-content-md-center m-0"
                     size="sm"
                     :per-page="perPage"
-                    :total-rows="nItems" />
+                    :total-rows="totalItems" />
                 <div>
                     <BButton
                         data-description="selection dialog cancel"

@@ -4,7 +4,7 @@
 import { computed, ref, watch } from "vue";
 
 import type { CollectionEntry, DCESummary, HistorySummary, SubCollection } from "@/api";
-import { isCollectionElement, isHDCA } from "@/api";
+import { canMutateHistory, isCollectionElement, isHDCA } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
@@ -66,6 +66,7 @@ const rootCollection = computed(() => {
     }
 });
 const isRoot = computed(() => dsc.value == rootCollection.value);
+const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
 
 function updateDsc(collection: any, fields: Object | undefined) {
     updateContentFields(collection, fields).then((response) => {
@@ -76,7 +77,7 @@ function updateDsc(collection: any, fields: Object | undefined) {
 }
 
 function getItemKey(item: DCESummary) {
-    return item.id;
+    return `${item.element_type}-${item.id}`;
 }
 
 function onScroll(newOffset: number) {
@@ -87,6 +88,7 @@ async function onViewDatasetCollectionElement(element: DCESummary) {
     if (!isCollectionElement(element)) {
         return;
     }
+    offset.value = 0;
     const collection: SubCollection = {
         ...element.object,
         name: element.element_identifier,
@@ -123,8 +125,8 @@ watch(
                     :history-name="history.name"
                     :selected-collections="selectedCollections"
                     v-on="$listeners" />
-                <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
+                <CollectionDetails :dsc="dsc" :writeable="canEdit" @update:dsc="updateDsc(dsc, $event)" />
+                <CollectionOperations v-if="canEdit && showControls" :dsc="dsc" />
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>

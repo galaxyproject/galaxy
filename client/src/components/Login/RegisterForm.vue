@@ -14,11 +14,12 @@ import {
     BFormInput,
     BFormText,
 } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 
 import { Toast } from "@/composables/toast";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -45,13 +46,13 @@ const confirm = ref(null);
 const password = ref(null);
 const username = ref(null);
 const subscribe = ref(null);
-const messageText = ref(null);
+const messageText: Ref<string | null> = ref(null);
 const disableCreate = ref(false);
 const labelPassword = ref(localize("Password"));
 const labelPublicName = ref(localize("Public name"));
 const labelEmailAddress = ref(localize("Email address"));
 const labelConfirmPassword = ref(localize("Confirm password"));
-const labelSubscribe = ref(localize("Subscribe to mailing list"));
+const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
@@ -81,8 +82,7 @@ async function submit() {
         window.location.href = props.redirect || withPrefix("/");
     } catch (error: any) {
         disableCreate.value = false;
-        const errMsg = error.response.data && error.response.data.err_msg;
-        messageText.value = errMsg || "Registration failed for an unknown reason.";
+        messageText.value = errorMessageAsString(error, "Registration failed for an unknown reason.");
     }
 }
 </script>
@@ -144,6 +144,7 @@ async function submit() {
                                         v-model="password"
                                         name="password"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 
@@ -153,6 +154,7 @@ async function submit() {
                                         v-model="confirm"
                                         name="confirm"
                                         type="password"
+                                        autocomplete="new-password"
                                         required />
                                 </BFormGroup>
 
@@ -180,6 +182,10 @@ async function submit() {
                                         type="checkbox">
                                         {{ labelSubscribe }}
                                     </BFormCheckbox>
+                                    <BFormText v-localize>
+                                        This list is used for important Galaxy updates and newsletter access. We keep it
+                                        streamlined, you should expect only 2-3 emails per month.
+                                    </BFormText>
                                 </BFormGroup>
 
                                 <BButton v-localize name="create" type="submit" :disabled="disableCreate">
@@ -211,7 +217,6 @@ async function submit() {
         </div>
     </div>
 </template>
-
 <style scoped lang="scss">
 .embed-container {
     position: relative;

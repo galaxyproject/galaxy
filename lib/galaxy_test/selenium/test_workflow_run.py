@@ -1,4 +1,5 @@
 import json
+from uuid import uuid4
 
 import yaml
 from selenium.webdriver.common.by import By
@@ -14,6 +15,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DATA_TAG_FILTER,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -177,7 +179,7 @@ steps:
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Check that this tool form contains a warning about different versions.
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         self.screenshot("workflow_run_tool_upgrade")
 
     @selenium_test
@@ -189,7 +191,7 @@ steps:
         name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
         self.workflow_run_with_name(name)
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        self.assert_message(self.components.workflow_run.warning, contains="tools which have changed")
         # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
         workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
         workflow_with_rules_json = json.dumps(workflow_with_rules)
@@ -307,6 +309,24 @@ steps: {}
         workflow_run.run_workflow_disabled.wait_for_absent()
         input_element.clear()
         workflow_run.run_workflow_disabled.wait_for_present()
+
+    @selenium_test
+    @managed_history
+    def test_workflow_run_tag_filter(self):
+        history_id = self.current_history_id()
+        dataset = self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_populator.tag_dataset(history_id, dataset["id"], tags=["genomescope_model"])
+        # Add another possible input that should not be selected
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        wf = json.loads(WORKFLOW_WITH_DATA_TAG_FILTER)
+        wf["name"] = str(uuid4())
+        workflow_id = self.workflow_populator.create_workflow(wf)
+        self.workflow_run_with_name(wf["name"])
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.HISTORY_POLL)
+        invocations = self.workflow_populator.workflow_invocations(workflow_id=workflow_id)
+        invocation = self.workflow_populator.get_invocation(invocations[-1]["id"])
+        assert invocation["inputs"]["0"]["id"] == dataset["id"]
 
     def _assert_has_3_lines_after_run(self, hid):
         self.workflow_run_wait_for_ok(hid=hid)

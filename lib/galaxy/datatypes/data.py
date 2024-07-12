@@ -484,16 +484,17 @@ class Data(metaclass=DataMeta):
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
         headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/binary_file.mako",
-                data=data,
-                file_contents=open(data.get_file_name(), "rb").read(max_peek_size),
-                file_size=util.nice_size(file_size),
-                truncated=file_size > max_peek_size,
-            ),
-            headers,
-        )
+        with open(data.get_file_name(), "rb") as fh:
+            return (
+                trans.fill_template_mako(
+                    "/dataset/binary_file.mako",
+                    data=data,
+                    file_contents=fh.read(max_peek_size),
+                    file_size=util.nice_size(file_size),
+                    truncated=file_size > max_peek_size,
+                ),
+                headers,
+            )
 
     def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
         from galaxy.datatypes import images
@@ -502,16 +503,17 @@ class Data(metaclass=DataMeta):
         if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
             return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
 
-        # preview large text file
-        headers["content-type"] = "text/html"
-        return (
-            trans.fill_template_mako(
-                "/dataset/large_file.mako",
-                truncated_data=open(data.get_file_name(), "rb").read(max_peek_size),
-                data=data,
-            ),
-            headers,
-        )
+        with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
+            # preview large text file
+            headers["content-type"] = "text/html"
+            return (
+                trans.fill_template_mako(
+                    "/dataset/large_file.mako",
+                    truncated_data=fh.read(max_peek_size),
+                    data=data,
+                ),
+                headers,
+            )
 
     def display_data(
         self,
@@ -842,7 +844,11 @@ class Data(metaclass=DataMeta):
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         # Run converter, job is dispatched through Queue
-        job, converted_datasets, *_ = converter.execute(trans, incoming=params, set_output_hid=visible, history=history)
+        job, converted_datasets, *_ = converter.execute(
+            trans, incoming=params, set_output_hid=visible, history=history, flush_job=False
+        )
+        for converted_dataset in converted_datasets.values():
+            original_dataset.attach_implicitly_converted_dataset(trans.sa_session, converted_dataset, target_type)
         trans.app.job_manager.enqueue(job, tool=converter)
         if len(params) > 0:
             trans.log_event(f"Converter params: {str(params)}", tool_id=converter.id)
@@ -1045,7 +1051,7 @@ class Text(Data):
             sample_lines = dataset_read.count("\n")
             return int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         except UnicodeDecodeError:
-            log.error(f"Unable to estimate lines in file {dataset.get_file_name()}")
+            log.warning(f"Unable to estimate lines in file {dataset.get_file_name()}, likely not a text file.")
             return None
 
     def count_data_lines(self, dataset: HasFileName) -> Optional[int]:
@@ -1065,7 +1071,7 @@ class Text(Data):
                     if line and not line.startswith("#"):
                         data_lines += 1
             except UnicodeDecodeError:
-                log.error(f"Unable to count lines in file {dataset.get_file_name()}")
+                log.warning(f"Unable to count lines in file {dataset.get_file_name()}, likely not a text file.")
                 return None
         return data_lines
 

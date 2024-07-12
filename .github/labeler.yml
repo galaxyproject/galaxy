@@ -1,73 +1,130 @@
 ---
 area/admin:
-  - client/src/components/admin/**/*
-  - doc/source/admin/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/components/admin/**/*
+      - doc/source/admin/**/*
 area/API:
-  - lib/galaxy/webapps/galaxy/api/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/webapps/galaxy/api/**/*
 area/auth:
-  - lib/galaxy/auth/**/*
-  - lib/galaxy/authnz/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/auth/**/*
+      - lib/galaxy/authnz/**/*
 area/client:
-  - client/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/*
 area/database:
-  - lib/galaxy/model/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/model/**/*
 area/datatypes:
-  - lib/galaxy/datatypes/**/*
-  - lib/galaxy/config/sample/datatypes_conf.xml.sample
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/datatypes/**/*
+      - lib/galaxy/config/sample/datatypes_conf.xml.sample
 area/dependencies:
-  - lib/galaxy/dependencies/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/dependencies/**/*
 area/documentation:
-  - doc/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - doc/**/*
 area/jobs:
-  - lib/galaxy/jobs/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/jobs/**/*
 area/libraries:
-  - client/src/components/LibraryFolder/**/*
-  - lib/galaxy/webapps/galaxy/api/libraries.py
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/components/LibraryFolder/**/*
+      - lib/galaxy/webapps/galaxy/api/libraries.py
 area/objectstore:
-  - lib/galaxy/objectstore/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/objectstore/**/*
 area/packaging:
-  - packages/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - packages/**/*
 area/reports:
-  - client/src/reports/**/*
-  - lib/galaxy/webapps/reports/**/*
-  - templates/webapps/reports/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/reports/**/*
+      - lib/galaxy/webapps/reports/**/*
+      - templates/webapps/reports/**/*
 area/scripts:
-  - scripts/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - scripts/**/*
 area/security:
-  - lib/galaxy/security/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/security/**/*
 area/testing:
-  - lib/galaxy_test/**/*
-  - run_tests.sh
-  - test/**/*
-  - test-data/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy_test/**/*
+      - run_tests.sh
+      - test/**/*
+      - test-data/**/*
 area/testing/api:
-  - lib/galaxy_test/api/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy_test/api/**/*
 area/testing/integration:
-  - test/integration/**/*
-  - test/integration_selenium/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - test/integration/**/*
+      - test/integration_selenium/**/*
 area/testing/selenium:
-  - lib/galaxy/selenium/**/*
-  - lib/galaxy_test/selenium/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/selenium/**/*
+      - lib/galaxy_test/selenium/**/*
 area/tool-dependencies:
-  - lib/galaxy/tool_util/deps/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/tool_util/deps/**/*
 area/tool-framework:
-  - lib/galaxy/tools/**/*
-  - lib/galaxy/tool_util/**/*
-  - lib/galaxy/webapps/galaxy/api/tools.py
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/tools/**/*
+      - lib/galaxy/tool_util/**/*
+      - lib/galaxy/webapps/galaxy/api/tools.py
 area/tools:
-  - tools/**/*
-  - tool-data/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - tools/**/*
+      - tool-data/**/*
 area/toolshed:
-  - client/src/toolshed/**/*
-  - lib/galaxy/webapps/galaxy/api/toolshed.py
-  - lib/toolshed/**/*
-  - templates/webapps/tool_shed/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/toolshed/**/*
+      - lib/galaxy/webapps/galaxy/api/toolshed.py
+      - lib/toolshed/**/*
+      - templates/webapps/tool_shed/**/*
 area/UI-UX:
-  - all: ["client/src/**/*", "!client/src/api/schema/schema.ts"]
-    any: ["templates/**/*"]
+  - all:
+    - changed-files:
+      - any-glob-to-any-file:
+        - client/src/**/*
+        - templates/**/*
+      - all-globs-to-all-files:
+        - '!client/src/api/schema/schema.ts'
 area/util:
-  - lib/galaxy/util/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/util/**/*
 area/visualizations:
-  - config/plugins/visualizations/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - config/plugins/visualizations/**/*
 area/workflows:
-  - lib/galaxy/workflow/**/*
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/workflow/**/*

@@ -11,7 +11,7 @@ import time
 from ftplib import FTP
 from urllib.request import urlretrieve
 
-import requests
+from galaxy.util import requests
 
 try:
     from bs4 import BeautifulSoup
@@ -158,18 +158,18 @@ def process_FASTA(filename, org_num, refseq):
     fasta = "".join(fasta)
 
     # Create Chrom Info File:
-    chrom_info_file = open(os.path.join(os.path.split(filename)[0], "%s.info" % refseq), "wb+")
+    chrom_info_file = open(os.path.join(os.path.split(filename)[0], f"{refseq}.info"), "wb+")
     chrom_info_file.write(f"chromosome={refseq}\nname={chr_name}\nlength={len(fasta)}\norganism={org_num}\n")
     try:
-        chrom_info_file.write("gi=%s\n" % accesions["gi"])
+        chrom_info_file.write(f"gi={accesions['gi']}\n")
     except Exception:
         chrom_info_file.write("gi=None\n")
     try:
-        chrom_info_file.write("gb=%s\n" % accesions["gb"])
+        chrom_info_file.write(f"gb={accesions['gb']}\n")
     except Exception:
         chrom_info_file.write("gb=None\n")
     try:
-        chrom_info_file.write("refseq=%s\n" % refseq)
+        chrom_info_file.write(f"refseq={refseq}\n")
     except Exception:
         chrom_info_file.write("refseq=None\n")
     chrom_info_file.close()
@@ -191,7 +191,7 @@ def process_Glimmer3(filename, org_num, refseq):
     except Exception as e:
         print("Converting Glimmer3 to bed FAILED! For chrom:", refseq, "file:", filename, e)
         glimmer3_bed = []
-    glimmer3_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.Glimmer3.bed" % refseq), "wb+")
+    glimmer3_bed_file = open(os.path.join(os.path.split(filename)[0], f"{refseq}.Glimmer3.bed"), "wb+")
     glimmer3_bed_file.write("\n".join(glimmer3_bed))
     glimmer3_bed_file.close()
 
@@ -202,7 +202,7 @@ def process_GeneMarkHMM(filename, org_num, refseq):
     except Exception as e:
         print("Converting GeneMarkHMM to bed FAILED! For chrom:", refseq, "file:", filename, e)
         geneMarkHMM_bed = []
-    geneMarkHMM_bed_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.GeneMarkHMM.bed" % refseq), "wb+")
+    geneMarkHMM_bed_bed_file = open(os.path.join(os.path.split(filename)[0], f"{refseq}.GeneMarkHMM.bed"), "wb+")
     geneMarkHMM_bed_bed_file.write("\n".join(geneMarkHMM_bed))
     geneMarkHMM_bed_bed_file.close()
 
@@ -213,7 +213,7 @@ def process_GeneMark(filename, org_num, refseq):
     except Exception as e:
         print("Converting GeneMark to bed FAILED! For chrom:", refseq, "file:", filename, e)
         geneMark_bed = []
-    geneMark_bed_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.GeneMark.bed" % refseq), "wb+")
+    geneMark_bed_bed_file = open(os.path.join(os.path.split(filename)[0], f"{refseq}.GeneMark.bed"), "wb+")
     geneMark_bed_bed_file.write("\n".join(geneMark_bed))
     geneMark_bed_bed_file.close()
 
@@ -228,9 +228,9 @@ def __main__():
 
     try:
         os.mkdir(base_dir)
-        print("path '%s' has been created" % base_dir)
+        print(f"path '{base_dir}' has been created")
     except Exception:
-        print("path '%s' seems to already exist" % base_dir)
+        print(f"path '{base_dir}' seems to already exist")
 
     for org_num, name, chroms, kingdom, group, _, _, info_url, ftp_url in iter_genome_projects():
         if chroms is None:
@@ -240,7 +240,7 @@ def __main__():
             org_dir = os.path.join(base_dir, org_num)
             os.mkdir(org_dir)
         except Exception:
-            print("Organism %s already exists on disk, skipping" % org_num)
+            print(f"Organism {org_num} already exists on disk, skipping")
             continue
 
         # get ftp contents
@@ -254,14 +254,14 @@ def __main__():
                 print("Org:", org_num, "chrom:", refseq, "[", time.time() - start_time, "seconds elapsed. ]")
 
         # Create org info file
-        info_file = open(os.path.join(org_dir, "%s.info" % org_num), "wb+")
-        info_file.write("genome project id=%s\n" % org_num)
-        info_file.write("name=%s\n" % name)
-        info_file.write("kingdom=%s\n" % kingdom)
-        info_file.write("group=%s\n" % group)
-        info_file.write("chromosomes=%s\n" % ",".join(chroms))
-        info_file.write("info url=%s\n" % info_url)
-        info_file.write("ftp url=%s\n" % ftp_url)
+        info_file = open(os.path.join(org_dir, f"{org_num}.info"), "wb+")
+        info_file.write(f"genome project id={org_num}\n")
+        info_file.write(f"name={name}\n")
+        info_file.write(f"kingdom={kingdom}\n")
+        info_file.write(f"group={group}\n")
+        info_file.write("chromosomes={}\n".format(",".join(chroms)))
+        info_file.write(f"info url={info_url}\n")
+        info_file.write(f"ftp url={ftp_url}\n")
         info_file.close()
 
     print("Finished Harvesting", "[", time.time() - start_time, "seconds elapsed. ]")

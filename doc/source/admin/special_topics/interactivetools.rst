@@ -172,8 +172,8 @@ An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetoo
 
           #docker_cmd: /usr/local/custom_docker/docker
           #docker_host:
-          #docker_container_id_override: busybox:ubuntu-14.04
-          #docker_default_container_id: busybox:ubuntu-14.04
+          #docker_container_id_override: busybox:1.36.1-glibc
+          #docker_default_container_id: busybox:1.36.1-glibc
           #require_container: true
           #container_monitor: true
           #container_monitor_result: file

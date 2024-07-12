@@ -25,7 +25,7 @@ const defaultOptions = [
 
 function testDefaultOptions(wrapper) {
     const target = wrapper.findComponent(MountTarget);
-    const options = target.findAll("li > span > span");
+    const options = target.findAll("li > span > div");
     expect(options.length).toBe(4);
     for (let i = 0; i < options.length; i++) {
         expect(options.at(i).text()).toBe(`label_${i + 1}`);
@@ -52,7 +52,7 @@ describe("FormSelect", () => {
             optional: true,
         });
         const target = wrapper.findComponent(MountTarget);
-        const options = target.findAll("li > span > span");
+        const options = target.findAll("li > span > div");
         expect(options.length).toBe(5);
         expect(options.at(0).text()).toBe("Nothing selected");
         const selectedDefault = wrapper.find(".multiselect__option--selected");

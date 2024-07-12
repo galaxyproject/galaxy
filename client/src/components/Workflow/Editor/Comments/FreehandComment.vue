@@ -58,7 +58,9 @@ function onClick() {
 </script>
 
 <template>
-    <svg class="freehand-workflow-comment">
+    <svg
+        class="freehand-workflow-comment"
+        :class="{ 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id) }">
         <path
             class="prevent-zoom"
             :d="curve"
@@ -92,5 +94,10 @@ function onClick() {
     }
 
     pointer-events: none;
+
+    &.multi-selected {
+        border-radius: 0.25rem;
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
+    }
 }
 </style>

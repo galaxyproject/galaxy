@@ -66,6 +66,8 @@ IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
 OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 
+TAG_ITEM_PATTERN = r"^([^\s.:])+(\.[^\s.:]+)*(:\S+)?$"
+
 
 class DatasetState(str, Enum):
     NEW = "new"
@@ -347,6 +349,9 @@ class LimitedUserModel(Model):
     email: Optional[str] = None
 
 
+MaybeLimitedUserModel = Union[UserModel, LimitedUserModel]
+
+
 class DiskUsageUserModel(Model):
     total_disk_usage: float = TotalDiskUsageField
     nice_total_disk_usage: str = NiceTotalDiskUsageField
@@ -381,7 +386,12 @@ class RemoteUserCreationPayload(Model):
 
 
 class UserDeletionPayload(Model):
-    purge: bool = Field(default=..., title="Purge user", description="Purge the user")
+    purge: bool = Field(
+        default=False,
+        title="Purge user",
+        description="Purge the user. Deprecated, please use the `purge` query parameter instead.",
+        json_schema_extra={"deprecated": True},
+    )
 
 
 class FavoriteObject(Model):
@@ -527,7 +537,7 @@ class HistoryContentSource(str, Enum):
 DatasetCollectionInstanceType = Literal["history", "library"]
 
 
-TagItem = Annotated[str, Field(..., pattern=r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")]
+TagItem = Annotated[str, Field(..., pattern=TAG_ITEM_PATTERN)]
 
 
 class TagCollection(RootModel):
@@ -688,7 +698,7 @@ class HDASummary(HDACommon):
 class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
-    accessible: bool = AccessibleField
+    accessible: Literal[False]
     state: DatasetStateField
 
 
@@ -939,6 +949,8 @@ class HDAObject(Model, WithModelClass):
     history_id: HistoryID
     tags: List[str]
     copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
+    accessible: Optional[bool] = None
+    purged: bool
     model_config = ConfigDict(extra="allow")
 
 
@@ -969,13 +981,13 @@ class DCESummary(Model, WithModelClass):
         title="Element Identifier",
         description="The actual name of this element.",
     )
-    element_type: DCEType = Field(
-        ...,
+    element_type: Optional[DCEType] = Field(
+        None,
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDAObject, HDADetailed, DCObject] = Field(
-        ...,
+    object: Optional[Union[HDAObject, HDADetailed, DCObject]] = Field(
+        None,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
@@ -1561,14 +1573,14 @@ class CreateHistoryPayload(Model):
         default=None,
         title="History ID",
         description=(
-            "The encoded ID of the history to copy. " "Provide this value only if you want to copy an existing history."
+            "The encoded ID of the history to copy. Provide this value only if you want to copy an existing history."
         ),
     )
     all_datasets: Optional[bool] = Field(
         default=True,
         title="All Datasets",
         description=(
-            "Whether to copy also deleted HDAs/HDCAs. Only applies when " "providing a `history_id` to copy from."
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when providing a `history_id` to copy from."
         ),
     )
     archive_source: Optional[str] = Field(
@@ -3271,7 +3283,7 @@ class HDACustom(HDADetailed):
     model_config = ConfigDict(extra="allow")
 
 
-AnyHDA = Union[HDACustom, HDADetailed, HDASummary]
+AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
 AnyHDCA = Union[HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
@@ -3409,7 +3421,7 @@ class ShareWithPayload(Model):
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users " "that this resource will be shared with."
+            "A collection of encoded IDs (or email addresses) of users that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(
@@ -3721,16 +3733,3 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
-
-
-class DatasetSummary(Model):
-    id: EncodedDatabaseIdField
-    create_time: Optional[datetime] = CreateTimeField
-    update_time: Optional[datetime] = UpdateTimeField
-    state: DatasetStateField
-    deleted: bool
-    purged: bool
-    purgable: bool
-    file_size: int
-    total_size: int
-    uuid: UuidField

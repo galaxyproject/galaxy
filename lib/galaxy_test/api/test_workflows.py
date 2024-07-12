@@ -38,6 +38,7 @@ from galaxy_test.base.populators import (
 )
 from galaxy_test.base.workflow_fixtures import (
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
+    WORKFLOW_FLAT_CROSS_PRODUCT,
     WORKFLOW_INPUTS_AS_OUTPUTS,
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
@@ -2079,15 +2080,12 @@ steps:
         change_datatype: bam
     tool_state:
       style_cond:
-        __current_case__: 2
         pick_style: first_or_error
         type_cond:
-          __current_case__: 4
           param_type: data
           pick_from:
-          - __index__: 0
-            value:
-              __class__: RuntimeValue
+          - value:
+            __class__: RuntimeValue
 outputs:
   pick_out:
     outputSource: pick_value/data_param
@@ -3087,7 +3085,9 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
             invocation_id = summary.invocation_id
-            bco = self.workflow_populator.get_biocompute_object(invocation_id)
+            bco_path = self.workflow_populator.download_invocation_to_store(invocation_id, extension="bco.json")
+            with open(bco_path) as f:
+                bco = json.load(f)
             self.workflow_populator.validate_biocompute_object(bco)
             assert bco["provenance_domain"]["name"] == "Simple Workflow"
 
@@ -5114,6 +5114,89 @@ default_file_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def test_conditional_flat_crossproduct_subworkflow(self):
+        parent = yaml.safe_load(
+            """
+class: GalaxyWorkflow
+inputs:
+  collection_a: collection
+  collection_b: collection
+  collection_c: collection
+steps:
+  subworkflow_step:
+    run: null
+    in:
+      collection_a: collection_a
+      collection_b: collection_b
+    when: $(false)
+  pick_value:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: subworkflow_step/output_a
+      style_cond|type_cond|pick_from_1|value:
+        # we need a collection of same length as fallback,
+        # which makes this less intuitive than it could be.
+        source: collection_c
+    tool_state:
+      style_cond:
+        pick_style: first
+        type_cond:
+          param_type: data
+          pick_from:
+          - value:
+            __class__: RuntimeValue
+          - value:
+            __class__: RuntimeValue
+outputs:
+  the_output:
+    outputSource: pick_value/data_param
+test_data:
+  collection_a:
+    collection_type: list
+    elements:
+      - identifier: A
+        content: A
+      - identifier: B
+        content: B
+  collection_b:
+    collection_type: list
+    elements:
+      - identifier: C
+        content: C
+      - identifier: D
+        content: D
+  collection_c:
+    collection_type: list
+    elements:
+      - identifier: fallbackA
+        content: fallbackA
+      - identifier: fallbackBB
+        content: fallbackB
+      - identifier: fallbackC
+        content: fallbackC
+      - identifier: fallbackD
+        content: fallbackD
+"""
+        )
+        parent["steps"]["subworkflow_step"]["run"] = yaml.safe_load(WORKFLOW_FLAT_CROSS_PRODUCT)
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                parent,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            hdca_id = invocation["output_collections"]["the_output"]["id"]
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id,
+                content_id=hdca_id,
+            )
+            # Following assert is what user would expect, but heuristic currently picks first input element as identifier source
+            # assert hdca["elements"][0]["element_identifier"] == "fallbackA"
+            assert "fallbackA" in hdca["elements"][0]["object"]["peek"]
+
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(
@@ -5443,6 +5526,14 @@ outer_input:
         workflow_request["history"] = f"hist_id={other_history_id}"
         run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 403)
+
+    def test_cannot_run_workflow_as_anon(self):
+        workflow = self.workflow_populator.load_workflow(name="test_for_run_anon_user")
+        workflow_request, _, workflow_id = self._setup_workflow_run(workflow)
+        with self._different_user(anon=True):
+            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
+            self._assert_status_code_is(run_workflow_response, 403)
+            self._assert_error_code_is(run_workflow_response, error_codes.error_codes_by_name["USER_NO_API_KEY"])
 
     def test_cannot_run_bootstrap_admin_workflow(self):
         workflow = self.workflow_populator.load_workflow(name="test_bootstrap_admin_cannot_run")
@@ -7612,6 +7703,13 @@ outer_input:
         self._assert_status_code_is(all_invocations_for_user, 200)
         invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
         return invocation_ids
+
+    def test_subworkflow_tags(self):
+        workflow = self.workflow_populator.load_workflow_from_resource("test_subworkflow_with_tags")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        downloaded_workflow = self._download_workflow(workflow_id)
+        subworkflow = downloaded_workflow["steps"]["1"]["subworkflow"]
+        assert subworkflow["tags"] == []
 
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):

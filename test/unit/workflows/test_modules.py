@@ -207,7 +207,7 @@ steps:
     -   output_name: "out_file1"
 """
 
-COLLECTION_TYPE_WORKLFOW_YAML = """
+COLLECTION_TYPE_WORKFLOW_YAML = """
 steps:
   - type: "data_collection_input"
     label: "input1"
@@ -234,7 +234,7 @@ def test_subworkflow_new_inputs():
 
 
 def test_subworkflow_new_inputs_collection_type():
-    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKLFOW_YAML)
+    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKFLOW_YAML)
     inputs = subworkflow_module.get_data_inputs()
     assert inputs[0]["collection_type"] == "list:list"
 
@@ -272,6 +272,18 @@ def test_to_cwl_nested_collection():
     result = modules.to_cwl(hdca, [], model.WorkflowStep())
     assert result["outer"][0]["class"] == "File"
     assert result["outer"][0]["basename"] == "inner"
+
+
+def test_to_cwl_dataset_collection_element():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    dc_inner = model.DatasetCollection(collection_type="list")
+    model.DatasetCollectionElement(collection=dc_inner, element_identifier="inner", element=hda)
+    dc_outer = model.DatasetCollection(collection_type="list:list")
+    dce_outer = model.DatasetCollectionElement(collection=dc_outer, element_identifier="outer", element=dc_inner)
+    result = modules.to_cwl(dce_outer, [], model.WorkflowStep())
+    assert result[0]["class"] == "File"
+    assert result[0]["basename"] == "inner"
 
 
 class MapOverTestCase(NamedTuple):

@@ -36,7 +36,7 @@ $gray-900: $text-color;
 $gray-800: $text-muted;
 $gray-700: $text-muted;
 $gray-600: $text-muted;
-$gray-500: $text-muted;
+$gray-500: darken($brand-light, 30%);
 $gray-400: $border-color;
 $black: $brand-dark;
 
@@ -110,7 +110,7 @@ $input-color-placeholder: $text-muted;
 $body-bg: $white;
 
 // Masthead
-$masthead-height: 3rem;
+$masthead-height: 2.5rem;
 
 // Side panels
 $panel-bg-color: $brand-light;

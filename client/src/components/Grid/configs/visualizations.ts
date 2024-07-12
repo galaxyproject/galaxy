@@ -69,11 +69,9 @@ const fields: FieldArray = [
                 icon: faEye,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: (data: VisualizationEntry) => {
-                    if (data.type === "trackster") {
-                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
-                    } else {
-                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-                    }
+                    emit(`/visualizations/display?visualization=${data.type}&visualization_id=${data.id}`, {
+                        title: data.title,
+                    });
                 },
             },
             {

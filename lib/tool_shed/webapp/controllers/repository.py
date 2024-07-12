@@ -24,8 +24,8 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.managers.users import get_user_by_username
 from galaxy.model.base import transaction
+from galaxy.model.db.user import get_user_by_username
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
 from galaxy.util.tool_shed import encoding_util
@@ -737,7 +737,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     repository_type,
                     description,
                     long_description,
-                    user_id=trans.user.id,
+                    user=trans.user,
                     category_ids=category_ids,
                     remote_repository_url=remote_repository_url,
                     homepage_url=homepage_url,

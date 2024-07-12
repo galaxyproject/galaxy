@@ -94,6 +94,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     ],
     "text": ["regex", "length", "empty_field", "value_in_data_table", "value_not_in_data_table", "expression"],
     "select": [
+        "in_range",
         "no_options",
         "regex",
         "length",

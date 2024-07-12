@@ -5641,11 +5641,13 @@ The default is ``galaxy.json``.
   <xs:attributeGroup name="OutputCommon">
     <xs:attribute name="format" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
+        <xs:documentation xml:lang="en"><![CDATA[
+The short name for the output datatype. The valid values for format can be found in
 [/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default format for all included
-elements. Note that the format specified here is ignored for discovered data sets.</xs:documentation>
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``). For collections this is the default
+format for all included elements. Note that the format specified here is ignored for
+discovered data sets on Galaxy versions prior to 24.0 and should be specified using the ``<discovered_data>`` tag set.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="format_source" type="xs:string">
@@ -5694,8 +5696,8 @@ This only applies to collections that are mapped over a non-collection input and
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This copies the metadata information
-from the tool's input dataset. This is particularly useful for interval data
-types where the order of the columns is not set.</xs:documentation>
+from the tool's input dataset to serve as default for information that cannot be detected from the output.
+One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
@@ -7348,8 +7350,9 @@ description. Note the quoting of the ``<`` and ``>`` characters in XML.
 
   <xs:complexType name="ChangeFormat">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[See
-[extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
+      <xs:documentation xml:lang="en"><![CDATA[
+Change the format of an output depending on the value of another input paramter.
+See [extract_genomic_dna.xml](https://github.com/galaxyproject/tools-iuc/blob/main/tools/extract_genomic_dna/extract_genomic_dna.xml)
 or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for simple examples of how this tag set is used in a tool. This tag set is
@@ -7363,8 +7366,7 @@ for the following ``<when>`` tag set.]]></xs:documentation>
   <xs:complexType name="ChangeFormatWhen">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
-If the data type of the output dataset is the specified type, the data type is
+If the value of referenced parameter has the specified value, the data type is
 changed to the desired type.
 
 ### Examples
@@ -7399,13 +7401,16 @@ or the test tool
 [output_format.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/output_format.xml)
 for more examples.
 
+For parameters that are nested in sections, conditionals, or repeats are accessed with object access syntax,
+e.g. a parameter with name ``p`` that is in a conditional with name ``c``that is in a section with name ``s``
+is referenced by ``s.c.p``"].
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence/>
     <xs:attribute name="input" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This attribute should be the name of
-the desired input parameter (e.g. ``input="out_format"`` above).</xs:documentation>
+the desired input parameter (e.g. ``input="out_format"`` above). Parameters that are nested are accessed like an object.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
@@ -7858,7 +7863,7 @@ A tool can have any number of EDAM topic references.
     <xs:sequence>
       <xs:element name="edam_topic" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
-          <xs:restriction base="xs:string">
+          <xs:restriction base="singleLineString">
             <xs:pattern value="topic_[0-9]{4}"></xs:pattern>
           </xs:restriction>
         </xs:simpleType>
@@ -7883,7 +7888,7 @@ A tool can have any number of EDAM operation references.
     <xs:sequence>
       <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
         <xs:simpleType>
-          <xs:restriction base="xs:string">
+          <xs:restriction base="singleLineString">
             <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
           </xs:restriction>
         </xs:simpleType>
@@ -7918,7 +7923,7 @@ A tool can refer multiple reference IDs.
 information according to a catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
-      <xs:extension base="xs:string">
+      <xs:extension base="singleLineString">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
@@ -7941,8 +7946,17 @@ the only supported options.</xs:documentation>
   </xs:simpleType>
 
   <xs:simpleType name="MacroImportType">
-    <xs:restriction base="xs:string">
+    <xs:restriction base="singleLineString">
       <xs:pattern value="[a-zA-Z0-9_\-\.]+.xml"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="singleLineString">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">A string without newline characters.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:whiteSpace value="collapse"/>
     </xs:restriction>
   </xs:simpleType>
 

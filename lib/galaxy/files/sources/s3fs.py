@@ -2,16 +2,17 @@ import functools
 import logging
 import os
 from typing import (
-    Any,
     cast,
-    Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Unpack
 
+from galaxy.files import OptionalUserContext
 from . import (
+    AnyRemoteEntry,
     FilesSourceOptions,
     FilesSourceProperties,
 )
@@ -55,33 +56,55 @@ class S3FsFilesSource(BaseFilesSource):
         if self._endpoint_url:
             self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _list(
+        self,
+        path="/",
+        recursive=True,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> Tuple[List[AnyRemoteEntry], int]:
         _props = self._serialization_props(user_context)
         # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function
         _bucket_name = _props.pop("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
         if recursive:
-            res: List[Dict[str, Any]] = []
+            res: List[AnyRemoteEntry] = []
             bucket_path = self._bucket_path(_bucket_name, path)
             for p, dirs, files in fs.walk(bucket_path, detail=True):
                 to_dict = functools.partial(self._resource_info_to_dict, p)
                 res.extend(map(to_dict, dirs.values()))
                 res.extend(map(to_dict, files.values()))
-            return res
+            return res, len(res)
         else:
             bucket_path = self._bucket_path(_bucket_name, path)
             res = fs.ls(bucket_path, detail=True)
             to_dict = functools.partial(self._resource_info_to_dict, path)
-            return list(map(to_dict, res))
+            return list(map(to_dict, res)), len(res)
 
-    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         _props = self._serialization_props(user_context)
         _bucket_name = _props.pop("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
         bucket_path = self._bucket_path(_bucket_name, source_path)
         fs.download(bucket_path, native_path)
 
-    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def _write_from(
+        self,
+        target_path,
+        native_path,
+        user_context: OptionalUserContext = None,
+        opts: Optional[FilesSourceOptions] = None,
+    ):
         _props = self._serialization_props(user_context)
         _bucket_name = _props.pop("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
@@ -100,7 +123,7 @@ class S3FsFilesSource(BaseFilesSource):
         fs = s3fs.S3FileSystem(**{**props, **extra_props})
         return fs
 
-    def _resource_info_to_dict(self, dir_path: str, resource_info):
+    def _resource_info_to_dict(self, dir_path: str, resource_info) -> AnyRemoteEntry:
         name = os.path.basename(resource_info["name"])
         path = os.path.join(dir_path, name)
         uri = self.uri_from_path(path)
@@ -117,7 +140,7 @@ class S3FsFilesSource(BaseFilesSource):
                 "path": path,
             }
 
-    def _serialization_props(self, user_context=None) -> S3FsFilesSourceProperties:
+    def _serialization_props(self, user_context: OptionalUserContext = None) -> S3FsFilesSourceProperties:
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)

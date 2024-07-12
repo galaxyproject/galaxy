@@ -1,0 +1,90 @@
+- id: s3fs
+  version: 0
+  name: S3 Compatible Storage with Credentials
+  description: |
+    The APIs used to connect to Amazon's S3 (Simple Storage Service) have become something
+    of an unofficial standard for cloud storage across a variety of vendors and services.
+    Many vendors offer storage APIs compatible with S3. This template configuration allows
+    using such service as a Galaxy storage location as long as you are able to find the
+    connection details and have the relevant credentials.
+
+    Given the amount of information needed to connect to such a service, this is a bit of an
+    advanced template and probably should not be used to connect to a service if a more
+    specific template is available.
+  variables:
+    access_key:
+      label: Access Key ID
+      type: string
+      help: |
+        The less secure part of your access tokens or access keys that describe the user
+        that is accessing the data. The [Amazon documentation](https://docs.aws.amazon.com/IAM/latest/UserGuide/security-creds.html)
+        calls these an "access key ID", the [CloudFlare documentation](https://developers.cloudflare.com/r2/examples/aws/boto3/)
+        describes these as ``aws_access_key_id``.
+    bucket:
+      label: Bucket
+      type: string
+      help: |
+        The [bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/UsingBucket.html) to
+        store your datasets in. How to setup buckets for your storage will vary from service to service
+        but all S3 compatible storage services should have the concept of a bucket to namespace
+        a grouping of your data together with.
+    host:
+      label: Connection Host
+      type: string
+      help: |
+        The [hostname](https://en.wikipedia.org/wiki/Hostname) used to connect to the target
+        S3 compatible service.
+
+        If the documentation for your storage service has something called an ``endpoint_url``,
+        this can be used to determine this value. For instance, the CloudFlare documentation
+        describes its endpoints as ``https://<accountid>.r2.cloudflarestorage.com``. Here
+        you would substitute your CloudFlare account ID into the endpoint and shave off the ``https://``,
+        so if your account ID was ``galactian``, you would enter ``galactian.r2.cloudflarestorage.com``.
+    port:
+      label: Connection Port
+      type: integer
+      default: 443
+      help: |
+        The [port](https://en.wikipedia.org/wiki/Port_(computer_networking)) used to connect
+        to the target S3 compatible service. This might be ``443`` if you cannot find a relevant
+        port - this is the default for secure HTTP connections.
+
+        If the documentation for your storage service has something called an ``endpoint_url``,
+        this can be used to determine this value. The [MinIO](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html)
+        documentation describes the endpoint URL for its Play service as ``https://play.min.io:9000``.
+        The ``:9000`` here indicates this port should be specified as ``9000``. Alternatively, the
+        CloudFlare documentation describes its endpoints ``https://<accountid>.r2.cloudflarestorage.com``.
+        Here there is no number at the end of the URL so the port is ``443`` as long the URL starts
+        with ``https``.
+    connection_path:
+      label: Connection Path
+      type: string
+      default: ""
+      help: |
+        This is an advanced configuration option and it is very likely best to just keep this empty
+        for most storage services. If specified, it will be the prefix in the URL for the S3 compatible
+        API after the host and port to reach the target API.
+    secure:
+      label: Use HTTPS?
+      type: boolean
+      default: true
+      help: |
+        This is an advanced configuration option and if this option is not checked, you should not assume
+        your data is secure at all. This should only ever be unchecked during testing new or experimental
+        services with data and keys you do not care about.
+  secrets:
+    secret_key:
+      label: Secret Access Key
+      help: |
+        The secret key used to connect to the S3 compatible storage with for the given access key.
+
+        The [Amazon documentation] calls these an "secret access key" and
+        the [CloudFlare documentation](https://developers.cloudflare.com/r2/examples/aws/boto3/)
+        describes these as ``aws_secret_access_key``. Internally to Galaxy, we often just call
+        this the ``secret_key``.
+  configuration:
+    type: s3fs
+    endpoint_url: '{{ "https" if variables.secure else "http" }}://{{ variables.host }}:{{ variables.port }}/{{ variables.connection_path }}'
+    key: '{{ variables.access_key }}'
+    secret: '{{ secrets.secret_key }}'
+    bucket: '{{ variables.bucket }}'

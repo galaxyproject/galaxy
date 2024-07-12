@@ -206,7 +206,7 @@ class HDAManager(
             parent_id=kwargs.get("parent_id"),
             copy_hid=False,
             copy_tags=hda.tags,  # type:ignore[attr-defined]
-            flush=flush,
+            flush=False,
         )
         if hide_copy:
             copy.visible = False
@@ -226,12 +226,6 @@ class HDAManager(
                 session.commit()
 
         return copy
-
-    def copy_ldda(self, history, ldda, **kwargs):
-        """
-        Copy this HDA as a LDDA and return.
-        """
-        return ldda.to_history_dataset_association(history, add_to_history=True)
 
     # .... deletion and purging
     def purge(self, hda, flush=True, **kwargs):
@@ -317,7 +311,10 @@ class HDAManager(
 
         truncated = preview and os.stat(file_path).st_size > MAX_PEEK_SIZE
         with get_fileobj(file_path) as fh:
-            hda_data = fh.read(MAX_PEEK_SIZE)
+            try:
+                hda_data = fh.read(MAX_PEEK_SIZE)
+            except UnicodeDecodeError:
+                raise exceptions.RequestParameterInvalidException("Cannot generate text preview for dataset.")
         return truncated, hda_data
 
     # .... annotatable
@@ -569,6 +566,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
 
         serializers: Dict[str, base.Serializer] = {
+            "hid": lambda item, key, **context: item.hid if item.hid is not None else -1,
             "model_class": lambda item, key, **context: "HistoryDatasetAssociation",
             "history_content_type": lambda item, key, **context: "dataset",
             "hda_ldda": lambda item, key, **context: "hda",
@@ -630,18 +628,19 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         hda = item
         display_apps: List[Dict[str, Any]] = []
-        for display_app in hda.get_display_applications(trans).values():
-            app_links = []
-            for link_app in display_app.links.values():
-                app_links.append(
-                    {
-                        "target": link_app.url.get("target_frame", "_blank"),
-                        "href": link_app.get_display_url(hda, trans),
-                        "text": gettext.gettext(link_app.name),
-                    }
-                )
-            if app_links:
-                display_apps.append(dict(label=display_app.name, links=app_links))
+        if hda.state == model.HistoryDatasetAssociation.states.OK and not hda.deleted:
+            for display_app in hda.get_display_applications(trans).values():
+                app_links = []
+                for link_app in display_app.links.values():
+                    app_links.append(
+                        {
+                            "target": link_app.url.get("target_frame", "_blank"),
+                            "href": link_app.get_display_url(hda, trans),
+                            "text": gettext.gettext(link_app.name),
+                        }
+                    )
+                if app_links:
+                    display_apps.append(dict(label=display_app.name, links=app_links))
 
         return display_apps
 
@@ -651,28 +650,30 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         """
         hda = item
         display_apps: List[Dict[str, Any]] = []
-        if not self.app.config.enable_old_display_applications:
-            return display_apps
+        if (
+            self.app.config.enable_old_display_applications
+            and hda.state == model.HistoryDatasetAssociation.states.OK
+            and not hda.deleted
+        ):
+            display_link_fn = hda.datatype.get_display_links
+            for display_app in hda.datatype.get_display_types():
+                target_frame, display_links = display_link_fn(
+                    hda,
+                    display_app,
+                    self.app,
+                    trans.request.base,
+                )
 
-        display_link_fn = hda.datatype.get_display_links
-        for display_app in hda.datatype.get_display_types():
-            target_frame, display_links = display_link_fn(
-                hda,
-                display_app,
-                self.app,
-                trans.request.base,
-            )
+                if len(display_links) > 0:
+                    display_label = hda.datatype.get_display_label(display_app)
 
-            if len(display_links) > 0:
-                display_label = hda.datatype.get_display_label(display_app)
-
-                app_links = []
-                for display_name, display_link in display_links:
-                    app_links.append(
-                        {"target": target_frame, "href": display_link, "text": gettext.gettext(display_name)}
-                    )
-                if app_links:
-                    display_apps.append(dict(label=display_label, links=app_links))
+                    app_links = []
+                    for display_name, display_link in display_links:
+                        app_links.append(
+                            {"target": target_frame, "href": display_link, "text": gettext.gettext(display_name)}
+                        )
+                    if app_links:
+                        display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
 

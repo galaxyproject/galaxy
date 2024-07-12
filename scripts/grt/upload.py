@@ -8,8 +8,9 @@ import logging
 import os
 import sys
 
-import requests
 import yaml
+
+from galaxy.util import requests
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), "grt.yml.sample"))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), "grt.yml"))

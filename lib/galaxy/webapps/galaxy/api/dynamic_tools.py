@@ -40,7 +40,7 @@ class DynamicToolsController(BaseAPIController):
         """
         GET /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
         """
-        self._get_dynamic_tool(trans, id).to_dict()
+        return self._get_dynamic_tool(trans, id).to_dict()
 
     @web.require_admin
     @expose_api

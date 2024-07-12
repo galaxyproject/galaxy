@@ -22,6 +22,7 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -55,12 +56,11 @@ from galaxy.schema.schema import (
     FavoriteObjectsSummary,
     FavoriteObjectType,
     FlexibleUserIdType,
-    LimitedUserModel,
+    MaybeLimitedUserModel,
     RemoteUserCreationPayload,
     UserBeaconSetting,
     UserCreationPayload,
     UserDeletionPayload,
-    UserModel,
 )
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -134,7 +134,6 @@ RecalculateDiskUsageResponseDescriptions = {
     },
 }
 
-UserDeletionBody = Body(default=None, title="Purge user", description="Purge the user.")
 UserUpdateBody = Body(default=..., title="Update user", description="The user values to update.")
 FavoriteObjectBody = Body(
     default=..., title="Set favorite", description="The id of an object the user wants to favorite."
@@ -203,7 +202,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.post(
@@ -651,7 +650,7 @@ class FastAPIUsers:
         f_email: Optional[str] = FilterEmailQueryParam,
         f_name: Optional[str] = FilterNameQueryParam,
         f_any: Optional[str] = FilterAnyQueryParam,
-    ) -> List[Union[UserModel, LimitedUserModel]]:
+    ) -> List[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
     @router.get(
@@ -693,13 +692,17 @@ class FastAPIUsers:
         self,
         user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Optional[UserDeletionPayload] = UserDeletionBody,
+        purge: Annotated[
+            bool,
+            Query(
+                title="Purge user",
+                description="Whether to definitely remove this user. Only deleted users can be purged.",
+            ),
+        ] = False,
+        payload: Optional[UserDeletionPayload] = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
-        if payload:
-            purge = payload.purge
-        else:
-            purge = False
+        purge = payload and payload.purge or purge
         if trans.user_is_admin:
             if purge:
                 log.debug("Purging user %s", user_to_update)

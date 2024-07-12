@@ -3,22 +3,29 @@ import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
 import {
-    BrowsableFilesSourcePlugin,
     browseRemoteFiles,
+    fetchFileSources,
     FileSourceBrowsingMode,
     FilterFileSourcesOptions,
-    getFileSources,
     RemoteEntry,
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
-import { isSubPath } from "@/components/FilesDialog/utilities";
-import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
+import {
+    ItemsProvider,
+    ItemsProviderContext,
+    SELECTION_STATES,
+    type SelectionItem,
+} from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Model } from "./model";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+const filesSources = useFileSources();
 
 interface FilesDialogProps {
     /** Callback function to be called passing the results when selection is complete */
@@ -33,6 +40,8 @@ interface FilesDialogProps {
     multiple?: boolean;
     /** Whether to show only writable sources */
     requireWritable?: boolean;
+    /** Optional selected item to start browsing from */
+    selectedItem?: SelectionItem;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
@@ -42,6 +51,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     mode: "file",
     multiple: false,
     requireWritable: false,
+    selectedItem: undefined,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -53,6 +63,7 @@ const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<SelectionItem[]>([]);
+const itemsProvider = ref<ItemsProvider>();
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
@@ -64,6 +75,7 @@ const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
 const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
+const totalItems = ref(0);
 
 const fields = computed(() => {
     const fields = [];
@@ -154,7 +166,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
         const recursive = true;
         isBusy.value = true;
         browseRemoteFiles(record.url, recursive).then((incoming) => {
-            incoming.forEach((item) => {
+            incoming.entries.forEach((item) => {
                 // construct record
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
@@ -165,6 +177,7 @@ function selectDirectoryRecursive(record: SelectionItem) {
                     selectedDirectories.value.push(subRecord);
                 }
             });
+            totalItems.value = incoming.totalMatches;
             isBusy.value = false;
         });
     }
@@ -228,17 +241,19 @@ function load(record?: SelectionItem) {
     optionsShow.value = false;
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
+        itemsProvider.value = undefined;
         errorMessage.value = undefined;
-        getFileSources(props.filterOptions)
+        fetchFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
-                    .map(fileSourcePluginToRecord);
+                    .map(fileSourcePluginToItem);
                 items.value = convertedItems;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = false;
                 showDetails.value = true;
+                totalItems.value = convertedItems.length;
             })
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
@@ -255,9 +270,19 @@ function load(record?: SelectionItem) {
             showDetails.value = false;
             return;
         }
+
+        if (shouldUseItemsProvider()) {
+            itemsProvider.value = (ctx) => provideItems(ctx, currentDirectory.value?.url);
+            optionsShow.value = true;
+            showTime.value = true;
+            showDetails.value = false;
+            return;
+        }
+
         browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
-            .then((results) => {
-                items.value = filterByMode(results).map(entryToRecord);
+            .then((result) => {
+                items.value = filterByMode(result.entries).map(entryToRecord);
+                totalItems.value = result.totalMatches;
                 formatRows();
                 optionsShow.value = true;
                 showTime.value = true;
@@ -266,6 +291,45 @@ function load(record?: SelectionItem) {
             .catch((error) => {
                 errorMessage.value = errorMessageAsString(error);
             });
+    }
+}
+
+/**
+ * Check if the current file source supports server-side pagination.
+ * If it does, we will use the items provider to fetch items.
+ */
+function shouldUseItemsProvider(): boolean {
+    if (!currentDirectory.value) {
+        return false;
+    }
+    const fileSource = filesSources.getFileSourceByUri(currentDirectory.value.url);
+    const supportsPagination = fileSource?.supports?.pagination;
+    return Boolean(supportsPagination);
+}
+
+/**
+ *  Fetches items from the server using server-side pagination and filtering.
+ **/
+async function provideItems(ctx: ItemsProviderContext, url?: string): Promise<SelectionItem[]> {
+    isBusy.value = true;
+    try {
+        if (!url) {
+            return [];
+        }
+        const limit = ctx.perPage;
+        const offset = (ctx.currentPage - 1) * ctx.perPage;
+        const query = ctx.filter;
+        const response = await browseRemoteFiles(url, false, props.requireWritable, limit, offset, query);
+        const result = response.entries.map(entryToRecord);
+        totalItems.value = response.totalMatches;
+        items.value = result;
+        formatRows();
+        return result;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return [];
+    } finally {
+        isBusy.value = false;
     }
 }
 
@@ -286,17 +350,6 @@ function entryToRecord(entry: RemoteEntry): SelectionItem {
         isLeaf: entry.class === "File",
         url: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
-    };
-    return result;
-}
-
-function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): SelectionItem {
-    const result = {
-        id: plugin.id,
-        label: plugin.label,
-        details: plugin.doc,
-        isLeaf: false,
-        url: plugin.uri_root,
     };
     return result;
 }
@@ -343,7 +396,7 @@ function onOk() {
 }
 
 onMounted(() => {
-    load();
+    load(props.selectedItem);
 });
 </script>
 
@@ -355,6 +408,9 @@ onMounted(() => {
         :fields="fields"
         :is-busy="isBusy"
         :items="items"
+        :items-provider="itemsProvider"
+        :provider-url="currentDirectory?.url"
+        :total-items="totalItems"
         :modal-show="modalShow"
         :modal-static="modalStatic"
         :multiple="multiple"

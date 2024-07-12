@@ -1133,7 +1133,8 @@ class StdioParser:
                         log.warning(
                             "Tool id %s: unable to determine if tool "
                             "stream source scanning is output, error, "
-                            "or both. Defaulting to use both." % self.id
+                            "or both. Defaulting to use both.",
+                            self.id,
                         )
                         regex.stdout_match = True
                         regex.stderr_match = True

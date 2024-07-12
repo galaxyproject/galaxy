@@ -108,7 +108,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
-# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+# Can be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
 
 # Currently these supported binary data types must be manually set on upload
@@ -2089,7 +2089,7 @@ class H5MLM(H5):
         try:
             return dataset.peek
         except Exception:
-            return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
+            return f"HDF5 Model ({nice_size(dataset.get_size())})"
 
     def display_data(
         self,
@@ -3759,6 +3759,31 @@ class Fast5ArchiveBz2(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
+class Pod5(Binary):
+    """
+    Class describing a POD5 file. The POD5 Format Specification is at
+    https://pod5-file-format.readthedocs.io/en/latest/SPECIFICATION.html
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.pod5')
+    >>> Pod5().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Pod5().sniff(fname)
+    False
+    """
+
+    file_ext = "pod5"
+
+    def sniff(self, filename: str) -> bool:
+        expected_signature = bytes([0x8B, 0x50, 0x4F, 0x44, 0x0D, 0x0A, 0x1A, 0x0A])
+        with open(filename, "rb") as f:
+            first_8_bytes = f.read(8)
+            f.seek(-8, 2)
+            last_8_bytes = f.read(8)
+            return first_8_bytes == expected_signature and last_8_bytes == expected_signature
+
+
 class SearchGuiArchive(CompressedArchive):
     """Class describing a SearchGUI archive"""
 
@@ -4258,7 +4283,7 @@ class Pretext(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary pretext file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary pretext file ({nice_size(dataset.get_size())})"
 
 
 class JP2(Binary):
@@ -4302,7 +4327,7 @@ class JP2(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary JPEG 2000 file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary JPEG 2000 file ({nice_size(dataset.get_size())})"
 
 
 class Npz(CompressedArchive):
@@ -4356,7 +4381,7 @@ class Npz(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class HexrdImagesNpz(Npz):
@@ -4433,7 +4458,7 @@ class HexrdImagesNpz(Npz):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class HexrdEtaOmeNpz(Npz):
@@ -4495,7 +4520,7 @@ class HexrdEtaOmeNpz(Npz):
         try:
             return dataset.peek
         except Exception:
-            return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary Numpy npz file ({nice_size(dataset.get_size())})"
 
 
 class FITS(Binary):
@@ -4624,4 +4649,4 @@ class Numpy(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary numpy file (%s)" % (nice_size(dataset.get_size()))
+            return f"Binary numpy file ({nice_size(dataset.get_size())})"

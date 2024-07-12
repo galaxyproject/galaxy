@@ -698,6 +698,7 @@ class HistoryExportManager:
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
+        assert history.update_time is not None, "History update time must be set"
         history_has_changed = history.update_time > export_date
         export_metadata = self.get_record_metadata(export)
         is_ready = export_metadata is not None and export_metadata.is_ready()
@@ -1005,7 +1006,9 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
 
     def deserialize_preferred_object_store_id(self, item, key, val, **context):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(
+            context["trans"], self.app.object_store, preferred_object_store_id
+        )
         if validation_error:
             raise ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)

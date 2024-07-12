@@ -56,7 +56,6 @@ from urllib.parse import (
     urlunsplit,
 )
 
-import requests
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -124,6 +123,7 @@ except ImportError:
         XML,
     )
 
+from . import requests
 from .custom_logging import get_logger
 from .inflection import Inflector
 from .path import (  # noqa: F401

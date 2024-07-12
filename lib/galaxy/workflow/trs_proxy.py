@@ -3,13 +3,13 @@ import os
 import re
 import urllib.parse
 
-import requests
 import yaml
 
 from galaxy.exceptions import MessageException
 from galaxy.util import (
     asbool,
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
 )
 from galaxy.util.search import parse_filters
 

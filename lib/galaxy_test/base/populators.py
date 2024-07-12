@@ -76,7 +76,7 @@ from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-from gxformat2._yaml import ordered_load
+from gxformat2.yaml import ordered_load
 from requests import Response
 from rocrate.rocrate import ROCrate
 from typing_extensions import Literal
@@ -506,6 +506,19 @@ class BaseDatasetPopulator(BasePopulator):
         output = self.fetch_hda(history_id, item)
         details = self.get_history_dataset_details(history_id, dataset=output)
         return details
+
+    def export_dataset_to_remote_file(self, history_id: str, content: str, name: str, target_uri: str):
+        dataset = self.new_dataset(history_id, content=content, wait=True, name=name)
+        infile = {"src": "hda", "id": dataset["id"]}
+        inputs = {
+            "d_uri": target_uri,
+            "export_type|export_type_selector": "datasets_named",
+            "export_type|datasets_0|infile": infile,
+            "export_type|datasets_0|name": name,
+        }
+        response = self.run_tool("export_remote", inputs, history_id)
+        self.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
+        return f"{target_uri}/{name}"
 
     def tag_dataset(self, history_id, hda_id, tags, raise_on_error=True):
         url = f"histories/{history_id}/contents/{hda_id}"
@@ -1199,8 +1212,12 @@ class BaseDatasetPopulator(BasePopulator):
 
     def update_user(self, properties: Dict[str, Any]) -> Dict[str, Any]:
         update_response = self.update_user_raw(properties)
-        update_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(update_response)
         return update_response.json()
+
+    def set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+        user_properties = self.update_user({"preferred_object_store_id": store_id})
+        assert user_properties["preferred_object_store_id"] == store_id
 
     def update_user_raw(self, properties: Dict[str, Any]) -> Response:
         update_response = self.galaxy_interactor.put("users/current", properties, json=True)
@@ -1492,6 +1509,36 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
         )
+
+    def create_object_store_raw(self, payload: Dict[str, Any]) -> Response:
+        response = self._post(
+            "/api/object_store_instances",
+            payload,
+            json=True,
+        )
+        return response
+
+    def create_object_store(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.create_object_store_raw(payload)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def upgrade_object_store_raw(self, id: str, payload: Dict[str, Any]) -> Response:
+        response = self._put(
+            f"/api/object_store_instances/{id}",
+            payload,
+            json=True,
+        )
+        return response
+
+    def upgrade_object_store(self, id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.upgrade_object_store_raw(id, payload)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    # same implementation client side, slightly different types...
+    update_object_store_raw = upgrade_object_store_raw
+    update_object_store = upgrade_object_store
 
     def selectable_object_stores(self) -> List[Dict[str, Any]]:
         selectable_object_stores_response = self._get("object_stores?selectable=true")
@@ -1828,11 +1875,6 @@ class BaseWorkflowPopulator(BasePopulator):
         )
         api_asserts.assert_status_code_is_ok(create_response)
         return create_response.json()
-
-    def get_biocompute_object(self, invocation_id):
-        bco_response = self._get(f"invocations/{invocation_id}/biocompute")
-        bco_response.raise_for_status()
-        return bco_response.json()
 
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"

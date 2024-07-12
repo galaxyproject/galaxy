@@ -99,7 +99,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
@@ -162,10 +162,11 @@ SortByQueryParam: JobIndexSortByEnum = Query(
     description="Sort results by specified field.",
 )
 
-LimitQueryParam: int = Query(default=500, title="Limit", description="Maximum number of jobs to return.")
+LimitQueryParam: int = Query(default=500, ge=1, title="Limit", description="Maximum number of jobs to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )

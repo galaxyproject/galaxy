@@ -57,6 +57,7 @@ from galaxy.util import (
     galaxy_directory,
     specs,
     string_as_bool_or_none,
+    unicodify,
 )
 
 log = logging.getLogger(__name__)
@@ -322,7 +323,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         log.debug("(%s) Received status update: %s", job_state.job_id, pulsar_status)
-        if pulsar_status in ["complete", "cancelled"] or job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+        if pulsar_status in ["complete", "cancelled"]:
+            self.mark_as_finished(job_state)
+            return None
+        if job_state.job_wrapper.get_state() == model.Job.states.STOPPED:
+            client = self.get_client_from_state(job_state)
+            client.kill()
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:
@@ -644,8 +650,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_metadata_directory = run_results.get("metadata_directory", None)
-            tool_stdout = run_results.get("stdout", "")
-            tool_stderr = run_results.get("stderr", "")
+            tool_stdout = unicodify(run_results.get("stdout", ""), strip_null=True)
+            tool_stderr = unicodify(run_results.get("stderr", ""), strip_null=True)
             for file in ("tool_stdout", "tool_stderr"):
                 if tool_stdout and tool_stderr:
                     pass

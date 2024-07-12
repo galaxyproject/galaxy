@@ -38,7 +38,7 @@ from galaxy.exceptions import (
     ObjectInvalid,
     ObjectNotFound,
 )
-from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.output_collect import (
@@ -69,7 +69,10 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
-from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore import (
+    ObjectStorePopulator,
+    serialize_static_object_store_config,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import (
@@ -1060,7 +1063,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if self._job_io is None:
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
-            user_context = ProvidesUserFileSourcesUserContext(work_request)
+            user_context = ProvidesFileSourcesUserContext(work_request)
             tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
                 sa_session=self.sa_session,
@@ -1331,7 +1334,7 @@ class MinimalJobWrapper(HasResourceParameters):
         job = self.get_job()
         if not os.path.exists(self.working_directory):
             log.warning(
-                "(%s): Working directory clear requested but %s does " "not exist", self.job_id, self.working_directory
+                "(%s): Working directory clear requested but %s does not exist", self.job_id, self.working_directory
             )
             return
 
@@ -1420,8 +1423,8 @@ class MinimalJobWrapper(HasResourceParameters):
                         try:
                             shutil.move(dataset_path.false_path, dataset_path.real_path)
                             log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
-                        except OSError as e:
-                            log.error("fail(): Missing output file in working directory: %s", unicodify(e))
+                        except FileNotFoundError as e:
+                            log.warning("fail(): Missing output file in working directory: %s", unicodify(e))
             except Exception as e:
                 log.exception(str(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -1535,7 +1538,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if job.state in model.Job.terminal_states:
             log.warning(
-                "(%s) Ignoring state change from '%s' to '%s' for job " "that is already terminal",
+                "(%s) Ignoring state change from '%s' to '%s' for job that is already terminal",
                 job.id,
                 job.state,
                 state,
@@ -1787,13 +1790,9 @@ class MinimalJobWrapper(HasResourceParameters):
                     working_directory=self.working_directory,
                     remote_metadata_directory=remote_metadata_directory,
                 )
-            line_count = context.get("line_count", None)
-            try:
-                # Certain datatype's set_peek methods contain a line_count argument
+            if final_job_state != job.states.ERROR:
+                line_count = context.get("line_count", None)
                 dataset.set_peek(line_count=line_count)
-            except TypeError:
-                # ... and others don't
-                dataset.set_peek()
         else:
             # Handle purged datasets.
             dataset.blurb = "empty"
@@ -1907,7 +1906,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         job.set_state(final_job_state)
                         return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
-        job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
+        job_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
         if extended_metadata:
             try:
                 import_options = store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
@@ -2005,10 +2004,14 @@ class MinimalJobWrapper(HasResourceParameters):
         quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
-            if not dataset_assoc.dataset.dataset.purged:
+            dataset = dataset_assoc.dataset.dataset
+            if not dataset.purged:
                 # assume all datasets in a job get written to the same objectstore
-                quota_source_info = dataset_assoc.dataset.dataset.quota_source_info
-                collected_bytes += dataset_assoc.dataset.set_total_size()
+                quota_source_info = dataset.quota_source_info
+                collected_bytes += dataset.set_total_size()
+            else:
+                # Purge, in case job wrote directly to object store
+                dataset.full_delete()
 
         user = job.user
         if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
@@ -2169,8 +2172,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     )
                     return (
                         JobState.runner_states.OUTPUT_SIZE_LIMIT,
-                        "Job output file grew too large (greater than %s), please try different inputs or parameters"
-                        % util.nice_size(self.app.job_config.limits.output_size),
+                        f"Job output file grew too large (greater than {util.nice_size(self.app.job_config.limits.output_size)}), please try different inputs or parameters",
                     )
         if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
             if runtime > self.app.job_config.limits.walltime_delta:
@@ -2297,8 +2299,15 @@ class MinimalJobWrapper(HasResourceParameters):
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
         inp_data, out_data, out_collections = job.io_dicts(exclude_implicit_outputs=True)
+
+        required_user_object_store_uris = set()
+        for out_dataset_instance in out_data.values():
+            object_store_id = out_dataset_instance.dataset.object_store_id
+            if object_store_id and object_store_id.startswith("user_objects://"):
+                required_user_object_store_uris.add(object_store_id)
+
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
-        object_store_conf = self.object_store.to_dict()
+        object_store_conf = serialize_static_object_store_config(self.object_store, required_user_object_store_uris)
         command = self.external_output_metadata.setup_external_metadata(
             out_data,
             out_collections,

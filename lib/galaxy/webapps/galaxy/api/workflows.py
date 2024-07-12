@@ -21,8 +21,7 @@ from fastapi import (
     Response,
     status,
 )
-from gxformat2._yaml import ordered_dump
-from markupsafe import escape
+from gxformat2.yaml import ordered_dump
 from pydantic import (
     UUID1,
     UUID4,
@@ -52,7 +51,6 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
@@ -87,8 +85,6 @@ from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryMan
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_raw_anonymous_and_sessionless,
@@ -270,7 +266,7 @@ class WorkflowsAPIController(
                         )
                         import_source = "URL"
                     except Exception:
-                        raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
+                        raise exceptions.MessageException(f"Failed to open URL '{archive_source}'.")
             elif hasattr(archive_file, "file"):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -450,7 +446,7 @@ class WorkflowsAPIController(
             name_updated = new_workflow_name and new_workflow_name != stored_workflow.name
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
-                sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                sanitized_name = new_workflow_name or old_workflow.name
                 if not sanitized_name:
                     raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
@@ -474,7 +470,7 @@ class WorkflowsAPIController(
                 require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
-                newAnnotation = sanitize_html(workflow_dict["annotation"])
+                newAnnotation = workflow_dict["annotation"]
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
                 require_flush = True
 
@@ -601,7 +597,7 @@ class WorkflowsAPIController(
         workflow = workflow.latest_workflow
 
         response = {
-            "message": f"Workflow '{escape(workflow.name)}' imported successfully.",
+            "message": f"Workflow '{workflow.name}' imported successfully.",
             "status": "success",
             "id": trans.security.encode_id(workflow_id),
         }
@@ -815,10 +811,11 @@ SortDescQueryParam: Optional[bool] = Query(
     description="Sort in descending order?",
 )
 
-LimitQueryParam: Optional[int] = Query(default=None, title="Limit number of queries.")
+LimitQueryParam: Optional[int] = Query(default=None, ge=1, title="Limit number of queries.")
 
 OffsetQueryParam: Optional[int] = Query(
     default=0,
+    ge=0,
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
@@ -1229,6 +1226,7 @@ InvocationsIncludeTerminalQueryParam = Annotated[
 InvocationsLimitQueryParam = Annotated[
     Optional[int],
     Query(
+        ge=1,
         title="Limit",
         description="Limit the number of invocations to return.",
     ),
@@ -1237,6 +1235,7 @@ InvocationsLimitQueryParam = Annotated[
 InvocationsOffsetQueryParam = Annotated[
     Optional[int],
     Query(
+        ge=0,
         title="Offset",
         description="Number of invocations to skip.",
     ),
@@ -1712,88 +1711,3 @@ class FastAPIInvocations:
     ) -> InvocationJobsResponse:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
-
-    # TODO: remove this endpoint after 23.1 release
-    @router.get(
-        "/api/invocations/{invocation_id}/biocompute",
-        summary="Return a BioCompute Object for the workflow invocation.",
-        deprecated=True,
-    )
-    def export_invocation_bco(
-        self,
-        invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-        merge_history_metadata: Optional[bool] = Query(default=False),
-    ):
-        """
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-
-        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-
-        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-            ```
-            {
-                model_store_format: bco.json
-            }
-            ```
-        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-
-        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-        """
-        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
-        return json.loads(bco)
-
-    # TODO: remove this endpoint after 23.1 release
-    @router.get(
-        "/api/invocations/{invocation_id}/biocompute/download",
-        summary="Return a BioCompute Object for the workflow invocation as a file for download.",
-        response_class=StreamingResponse,
-        deprecated=True,
-    )
-    def download_invocation_bco(
-        self,
-        invocation_id: InvocationIDPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-        merge_history_metadata: Optional[bool] = Query(default=False),
-    ):
-        """
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-
-        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
-
-        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
-            ```
-            {
-                model_store_format: bco.json
-            }
-            ```
-        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
-
-        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
-        """
-        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
-        return StreamingResponse(
-            content=BytesIO(bco),
-            media_type="application/json",
-            headers={
-                "Content-Disposition": f'attachment; filename="bco_{trans.security.encode_id(invocation_id)}.json"',
-                "Access-Control-Expose-Headers": "Content-Disposition",
-            },
-        )
-
-    # TODO: remove this after 23.1 release
-    def _deprecated_generate_bco(
-        self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
-    ):
-        export_options = BcoExportOptions(
-            galaxy_url=trans.request.url_path,
-            galaxy_version=VERSION,
-            merge_history_metadata=merge_history_metadata or False,
-        )
-        return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)

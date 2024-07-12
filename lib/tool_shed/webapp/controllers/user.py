@@ -8,8 +8,8 @@ from galaxy import (
     web,
 )
 from galaxy.managers.api_keys import ApiKeyManager
-from galaxy.managers.users import get_user_by_email
 from galaxy.model.base import transaction
+from galaxy.model.db.user import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -85,8 +85,9 @@ class User(BaseUser):
         if not success and not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = (
-                    "  If you don't already have an account, <a href='%s'>you may create one</a>."
-                    % web.url_for(controller="user", action="create", cntrller="user")
+                    "  If you don't already have an account, <a href='{}'>you may create one</a>.".format(
+                        web.url_for(controller="user", action="create", cntrller="user")
+                    )
                 )
                 header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
             else:
@@ -243,9 +244,9 @@ class User(BaseUser):
             if not message:
                 # Default to a non-userinfo-leaking response message
                 message = (
-                    "Your reset request for %s has been received.  "
+                    f"Your reset request for {escape(email)} has been received.  "
                     "Please check your email account for more instructions.  "
-                    "If you do not receive an email shortly, please contact an administrator." % (escape(email))
+                    "If you do not receive an email shortly, please contact an administrator."
                 )
                 reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User)
                 if not reset_user:
@@ -476,9 +477,7 @@ class User(BaseUser):
     @web.expose
     def logout(self, trans, logout_all=False, **kwd):
         trans.handle_user_logout(logout_all=logout_all)
-        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % (
-            url_for("/")
-        )
+        message = f'You have been logged out.<br>To log in again <a target="_top" href="{url_for("/")}">go to the home page</a>.'
         if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
             trans.response.send_redirect(trans.app.config.remote_user_logout_href)
         else:

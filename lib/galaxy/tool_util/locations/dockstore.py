@@ -1,9 +1,11 @@
 from urllib.parse import quote
 
-import requests
 import yaml
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from . import ToolLocationResolver
 
 

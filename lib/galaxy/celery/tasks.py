@@ -291,6 +291,7 @@ def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job
                 return future.result(timeout=1)
             except TimeoutError:
                 if is_aborted(session, job_id):
+                    future.cancel()
                     return
 
 

@@ -22,16 +22,16 @@ steps:
       postclick: true
 
     - title: "Upload your data"
-      element: "#btn-local"
+      component: upload.local_button
       intro: "You can upload data from your computer."
 
     - title: "Upload your data"
-      element: "#btn-new"
+      component: upload.create_button
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       preclick: true
 
     - title: "Insert URLs"
-      element: ".upload-text-content"
+      component: upload.paste_content(n=0)
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       textinsert: |
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
@@ -49,15 +49,15 @@ steps:
       postclick: true
 
     - title: "Tools"
-      element: "#left"
+      component: _.left_panel
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
 
     - title: "Tool categories"
-      element: '.toolSectionTitle'
+      component: tools.title
       intro: "Tools are grouped into categories to make them easier to find."
 
     - title: "Tool search bar"
-      element: '.search-query'
+      component: tools.search
       intro: "You can search for tools by keywords."
       textinsert: 'filter'
 
@@ -67,26 +67,26 @@ steps:
       postclick: true
 
     - title: "Filter Tool"
-      element: '#center'
+      component: _.center_panel
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
 
     - title: "Tool parameters"
-      element: '#center #tool-card-body'
+      component: tools.body
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
 
     - title: "Tool help"
-      element: 'div.form-help'
+      component: tools.help
       intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters.
               Have a look and study your tool in depth by reading it."
 
     - title: "Run your tool"
-      element: '#execute'
+      component: tools.execute
       intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
               Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
       postclick: true
 
     - title: "History"
-      element: "#current-history-panel"
+      component: history_panel
       intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
               A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
@@ -117,37 +117,30 @@ steps:
       element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
-    - title: "Top panel"
-      element: "#masthead"
-      intro: "The top panel will give you access to a lot of useful things."
-
     - title: "Analyze data"
+      component: masthead.home
       element: "#analysis"
       intro: "This is the current view. Start your <b>Analysis</b> from here."
 
     - title: "Workflow"
-      element: "#workflow"
+      component: workflows.activity
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
-
-    - title: "Data"
-      element: "#resources"
-      intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b> and <b>Visualizations</b>."
-
+    
     - title: "Visualization"
-      element: "#visualization"
+      component: visualization.activity
       intro: "Galaxy offers a lot of visualizations to review your data!"
 
     - title: "Help"
-      element: "#help"
+      component: masthead.help
       intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
 
-    - title: "User Preferences"
-      element: "#user"
-      intro: "Login and start your analysis!"
-
     - title: "Window Manager"
-      element: "#enable-window-manager"
+      component: masthead.window_manager
       intro: "Window Manager offers you multiple visualizations next to each other. Have a look at our Window Manager tour to learn more about it."
+
+    - title: "Login"
+      component: masthead.login
+      intro: "Login and start your analysis!"
 
     - title: "Enjoy Galaxy"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"

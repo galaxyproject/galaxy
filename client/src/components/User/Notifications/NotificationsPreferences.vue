@@ -48,8 +48,12 @@ const showPreferences = computed(() => {
 });
 
 const categoryDescriptionMap: Record<string, string> = {
-    message: "You will receive notifications when someone sends you a message.",
-    new_shared_item: "You will receive notifications when someone shares an item with you.",
+    message: `
+        You will receive these notifications only when your Galaxy administrators send you a message.
+        Please note that for certain critical or urgent messages, you will receive notifications even if you have disabled this channel.
+    `,
+    new_shared_item:
+        "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
 };
 
 async function getNotificationsPreferences() {
@@ -131,14 +135,6 @@ watch(
         <div v-else-if="showPreferences" class="notifications-preferences-body">
             <div v-for="category in categories" :key="category" class="card-container">
                 <div class="category-header">
-                    <div>
-                        <div v-localize class="category-title">{{ capitalizeWords(category) }}</div>
-
-                        <div v-if="categoryDescriptionMap[category]" v-localize class="category-description">
-                            {{ categoryDescriptionMap[category] }}
-                        </div>
-                    </div>
-
                     <BFormCheckbox
                         v-model="notificationsPreferences[category].enabled"
                         v-b-tooltip.hover
@@ -147,7 +143,13 @@ watch(
                                 ? 'Disable notifications'
                                 : 'Enable notifications'
                         "
-                        switch />
+                        switch>
+                        <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
+                    </BFormCheckbox>
+                </div>
+
+                <div v-if="categoryDescriptionMap[category]" v-localize class="category-description">
+                    {{ categoryDescriptionMap[category] }}
                 </div>
 
                 <div v-for="channel in supportedChannels" :key="channel" class="category-channel">
@@ -244,5 +246,10 @@ watch(
 .category-description {
     font-size: 0.8rem;
     font-style: italic;
+    margin-bottom: 0.5rem;
+}
+
+.card-container {
+    margin: 0.5rem;
 }
 </style>

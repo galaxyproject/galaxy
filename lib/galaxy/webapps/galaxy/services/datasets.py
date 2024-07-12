@@ -364,7 +364,17 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Displays information about and/or content of a dataset.
         """
-        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(dataset_id, trans.user)
+        requests_that_require_data = (
+            RequestDataType.converted_datasets_state,
+            RequestDataType.data,
+            RequestDataType.features,
+            RequestDataType.raw_data,
+            RequestDataType.track_config,
+        )
+        if data_type in requests_that_require_data:
+            dataset_manager.ensure_dataset_on_disk(trans, dataset)
 
         # Use data type to return particular type of data.
         rval: Any
@@ -606,7 +616,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         rval: Any = ""
         try:
-            dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
+            dataset_manager = self.dataset_manager_by_type[hda_ldda]
+            dataset_instance = dataset_manager.get_accessible(dataset_id, trans.user)
+            dataset_manager.ensure_dataset_on_disk(trans, dataset_instance)
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
@@ -668,6 +680,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
+        self.hda_manager.ensure_dataset_on_disk(trans, hda)
         file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
         fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda.name)[0:150]
         headers = {}
@@ -832,7 +845,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             data_provider = self.data_provider_registry.get_data_provider(
                 trans, original_dataset=dataset, source="index"
             )
-            if not data_provider.has_data(chrom):
+            if not dataset.has_data() or not data_provider.has_data(chrom):
                 return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here

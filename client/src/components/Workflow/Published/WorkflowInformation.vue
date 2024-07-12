@@ -3,8 +3,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
+import { RouterLink } from "vue-router";
+
+import { useUserStore } from "@/stores/userStore";
+import { getFullAppUrl } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import License from "@/components/License/License.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -14,24 +19,44 @@ library.add(faBuilding, faUser);
 interface WorkflowInformation {
     name: string;
     [key: string]: unknown;
+    update_time: string;
     license?: string;
     tags?: string[];
-    update_time: string;
-    creator?: Array<{
+    creator?: {
         [key: string]: unknown;
-    }>;
+    }[];
 }
 
-const props = defineProps<{
+interface Props {
     workflowInfo: WorkflowInformation;
     embedded?: boolean;
-}>();
+}
+
+const props = defineProps<Props>();
+
+const userStore = useUserStore();
 
 const gravatarSource = computed(
     () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
 );
 
 const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
+
+const relativeLink = computed(() => {
+    return `/published/workflow?id=${props.workflowInfo.id}`;
+});
+
+const fullLink = computed(() => {
+    return getFullAppUrl(relativeLink.value.substring(1));
+});
+
+const userOwned = computed(() => {
+    if (userStore.currentUser) {
+        return userStore.currentUser.username === props.workflowInfo.owner;
+    } else {
+        return false;
+    }
+});
 </script>
 
 <template>
@@ -52,9 +77,9 @@ const publishedByUser = computed(() => `/workflows/list_published?owner=${props.
 
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
-            <router-link :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
+            <RouterLink :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
                 All published Workflows by {{ workflowInfo.owner }}
-            </router-link>
+            </RouterLink>
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">
@@ -95,6 +120,23 @@ const publishedByUser = computed(() => `/workflows/list_published?owner=${props.
             <Heading h3 size="md" class="mb-0">Last Updated</Heading>
 
             <UtcDate :date="workflowInfo.update_time" mode="pretty" />
+        </div>
+
+        <div v-if="!props.embedded && (workflowInfo.published || userOwned)" class="workflow-info-box">
+            <Heading h3 size="md" class="mb-0">Sharing</Heading>
+
+            <span v-if="workflowInfo.published">
+                Use the following link to share preview of this workflow:
+
+                <a :href="fullLink" target="_blank">{{ fullLink }}</a>
+                <CopyToClipboard message="Link copied to clipboard" :text="fullLink" title="Copy link" />. Manage
+                sharing settings <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">here</RouterLink>.
+            </span>
+
+            <span v-else-if="userOwned">
+                This workflow is not published and cannot be shared.
+                <RouterLink :to="`/workflows/sharing?id=${workflowInfo.id}`">Publish this workflow</RouterLink>
+            </span>
         </div>
     </aside>
 </template>

@@ -95,7 +95,7 @@ class DatasetCollectionManager:
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
         dataset_collection = self.precreate_dataset_collection(
             structure,
-            allow_unitialized_element=implicit_output_name is not None,
+            allow_uninitialized_element=implicit_output_name is not None,
             completed_collection=completed_collection,
             implicit_output_name=implicit_output_name,
         )
@@ -112,10 +112,10 @@ class DatasetCollectionManager:
         return instance
 
     def precreate_dataset_collection(
-        self, structure, allow_unitialized_element=True, completed_collection=None, implicit_output_name=None
+        self, structure, allow_uninitialized_element=True, completed_collection=None, implicit_output_name=None
     ):
         has_structure = not structure.is_leaf and structure.children_known
-        if not has_structure and allow_unitialized_element:
+        if not has_structure and allow_uninitialized_element:
             dataset_collection = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
         elif not has_structure:
             collection_type_description = structure.collection_type_description
@@ -143,7 +143,7 @@ class DatasetCollectionManager:
                         element = model.DatasetCollectionElement.UNINITIALIZED_ELEMENT
                     else:
                         element = self.precreate_dataset_collection(
-                            substructure, allow_unitialized_element=allow_unitialized_element
+                            substructure, allow_uninitialized_element=allow_uninitialized_element
                         )
 
                 element = model.DatasetCollectionElement(

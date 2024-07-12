@@ -115,7 +115,9 @@ const decreaseFontSizeTitle = computed(() =>
 );
 
 function onRootClick() {
-    editableElement.value?.focus();
+    if (!props.readonly) {
+        editableElement.value?.focus();
+    }
 }
 
 function onMove(position: { x: number; y: number }) {
@@ -171,6 +173,8 @@ onMounted(() => {
         selectAllText(editableElement.value);
     }
 });
+
+const position = computed(() => ({ x: props.comment.position[0], y: props.comment.position[1] }));
 </script>
 
 <template>
@@ -179,13 +183,19 @@ onMounted(() => {
         <div
             ref="resizeContainer"
             class="resize-container"
-            :class="{ resizable: !props.readonly, 'prevent-zoom': !props.readonly }"
+            :class="{
+                resizable: !props.readonly,
+                'prevent-zoom': !props.readonly,
+                'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
+            }"
             :style="cssVariables"
             @click="onRootClick">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
+                :position="position"
+                :selected="commentStore.getCommentMultiSelected(props.comment.id)"
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="saveText"
@@ -346,6 +356,10 @@ onMounted(() => {
     &.resizable:focus {
         resize: both;
         border-color: $brand-primary;
+    }
+
+    &.multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
     }
 }
 

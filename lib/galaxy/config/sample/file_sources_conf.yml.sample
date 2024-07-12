@@ -211,9 +211,30 @@
   public_name: ${user.preferences['invenio_sandbox|public_name']}
   writable: true
 
+- type: zenodo
+  id: zenodo
+  doc: Zenodo is a general-purpose open-access repository developed under the European OpenAIRE program and operated by CERN. It allows researchers to deposit data sets, research software, reports, and any other research-related digital artifacts. For each submission, a persistent digital object identifier (DOI) is minted, which makes the stored items easily citeable.
+  label: Zenodo
+  url: https://zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo/token')}
+  public_name: ${user.preferences['zenodo|public_name']}
+  writable: true
+
+- type: zenodo
+  id: zenodo_sandbox
+  doc: This is the Sandbox instance of Zenodo. It is used for testing purposes only, content is NOT preserved. DOIs created in this instance are not real and will not resolve.
+  label: Zenodo Sandbox (TESTING ONLY)
+  url: https://sandbox.zenodo.org
+  token: ${user.user_vault.read_secret('preferences/zenodo_sandbox/token')}
+  public_name: ${user.preferences['zenodo_sandbox|public_name']}
+  writable: true
+
+# Note for developers: you can easily set up a minimal, dockerized Onedata environment
+# using the so-called "demo-mode": https://onedata.org/#/home/documentation/topic/stable/demo-mode
 - type: onedata
   id: onedata1
   label: Onedata
   doc: Your Onedata files - configure an access token via user preferences
   accessToken: ${user.preferences['onedata|access_token']}
   onezoneDomain: ${user.preferences['onedata|onezone_domain']}
+  disableTlsCertificateValidation: ${user.preferences['onedata|disable_tls_certificate_validation']}

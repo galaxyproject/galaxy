@@ -322,10 +322,9 @@ def _setup_module_command(temp_directory, contents):
     module_script = os.path.join(temp_directory, "modulecmd")
     __write_script(
         module_script,
-        """#!/bin/sh
-cat %s/example_output 1>&2;
-"""
-        % temp_directory,
+        f"""#!/bin/sh
+cat {temp_directory}/example_output 1>&2;
+""",
     )
     with open(os.path.join(temp_directory, "example_output"), "w") as f:
         # Subset of module avail from MSI cluster.
@@ -483,10 +482,9 @@ def _setup_lmod_command(temp_directory, contents):
     lmod_script = os.path.join(temp_directory, "lmod")
     __write_script(
         lmod_script,
-        """#!/bin/sh
-cat %s/lmod_example_output 1>&2;
-"""
-        % temp_directory,
+        f"""#!/bin/sh
+cat {temp_directory}/lmod_example_output 1>&2;
+""",
     )
     with open(os.path.join(temp_directory, "lmod_example_output"), "w") as f:
         # Subset of a "lmod -t avail" command of the LMOD environment module system.
@@ -544,7 +542,7 @@ def test_shell_commands_built():
 
 
 def __assert_foo_exported(commands):
-    command = ["bash", "-c", '%s; echo "$FOO"' % "".join(commands)]
+    command = ["bash", "-c", '{}; echo "$FOO"'.format("".join(commands))]
     process = Popen(command, stdout=PIPE)
     output = process.communicate()[0].strip()
     assert output == b"bar", f"Command {command} exports FOO as {unicodify(output)}, not bar"

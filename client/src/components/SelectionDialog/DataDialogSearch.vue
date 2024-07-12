@@ -34,7 +34,7 @@ const placeholder = computed(() => `search ${props.title.toLowerCase()}`);
 
 <template>
     <BInputGroup class="w-100">
-        <BFormInput v-model="filter" :placeholder="placeholder" />
+        <BFormInput v-model="filter" :placeholder="placeholder" debounce="500" />
         <BInputGroupAppend>
             <BButton :disabled="!filter" @click="filter = ''"><FontAwesomeIcon icon="times" /></BButton>
         </BInputGroupAppend>

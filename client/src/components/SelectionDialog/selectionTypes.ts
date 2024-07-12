@@ -17,3 +17,14 @@ export interface SelectionItem {
     isLeaf: boolean;
     url: string;
 }
+
+export interface ItemsProviderContext {
+    apiUrl?: string;
+    currentPage: number;
+    perPage: number;
+    filter?: string;
+    sortBy?: string;
+    sortDesc?: boolean;
+}
+
+export type ItemsProvider = (ctx: ItemsProviderContext) => Promise<SelectionItem[]>;

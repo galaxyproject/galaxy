@@ -588,13 +588,13 @@
                trust tool's specified container - a destination wide override
                can be set. This will cause all jobs on this destination to use
                that docker image. -->
-          <!-- <param id="docker_container_id_override">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_container_id_override">busybox:1.36.1-glibc</param> -->
 
           <!-- Likewise, if deployer wants to use docker for isolation and
                does trust tool's specified container - but also wants tool's not
                configured to run in a container the following option can provide
                a fallback. -->
-          <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+          <!-- <param id="docker_default_container_id">busybox:1.36.1-glibc</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
                the following parameter may be set for the job destination. Some tools do
@@ -674,11 +674,11 @@
                the enabled container types for this destination will be used.
           -->
           <param id="container_override">
-              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:1.36.1-glibc</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
           </param>
           <param id="container">
-              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:1.36.1-glibc</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
           </param>
         </destination>
@@ -966,7 +966,7 @@
             container ID will be passed along to condor as
             the docker_image submission parameter.
             -->
-            <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
+            <!-- <param id="docker_default_container_id">busybox:1.36.1-glibc</param> -->
         </destination>
 
         <!-- Jobs can be re-submitted for various reasons (to the same destination or others,

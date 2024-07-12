@@ -30,6 +30,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    Generic,
     Iterable,
     List,
     NamedTuple,
@@ -39,6 +40,7 @@ from typing import (
     Tuple,
     Type,
     TYPE_CHECKING,
+    TypeVar,
     Union,
 )
 from uuid import (
@@ -133,6 +135,11 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
+from galaxy.files.templates import (
+    FileSourceConfiguration,
+    FileSourceTemplate,
+    template_to_configuration as file_source_template_to_configuration,
+)
 from galaxy.model.base import (
     ensure_object_added_to_session,
     transaction,
@@ -152,6 +159,12 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.objectstore import ObjectStorePopulator
+from galaxy.objectstore.templates import (
+    ObjectStoreConfiguration,
+    ObjectStoreTemplate,
+    template_to_configuration as object_store_template_to_configuration,
+)
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -176,6 +189,12 @@ from galaxy.util import (
     ready_name_for_url,
     unicodify,
     unique_id,
+)
+from galaxy.util.config_templates import (
+    EnvironmentDict,
+    SecretsDict,
+    Template as ConfigTemplate,
+    TemplateEnvironment,
 )
 from galaxy.util.dictifiable import (
     dict_for,
@@ -209,6 +228,28 @@ _datatypes_registry = None
 STR_TO_STR_DICT = Dict[str, str]
 
 
+class ConfigurationTemplateEnvironmentSecret(TypedDict):
+    name: str
+    type: Literal["secret"]
+    vault_key: str
+
+
+class ConfigurationTemplateEnvironmentVariable(TypedDict):
+    name: str
+    type: Literal["variable"]
+    variable: str
+
+
+CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY = Union[
+    ConfigurationTemplateEnvironmentSecret, ConfigurationTemplateEnvironmentVariable
+]
+CONFIGURATION_TEMPLATE_ENVIRONMENT = List[CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = Dict[str, CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE]
+CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = List[str]
+CONFIGURATION_TEMPLATE_DEFINITION_TYPE = Dict[str, Any]
+
+
 class TransformAction(TypedDict):
     action: str
 
@@ -219,6 +260,10 @@ mapper_registry = registry(
     type_annotation_map={
         Optional[STR_TO_STR_DICT]: JSONType,
         Optional[TRANSFORM_ACTIONS]: MutableJSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]: JSONType,
+        Optional[CONFIGURATION_TEMPLATE_ENVIRONMENT]: JSONType,
     },
 )
 
@@ -612,13 +657,10 @@ def calculate_user_disk_usage_statements(user_id, quota_source_map, for_sqlite=F
     if default_usage_dataset_condition.strip():
         default_usage_dataset_condition = f"AND ( {default_usage_dataset_condition} )"
     default_usage = UNIQUE_DATASET_USER_USAGE.format(and_dataset_condition=default_usage_dataset_condition)
-    default_usage = (
-        """
-UPDATE galaxy_user SET disk_usage = (%s)
+    default_usage = f"""
+UPDATE galaxy_user SET disk_usage = ({default_usage})
 WHERE id = :id
 """
-        % default_usage
-    )
     params = {"id": user_id}
     if default_exclude_ids:
         params["exclude_object_store_ids"] = default_exclude_ids
@@ -751,7 +793,6 @@ class User(Base, Dictifiable, RepresentById):
     addresses: Mapped[List["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
-    cloudauthz: Mapped[List["CloudAuthz"]] = relationship(back_populates="user")
     custos_auth: Mapped[List["CustosAuthnzToken"]] = relationship(back_populates="user")
     default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[List["UserGroupAssociation"]] = relationship(back_populates="user")
@@ -766,6 +807,8 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
         back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False
     )
+    object_stores: Mapped[List["UserObjectStore"]] = relationship(back_populates="user")
+    file_sources: Mapped[List["UserFileSource"]] = relationship(back_populates="user")
     quotas: Mapped[List["UserQuotaAssociation"]] = relationship(back_populates="user")
     quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(back_populates="user")
     social_auth: Mapped[List["UserAuthnzToken"]] = relationship(back_populates="user")
@@ -1161,6 +1204,16 @@ ON CONFLICT
         """ """
         environment = User.user_template_environment(user)
         return Template(in_string).safe_substitute(environment)
+
+    # above templating is for Cheetah in tools where we discouraged user details from being exposed.
+    # the following templating if user details in Jinja for object stores and file sources where user
+    # details are critical and documented.
+    def config_template_details(self) -> Dict[str, Any]:
+        return {
+            "username": self.username,
+            "email": self.email,
+            "id": self.id,
+        }
 
     def is_active(self):
         return self.active
@@ -3033,7 +3086,7 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
-class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
+class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
@@ -3200,6 +3253,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def count(self):
         return self.hid_counter - 1
 
+    def update(self):
+        self._update_time = now()
+
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
         # so we don't need to set the quota.
@@ -3255,7 +3311,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         elif not isinstance(dataset, (HistoryDatasetAssociation, HistoryDatasetCollectionAssociation)):
             raise TypeError(
                 "You can only add Dataset and HistoryDatasetAssociation instances to a history"
-                + f" ( you tried to add {str(dataset)} )."
+                f" ( you tried to add {str(dataset)} )."
             )
         is_dataset = is_hda(dataset)
         if parent_id:
@@ -3985,6 +4041,10 @@ class StorableObject:
                 sa_session.commit()
 
 
+def setup_global_object_store_for_models(object_store):
+    Dataset.object_store = object_store
+
+
 class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
 
@@ -4316,6 +4376,8 @@ class Dataset(Base, StorableObject, Serializable):
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
+        self.file_size = 0
+        self.total_size = 0
 
     def get_access_roles(self, security_agent):
         roles = []
@@ -4601,6 +4663,17 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     quota_source_label = property(get_quota_source_label)
 
+    def set_skipped(self, object_store_populator: ObjectStorePopulator):
+        assert self.dataset
+        object_store_populator.set_object_store_id(self)
+        self.extension = "expression.json"
+        self.state = self.states.OK
+        self.blurb = "skipped"
+        self.visible = False
+        with open(self.dataset.get_file_name(), "w") as out:
+            out.write(json.dumps(None))
+        self.set_total_size()
+
     def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
             return ""
@@ -4757,8 +4830,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             # extension is None
             return "data"
 
-    def set_peek(self, **kwd):
-        return self.datatype.set_peek(self, **kwd)
+    def set_peek(self, line_count=None, **kwd):
+        try:
+            # Certain datatype's set_peek methods contain a line_count argument
+            return self.datatype.set_peek(self, line_count=line_count, **kwd)
+        except TypeError:
+            # ... and others don't
+            return self.datatype.set_peek(self, **kwd)
+        except Exception:
+            # Never fail peek setting, but do log exception so datatype logic can be fixed
+            log.exception("Setting peek failed")
 
     def init_meta(self, copy_from=None):
         return self.datatype.init_meta(self, copy_from=copy_from)
@@ -4844,7 +4925,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             raise NoConverterException(f"A dependency ({dependency}) is missing a converter.")
         except KeyError:
             pass  # No deps
-        new_dataset = next(
+        return next(
             iter(
                 self.datatype.convert_dataset(
                     trans,
@@ -4858,7 +4939,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 ).values()
             )
         )
-        return self.attach_implicitly_converted_dataset(trans.sa_session, new_dataset, target_ext)
 
     def attach_implicitly_converted_dataset(self, session, new_dataset, target_ext: str):
         new_dataset.name = self.name
@@ -4868,9 +4948,6 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         )
         session.add(new_dataset)
         session.add(assoc)
-        with transaction(session):
-            session.commit()
-        return new_dataset
 
     def copy_attributes(self, new_dataset):
         """
@@ -5244,7 +5321,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 self.tags.append(copied_tag)
 
     def copy_attributes(self, new_dataset):
-        new_dataset.hid = self.hid
+        if new_dataset.hid is None:
+            new_dataset.hid = self.hid
 
     def to_library_dataset_dataset_association(
         self,
@@ -5932,11 +6010,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
 
         tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
-        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
+        tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags, flush=False)
         sa_session.add(hda)
-        with transaction(sa_session):
-            sa_session.commit()
-        hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
+        hda.metadata = self.metadata
         if add_to_history and target_history:
             target_history.add_dataset(hda)
         with transaction(sa_session):
@@ -6417,10 +6493,27 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         for entity in return_entities:
             q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
-                q = q.filter(entity.id == dce.c.id)  # type:ignore[arg-type]
+                q = q.filter(entity.id == dce.c.id)
 
         q = q.order_by(*order_by_columns)
         return q
+
+    @property
+    def elements_deleted(self):
+        if not hasattr(self, "_elements_deleted"):
+            if session := object_session(self):
+                stmt = self._build_nested_collection_attributes_stmt(
+                    hda_attributes=("deleted",), dataset_attributes=("deleted",)
+                )
+                stmt = stmt.exists().where(or_(HistoryDatasetAssociation.deleted == true(), Dataset.deleted == true()))
+                self._elements_deleted = session.execute(select(stmt)).scalar()
+            else:
+                self._elements_deleted = False
+                for dataset_instance in self.dataset_instances:
+                    if dataset_instance.deleted or dataset_instance.dataset.deleted:
+                        self._elements_deleted = True
+                        break
+        return self._elements_deleted
 
     @property
     def dataset_states_and_extensions_summary(self):
@@ -6469,6 +6562,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     @property
     def populated_optimized(self):
         if not hasattr(self, "_populated_optimized"):
+            if not self.id:
+                return self.populated
             _populated_optimized = True
             if ":" not in self.collection_type:
                 _populated_optimized = self.populated_state == DatasetCollection.populated_states.OK
@@ -6606,7 +6701,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return elements
 
     @property
-    def first_dataset_element(self):
+    def first_dataset_element(self) -> Optional["DatasetCollectionElement"]:
         for element in self.elements:
             if element.is_collection:
                 first_element = element.child_collection.first_dataset_element
@@ -7253,7 +7348,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         self.element_identifier = element_identifier or str(element_index)
 
     def __strict_check_before_flush__(self):
-        assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
+        if self.collection.populated_optimized:
+            assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
 
     @property
     def element_type(self):
@@ -7462,7 +7558,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
         self.history = history
 
 
-class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
+class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
     It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
@@ -7586,7 +7682,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
-            raise Exception("Version does not exist")
+            raise galaxy.exceptions.RequestParameterInvalidException("Version does not exist")
         return list(reversed(self.workflows))[version]
 
     def version_of(self, workflow):
@@ -7802,6 +7898,25 @@ class Workflow(Base, Dictifiable, RepresentById):
         for old_step, new_step in zip(self.steps, copied_steps):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
+
+        copied_comments = [comment.copy() for comment in self.comments]
+        steps_by_id = {s.order_index: s for s in copied_workflow.steps}
+        comments_by_id = {c.order_index: c for c in copied_comments}
+
+        # copy comment relationships
+        for old_comment, new_comment in zip(self.comments, copied_comments):
+            for step_id in [step.order_index for step in old_comment.child_steps]:
+                child_step = steps_by_id.get(step_id)
+                if child_step:
+                    child_step.parent_comment = new_comment
+
+            for comment_id in [comment.order_index for comment in old_comment.child_comments]:
+                child_comment = comments_by_id.get(comment_id)
+                if child_comment:
+                    child_comment.parent_comment = new_comment
+
+        copied_workflow.comments = copied_comments
+
         return copied_workflow
 
     @property
@@ -7818,7 +7933,7 @@ class Workflow(Base, Dictifiable, RepresentById):
 InputConnDictType = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
 
 
-class WorkflowStep(Base, RepresentById):
+class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     """
     WorkflowStep represents a tool or subworkflow, its inputs, annotations, and any outputs that are flagged as workflow outputs.
 
@@ -7893,8 +8008,8 @@ class WorkflowStep(Base, RepresentById):
         self._inputs_by_name = None
         # Injected attributes
         # TODO: code using these should be refactored to not depend on these non-persistent fields
-        self.module: Optional["WorkflowModule"]
-        self.state: Optional["DefaultToolState"]
+        self.module: Optional[WorkflowModule]
+        self.state: Optional[DefaultToolState]
         self.upgrade_messages: Optional[Dict]
 
     @reconstructor
@@ -8354,6 +8469,17 @@ class WorkflowComment(Base, RepresentById):
         comment.data = dict.get("data", None)
         return comment
 
+    def copy(self):
+        comment = WorkflowComment()
+        comment.order_index = self.order_index
+        comment.type = self.type
+        comment.position = self.position
+        comment.size = self.size
+        comment.color = self.color
+        comment.data = self.data
+
+        return comment
+
 
 class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     __tablename__ = "stored_workflow_user_share_connection"
@@ -8784,6 +8910,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                         v["state"] = None
                         steps.append(v)
                 else:
+                    v["implicit_collection_jobs_id"] = step.implicit_collection_jobs_id
                     steps.append(v)
             rval["steps"] = steps
 
@@ -8812,7 +8939,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for input_step_parameter in self.input_step_parameters:
                 label = input_step_parameter.workflow_step.label
                 if not label:
-                    continue
+                    label = f"{input_step_parameter.workflow_step.order_index + 1}: Unnamed parameter"
                 input_parameters[label] = {
                     "parameter_value": input_step_parameter.parameter_value,
                     "label": label,
@@ -9556,13 +9683,14 @@ class MetadataFile(Base, StorableObject, Serializable):
     def update_from_file(self, file_name):
         if not self.dataset:
             raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
-        self.dataset.object_store.update_from_file(
-            self,
-            file_name=file_name,
-            extra_dir="_metadata_files",
-            extra_dir_at_root=True,
-            alt_name=os.path.basename(self.get_file_name()),
-        )
+        if not self.dataset.purged:
+            self.dataset.object_store.update_from_file(
+                self,
+                file_name=file_name,
+                extra_dir="_metadata_files",
+                extra_dir_at_root=True,
+                alt_name=os.path.basename(self.get_file_name()),
+            )
 
     def get_file_name(self, sync_cache=True):
         # Ensure the directory structure and the metadata file object exist
@@ -10104,43 +10232,7 @@ class CustosAuthnzToken(Base, RepresentById):
     user: Mapped["User"] = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base):
-    __tablename__ = "cloudauthz"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    provider: Mapped[Optional[str]] = mapped_column(String(255))
-    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    authn_id: Mapped[Optional[int]] = mapped_column(ForeignKey("oidc_user_authnz_tokens.id"), index=True)
-    tokens: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    last_update: Mapped[Optional[datetime]]
-    last_activity: Mapped[Optional[datetime]]
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    user: Mapped[Optional["User"]] = relationship(back_populates="cloudauthz")
-    authn: Mapped[Optional["UserAuthnzToken"]] = relationship()
-
-    def __init__(self, user_id, provider, config, authn_id, description=None):
-        self.user_id = user_id
-        self.provider = provider
-        self.config = config
-        self.authn_id = authn_id
-        self.last_update = now()
-        self.last_activity = now()
-        self.description = description
-
-    def equals(self, user_id, provider, authn_id, config):
-        return (
-            self.user_id == user_id
-            and self.provider == provider
-            and self.authn_id
-            and self.authn_id == authn_id
-            and len({k: self.config[k] for k in self.config if k in config and self.config[k] == config[k]})
-            == len(self.config)
-        )
-
-
-class Page(Base, HasTags, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -10200,6 +10292,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
 
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
+        if "importable" in rval and rval["importable"] is None:
+            # pages created prior to 2011 might not have importable field
+            # probably not worth creating a migration to fix that
+            rval["importable"] = False
         rev = []
         for a in self.revisions:
             rev.append(a.id)
@@ -10251,7 +10347,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page: Mapped["Page"] = relationship(back_populates="users_shared_with")
 
 
-class Visualization(Base, HasTags, Dictifiable, RepresentById):
+class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
@@ -10864,6 +10960,197 @@ class UserPreference(Base, RepresentById):
         # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
+
+
+class UsesTemplatesAppConfig(Protocol):
+    # TODO: delete this config protocol def and uses in dev
+    pass
+
+
+class HasConfigSecrets(RepresentById):
+    secret_config_type: str
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]]
+    uuid: Mapped[Union[UUID, str]]
+    user: Mapped["User"]
+
+    def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
+        id_str = str(self.uuid)
+        user_vault_id_prefix = f"{self.secret_config_type}/{id_str}"
+        return user_vault_id_prefix
+
+    def vault_key(self, secret: str, app_config: UsesTemplatesAppConfig) -> str:
+        user_vault_id_prefix = self.vault_id_prefix(app_config)
+        key = f"{user_vault_id_prefix}/{secret}"
+        return key
+
+
+class HasConfigEnvironment(RepresentById):
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]]
+
+    @property
+    def template_environment(self) -> TemplateEnvironment:
+        definition = self.template_definition
+        if not definition:
+            return TemplateEnvironment.model_validate([])
+        environment = definition.get("environment")
+        if not environment:
+            return TemplateEnvironment.model_validate([])
+        else:
+            return TemplateEnvironment.model_validate(environment)
+
+
+T = TypeVar("T", bound=ConfigTemplate, covariant=True)
+
+
+class HasConfigTemplate(HasConfigSecrets, HasConfigEnvironment, RepresentById, Generic[T]):
+    name: Mapped[str]
+    description: Mapped[Optional[str]]
+    template_id: Mapped[str]
+    template_version: Mapped[int]
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]]
+    hidden: Mapped[bool]
+    active: Mapped[bool]
+    purged: Mapped[bool]
+
+    @property
+    def template(self) -> T:
+        raise NotImplementedError()
+
+
+class UserObjectStore(Base, HasConfigTemplate):
+    __tablename__ = "user_object_store"
+    secret_config_type = "object_store_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(Integer, index=True)
+    # Full template from object_store_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="object_stores")
+
+    @property
+    def template(self) -> ObjectStoreTemplate:
+        return ObjectStoreTemplate(**self.template_definition or {})
+
+    def object_store_configuration(
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[ObjectStoreTemplate]] = None
+    ) -> ObjectStoreConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user_details = self.user.config_template_details()
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return object_store_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to object_store_configuration")
+
+
+class UserFileSource(Base, HasConfigTemplate):
+    __tablename__ = "user_file_source"
+    secret_config_type = "file_source_config"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name: Mapped[str] = mapped_column(String(255), index=True)
+    # user specified description of the instance they've created
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    # active but doesn't appear in user selection
+    hidden: Mapped[bool] = mapped_column(default=False)
+    # set to False to deactive the source
+    active: Mapped[bool] = mapped_column(default=True)
+    # a purged file source cannot be re-activated because secrets have been purged
+    purged: Mapped[bool] = mapped_column(default=False)
+    # the template store id
+    template_id: Mapped[str] = mapped_column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    template_version: Mapped[int] = mapped_column(index=True)
+    # Full template from file_sources_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+
+    user: Mapped["User"] = relationship("User", back_populates="file_sources")
+
+    @property
+    def template(self) -> FileSourceTemplate:
+        return FileSourceTemplate(**self.template_definition or {})
+
+    def file_source_configuration(
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[List[FileSourceTemplate]] = None
+    ) -> FileSourceConfiguration:
+        if templates is None:
+            templates = [self.template]
+        user_details = self.user.config_template_details()
+        variables: CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = self.template_variables or {}
+        first_exception = None
+        for template in templates:
+            try:
+                return file_source_template_to_configuration(
+                    template,
+                    variables=variables,
+                    secrets=secrets,
+                    user_details=user_details,
+                    environment=environment,
+                )
+            except Exception as e:
+                if first_exception is None:
+                    first_exception = e
+                continue
+        if first_exception:
+            raise first_exception
+
+        raise ValueError("No template sent to file_source_configuration")
 
 
 class UserAction(Base, RepresentById):

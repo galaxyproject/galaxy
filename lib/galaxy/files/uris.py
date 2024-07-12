@@ -6,12 +6,14 @@ import tempfile
 from typing import (
     List,
     Optional,
+    Tuple,
 )
 from urllib.parse import urlparse
 
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
 )
 from galaxy.files import (
     ConfiguredFileSources,
@@ -77,6 +79,18 @@ def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: List[IpAllowedLi
         raise AdminRequiredException()
 
 
+def split_port(parsed_url: str, url: str) -> Tuple[str, int]:
+    try:
+        idx = parsed_url.rindex(":")
+        # We parse as an int and let this fail ungracefully if parsing
+        # fails because we desire to fail closed rather than open.
+        port = int(parsed_url[idx + 1 :])
+        parsed_url = parsed_url[:idx]
+        return (parsed_url, port)
+    except Exception:
+        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
+
+
 def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str:
     # If it doesn't look like a URL, ignore it.
     if not (uri.lstrip().startswith("http://") or uri.lstrip().startswith("https://")):
@@ -105,27 +119,23 @@ def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str
             # However if it ends with a ']' then there is no port after it and
             # they've wrapped it in brackets just for fun.
             if "]" in parsed_url and not parsed_url.endswith("]"):
-                # If this +1 throws a range error, we don't care, their url
-                # shouldn't end with a colon.
-                idx = parsed_url.rindex(":")
-                # We parse as an int and let this fail ungracefully if parsing
-                # fails because we desire to fail closed rather than open.
-                port = int(parsed_url[idx + 1 :])
-                parsed_url = parsed_url[:idx]
+                parsed_url, port = split_port(parsed_url=parsed_url, url=url)
             else:
                 # Plain ipv6 without port
                 pass
         else:
             # This should finally be ipv4 with port. It cannot be IPv6 as that
             # was caught by earlier cases, and it cannot be due to credentials.
-            idx = parsed_url.rindex(":")
-            port = int(parsed_url[idx + 1 :])
-            parsed_url = parsed_url[:idx]
+            parsed_url, port = split_port(parsed_url=parsed_url, url=url)
 
     # safe to log out, no credentials/request path, just an IP + port
     log.debug("parsed url %s, port:  %s", parsed_url, port)
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
-    addrinfo = socket.getaddrinfo(parsed_url, port)
+    try:
+        addrinfo = socket.getaddrinfo(parsed_url, port)
+    except socket.gaierror as e:
+        log.debug("Could not resolve url '%': %'", url, e)
+        raise RequestParameterInvalidException(f"Could not verify url '{url}'.")
     # Get the IP addresses that this entry resolves to (uniquely)
     # We drop:
     #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,

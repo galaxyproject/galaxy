@@ -1,5 +1,4 @@
 import { getGalaxyInstance } from "app";
-import ActiveInvocations from "components/admin/ActiveInvocations";
 import DataManager from "components/admin/DataManager/DataManager";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
 import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
@@ -23,6 +22,7 @@ import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
 import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
 import adminRolesGridConfig from "components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
+import GridInvocation from "components/Grid/GridInvocation";
 import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
@@ -48,7 +48,18 @@ export default [
             { path: "data_types", component: DataTypes },
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
-            { path: "invocations", component: ActiveInvocations },
+            {
+                path: "invocations",
+                component: GridInvocation,
+                props: () => {
+                    return {
+                        headerMessage:
+                            "Workflow invocations that are still being scheduled are displayed on this page.",
+                        noInvocationsMessage: "There are no scheduling workflow invocations to show currently.",
+                        ownerGrid: false,
+                    };
+                },
+            },
             { path: "jobs", component: JobsList },
             { path: "reset_metadata", component: ResetMetadata },
             { path: "sanitize_allow", component: SanitizeAllow },

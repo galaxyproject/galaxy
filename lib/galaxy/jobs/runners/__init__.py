@@ -169,7 +169,7 @@ class BaseJobRunner:
                 try:
                     action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                     action_timer = self.app.execution_timer_factory.get_timer(
-                        f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
+                        f"internals.{action_str}", f"job runner action {action_str} for job ${{job_id}} executed"
                     )
                     method(arg)
                     log.trace(action_timer.to_str(job_id=job_id))
@@ -380,6 +380,13 @@ class BaseJobRunner:
         job_tool = job_wrapper.tool
         for joda, dataset in self._walk_dataset_outputs(job):
             if joda and job_tool:
+                if dataset.dataset.purged:
+                    log.info(
+                        "Output dataset %s for job %s purged before job completed, skipping output collection.",
+                        joda.name,
+                        job.id,
+                    )
+                    continue
                 hda_tool_output = job_tool.find_output_def(joda.name)
                 if hda_tool_output and hda_tool_output.from_work_dir:
                     # Copy from working dir to HDA.
@@ -618,10 +625,23 @@ class BaseJobRunner:
 
             tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            with open(tool_stdout_path, "rb") as stdout_file:
-                tool_stdout = self._job_io_for_db(stdout_file)
-            with open(tool_stderr_path, "rb") as stderr_file:
-                tool_stderr = self._job_io_for_db(stderr_file)
+            try:
+                with open(tool_stdout_path, "rb") as stdout_file:
+                    tool_stdout = self._job_io_for_db(stdout_file)
+                with open(tool_stderr_path, "rb") as stderr_file:
+                    tool_stderr = self._job_io_for_db(stderr_file)
+            except FileNotFoundError:
+                if job.state in (model.Job.states.DELETING, model.Job.states.DELETED):
+                    # We killed the job, so we may not even have the tool stdout / tool stderr
+                    tool_stdout = ""
+                    tool_stderr = "Job cancelled"
+                else:
+                    # Should we instead just move on ?
+                    # In the end the only consequence here is that we won't be able to determine
+                    # if the job failed for known tool reasons (check_tool_output).
+                    # OTOH I don't know if this can even be reached
+                    # Deal with it if we ever get reports about this.
+                    raise
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -678,13 +698,18 @@ class JobState:
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
         self.runner_state = None
-        self.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_wrapper.get_id_tag())
-
         self.redact_email_in_job_name = True
+        self._exit_code_file = None
         if self.job_wrapper:
             self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ["job_file", "output_file", "error_file", "exit_code_file"]
+
+    @property
+    def exit_code_file(self) -> str:
+        return self._exit_code_file or default_exit_code_file(
+            self.job_wrapper.working_directory, self.job_wrapper.get_id_tag()
+        )
 
     def set_defaults(self, files_dir):
         if self.job_wrapper is not None:
@@ -753,7 +778,7 @@ class AsynchronousJobState(JobState):
         self.output_file = output_file
         self.error_file = error_file
         if exit_code_file:
-            self.exit_code_file = exit_code_file
+            self._exit_code_file = exit_code_file
         self.job_name = job_name
 
         self.set_defaults(files_dir)

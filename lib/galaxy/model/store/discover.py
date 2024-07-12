@@ -38,6 +38,10 @@ from galaxy.util import (
 from galaxy.util.hash_util import HASH_NAME_MAP
 
 if TYPE_CHECKING:
+    from galaxy.job_execution.output_collect import (
+        DatasetCollector,
+        ToolMetadataDatasetCollector,
+    )
     from galaxy.model.store import ModelExportStore
 
 log = logging.getLogger(__name__)
@@ -50,7 +54,7 @@ class MaxDiscoveredFilesExceededError(ValueError):
     pass
 
 
-CollectorT = Any  # TODO: setup an interface for these file collectors data classes.
+CollectorT = Union["DatasetCollector", "ToolMetadataDatasetCollector"]
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -91,6 +95,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         creating_job_id=None,
         output_name=None,
         storage_callbacks=None,
+        purged=False,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -190,7 +195,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if info is not None:
             primary_data.info = info
-        if filename:
+
+        if purged:
+            primary_data.dataset.purged = True
+            primary_data.purged = True
+        if filename and not purged:
             if storage_callbacks is None:
                 self.finalize_storage(
                     primary_data=primary_data,
@@ -214,6 +223,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         return primary_data
 
     def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
+        if primary_data.dataset.purged:
+            # metadata won't be set, maybe we should do that, then purge ?
+            primary_data.dataset.file_size = 0
+            primary_data.dataset.total_size = 0
+            return
         # Move data from temp location to dataset location
         if not link_data:
             dataset = primary_data.dataset
@@ -1048,19 +1062,21 @@ class JsonCollectedDatasetMatch:
         return self.as_dict.get("name")
 
     @property
-    def dbkey(self):
-        return self.as_dict.get("dbkey", getattr(self.collector, "default_dbkey", "?"))
+    def dbkey(self) -> str:
+        return self.as_dict.get("dbkey", self.collector and self.collector.default_dbkey or "?")
 
     @property
-    def ext(self):
-        return self.as_dict.get("ext", getattr(self.collector, "default_ext", "data"))
+    def ext(self) -> str:
+        return self.as_dict.get("ext", self.collector and self.collector.default_ext or "data")
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         try:
             return self.as_dict["visible"].lower() == "visible"
         except KeyError:
-            return getattr(self.collector, "default_visible", True)
+            if self.collector and self.collector.default_visible is not None:
+                return self.collector.default_visible
+            return True
 
     @property
     def link_data(self):

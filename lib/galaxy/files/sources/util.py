@@ -7,17 +7,18 @@ from typing import (
     Union,
 )
 
-import requests
-
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
-    FileSourceDictifiable,
+    FileSourcesUserContext,
 )
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.util.config_parsers import IpAllowedListEntryT
 
 TargetPathT = Union[str, PathLike]
@@ -79,7 +80,7 @@ def _get_access_info(obj_url: str, access_method: dict, headers=None) -> Tuple[s
 def fetch_drs_to_file(
     drs_uri: str,
     target_path: TargetPathT,
-    user_context: FileSourceDictifiable,
+    user_context: Optional[FileSourcesUserContext],
     force_http=False,
     retry_options: Optional[RetryOptions] = None,
     headers: Optional[dict] = None,

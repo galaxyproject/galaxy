@@ -39,6 +39,7 @@ from galaxy.datatypes.util.gff_util import (
     GFFReaderWrapper,
     parse_gff_attributes,
 )
+from galaxy.exceptions import MessageException
 from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
@@ -48,7 +49,7 @@ from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and
 #
 
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
-# Can be be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
+# Can be removed once https://github.com/pysam-developers/pysam/issues/939 is resolved.
 pysam.set_verbosity(0)
 
 PAYLOAD_LIST_TYPE = List[Optional[Union[str, int, float, List[Tuple[int, int]]]]]
@@ -106,43 +107,53 @@ class FeatureLocationIndexDataProvider(BaseDataProvider):
         self.converted_dataset = converted_dataset
 
     def get_data(self, query):
+        if self.converted_dataset is None or not self.converted_dataset.is_ok:
+            raise MessageException("The dataset is not available or is in an error state.")
         # Init.
-        textloc_file = open(self.converted_dataset.get_file_name())
-        line_len = int(textloc_file.readline())
-        file_len = os.path.getsize(self.converted_dataset.get_file_name())
-        query = query.lower()
+        result = []
+        with open(self.converted_dataset.get_file_name()) as textloc_file:
+            line = textloc_file.readline()
+            if not line:
+                raise MessageException("The dataset is empty.")
+            try:
+                line_len = int(line)
+            except ValueError:
+                raise MessageException(f"Expected an integer at first line, but found: '{line}'")
+            if line_len < 1:
+                raise MessageException(f"The first line must be a positive integer, but found: {line_len}")
 
-        # Find query in file using binary search.
-        low = 0
-        high = int(file_len / line_len)
-        while low < high:
-            mid: int = (low + high) // 2
-            position = mid * line_len
+            file_len = os.path.getsize(self.converted_dataset.get_file_name())
+            query = query.lower()
+
+            # Find query in file using binary search.
+            low = 0
+            high = int(file_len / line_len)
+            while low < high:
+                mid: int = (low + high) // 2
+                position = mid * line_len
+                textloc_file.seek(position)
+
+                # Compare line with query and update low, high.
+                line = textloc_file.readline()
+                if line < query:
+                    low = mid + 1
+                else:
+                    high = mid
+
+            # Need to move back one line because last line read may be included in
+            # results.
+            position = low * line_len
             textloc_file.seek(position)
 
-            # Compare line with query and update low, high.
-            line = textloc_file.readline()
-            if line < query:
-                low = mid + 1
-            else:
-                high = mid
+            # At right point in file, generate hits.
+            while True:
+                line = textloc_file.readline()
+                if not line.startswith(query):
+                    break
+                if line[-1:] == "\n":
+                    line = line[:-1]
+                result.append(line.split()[1:])
 
-        # Need to move back one line because last line read may be included in
-        # results.
-        position = low * line_len
-        textloc_file.seek(position)
-
-        # At right point in file, generate hits.
-        result = []
-        while True:
-            line = textloc_file.readline()
-            if not line.startswith(query):
-                break
-            if line[-1:] == "\n":
-                line = line[:-1]
-            result.append(line.split()[1:])
-
-        textloc_file.close()
         return result
 
 

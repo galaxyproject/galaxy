@@ -27,3 +27,44 @@ export function getAllValues(headOptions: Array<Option>): string[] {
     }
     return values;
 }
+
+/**
+ * Returns all types of "decendants" (child, grandchild, and so forth) in nested array (or null).
+ * @param objects Array of Option objects with all keys intact
+ * @returns values: string[]
+ */
+export function findDescendants(objects: Array<Option>, search: string): any[] | null {
+    const stack: Array<Option> = [...objects];
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (current === undefined) {
+            return null;
+        } else {
+            if (current.value === search) {
+                return current.options;
+            }
+            if (current.options && Array.isArray(current.options)) {
+                stack.push(...current.options);
+            }
+        }
+    }
+
+    return null;
+}
+
+export function flattenValues(objects: any): string[] {
+    const newArray = [];
+    const stack = [...objects];
+
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (current.value) {
+            newArray.push(current.value);
+        }
+        if (current.options && Array.isArray(current.options)) {
+            stack.push(...current.options);
+        }
+    }
+
+    return newArray;
+}

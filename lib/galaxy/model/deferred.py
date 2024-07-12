@@ -61,9 +61,9 @@ class SimpleTransientPathMapper(TransientPathMapper):
         self._staging_directory = staging_directory
 
     def transient_paths_for(self, old_dataset: Dataset) -> TransientDatasetPaths:
-        external_filename_basename = "dataset_%s.dat" % str(old_dataset.uuid)
+        external_filename_basename = f"dataset_{old_dataset.uuid}.dat"
         external_filename = os.path.join(self._staging_directory, external_filename_basename)
-        external_extras_basename = "dataset_%s_files" % str(old_dataset.uuid)
+        external_extras_basename = f"dataset_{old_dataset.uuid}_files"
         external_extras = os.path.join(self._staging_directory, external_extras_basename)
         return TransientDatasetPaths(external_filename, external_extras, self._staging_directory)
 
@@ -169,7 +169,7 @@ class DatasetInstanceMaterializer:
             if transient_paths:
                 metadata_tmp_files_dir = transient_paths.metadata_files_dir
             else:
-                # If metadata_tmp_files_dir is set we generate a MetdataTempFile,
+                # If metadata_tmp_files_dir is set we generate a MetadataTempFile,
                 # which we don't want when we're generating an attached materialized dataset instance
                 metadata_tmp_files_dir = None
             materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)

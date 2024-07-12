@@ -150,11 +150,13 @@ class ToolShedInstallationClient(metaclass=abc.ABCMeta):
     ) -> Dict[str, Any]:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def tool_data_path(self) -> str:
         """"""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def shed_tool_data_table_conf(self) -> str:
         """"""
 
@@ -2048,9 +2050,7 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _assert_repo_has_tool_with_id(
         self, installed_repository: galaxy_model.ToolShedRepository, tool_id: str
     ) -> None:
-        assert "tools" in installed_repository.metadata_, (
-            "No valid tools were defined in %s." % installed_repository.name
-        )
+        assert "tools" in installed_repository.metadata_, f"No valid tools were defined in {installed_repository.name}."
         tools = installed_repository.metadata_["tools"]
         found_it = False
         for tool in tools:  # type:ignore[attr-defined]
@@ -2064,9 +2064,9 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _assert_repo_has_invalid_tool_in_file(
         self, installed_repository: galaxy_model.ToolShedRepository, name: str
     ) -> None:
-        assert "invalid_tools" in installed_repository.metadata_, (
-            "No invalid tools were defined in %s." % installed_repository.name
-        )
+        assert (
+            "invalid_tools" in installed_repository.metadata_
+        ), f"No invalid tools were defined in {installed_repository.name}."
         invalid_tools = installed_repository.metadata_["invalid_tools"]
         found_it = name in invalid_tools
         assert found_it, f"Did not find invalid tool file {name} in {invalid_tools}"

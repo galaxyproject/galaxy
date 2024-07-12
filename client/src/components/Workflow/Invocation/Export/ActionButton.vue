@@ -1,14 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref } from "vue";
 
 import { InvocationExportPluginAction } from "./model";
 
-const modal = ref(null);
+const modal = ref();
 
-const props = defineProps({
-    action: { type: InvocationExportPluginAction, required: true },
-});
+interface Props {
+    action: InvocationExportPluginAction;
+}
+
+const props = defineProps<Props>();
 </script>
 
 <template>

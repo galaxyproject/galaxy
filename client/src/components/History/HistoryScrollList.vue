@@ -148,6 +148,10 @@ const filtered = computed<HistorySummary[]>(() => {
             return -1;
         } else if (!isMultiviewPanel.value && b.id == currentHistoryId.value) {
             return 1;
+        } else if (isMultiviewPanel.value && isPinned(a.id) && !isPinned(b.id)) {
+            return -1;
+        } else if (isMultiviewPanel.value && !isPinned(a.id) && isPinned(b.id)) {
+            return 1;
         } else if (a.update_time < b.update_time) {
             return 1;
         } else {
@@ -161,16 +165,20 @@ const isMultiviewPanel = computed(() => !props.inModal && props.multiple);
 
 function isActiveItem(history: HistorySummary) {
     if (isMultiviewPanel.value) {
-        return pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id);
+        return isPinned(history.id);
     } else {
         return props.selectedHistories.some((item: PinnedHistory) => item.id == history.id);
     }
 }
 
+function isPinned(historyId: string) {
+    return pinnedHistories.value.some((item: PinnedHistory) => item.id == historyId);
+}
+
 function historyClicked(history: HistorySummary) {
     emit("selectHistory", history);
     if (isMultiviewPanel.value) {
-        if (pinnedHistories.value.some((item: PinnedHistory) => item.id == history.id)) {
+        if (isPinned(history.id)) {
             historyStore.unpinHistories([history.id]);
         } else {
             openInMulti(history);
@@ -220,14 +228,14 @@ async function loadMore(noScroll = false) {
 <template>
     <div :class="isMultiviewPanel ? 'unified-panel' : 'flex-column-overflow'">
         <div class="unified-panel-controls">
-            <BBadge v-if="props.filter && !validFilter" class="alert-danger w-100 mb-2">
-                Search string too short!
+            <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
+                Search term is too short
             </BBadge>
             <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </div>
 
         <div
-            class="history-list-container"
+            class="scroll-list-container"
             :class="{
                 'in-panel': isMultiviewPanel,
                 'scrolled-top': scrolledTop,
@@ -237,7 +245,7 @@ async function loadMore(noScroll = false) {
                 v-show="!showAdvanced"
                 ref="scrollableDiv"
                 :class="{
-                    'history-scroll-list': !hasNoResults,
+                    'scroll-list': !hasNoResults,
                     'in-panel': isMultiviewPanel,
                     'in-modal': props.inModal,
                     toolMenuContainer: isMultiviewPanel,
@@ -263,18 +271,14 @@ async function loadMore(noScroll = false) {
                                         <i v-if="history.id === currentHistoryId">(Current)</i>
                                     </Heading>
                                     <i
-                                        v-if="props.multiple && pinnedHistories.some((h) => h.id === history.id)"
-                                        v-b-tooltip.noninteractive.hover
+                                        v-if="props.multiple && isPinned(history.id)"
                                         title="This history is currently pinned in the multi-history view">
                                         (currently pinned)
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Amount of items in history')">
+                                    <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
                                     </BBadge>
                                     <BBadge
@@ -377,111 +381,3 @@ async function loadMore(noScroll = false) {
         </div>
     </div>
 </template>
-
-<style lang="scss" scoped>
-@import "theme/blue.scss";
-
-.flex-column-overflow {
-    display: flex;
-    flex-direction: column;
-    overflow: auto;
-}
-
-.history-list-container {
-    position: relative;
-
-    &.in-panel {
-        flex-grow: 1;
-    }
-
-    &:not(&.in-panel) {
-        @extend .flex-column-overflow;
-    }
-
-    &:before,
-    &:after {
-        position: absolute;
-        content: "";
-        pointer-events: none;
-        z-index: 10;
-        height: 30px;
-        width: 100%;
-        opacity: 0;
-
-        background-repeat: no-repeat;
-        transition: opacity 0.4s;
-    }
-
-    &:before {
-        top: 0;
-        background-image: linear-gradient(to bottom, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
-    }
-
-    &:not(.scrolled-top) {
-        &:before {
-            opacity: 1;
-        }
-    }
-
-    &:after {
-        bottom: 0;
-        background-image: linear-gradient(to top, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
-    }
-
-    &:not(.scrolled-bottom) {
-        &:after {
-            opacity: 1;
-        }
-    }
-}
-
-.history-scroll-list {
-    overflow-x: hidden;
-    overflow-y: scroll;
-    scroll-behavior: smooth;
-
-    &.in-panel {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-    }
-
-    .list-group {
-        .list-group-item {
-            display: flex;
-            border-radius: 0;
-
-            &.current {
-                border-left: 0.25rem solid $brand-primary;
-            }
-
-            &.panel-item {
-                justify-content: space-between;
-                align-items: center;
-                &:not(&.active) {
-                    background: $panel-bg-color;
-                }
-            }
-
-            &:not(&.panel-item) {
-                &:first-child {
-                    border-top-left-radius: inherit;
-                    border-top-right-radius: inherit;
-                }
-
-                &:last-child {
-                    border-bottom-left-radius: inherit;
-                    border-bottom-right-radius: inherit;
-                }
-            }
-        }
-    }
-    .list-end {
-        width: 100%;
-        text-align: center;
-        color: $text-light;
-    }
-}
-</style>

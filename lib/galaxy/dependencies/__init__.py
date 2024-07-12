@@ -234,6 +234,9 @@ class ConditionalDependencies:
     def check_azure_storage(self):
         return "azure_blob" in self.object_stores
 
+    def check_boto3(self):
+        return "boto3" in self.object_stores
+
     def check_kamaki(self):
         return "pithos" in self.object_stores
 
@@ -261,6 +264,9 @@ class ConditionalDependencies:
 
     def check_google_cloud_storage(self):
         return "googlecloudstorage" in self.file_sources
+
+    def check_onedatafilerestclient(self):
+        return "onedata" in self.object_stores
 
     def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
@@ -298,7 +304,7 @@ class ConditionalDependencies:
         return self.pkce_support
 
     def check_rucio_clients(self):
-        return sys.version_info >= (3, 9)
+        return "rucio" in self.object_stores and sys.version_info >= (3, 9)
 
 
 def optional(config_file=None):

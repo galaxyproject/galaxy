@@ -99,6 +99,10 @@ button {
     overflow: auto;
 }
 
+.modal-title {
+    word-break: break-all;
+}
+
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {
@@ -220,7 +224,7 @@ table thead.thead-dark tr th[role="columnheader"] {
 
 // show sticky elements behind dropdown-menus
 .sticky-top {
-    z-index: 800;
+    z-index: 100;
 }
 
 // remove margin for labels with for attribute

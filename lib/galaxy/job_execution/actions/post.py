@@ -8,11 +8,7 @@ import datetime
 from markupsafe import escape
 
 from galaxy.model import PostJobActionAssociation
-from galaxy.model.base import transaction
-from galaxy.util import (
-    send_mail,
-    unicodify,
-)
+from galaxy.util import send_mail
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -70,8 +66,8 @@ class EmailAction(DefaultJobAction):
             if link_invocation:
                 body += f"\n\nWorkflow Invocation Report:\n{link_invocation}"
             send_mail(app.config.email_from, to, subject, body, app.config)
-        except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
+        except Exception:
+            log.exception("EmailAction PJA Failed")
 
     @classmethod
     def get_short_str(cls, pja):
@@ -231,11 +227,11 @@ class RenameDatasetAction(DefaultJobAction):
                     elif operation == "lower":
                         replacement = replacement.lower()
 
-                new_name = new_name.replace("#{%s}" % to_be_replaced, replacement)
+                new_name = new_name.replace(f"#{{{to_be_replaced}}}", replacement)
 
             if replacement_dict:
                 for k, v in replacement_dict.items():
-                    new_name = new_name.replace("${%s}" % k, v)
+                    new_name = new_name.replace(f"${{{k}}}", v)
 
         return new_name
 
@@ -373,8 +369,6 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
-        with transaction(sa_session):
-            sa_session.commit()
         if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return

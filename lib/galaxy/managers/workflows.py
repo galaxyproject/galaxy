@@ -919,6 +919,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
             wf_dict["version"] = version
+            # If returning a run-form workflow for a specific version, use that version's name
+            if style == "run":
+                wf_dict["name"] = workflow.name
         else:
             wf_dict["version"] = len(stored.workflows) - 1
         return wf_dict
@@ -1046,6 +1049,7 @@ class WorkflowContentsManager(UsesAnnotations):
             "id": trans.app.security.encode_id(stored.id),
             "history_id": trans.app.security.encode_id(history.id) if history else None,
             "name": stored.name,
+            "owner": stored.user.username,
             "steps": step_models,
             "step_version_changes": step_version_changes,
             "has_upgrade_messages": has_upgrade_messages,
@@ -1412,7 +1416,7 @@ class WorkflowContentsManager(UsesAnnotations):
         If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
         """
         annotation_str = ""
-        tag_str = ""
+        tags_list = []
         annotation_owner = None
         if stored is not None:
             if stored.id:
@@ -1423,7 +1427,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     or self.get_item_annotation_str(trans.sa_session, annotation_owner, stored)
                     or ""
                 )
-                tag_str = stored.make_tag_string_list()
+                tags_list = stored.make_tag_string_list()
             else:
                 # dry run with flushed workflow objects, just use the annotation
                 annotations = stored.annotations
@@ -1436,7 +1440,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["format-version"] = "0.1"
         data["name"] = workflow.name
         data["annotation"] = annotation_str
-        data["tags"] = tag_str
+        data["tags"] = tags_list
         if workflow.uuid is not None:
             data["uuid"] = str(workflow.uuid)
         steps: Dict[int, Dict[str, Any]] = {}
@@ -1852,10 +1856,14 @@ class WorkflowContentsManager(UsesAnnotations):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
-            raise Exception("Subworkflow step defines both subworkflow and content_id, only one may be specified.")
+            raise exceptions.RequestParameterInvalidException(
+                "Subworkflow step defines both subworkflow and content_id, only one may be specified."
+            )
 
         if not embedded_subworkflow and not subworkflow_id:
-            raise Exception("Subworkflow step must define either subworkflow or content_id.")
+            raise exceptions.RequestParameterInvalidException(
+                "Subworkflow step must define either subworkflow or content_id."
+            )
 
         if embedded_subworkflow:
             assert not dry_run
