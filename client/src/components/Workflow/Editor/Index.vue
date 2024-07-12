@@ -74,7 +74,8 @@
                 @onCreate="onInsertTool"
                 @onChange="onChange"
                 @onRemove="onRemove"
-                @onUpdateStepPosition="onUpdateStepPosition">
+                @onUpdateStepPosition="onUpdateStepPosition"
+                @onViewChanges="() => (showInPanel = 'changes')">
             </WorkflowGraph>
         </div>
         <FlexPanel side="right">
@@ -85,6 +86,7 @@
                             :is-new-temp-workflow="isNewTempWorkflow"
                             :has-changes="hasChanges"
                             :has-invalid-connections="hasInvalidConnections"
+                            :current-active-panel="showInPanel"
                             @onSave="onSave"
                             @onCreate="onCreate"
                             @onSaveAs="onSaveAs"
@@ -95,13 +97,15 @@
                             @onEdit="onEdit"
                             @onAttributes="showAttributes"
                             @onLint="onLint"
-                            @onUpgrade="onUpgrade" />
+                            @onUpgrade="onUpgrade"
+                            @onViewChanges="toggleShowChanges" />
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                     <div v-if="!initialLoading">
+                        <UndoRedoStack v-if="showInPanel === 'changes'" :store-id="id" />
                         <FormTool
-                            v-if="hasActiveNodeTool"
+                            v-else-if="hasActiveNodeTool"
                             :key="activeStep.id"
                             :step="activeStep"
                             :datatypes="datatypes"
@@ -121,7 +125,7 @@
                             @onSetData="onSetData"
                             @onUpdateStep="updateStep" />
                         <WorkflowAttributes
-                            v-else-if="attributesVisible"
+                            v-else-if="showInPanel === 'attributes'"
                             :id="id"
                             :tags="tags"
                             :parameters="parameters"
@@ -138,7 +142,7 @@
                             @update:nameCurrent="setName"
                             @update:annotationCurrent="setAnnotation" />
                         <WorkflowLint
-                            v-else-if="showLint"
+                            v-else-if="showInPanel === 'lint'"
                             :untyped-parameters="parameters"
                             :annotation="annotation"
                             :creator="creator"
@@ -217,6 +221,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
@@ -238,6 +243,7 @@ export default {
         MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
+        UndoRedoStack,
     },
     props: {
         workflowId: {
@@ -291,6 +297,16 @@ export default {
         }
 
         const showInPanel = ref("attributes");
+
+        function toggleShowChanges() {
+            if (showInPanel.value !== "changes") {
+                ensureParametersSet();
+                stateStore.activeNodeId = null;
+                showInPanel.value = "changes";
+            } else {
+                showAttributes();
+            }
+        }
 
         function showAttributes() {
             ensureParametersSet();
@@ -441,6 +457,7 @@ export default {
             parameters,
             ensureParametersSet,
             showInPanel,
+            toggleShowChanges,
             showAttributes,
             setName,
             report,
@@ -498,12 +515,6 @@ export default {
         };
     },
     computed: {
-        attributesVisible() {
-            return this.showInPanel == "attributes";
-        },
-        showLint() {
-            return this.showInPanel == "lint";
-        },
         activeNodeType() {
             return this.activeStep?.type;
         },
@@ -705,10 +716,6 @@ export default {
                     newSteps.map((step) => this.stepStore.updateStep(step));
                 });
             });
-        },
-        onWorkflowTextEditor() {
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);

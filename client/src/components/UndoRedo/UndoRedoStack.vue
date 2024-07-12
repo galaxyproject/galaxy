@@ -27,6 +27,10 @@ watch(
 
             <span> current state </span>
 
+            <button v-if="currentStore.pendingLazyAction" @click="currentStore.undo">
+                {{ currentStore.pendingLazyAction.name }}
+            </button>
+
             <button
                 v-for="action in [...currentStore.undoActionStack].reverse()"
                 :key="action.id"
@@ -44,6 +48,7 @@ watch(
     .scroll-list {
         display: flex;
         flex-direction: column;
+        overflow-y: auto;
     }
 }
 </style>

@@ -151,6 +151,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     });
 
     function rollBackTo(action: UndoRedoAction) {
+        flushLazyAction();
         const undoSet = new Set(undoActionStack.value);
 
         if (!undoSet.has(action)) {
@@ -163,6 +164,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     }
 
     function rollForwardTo(action: UndoRedoAction) {
+        flushLazyAction();
         const redoSet = new Set(redoActionStack.value);
 
         if (!redoSet.has(action)) {
