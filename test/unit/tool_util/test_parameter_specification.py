@@ -60,23 +60,21 @@ def _test_file(file: str, specification=None):
     spec = specification or specification_object()
     combos = spec[file]
     tool_parameter_model = tool_parameter(file)
+
+    assertion_functions = {
+        "request_valid": _assert_requests_validate,
+        "request_invalid": _assert_requests_invalid,
+        "request_internal_valid": _assert_internal_requests_validate,
+        "request_internal_invalid": _assert_internal_requests_invalid,
+        "job_internal_valid": _assert_internal_jobs_validate,
+        "job_internal_invalid": _assert_internal_jobs_invalid,
+        "test_case_valid": _assert_test_cases_validate,
+        "test_case_invalid": _assert_test_cases_invalid,
+    }
+
     for valid_or_invalid, tests in combos.items():
-        if valid_or_invalid == "request_valid":
-            _assert_requests_validate(tool_parameter_model, tests)
-        elif valid_or_invalid == "request_invalid":
-            _assert_requests_invalid(tool_parameter_model, tests)
-        elif valid_or_invalid == "request_internal_valid":
-            _assert_internal_requests_validate(tool_parameter_model, tests)
-        elif valid_or_invalid == "request_internal_invalid":
-            _assert_internal_requests_invalid(tool_parameter_model, tests)
-        elif valid_or_invalid == "job_internal_valid":
-            _assert_internal_jobs_validate(tool_parameter_model, tests)
-        elif valid_or_invalid == "job_internal_invalid":
-            _assert_internal_jobs_invalid(tool_parameter_model, tests)
-        elif valid_or_invalid == "test_case_valid":
-            _assert_test_cases_validate(tool_parameter_model, tests)
-        elif valid_or_invalid == "test_case_invalid":
-            _assert_test_cases_invalid(tool_parameter_model, tests)
+        assertion_function = assertion_functions[valid_or_invalid]
+        assertion_function(tool_parameter_model, tests)
 
     # Assume request validation will work here.
     if "request_internal_valid" not in combos and "request_valid" in combos:
