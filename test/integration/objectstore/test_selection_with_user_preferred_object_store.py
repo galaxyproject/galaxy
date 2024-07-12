@@ -420,9 +420,9 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _run_nested_workflow_with_effective_output_get_output_storage_info_dicts(
         self, history_id: str, extra_invocation_kwds: Optional[Dict[str, Any]] = None, twice_nested=False
     ):
-        worklfow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
+        workflow_data = WORKFLOW_NESTED_OUTPUT if not twice_nested else WORKFLOW_NESTED_TWICE_OUTPUT
         wf_run = self.workflow_populator.run_workflow(
-            worklfow_data,
+            workflow_data,
             test_data=TEST_NESTED_WORKFLOW_TEST_DATA,
             history_id=history_id,
             extra_invocation_kwds=extra_invocation_kwds,

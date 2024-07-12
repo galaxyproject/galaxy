@@ -207,7 +207,7 @@ steps:
     -   output_name: "out_file1"
 """
 
-COLLECTION_TYPE_WORKLFOW_YAML = """
+COLLECTION_TYPE_WORKFLOW_YAML = """
 steps:
   - type: "data_collection_input"
     label: "input1"
@@ -234,7 +234,7 @@ def test_subworkflow_new_inputs():
 
 
 def test_subworkflow_new_inputs_collection_type():
-    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKLFOW_YAML)
+    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKFLOW_YAML)
     inputs = subworkflow_module.get_data_inputs()
     assert inputs[0]["collection_type"] == "list:list"
 
