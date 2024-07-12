@@ -19802,13 +19802,13 @@ export interface operations {
             };
         };
     };
+    /**
+     * Returns STDOUT and STDERR from the tool running in a specific job.
+     * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+     * of where to start reading stdout/stderr. The length parameters control how much
+     * stdout/stderr is read.
+     */
     get_console_output_api_jobs__job_id__console_output_get: {
-        /**
-         * Returns STDOUT and STDERR from the tool running in a specific job.
-         * @description Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
-         * of where to start reading stdout/stderr. The length parameters control how much
-         * stdout/stderr is read.
-         */
         parameters: {
             query: {
                 stdout_position: number;
@@ -19816,8 +19816,8 @@ export interface operations {
                 stderr_position: number;
                 stderr_length: number;
             };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
             path: {
