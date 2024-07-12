@@ -17,12 +17,10 @@ from typing import (
     Optional,
 )
 
-from galaxy.util import requests
-
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-
 from galaxy.tool_shed.util.hg_util import clone_repository
+from galaxy.util import requests
 from tool_shed.test.base.api import ensure_user_with_email
 from tool_shed.test.base.api_util import (
     create_user,
