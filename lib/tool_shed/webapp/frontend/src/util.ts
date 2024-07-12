@@ -1,7 +1,6 @@
 import { copyToClipboard, Notify, Cookies } from "quasar"
 import type { QNotifyCreateOptions } from "quasar"
 import { type LocationQueryValue } from "vue-router"
-import { ApiError } from "openapi-typescript-fetch"
 
 export function getCookie(name: string): string | null {
     return Cookies.get(name)
@@ -32,11 +31,10 @@ export async function copyAndNotify(value: string, notification: string) {
 }
 
 export function errorMessage(e: Error): string {
-    if (e instanceof ApiError) {
-        return e.data.err_msg
-    } else {
-        return JSON.stringify(e)
+    if (e.cause) {
+        return `${e.message}: ${e.cause}`
     }
+    return e.message
 }
 
 export function queryParamToString(param: LocationQueryValue | LocationQueryValue[]): string | null {

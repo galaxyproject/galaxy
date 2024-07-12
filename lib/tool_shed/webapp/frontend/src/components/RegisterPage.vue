@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
-import { fetcher } from "@/schema"
+import { client } from "@/schema"
 import { notify } from "@/util"
 import router from "@/router"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
@@ -12,19 +12,23 @@ const confirm = ref("")
 const username = ref("")
 
 const title = ref("Register")
-const createFetcher = fetcher.path("/api_internal/register").method("post").create()
 // type Response = components["schemas"]["UiRegisterResponse"]
 
 async function onRegister() {
     // TODO: handle confirm and implement bear_field.
     // let data: Response
     try {
-        const { data } = await createFetcher({
-            email: email.value,
-            password: password.value,
-            username: username.value,
-            bear_field: "",
+        const { data } = await client.POST("/api_internal/register", {
+            body: {
+                email: email.value,
+                password: password.value,
+                username: username.value,
+                bear_field: "",
+            },
         })
+        if (!data) {
+            throw new Error("No data returned")
+        }
         const query = {
             activation_error: data.activation_error ? "true" : "false",
             activation_sent: data.activation_sent ? "true" : "false",

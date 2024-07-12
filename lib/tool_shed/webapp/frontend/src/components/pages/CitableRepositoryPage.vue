@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import RepositoryPage from "./RepositoryPage.vue"
-import { fetcher } from "@/schema"
+import { client } from "@/schema"
 import type { Repository } from "@/schema/types"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
-
-const indexFetcher = fetcher.path("/api/repositories").method("get").create()
 
 interface CitableRepositoryPageProps {
     username: string
@@ -18,7 +16,14 @@ const error = ref<string | null>(null)
 
 async function update() {
     error.value = null
-    const { data } = await indexFetcher({ owner: props.username, name: props.repositoryName })
+    const { data } = await client.GET("/api/repositories", {
+        params: {
+            query: {
+                owner: props.username,
+                name: props.repositoryName,
+            },
+        },
+    })
     if (data instanceof Array) {
         if (data.length == 0) {
             error.value = `Repository ${props.username}/${props.repositoryName} is not found`
