@@ -3,8 +3,7 @@ import { computed, ref, watch } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
 import RepositoryGrid from "@/components/RepositoriesGrid.vue"
 import { type RepositoryGridItem, type OnScroll } from "@/components/RepositoriesGridInterface"
-import { fetcher, components } from "@/schema"
-const searchFetcher = fetcher.path("/api/repositories").method("get").create()
+import { client, components } from "@/schema"
 
 const query = ref("")
 const page = ref(1)
@@ -15,10 +14,17 @@ type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
 async function doQuery() {
     const queryValue = query.value
-    const { data } = await searchFetcher({ q: queryValue, page: page.value, page_size: 10 })
+    const { data } = await client.GET("/api/repositories", {
+        params: {
+            query: { q: queryValue, page: page.value, page_size: 10 },
+        },
+    })
     if (query.value != queryValue) {
         console.log("query changed.... not using these results...")
         return
+    }
+    if (!data) {
+        throw Error("Server response error.")
     }
     if ("hits" in data) {
         if (page.value == 1) {

@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { fetcher, components } from "@/schema"
+import { client, components } from "@/schema"
 import PageContainer from "@/components/PageContainer.vue"
 
-const searchIndexer = fetcher.path("/api/tools/build_search_index").method("put").create()
 type IndexResults = components["schemas"]["BuildSearchIndexResponse"]
 
-const searchResults = ref(null as IndexResults | null)
+const searchResults = ref<IndexResults>()
 
 async function onIndex() {
-    const { data } = await searchIndexer({})
+    const { data } = await client.PUT("/api/tools/build_search_index")
     searchResults.value = data
 }
 </script>

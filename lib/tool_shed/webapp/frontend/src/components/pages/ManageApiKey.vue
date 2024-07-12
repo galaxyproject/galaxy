@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
-import { fetcher } from "@/schema"
+import { client } from "@/schema"
 import { notify, copyAndNotify, notifyOnCatch } from "@/util"
 import ConfigFileContents from "@/components/ConfigFileContents.vue"
-
-const apiKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("get").create()
-const deleteKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("delete").create()
-const recreateKeyFetcher = fetcher.path("/api/users/{encoded_user_id}/api_key").method("post").create()
 
 const apiKey = ref(null as string | null)
 const planemoConfig = computed(
@@ -26,15 +22,28 @@ async function copyKey() {
 const params = { encoded_user_id: "current" }
 
 async function init() {
-    apiKeyFetcher(params)
+    client
+        .GET("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
         .then(({ data }) => {
+            if (!data) {
+                throw Error("Error fetching API key")
+            }
             apiKey.value = data
         })
         .catch(notifyOnCatch)
 }
 
 async function deleteKey() {
-    deleteKeyFetcher(params)
+    client
+        .DELETE("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
         .then(() => {
             apiKey.value = null
             notify("API key deactivated")
@@ -43,8 +52,16 @@ async function deleteKey() {
 }
 
 async function recreateKey() {
-    recreateKeyFetcher(params)
+    client
+        .POST("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
         .then(({ data }) => {
+            if (!data) {
+                throw Error("Error re-generating API key")
+            }
             apiKey.value = data
             notify("Re-generated API key")
         })
@@ -76,7 +93,7 @@ void init()
             alternate means to access your account and should be treated with the same care as your login password.
         </p>
         <p>
-            Add the following block to your Planemo configuration file (typically found in
+            Add the following block to your Planemo configuration file (typically) found in
             <code>~/.planemo.yml</code> in your
         </p>
         <config-file-contents name=".planemo.yml" :contents="planemoConfig" what="Planemo configuration" />

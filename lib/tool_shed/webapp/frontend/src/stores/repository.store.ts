@@ -1,24 +1,14 @@
 import { defineStore } from "pinia"
 
-import { fetcher, components } from "@/schema"
-const repositoryFetcher = fetcher.path("/api/repositories/{encoded_repository_id}").method("get").create()
-const repositoryMetadataFetcher = fetcher
-    .path("/api_internal/repositories/{encoded_repository_id}/metadata")
-    .method("get")
-    .create()
-const repositoryPermissionsFetcher = fetcher
-    .path("/api/repositories/{encoded_repository_id}/permissions")
-    .method("get")
-    .create()
-const repositoryPermissionsAdder = fetcher
-    .path("/api/repositories/{encoded_repository_id}/allow_push/{username}")
-    .method("post")
-    .create()
-const repositoryPermissionsRemover = fetcher
-    .path("/api/repositories/{encoded_repository_id}/allow_push/{username}")
-    .method("delete")
-    .create()
-const repositoryInstallInfoFetcher = fetcher.path("/api/repositories/install_info").method("get").create()
+import { client, components } from "@/schema"
+
+function fetchRepositoryPermissions(repositoryId: string) {
+    return client.GET("/api/repositories/{encoded_repository_id}/permissions", {
+        params: {
+            path: { encoded_repository_id: repositoryId },
+        },
+    })
+}
 
 type DetailedRepository = components["schemas"]["DetailedRepository"]
 type InstallInfo = components["schemas"]["InstallInfo"]
@@ -45,9 +35,11 @@ export const useRepositoryStore = defineStore({
                 encoded_repository_id: this.repositoryId,
                 username: username,
             }
-            await repositoryPermissionsAdder(params)
-            const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-            this.repositoryPermissions = _repositoryPermissions
+            await client.POST("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+                params: { path: params },
+            })
+            const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+            this.repositoryPermissions = _repositoryPermissions ?? null
         },
         async disallowPush(username: string) {
             if (this.repositoryId == null) {
@@ -57,9 +49,11 @@ export const useRepositoryStore = defineStore({
                 encoded_repository_id: this.repositoryId,
                 username: username,
             }
-            await repositoryPermissionsRemover(params)
-            const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-            this.repositoryPermissions = _repositoryPermissions
+            await client.DELETE("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+                params: { path: params },
+            })
+            const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+            this.repositoryPermissions = _repositoryPermissions ?? null
         },
         async setId(repositoryId: string) {
             this.repositoryId = repositoryId
@@ -71,27 +65,28 @@ export const useRepositoryStore = defineStore({
             }
             this.loading = true
             const params = { encoded_repository_id: this.repositoryId }
-            const metadataParams = { encoded_repository_id: this.repositoryId, downloadable_only: false }
             const [{ data: repository }, { data: repositoryMetadata }] = await Promise.all([
-                repositoryFetcher(params),
-                repositoryMetadataFetcher(metadataParams),
+                client.GET("/api/repositories/{encoded_repository_id}", { params: { path: params } }),
+                client.GET("/api_internal/repositories/{encoded_repository_id}/metadata", {
+                    params: { path: params, query: { downloadable_only: false } },
+                }),
             ])
-            this.repository = repository
-            this.repositoryMetadata = repositoryMetadata
+            this.repository = repository ?? null
+            this.repositoryMetadata = repositoryMetadata ?? null
             let repositoryPermissions = {
                 can_manage: false,
                 can_push: false,
                 allow_push: [] as string[],
             }
             try {
-                const { data: _repositoryPermissions } = await repositoryPermissionsFetcher(params)
-                repositoryPermissions = _repositoryPermissions
+                const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
+                repositoryPermissions = _repositoryPermissions ?? repositoryPermissions
                 this.repositoryPermissions = repositoryPermissions
             } catch (e) {
                 // console.log(e)
             }
-            const latestMetadata = Object.values(repositoryMetadata)[0]
-            if (!latestMetadata) {
+            const latestMetadata = Object.values(repositoryMetadata ?? {})[0]
+            if (!latestMetadata || !repository) {
                 this.empty = true
             } else {
                 if (this.empty) {
@@ -102,8 +97,10 @@ export const useRepositoryStore = defineStore({
                     owner: repository.owner,
                     changeset_revision: latestMetadata.changeset_revision,
                 }
-                const { data: repositoryInstallInfo } = await repositoryInstallInfoFetcher(installParams)
-                this.repositoryInstallInfo = repositoryInstallInfo
+                const { data: repositoryInstallInfo } = await client.GET("/api/repositories/install_info", {
+                    params: { query: installParams },
+                })
+                this.repositoryInstallInfo = repositoryInstallInfo ?? null
             }
             this.loading = false
         },

@@ -1,7 +1,6 @@
 import { defineStore } from "pinia"
 
-import { fetcher, components } from "@/schema"
-const usersFetcher = fetcher.path("/api/users").method("get").create()
+import { client, components } from "@/schema"
 
 type User = components["schemas"]["UserV2"]
 
@@ -14,8 +13,8 @@ export const useUsersStore = defineStore({
     actions: {
         async getAll() {
             this.loading = true
-            const { data: users } = await usersFetcher({})
-            this.users = users
+            const { data: users } = await client.GET("/api/users")
+            this.users = users ?? []
             this.loading = false
         },
     },
