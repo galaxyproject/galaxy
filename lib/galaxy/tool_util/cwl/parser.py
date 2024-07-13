@@ -903,7 +903,7 @@ def split_step_references(step_references, workflow_id=None, multiple=True):
     if multiple:
         return split_references
     else:
-        assert len(split_references) == 1
+        assert len(split_references) == 1, split_references
         return split_references[0]
 
 
