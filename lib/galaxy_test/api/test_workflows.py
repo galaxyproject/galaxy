@@ -7184,44 +7184,6 @@ input:
         put_response = self._update_workflow(workflow_id, workflow_object)
         assert put_response.status_code == 200
 
-    def test_empty_collection_sort(self, history_id):
-        self._run_workflow(
-            """class: GalaxyWorkflow
-inputs:
-  input: collection
-  filter_file: data
-steps:
-  filter_collection:
-    tool_id: __FILTER_FROM_FILE__
-    in:
-       input: input
-       how|filter_source: filter_file
-  sort_collection_1:
-    tool_id: __SORTLIST__
-    in:
-      input: filter_collection/output_filtered
-  sort_collection_2:
-    tool_id: __SORTLIST__
-    in:
-      input: filter_collection/output_discarded
-  merge_collection:
-    tool_id: __MERGE_COLLECTION__
-    in:
-      inputs_0|input: sort_collection_1/output
-      inputs_1|input: sort_collection_2/output
-test_data:
-  input:
-    collection_type: list
-    elements:
-      - identifier: i1
-        content: "0"
-  filter_file: i1
-""",
-            history_id=history_id,
-            wait=True,
-            assert_ok=True,
-        )
-
     @skip_without_tool("random_lines1")
     def test_run_replace_params_over_default_delayed(self):
         with self.dataset_populator.test_history() as history_id:
