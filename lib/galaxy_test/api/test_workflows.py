@@ -6249,52 +6249,6 @@ fastq_input:
             name = content["name"]
             assert name == "fastq1 suffix", name
 
-    @skip_without_tool("mapper2")
-    def test_run_rename_based_on_input_collection(self):
-        with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(
-                """
-class: GalaxyWorkflow
-inputs:
-  fasta_input: data
-  fastq_inputs: data
-steps:
-  mapping:
-    tool_id: mapper2
-    state:
-      fastq_input:
-        fastq_input_selector: paired_collection
-        fastq_input1:
-          $link: fastq_inputs
-      reference:
-        $link: fasta_input
-    outputs:
-      out_file1:
-        rename: "#{fastq_input.fastq_input1 | basename} suffix"
-""",
-                test_data="""
-fasta_input:
-  value: 1.fasta
-  type: File
-  name: fasta1
-  file_type: fasta
-fastq_inputs:
-  collection_type: list
-  name: the_dataset_pair
-  elements:
-    - identifier: forward
-      value: 1.fastq
-      type: File
-    - identifier: reverse
-      value: 1.fastq
-      type: File
-""",
-                history_id=history_id,
-            )
-            content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
-            name = content["name"]
-            assert name == "the_dataset_pair suffix", name
-
     @skip_without_tool("collection_creates_pair")
     def test_run_hide_on_collection_output(self):
         with self.dataset_populator.test_history() as history_id:

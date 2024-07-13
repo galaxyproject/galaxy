@@ -1,0 +1,20 @@
+class: GalaxyWorkflow
+inputs:
+  fasta_input: data
+  fastq_inputs: data
+outputs:
+  output:
+    outputSource: mapping/out_file1
+steps:
+  mapping:
+    tool_id: mapper2
+    state:
+      fastq_input:
+        fastq_input_selector: paired_collection
+        fastq_input1:
+          $link: fastq_inputs
+      reference:
+        $link: fasta_input
+    outputs:
+      out_file1:
+        rename: "#{fastq_input.fastq_input1 | basename} suffix"
