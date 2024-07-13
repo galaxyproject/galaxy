@@ -346,18 +346,7 @@ class GalaxyInteractorApi:
         `dbkey` and `tags` all map to the API description directly. Other metadata attributes
         are assumed to be datatype-specific and mapped with a prefix of `metadata_`.
         """
-        metadata = attributes.get("metadata", {}).copy()
-        for key in metadata.copy().keys():
-            if key not in ["name", "info", "tags", "created_from_basename"]:
-                new_key = f"metadata_{key}"
-                metadata[new_key] = metadata[key]
-                del metadata[key]
-            elif key == "info":
-                metadata["misc_info"] = metadata["info"]
-                del metadata["info"]
-        expected_file_type = attributes.get("ftype", None)
-        if expected_file_type:
-            metadata["file_ext"] = expected_file_type
+        metadata = get_metadata_to_test(attributes)
 
         if metadata:
 
@@ -370,29 +359,7 @@ class GalaxyInteractorApi:
                     return None
 
             dataset = wait_on(wait_for_content, desc="dataset metadata", timeout=10)
-
-            for key, value in metadata.items():
-                try:
-                    dataset_value = dataset.get(key, None)
-
-                    def compare(val, expected):
-                        if str(val) != str(expected):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
-                            )
-
-                    if isinstance(dataset_value, list):
-                        value = str(value).split(",")
-                        if len(value) != len(dataset_value):
-                            raise Exception(
-                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            )
-                        for val, expected in zip(dataset_value, value):
-                            compare(val, expected)
-                    else:
-                        compare(dataset_value, value)
-                except KeyError:
-                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+            compare_expected_metadata_to_api_response(metadata, dataset)
 
     def wait_for_job(self, job_id: str, history_id: Optional[str] = None, maxseconds=DEFAULT_TOOL_TEST_WAIT) -> None:
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
@@ -1934,3 +1901,45 @@ def test_data_iter(required_files):
                 raise Exception(f"edit_attributes type ({edit_att.get('type', None)}) is unimplemented")
 
         yield data_dict
+
+
+def compare_expected_metadata_to_api_response(metadata: dict, dataset: dict) -> None:
+    for key, value in metadata.items():
+        try:
+            dataset_value = dataset.get(key, None)
+
+            def compare(val, expected):
+                if str(val) != str(expected):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                    )
+
+            if isinstance(dataset_value, list):
+                value = str(value).split(",")
+                if len(value) != len(dataset_value):
+                    raise Exception(
+                        f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                    )
+                for val, expected in zip(dataset_value, value):
+                    compare(val, expected)
+            else:
+                compare(dataset_value, value)
+        except KeyError:
+            raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
+
+
+def get_metadata_to_test(test_properties: dict) -> dict:
+    """Fetch out metadata to test from test property dict and adapt it to keys the API produces."""
+    metadata = test_properties.get("metadata", {}).copy()
+    for key in metadata.copy().keys():
+        if key not in ["name", "info", "tags", "created_from_basename"]:
+            new_key = f"metadata_{key}"
+            metadata[new_key] = metadata[key]
+            del metadata[key]
+        elif key == "info":
+            metadata["misc_info"] = metadata["info"]
+            del metadata["info"]
+    expected_file_type = test_properties.get("ftype", None)
+    if expected_file_type:
+        metadata["file_ext"] = expected_file_type
+    return metadata

@@ -14,6 +14,8 @@ cat <<EOF
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
+'${0##*/} -framework-workflows'      for running through workflow tests to test correctness of workflow evaluation
+'${0##*/} -framework-workflows -id workflow_name' test single workflow framework test
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
 '${0##*/} -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
@@ -400,11 +402,17 @@ do
           export GALAXY_TEST_USER_API_KEY=$2
           shift 2
           ;;
-      -f|-framework|--framework)
+      -f|-framework|--framework|--framework-tools)
           GALAXY_TEST_TOOL_CONF="test/functional/tools/sample_tool_conf.xml"
           marker="tool"
           report_file="run_framework_tests.html"
           framework_test=1
+          shift 1
+          ;;
+      -w|--framework-workflows)
+          marker="workflow"
+          report_file="run_framework_workflows_tests.html"
+          framework_workflows_test=1
           shift 1
           ;;
       -d|-data_managers|--data_managers)
@@ -583,6 +591,13 @@ if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
         selector=""
     fi
     extra_args="test/functional/test_toolbox_pytest.py $selector"
+elif [ -n "$framework_workflows_test" ]; then
+    if [ -n "$test_id" ]; then
+        selector="-k $test_id"
+    else
+        selector=""
+    fi
+    extra_args="lib/galaxy_test/workflow/tests.py $selector"
 elif [ -n "$selenium_script" ]; then
     extra_args="$selenium_script"
 elif [ -n "$toolshed_script" ]; then

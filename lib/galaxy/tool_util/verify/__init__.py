@@ -45,9 +45,9 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_METRIC,
     DEFAULT_PIN_LABELS,
 )
+from galaxy.tool_util.parser.yaml import to_test_assert_list
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
-from galaxy.tool_util.parser.yaml import to_test_assert_list
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
@@ -58,7 +58,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
 GetFilenameT = Optional[Callable[[str], str]]
-GetLocationT = Optional[Callable[[str], bytes]]
+GetLocationT = Optional[Callable[[str], str]]
 
 
 def verify(
@@ -593,14 +593,30 @@ def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]
 # TODO: After tool-util with this included is published, fefactor planemo.test._check_output
 # to use this function. There is already a comment there about breaking fewer abstractions.
 # https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
-def verify_file_path_against_dict(get_filename: GetFilenameT, get_location: GetLocationT, path: str, output_content: bytes, test_properties, test_data_target_dir: Optional[str] = None) -> None:
+def verify_file_path_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    path: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: Optional[str] = None,
+) -> None:
     with open(path, "rb") as f:
         output_content = f.read()
-    item_label = "Output with path %s" % path
-    verify_file_contents_against_dict(get_filename, get_location, item_label, output_content, test_properties, test_data_target_dir)
+    item_label = f"Output with path {path}"
+    verify_file_contents_against_dict(
+        get_filename, get_location, item_label, output_content, test_properties, test_data_target_dir
+    )
 
 
-def verify_file_contents_against_dict(get_filename: GetFilenameT, get_location: GetLocationT, item_label: str, output_content: bytes, test_properties, test_data_target_dir: Optional[str] = None) -> None:
+def verify_file_contents_against_dict(
+    get_filename: GetFilenameT,
+    get_location: GetLocationT,
+    item_label: str,
+    output_content: bytes,
+    test_properties,
+    test_data_target_dir: Optional[str] = None,
+) -> None:
     # Support Galaxy-like file location (using "file") or CWL-like ("path" or "location").
     expected_file = test_properties.get("file", None)
     if expected_file is None:
@@ -609,6 +625,7 @@ def verify_file_contents_against_dict(get_filename: GetFilenameT, get_location: 
         location = test_properties.get("location")
         if location:
             if location.startswith(("http://", "https://")):
+                assert get_location
                 expected_file = get_location(location)
             else:
                 expected_file = location.split("file://", 1)[-1]
