@@ -310,6 +310,8 @@ def to_test_assert_list(assertions) -> AssertionList:
     return assert_list or None  # XML variant is None if no assertions made
 
 
+# Planemo depends on this and was never updated unfortunately.
+# https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
 __to_test_assert_list = to_test_assert_list
 
 
