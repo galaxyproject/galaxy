@@ -3733,3 +3733,8 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class MessageExceptionModel(BaseModel):
+    err_msg: str
+    err_code: int

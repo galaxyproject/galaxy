@@ -6624,11 +6624,6 @@ export interface components {
              */
             waiting?: number;
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
         /**
          * HashFunctionNameEnum
          * @description Particular pieces of information that can be requested for a dataset.
@@ -9510,6 +9505,13 @@ export interface components {
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
             source: components["schemas"]["DatasetSourceType"];
+        };
+        /** MessageExceptionModel */
+        MessageExceptionModel: {
+            /** Err Code */
+            err_code: number;
+            /** Err Msg */
+            err_msg: string;
         };
         /** MessageNotificationContent */
         MessageNotificationContent: {
@@ -12951,15 +12953,6 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-        };
         /** Visualization */
         Visualization: Record<string, never>;
         /** VisualizationSummary */
@@ -13423,6 +13416,18 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"];
                 };
             };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
         };
     };
     /**
@@ -13453,10 +13458,16 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13485,10 +13496,16 @@ export interface operations {
                     };
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13513,10 +13530,16 @@ export interface operations {
                     }[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13545,10 +13568,16 @@ export interface operations {
                     };
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13573,10 +13602,16 @@ export interface operations {
                     }[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13599,10 +13634,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13626,10 +13667,16 @@ export interface operations {
                     "application/json": components["schemas"]["DCESummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13654,10 +13701,16 @@ export interface operations {
                     "application/json": components["schemas"]["HDCADetailed"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13691,10 +13744,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetCollectionContentElements"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13724,10 +13783,16 @@ export interface operations {
                     "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13755,10 +13820,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetCollectionAttributesResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13785,10 +13856,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13814,10 +13891,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13846,15 +13929,21 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
             /** @description Required asynchronous tasks required for this operation not available. */
             501: {
                 content: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
             };
         };
     };
@@ -13881,10 +13970,16 @@ export interface operations {
                     "application/json": components["schemas"]["SuitableConverters"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13929,10 +14024,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -13962,10 +14063,16 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteDatasetBatchResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14004,10 +14111,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14051,10 +14164,16 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14115,10 +14234,16 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14143,10 +14268,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14173,10 +14304,16 @@ export interface operations {
                     "application/json": components["schemas"]["ConvertedDatasetsMap"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14219,10 +14356,16 @@ export interface operations {
                         | components["schemas"]["HDAInaccessible"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14246,10 +14389,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14273,10 +14422,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetTextContentDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14309,10 +14464,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14340,10 +14501,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetInheritanceChain"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14374,10 +14541,16 @@ export interface operations {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14406,10 +14579,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14443,10 +14622,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14478,10 +14663,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14509,10 +14700,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetStorageDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14551,10 +14748,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14595,10 +14798,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14624,10 +14833,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14655,10 +14870,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14683,10 +14904,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypeDetails"][] | string[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14701,6 +14928,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatatypeConverterList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14719,6 +14958,18 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
         };
     };
     /**
@@ -14732,6 +14983,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14750,6 +15013,18 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
         };
     };
     /**
@@ -14763,6 +15038,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatatypesEDAMDetailsDict"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14779,6 +15066,18 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesMap"];
                 };
             };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
         };
     };
     /**
@@ -14791,6 +15090,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": string[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14817,10 +15128,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14835,6 +15152,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DisplayApplication"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14864,10 +15193,16 @@ export interface operations {
                     "application/json": components["schemas"]["ReloadFeedback"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14889,10 +15224,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14912,10 +15253,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14940,10 +15287,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14968,10 +15321,16 @@ export interface operations {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -14995,10 +15354,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15030,10 +15395,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserFileSourceModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15055,10 +15426,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15078,10 +15455,16 @@ export interface operations {
                     "application/json": components["schemas"]["FileSourceTemplateSummaries"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15132,10 +15515,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderContentsIndexResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15164,10 +15553,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15194,10 +15589,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15229,10 +15630,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15264,10 +15671,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15298,10 +15711,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15333,10 +15752,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15376,10 +15801,16 @@ export interface operations {
                         | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15415,10 +15846,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibraryFolderCurrentPermissions"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15441,10 +15878,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15467,10 +15910,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15518,10 +15967,16 @@ export interface operations {
                         | components["schemas"]["ListJstreeResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15545,10 +16000,16 @@ export interface operations {
                     "application/json": string[][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15586,10 +16047,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15619,10 +16086,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15658,10 +16131,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15681,10 +16160,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15709,10 +16194,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15735,10 +16226,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15766,10 +16263,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15792,10 +16295,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15818,10 +16327,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15845,10 +16360,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15874,10 +16395,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15903,10 +16430,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15932,10 +16465,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15958,10 +16497,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -15990,10 +16535,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16023,10 +16574,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16056,10 +16613,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16087,10 +16650,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16119,10 +16688,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16152,10 +16727,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16185,10 +16766,16 @@ export interface operations {
                     "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16217,10 +16804,16 @@ export interface operations {
                     "application/json": components["schemas"]["HelpForumSearchResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16310,10 +16903,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16351,10 +16950,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16395,10 +17000,16 @@ export interface operations {
                     "application/json": unknown[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16434,10 +17045,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16472,10 +17089,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16495,10 +17118,16 @@ export interface operations {
                     "application/json": number;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16540,10 +17169,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16576,10 +17211,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16613,10 +17254,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16641,10 +17288,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16673,10 +17326,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16716,10 +17375,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16759,10 +17424,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16795,10 +17466,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16836,10 +17513,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16878,10 +17561,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16926,10 +17615,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16969,10 +17664,16 @@ export interface operations {
                         | components["schemas"]["HistorySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -16996,10 +17697,16 @@ export interface operations {
                     "application/json": unknown[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17077,10 +17784,16 @@ export interface operations {
                     "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17121,10 +17834,16 @@ export interface operations {
                     "application/json": components["schemas"]["HistoryContentsResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17179,10 +17898,16 @@ export interface operations {
                           )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17227,10 +17952,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17280,10 +18011,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17323,10 +18060,16 @@ export interface operations {
                     "application/json": components["schemas"]["HistoryContentBulkOperationResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17354,10 +18097,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17383,10 +18132,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17420,10 +18175,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17463,10 +18224,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17508,10 +18275,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17537,10 +18310,16 @@ export interface operations {
                     "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17568,10 +18347,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17595,10 +18380,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17623,10 +18414,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17656,10 +18453,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17689,10 +18492,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17717,10 +18526,16 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17768,10 +18583,16 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17820,10 +18641,16 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17888,10 +18715,16 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -17920,10 +18753,16 @@ export interface operations {
                     "application/json": Record<string, never>;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18004,10 +18843,16 @@ export interface operations {
                         | components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18061,10 +18906,16 @@ export interface operations {
                           )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18111,10 +18962,16 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18162,10 +19019,16 @@ export interface operations {
                         | components["schemas"]["HDCASummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18230,10 +19093,16 @@ export interface operations {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18272,10 +19141,16 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationStateSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18308,10 +19183,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18344,10 +19225,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18395,10 +19282,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18422,10 +19315,16 @@ export interface operations {
                     "application/json": components["schemas"]["CustomBuildsMetadataResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18452,10 +19351,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18482,10 +19387,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18521,10 +19432,16 @@ export interface operations {
                     "application/vnd.galaxy.task.export+json": components["schemas"]["ExportTaskListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18574,10 +19491,16 @@ export interface operations {
             202: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18610,10 +19533,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18655,10 +19584,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18687,10 +19622,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18719,10 +19660,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18749,10 +19696,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18784,10 +19737,16 @@ export interface operations {
                     "application/json": components["schemas"]["ShareHistoryWithStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18814,10 +19773,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18847,10 +19812,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18873,10 +19844,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18900,10 +19877,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18932,10 +19915,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18964,10 +19953,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -18991,10 +19986,16 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19021,10 +20022,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19053,10 +20060,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19103,10 +20116,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19134,10 +20153,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19161,10 +20186,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19199,10 +20230,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19237,10 +20274,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19270,10 +20313,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19302,10 +20351,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19329,10 +20384,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19354,10 +20415,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19391,10 +20458,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19423,10 +20496,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19457,10 +20536,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19489,10 +20574,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19515,10 +20606,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19546,10 +20643,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobLock"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19642,10 +20745,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19675,10 +20784,16 @@ export interface operations {
                     "application/json": components["schemas"]["EncodedJobDetails"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19708,10 +20823,16 @@ export interface operations {
                         | components["schemas"]["EncodedJobDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19740,10 +20861,16 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19767,10 +20894,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobInputSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19794,10 +20927,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobDestinationParams"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19826,10 +20965,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobErrorSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19853,10 +20998,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobInputAssociation"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19887,10 +21038,16 @@ export interface operations {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19922,10 +21079,16 @@ export interface operations {
                     "text/plain": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "text/plain": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19949,10 +21112,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -19988,10 +21157,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20015,10 +21190,16 @@ export interface operations {
                     "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20045,10 +21226,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20076,10 +21263,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20102,10 +21295,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20130,10 +21329,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20160,10 +21365,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20200,10 +21411,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20235,10 +21452,16 @@ export interface operations {
                     "application/json": components["schemas"]["LibrarySummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20280,10 +21503,16 @@ export interface operations {
                         | components["schemas"]["LibraryAvailablePermissions"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20323,10 +21552,16 @@ export interface operations {
                         | components["schemas"]["LibraryCurrentPermissions"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20341,6 +21576,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["LicenseMetadataModel"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20364,10 +21611,16 @@ export interface operations {
                     "application/json": components["schemas"]["LicenseMetadataModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20395,10 +21648,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20427,10 +21686,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20455,10 +21720,16 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20488,10 +21759,16 @@ export interface operations {
                         | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20516,10 +21793,16 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20542,10 +21825,16 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastNotificationListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20584,10 +21873,16 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationCreatedResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20614,10 +21909,16 @@ export interface operations {
                     "application/json": components["schemas"]["BroadcastNotificationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20647,10 +21948,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20676,10 +21983,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20710,10 +22023,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationPreferences"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20739,10 +22058,16 @@ export interface operations {
                     "application/json": components["schemas"]["NotificationStatusSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20766,10 +22091,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserNotificationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20796,10 +22127,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20828,10 +22165,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20851,10 +22194,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20879,10 +22228,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20907,10 +22262,16 @@ export interface operations {
                     "application/json": components["schemas"]["PluginStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20934,10 +22295,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20969,10 +22336,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -20994,10 +22367,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21017,10 +22396,16 @@ export interface operations {
                     "application/json": components["schemas"]["ObjectStoreTemplateSummaries"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21047,10 +22432,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21074,10 +22465,16 @@ export interface operations {
                     "application/json": components["schemas"]["ConcreteObjectStoreModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21151,10 +22548,16 @@ export interface operations {
                     "application/json": components["schemas"]["PageSummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21182,10 +22585,16 @@ export interface operations {
                     "application/json": components["schemas"]["PageSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21212,10 +22621,16 @@ export interface operations {
                     "application/json": components["schemas"]["PageDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21240,10 +22655,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21272,15 +22693,21 @@ export interface operations {
                     "application/pdf": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
             /** @description PDF conversion service not available. */
             501: {
                 content: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
             };
         };
     };
@@ -21306,10 +22733,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21336,10 +22769,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21368,15 +22807,21 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncFile"];
                 };
             };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
             /** @description PDF conversion service not available. */
             501: {
                 content: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
             };
         };
     };
@@ -21402,10 +22847,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21437,10 +22888,16 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21467,10 +22924,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21500,10 +22963,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21528,10 +22997,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21558,10 +23033,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21584,10 +23065,16 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21615,10 +23102,16 @@ export interface operations {
                     "application/json": components["schemas"]["CreateQuotaResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21641,10 +23134,16 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaSummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21671,10 +23170,16 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21701,10 +23206,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21731,10 +23242,16 @@ export interface operations {
                     "application/json": components["schemas"]["QuotaDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21766,10 +23283,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21801,10 +23324,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21828,10 +23357,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21878,10 +23413,16 @@ export interface operations {
                         | components["schemas"]["ListJstreeResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21909,10 +23450,16 @@ export interface operations {
                     "application/json": components["schemas"]["CreatedEntryResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21943,10 +23490,16 @@ export interface operations {
                     "application/json": components["schemas"]["FilesSourcePluginList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21966,10 +23519,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -21994,10 +23553,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22020,10 +23585,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22046,10 +23617,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22072,10 +23649,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22098,10 +23681,16 @@ export interface operations {
                     "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22122,10 +23711,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22144,10 +23739,16 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22175,10 +23776,16 @@ export interface operations {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22206,10 +23813,16 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22229,10 +23842,16 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22260,10 +23879,16 @@ export interface operations {
                     "application/json": components["schemas"]["StorageItemsCleanupResult"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22291,10 +23916,16 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22314,10 +23945,16 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22345,10 +23982,16 @@ export interface operations {
                     "application/json": components["schemas"]["StoredItem"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22368,10 +24011,16 @@ export interface operations {
                     "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22400,10 +24049,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22422,10 +24077,16 @@ export interface operations {
                     "application/json": components["schemas"]["TaskState"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22440,6 +24101,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["ToolDataEntryList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22467,10 +24140,16 @@ export interface operations {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22497,10 +24176,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22532,10 +24217,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22564,10 +24255,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataField"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22596,10 +24293,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22626,10 +24329,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolDataDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22657,10 +24366,16 @@ export interface operations {
                     "application/json": components["schemas"]["InstalledToolShedRepository"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22683,10 +24398,16 @@ export interface operations {
                     "application/json": components["schemas"]["CheckForUpdatesResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22706,10 +24427,16 @@ export interface operations {
                     "application/json": components["schemas"]["InstalledToolShedRepository"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22734,10 +24461,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22752,6 +24485,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["TourList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22773,10 +24518,16 @@ export interface operations {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22802,10 +24553,16 @@ export interface operations {
                     "application/json": components["schemas"]["TourDetails"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22841,10 +24598,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22871,10 +24634,16 @@ export interface operations {
                     "application/json": components["schemas"]["CreatedUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22903,10 +24672,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22940,10 +24715,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22969,10 +24750,16 @@ export interface operations {
                         | components["schemas"]["AnonUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -22996,10 +24783,16 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23029,10 +24822,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23062,10 +24861,16 @@ export interface operations {
                         | components["schemas"]["AnonUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23098,10 +24903,16 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23134,10 +24945,16 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedUserModel"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23161,10 +24978,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23188,10 +25011,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23213,10 +25042,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23244,10 +25079,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23274,10 +25115,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23309,10 +25156,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserBeaconSetting"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23336,10 +25189,16 @@ export interface operations {
                     "application/json": components["schemas"]["CustomBuildsCollection"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23370,10 +25229,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23399,10 +25264,16 @@ export interface operations {
                     "application/json": components["schemas"]["DeletedCustomBuild"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23433,10 +25304,16 @@ export interface operations {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23464,10 +25341,16 @@ export interface operations {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23491,10 +25374,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23522,10 +25411,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23549,10 +25444,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23578,10 +25479,16 @@ export interface operations {
                     "application/json": string;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23605,10 +25512,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserQuotaUsage"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23634,10 +25547,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserQuotaUsage"] | null;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23652,6 +25571,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23724,10 +25655,16 @@ export interface operations {
                     "application/json": components["schemas"]["VisualizationSummaryList"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23754,10 +25691,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23784,10 +25727,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23814,10 +25763,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23849,10 +25804,16 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23879,10 +25840,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23912,10 +25879,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23942,10 +25915,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -23968,10 +25947,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserModel"] | null;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24052,10 +26037,16 @@ export interface operations {
                     "application/json": Record<string, never>[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24085,10 +26076,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24119,10 +26116,16 @@ export interface operations {
                     "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24146,10 +26149,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24177,10 +26186,16 @@ export interface operations {
                     "application/json": components["schemas"]["RootModel_Dict_str__int__"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24207,10 +26222,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24237,10 +26258,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24288,10 +26315,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24322,10 +26355,16 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24365,10 +26404,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24408,10 +26453,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24440,10 +26491,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24472,10 +26529,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24502,10 +26565,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24538,10 +26607,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24572,10 +26647,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24611,10 +26692,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24641,10 +26728,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24676,10 +26769,16 @@ export interface operations {
                     "application/json": components["schemas"]["RefactorResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24711,10 +26810,16 @@ export interface operations {
                     "application/json": components["schemas"]["ShareWithStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24741,10 +26846,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24774,10 +26885,16 @@ export interface operations {
             204: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24800,10 +26917,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsListResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24827,10 +26950,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24859,10 +26988,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24891,10 +27026,16 @@ export interface operations {
                     "application/json": components["schemas"]["ItemTagsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24918,10 +27059,16 @@ export interface operations {
                     "application/json": boolean;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24945,10 +27092,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -24975,10 +27128,16 @@ export interface operations {
                     "application/json": components["schemas"]["SharingStatus"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25029,10 +27188,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25066,10 +27231,16 @@ export interface operations {
                         | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25110,10 +27281,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25154,10 +27331,16 @@ export interface operations {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25187,10 +27370,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25220,10 +27409,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationReport"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25251,10 +27446,16 @@ export interface operations {
             200: {
                 content: never;
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25288,10 +27489,16 @@ export interface operations {
                     )[];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25323,10 +27530,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25363,10 +27576,16 @@ export interface operations {
                     "application/json": components["schemas"]["InvocationStep"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25393,10 +27612,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25420,10 +27645,16 @@ export interface operations {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25447,10 +27678,16 @@ export interface operations {
                     "application/json": components["schemas"]["DrsObject"];
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25476,10 +27713,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25505,10 +27748,16 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
@@ -25520,6 +27769,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Service"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
                 };
             };
         };
