@@ -30,6 +30,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", (scope) => {
     function $reset() {
         undoActionStack.value.forEach((action) => action.destroy());
         undoActionStack.value = [];
+        deletedActions.value = [];
         clearRedoStack();
     }
 
