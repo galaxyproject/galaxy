@@ -1,0 +1,30 @@
+<tool id="gx_conditional_conditional_boolean" name="gx_conditional_conditional_boolean" version="1.0.0">
+    <command><![CDATA[
+echo '$outer_conditional_parameter.outer_test_parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <conditional name="outer_conditional_parameter">
+            <!-- boolean parameters as the test parameter are discouraged, respect linting and don't do this -->
+            <param name="outer_test_parameter" type="boolean" />
+            <when value="true">
+                <conditional name="inner_conditional_parameter">
+                    <param name="inner_test_parameter" type="boolean" />
+                    <when value="true">
+                        <param name="integer_parameter" type="integer" value="1" />
+                    </when>
+                    <when value="false">
+                        <param name="boolean_parameter" type="boolean" />
+                    </when>
+                </conditional>
+            </when>
+            <when value="false">
+                <param name="boolean_parameter" type="boolean" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

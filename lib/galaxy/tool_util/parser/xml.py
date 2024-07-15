@@ -11,6 +11,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Tuple,
 )
 
 from packaging.version import Version
@@ -32,6 +33,7 @@ from galaxy.util import (
 )
 from .interface import (
     AssertionList,
+    Citation,
     InputSource,
     PageSource,
     PagesSource,
@@ -41,6 +43,7 @@ from .interface import (
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
+    XrefDict,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -142,7 +145,7 @@ class XmlToolSource(ToolSource):
         self.root = None
         self._xml_tree = None
 
-    def parse_version(self):
+    def parse_version(self) -> Optional[str]:
         return self.root.get("version", None)
 
     def parse_id(self):
@@ -174,7 +177,7 @@ class XmlToolSource(ToolSource):
             return root.get("tool_type")
 
     def parse_name(self):
-        return self.root.get("name")
+        return self.root.get("name") or self.parse_id()
 
     def parse_edam_operations(self):
         edam_ops = self.root.find("edam_operations")
@@ -188,17 +191,17 @@ class XmlToolSource(ToolSource):
             return []
         return [edam_topic.text for edam_topic in edam_topics.findall("edam_topic")]
 
-    def parse_xrefs(self):
+    def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root.find("xrefs")
         if xrefs is None:
             return []
         return [
-            dict(value=xref.text.strip(), reftype=xref.attrib["type"])
+            XrefDict(value=xref.text.strip(), reftype=str(xref.attrib["type"]))
             for xref in xrefs.findall("xref")
-            if xref.get("type")
+            if xref.get("type") and xref.text
         ]
 
-    def parse_description(self):
+    def parse_description(self) -> str:
         return xml_text(self.root, "description")
 
     def parse_display_interface(self, default):
@@ -535,7 +538,7 @@ class XmlToolSource(ToolSource):
         output.default_identifier_source = data_elem.get("default_identifier_source", "None")
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
         output.parent = data_elem.get("parent", None)
-        output.label = xml_text(data_elem, "label")
+        output.label = xml_text(data_elem, "label", None)
         output.count = int(data_elem.get("count", 1))
         output.filters = data_elem.findall("filter")
         output.tool = tool
@@ -561,7 +564,7 @@ class XmlToolSource(ToolSource):
             from_expression,
         )
         output.path = output_elem.get("value")
-        output.label = xml_text(output_elem, "label")
+        output.label = xml_text(output_elem, "label", None)
 
         output.hidden = string_as_bool(output_elem.get("hidden", ""))
         output.actions = ToolOutputActionGroup(output, output_elem.find("actions"))
@@ -659,8 +662,23 @@ class XmlToolSource(ToolSource):
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
 
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         return self.root.get("license")
+
+    def parse_citations(self) -> List[Citation]:
+        """Return a list of citations."""
+        citations: List[Citation] = []
+        root = self.root
+        citations_elem = root.find("citations")
+        if citations_elem is None:
+            return citations
+
+        for citation_elem in citations_elem:
+            citation = parse_citation_elem(citation_elem)
+            if citation:
+                citations.append(citation)
+
+        return citations
 
     def parse_python_template_version(self):
         python_template_version = self.root.get("python_template_version")
@@ -1235,7 +1253,7 @@ class XmlInputSource(InputSource):
         options_elem = self.input_elem.find("options")
         return options_elem
 
-    def parse_static_options(self):
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """
         >>> from galaxy.util import parse_xml_string_to_etree
         >>> xml = '<param><option value="a">A</option><option value="b">B</option></param>'
@@ -1372,3 +1390,18 @@ class ParallelismInfo:
             # legacy basic mode - provide compatible defaults
             self.attributes["split_size"] = 20
             self.attributes["split_mode"] = "number_of_parts"
+
+
+def parse_citation_elem(citation_elem: Element) -> Optional[Citation]:
+    if citation_elem.tag != "citation":
+        return None
+
+    citation_type = citation_elem.attrib.get("type", None)
+    citation_raw_text = citation_elem.text
+    assert citation_raw_text
+    content = citation_raw_text.strip()
+
+    return Citation(
+        type=citation_type,
+        content=content,
+    )
