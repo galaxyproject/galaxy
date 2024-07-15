@@ -252,7 +252,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         service = Service(self._pykube_api, k8s_service_obj)
         service.create()
         ingress = Ingress(self._pykube_api, k8s_ingress_obj)
-        ingress.version = self.runner_params.get("k8s_ingress_api_version")
+        ingress.version = self.runner_params["k8s_ingress_api_version"]
         ingress.create()
 
     def __get_overridable_params(self, job_wrapper, param_key):
