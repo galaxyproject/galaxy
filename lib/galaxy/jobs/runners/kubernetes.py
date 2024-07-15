@@ -435,7 +435,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __get_k8s_ingress_rules_spec(self, ajs, entry_points):
         """This represents the template for the "rules" portion of the Ingress spec."""
-        if "v1beta1" in self.runner_params.get("k8s_ingress_api_version"):
+        if "v1beta1" in self.runner_params["k8s_ingress_api_version"]:
             rules_spec = [
                 {
                     "host": ep["domain"],
