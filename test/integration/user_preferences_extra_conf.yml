@@ -3,7 +3,7 @@ preferences:
         description: Your own Beacon2 account
         inputs:
             - name: db_auth_source
-              label: Beacon Database authentication source
+              label: Beacon Database Authentication Source
               type: text
               required: False
             - name: db_user
