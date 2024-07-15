@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faHistory } from "@fortawesome/free-solid-svg-icons";
 import { ref, watch } from "vue";
 
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
+
+import Heading from "@/components/Common/Heading.vue";
+
+library.add(faHistory);
 
 const props = defineProps<{
     storeId: string;
@@ -17,23 +23,27 @@ watch(
 
 <template>
     <section class="undo-redo-stack">
+        <Heading h2 size="sm" icon="fa-history">Latest Changes</Heading>
+
         <div class="scroll-list">
             <button
                 v-for="action in currentStore.redoActionStack"
                 :key="action.id"
+                class="action future"
                 @click="currentStore.rollForwardTo(action)">
                 {{ action.name }}
             </button>
 
-            <span> current state </span>
+            <span class="current-state"> current state </span>
 
-            <button v-if="currentStore.pendingLazyAction" @click="currentStore.undo">
+            <button v-if="currentStore.pendingLazyAction" class="action lazy" @click="currentStore.undo">
                 {{ currentStore.pendingLazyAction.name }}
             </button>
 
             <button
                 v-for="action in [...currentStore.undoActionStack].reverse()"
                 :key="action.id"
+                class="action past"
                 @click="currentStore.rollBackTo(action)">
                 {{ action.name }}
             </button>
@@ -42,13 +52,80 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .undo-redo-stack {
     width: 100%;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    overflow-y: hidden;
+
+    display: flex;
+    flex-direction: column;
 
     .scroll-list {
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+    }
+}
+
+.action {
+    text-align: left;
+    background-color: transparent;
+    border: none;
+    padding: 0.1rem;
+    padding-left: 0;
+    line-height: 1.2;
+
+    display: grid;
+    grid-template-columns: 8px auto;
+    align-items: center;
+    gap: 0.5rem;
+
+    &::before {
+        content: "";
+        display: block;
+        height: 2px;
+        background-color: $brand-secondary;
+    }
+
+    &:focus-visible {
+        background-color: $brand-secondary;
+    }
+
+    &.lazy {
+        color: $text-muted;
+    }
+
+    &.future {
+        color: $text-light;
+    }
+
+    &.past {
+        &::before {
+            background-color: $text-light;
+        }
+    }
+}
+
+.current-state {
+    display: grid;
+    grid-template-columns: 1rem auto 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    color: $text-light;
+
+    &::before,
+    &::after {
+        content: "";
+        display: block;
+        height: 2px;
+        background-color: $brand-secondary;
     }
 }
 </style>

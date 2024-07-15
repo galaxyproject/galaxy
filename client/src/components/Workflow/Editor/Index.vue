@@ -107,7 +107,7 @@
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
-                    <div v-if="!initialLoading">
+                    <div v-if="!initialLoading" class="position-relative h-100">
                         <UndoRedoStack v-if="showInPanel === 'changes'" :store-id="id" />
                         <FormTool
                             v-else-if="hasActiveNodeTool"
