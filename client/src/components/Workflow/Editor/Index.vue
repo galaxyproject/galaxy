@@ -61,7 +61,7 @@
                     </b-button>
                     <b-button
                         title="View Last Changes"
-                        :variant="showInPanel === 'changes' ? 'primary' : 'link'"
+                        :variant="showChanges ? 'primary' : 'link'"
                         @click="toggleShowChanges">
                         <FontAwesomeIcon icon="fa-history" />
                     </b-button>
@@ -80,8 +80,7 @@
                 @onCreate="onInsertTool"
                 @onChange="onChange"
                 @onRemove="onRemove"
-                @onUpdateStepPosition="onUpdateStepPosition"
-                @onViewChanges="() => (showInPanel = 'changes')">
+                @onUpdateStepPosition="onUpdateStepPosition">
             </WorkflowGraph>
         </div>
         <FlexPanel side="right">
@@ -101,14 +100,14 @@
                             @onReport="onReport"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onLint="onLint"
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                     <div v-if="!initialLoading" class="position-relative h-100">
-                        <UndoRedoStack v-if="showInPanel === 'changes'" :store-id="id" />
+                        <UndoRedoStack v-if="showChanges" :store-id="id" />
                         <FormTool
                             v-else-if="hasActiveNodeTool"
                             :key="activeStep.id"
@@ -154,7 +153,7 @@
                             :license="license"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onHighlight="onHighlight"
                             @onUnhighlight="onUnhighlight"
                             @onRefactor="onAttemptRefactor"
@@ -302,18 +301,18 @@ export default {
         }
 
         const showInPanel = ref("attributes");
+        const showChanges = ref(false);
 
         function toggleShowChanges() {
-            if (showInPanel.value !== "changes") {
-                ensureParametersSet();
-                stateStore.activeNodeId = null;
-                showInPanel.value = "changes";
-            } else {
-                showAttributes();
-            }
+            ensureParametersSet();
+            showChanges.value = !showChanges.value;
         }
 
-        function showAttributes() {
+        function showAttributes(closeChanges = false) {
+            if (closeChanges) {
+                showChanges.value = false;
+            }
+
             ensureParametersSet();
             stateStore.activeNodeId = null;
             showInPanel.value = "attributes";
@@ -462,6 +461,7 @@ export default {
             parameters,
             ensureParametersSet,
             showInPanel,
+            showChanges,
             toggleShowChanges,
             showAttributes,
             setName,

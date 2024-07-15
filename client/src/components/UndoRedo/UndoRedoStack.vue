@@ -47,7 +47,16 @@ watch(
                 @click="currentStore.rollBackTo(action)">
                 {{ action.name }}
             </button>
+
+            <span v-for="(action, i) in [...currentStore.deletedActions].reverse()" :key="i" class="action dead">
+                {{ action }}
+            </span>
         </div>
+
+        <label>
+            Max saved changes
+            <input v-model.number="currentStore.maxUndoActions" type="number" step="1" min="10" max="10000" />
+        </label>
     </section>
 </template>
 
@@ -71,6 +80,7 @@ watch(
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        flex: 1;
     }
 }
 
@@ -109,6 +119,13 @@ watch(
     &.past {
         &::before {
             background-color: $text-light;
+        }
+    }
+
+    &.dead {
+        color: $text-light;
+        &::before {
+            background-color: transparent;
         }
     }
 }

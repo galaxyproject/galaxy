@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
 
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { defineScopedStore } from "@/stores/scopedStore";
 
 import { type LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
@@ -17,10 +18,14 @@ export class ActionOutOfBoundsError extends Error {
     }
 }
 
-export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
+export const useUndoRedoStore = defineScopedStore("undoRedoStore", (scope) => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
-    const maxUndoActions = ref(100);
+
+    const maxUndoActions = useUserLocalStorage(`undoRedoStore-maxUndoActions-${scope}`, 100);
+
+    /** names of actions which were deleted due to maxUndoActions being exceeded */
+    const deletedActions = ref<string[]>([]);
 
     function $reset() {
         undoActionStack.value.forEach((action) => action.destroy());
@@ -55,6 +60,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
         while (undoActionStack.value.length > maxUndoActions.value && undoActionStack.value.length > 0) {
             const action = undoActionStack.value.shift();
+            deletedActions.value.push(action?.name ?? "unnamed action");
             action?.destroy();
         }
     }
@@ -180,6 +186,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         undoActionStack,
         redoActionStack,
         maxUndoActions,
+        deletedActions,
         undo,
         redo,
         applyAction,
