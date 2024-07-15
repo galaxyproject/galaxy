@@ -34,7 +34,7 @@ watch(
                 {{ action.name }}
             </button>
 
-            <span class="current-state"> current state </span>
+            <span class="state-indicator"> current state </span>
 
             <button v-if="currentStore.pendingLazyAction" class="action lazy" @click="currentStore.undo">
                 {{ currentStore.pendingLazyAction.name }}
@@ -48,9 +48,13 @@ watch(
                 {{ action.name }}
             </button>
 
+            <span v-if="currentStore.deletedActions.length !== 0" class="state-indicator"> latest saved state </span>
+
             <span v-for="(action, i) in [...currentStore.deletedActions].reverse()" :key="i" class="action dead">
                 {{ action }}
             </span>
+
+            <span class="state-indicator"> start of session </span>
         </div>
 
         <label>
@@ -130,7 +134,7 @@ watch(
     }
 }
 
-.current-state {
+.state-indicator {
     display: grid;
     grid-template-columns: 1rem auto 1fr;
     gap: 0.5rem;
