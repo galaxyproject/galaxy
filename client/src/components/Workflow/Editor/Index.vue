@@ -59,6 +59,12 @@
                         @click="undoRedoStore.redo()">
                         <FontAwesomeIcon icon="fa-arrow-right" />
                     </b-button>
+                    <b-button
+                        title="View Last Changes"
+                        :variant="showInPanel === 'changes' ? 'primary' : 'link'"
+                        @click="toggleShowChanges">
+                        <FontAwesomeIcon icon="fa-history" />
+                    </b-button>
                 </b-button-group>
             </div>
             <WorkflowGraph
@@ -97,8 +103,7 @@
                             @onEdit="onEdit"
                             @onAttributes="showAttributes"
                             @onLint="onLint"
-                            @onUpgrade="onUpgrade"
-                            @onViewChanges="toggleShowChanges" />
+                            @onUpgrade="onUpgrade" />
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
@@ -182,7 +187,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faHistory } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -225,7 +230,7 @@ import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
-library.add(faArrowLeft, faArrowRight);
+library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {

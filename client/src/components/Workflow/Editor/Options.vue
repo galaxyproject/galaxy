@@ -18,7 +18,7 @@ import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 
-library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faMagic, faRecycle, faDownload, faPlay, faHistory, faSave);
+library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faMagic, faDownload, faPlay, faHistory, faSave, faRecycle);
 
 const emit = defineEmits<{
     (e: "onAttributes"): void;
@@ -31,7 +31,6 @@ const emit = defineEmits<{
     (e: "onUpgrade"): void;
     (e: "onDownload"): void;
     (e: "onRun"): void;
-    (e: "onViewChanges"): void;
 }>();
 
 const props = defineProps<{
@@ -158,16 +157,6 @@ async function onSave() {
                 <FontAwesomeIcon icon="fa fa-download" /> Download
             </BDropdownItem>
         </BDropdown>
-
-        <BButton
-            v-b-tooltip.hover.noninteractive
-            title="View Last Changes"
-            role="button"
-            :variant="props.currentActivePanel === 'changes' ? 'primary' : 'link'"
-            aria-label="View Last Changes"
-            @click="emit('onViewChanges')">
-            <FontAwesomeIcon icon="fa fa-history" />
-        </BButton>
 
         <BButton
             id="workflow-run-button"
