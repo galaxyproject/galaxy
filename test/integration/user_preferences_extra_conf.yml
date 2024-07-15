@@ -1,23 +1,17 @@
 preferences:
-    vaulttestsection:
-        description: A dummy extra prefs section
+    beacon2_account:
+        description: Your own Beacon2 account
         inputs:
-            - name: client_id
-              label: Client ID
+            - name: db_auth_source
+              label: Beacon Database authentication source
               type: text
-              required: True
-            - name: client_secret
-              label: Client Secret
+              required: False
+            - name: db_user
+              label: Beacon Database Username
+              type: text
+              required: False
+            - name: db_password
+              label: Beacon Database Password
               type: password
               store: vault
-              required: True
-            - name: access_token
-              label: Access token
-              type: password
-              store: vault
-              required: True
-            - name: refresh_token
-              label: Refresh Token
-              type: secret
-              store: vault
-              required: True
+              required: False
