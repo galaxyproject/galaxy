@@ -119,9 +119,10 @@ function dismissAlert() {
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
                 <b>Download here</b>
             </BLink>
-            <p v-if="expirationDate">
-                This result will expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" />.
-            </p>
+            <br />
+            <span v-if="expirationDate">
+                This result will <b>expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
+            </span>
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>
