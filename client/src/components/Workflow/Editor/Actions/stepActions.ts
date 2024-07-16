@@ -347,6 +347,7 @@ export class CopyStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     step: NewStep;
+    stepLabel;
     stepId?: number;
     onUndoRedo?: () => void;
 
@@ -356,12 +357,13 @@ export class CopyStepAction extends UndoRedoAction {
         this.stateStore = stateStore;
 
         const labelSet = getLabelSet(stepStore);
+        this.stepLabel = `${step.id + 1}: ${step.label ?? step.name}`;
         this.step = cloneStepWithUniqueLabel(step, labelSet);
         delete this.step.id;
     }
 
     get name() {
-        return `duplicate step ${this.step.label ?? this.step.name}`;
+        return `duplicate step "${this.stepLabel}"`;
     }
 
     run() {
