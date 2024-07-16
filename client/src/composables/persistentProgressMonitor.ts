@@ -105,6 +105,18 @@ export function usePersistentProgressTaskMonitor(
     useMonitor: TaskMonitor,
     monitoringData: MonitoringData | null = null
 ) {
+    const {
+        waitForTask,
+        isFinalState,
+        loadStatus,
+        isRunning,
+        isCompleted,
+        hasFailed,
+        requestHasFailed,
+        status,
+        expirationTime,
+    } = useMonitor;
+
     const localStorageKey = getPersistentKey(request);
 
     const currentMonitoringData = useLocalStorage<MonitoringData | null>(localStorageKey, monitoringData, {
@@ -138,18 +150,6 @@ export function usePersistentProgressTaskMonitor(
         const startedAt = new Date(currentMonitoringData.value.startedAt);
         return new Date(startedAt.getTime() + expirationTime);
     });
-
-    const {
-        waitForTask,
-        isFinalState,
-        loadStatus,
-        isRunning,
-        isCompleted,
-        hasFailed,
-        requestHasFailed,
-        status,
-        expirationTime,
-    } = useMonitor;
 
     watch(
         status,

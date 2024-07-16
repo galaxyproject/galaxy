@@ -26,7 +26,10 @@ const FAKE_MONITOR: TaskMonitor = {
     isCompleted: ref(false),
     hasFailed: ref(false),
     requestHasFailed: ref(false),
-    status: ref(""),
+    status: ref(),
+    expirationTime: 1000,
+    isFinalState: jest.fn(),
+    loadStatus: jest.fn(),
 };
 
 const mountComponent = (
@@ -61,6 +64,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -85,6 +89,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -109,6 +114,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
@@ -138,6 +144,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: taskId,
             taskType: "short_term_storage",
             request: monitoringRequest,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(monitoringRequest, useMonitor, existingMonitoringData);
 
@@ -166,6 +173,7 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
             taskId: "1",
             taskType: "task",
             request: FAKE_MONITOR_REQUEST,
+            startedAt: new Date(),
         };
         usePersistentProgressTaskMonitor(FAKE_MONITOR_REQUEST, useMonitor, existingMonitoringData);
 
