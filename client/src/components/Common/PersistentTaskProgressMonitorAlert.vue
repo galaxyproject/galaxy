@@ -66,7 +66,12 @@ watch(
     () => props.taskId,
     (newTaskId, oldTaskId) => {
         if (newTaskId && newTaskId !== oldTaskId) {
-            start({ taskId: newTaskId, taskType: props.monitorRequest.taskType, request: props.monitorRequest });
+            start({
+                taskId: newTaskId,
+                taskType: props.monitorRequest.taskType,
+                request: props.monitorRequest,
+                startedAt: new Date(),
+            });
         }
     }
 );

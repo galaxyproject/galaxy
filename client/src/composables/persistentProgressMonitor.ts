@@ -80,6 +80,11 @@ export interface MonitoringData {
      * The information about the task.
      */
     request: MonitoringRequest;
+
+    /**
+     * The time when the task was started.
+     */
+    startedAt: Date;
 }
 
 /**
