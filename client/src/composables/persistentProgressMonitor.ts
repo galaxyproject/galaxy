@@ -115,12 +115,13 @@ export function usePersistentProgressTaskMonitor(
         return Boolean(currentMonitoringData.value);
     });
 
-    const { waitForTask, isRunning, isCompleted, hasFailed, requestHasFailed, status } = useMonitor;
+    const { waitForTask, isFinalState, loadStatus, isRunning, isCompleted, hasFailed, requestHasFailed, status } =
+        useMonitor;
 
     watch(
         status,
         (newStatus) => {
-            if (currentMonitoringData.value) {
+            if (newStatus && currentMonitoringData.value) {
                 currentMonitoringData.value = {
                     ...currentMonitoringData.value,
                     status: newStatus,
@@ -137,6 +138,12 @@ export function usePersistentProgressTaskMonitor(
 
         if (!currentMonitoringData.value) {
             throw new Error("No monitoring data provided or stored. Cannot start monitoring progress.");
+        }
+
+        if (isFinalState(currentMonitoringData.value.status)) {
+            // The task has already finished no need to start monitoring again.
+            // Instead, reload the stored status to update the UI.
+            return loadStatus(currentMonitoringData.value.status!);
         }
 
         return waitForTask(currentMonitoringData.value.taskId);
