@@ -56,6 +56,12 @@ export interface TaskMonitor {
      * @returns True if the status is a final state and is not expected to change.
      */
     isFinalState: (status?: string) => boolean;
+
+    /**
+     * If defined, the time (in milliseconds) after which the task should be considered expired.
+     * Requests to check the task status after this time should be avoided. As they are not guaranteed to return the correct status.
+     */
+    expirationTime?: number;
 }
 
 /**
@@ -79,6 +85,12 @@ export function useGenericMonitor(options: {
      * The delay can be overridden when calling `waitForTask`.
      */
     defaultPollDelay?: number;
+
+    /** Optional expiration time for the task in milliseconds.
+     * After this time, the task should be considered expired.
+     * Requests to check the task status after this time should be avoided.
+     */
+    expirationTime?: number;
 }): TaskMonitor {
     let timeout: NodeJS.Timeout | null = null;
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
@@ -158,5 +170,6 @@ export function useGenericMonitor(options: {
         hasFailed: readonly(hasFailed),
         requestHasFailed: readonly(requestHasFailed),
         status: readonly(status),
+        expirationTime: options.expirationTime,
     };
 }

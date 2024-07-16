@@ -9,6 +9,8 @@ import { TaskMonitor } from "@/composables/genericTaskMonitor";
 import { MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
+import UtcDate from "@/components/UtcDate.vue";
+
 library.add(faSpinner);
 
 interface Props {
@@ -46,8 +48,19 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { getDownloadObjectUrl } = useShortTermStorage();
 
-const { hasMonitoringData, isRunning, isCompleted, hasFailed, requestHasFailed, storedTaskId, status, start, reset } =
-    usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
+const {
+    hasMonitoringData,
+    isRunning,
+    isCompleted,
+    hasFailed,
+    requestHasFailed,
+    storedTaskId,
+    status,
+    hasExpired,
+    expirationDate,
+    start,
+    reset,
+} = usePersistentProgressTaskMonitor(props.monitorRequest, props.useMonitor);
 
 const downloadUrl = computed(() => {
     // We can only download the result if the task is completed and the task type is short_term_storage.
@@ -98,11 +111,17 @@ function dismissAlert() {
             <b>{{ inProgressMessage }}</b>
             <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
         </BAlert>
+        <BAlert v-else-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
+            The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
+        </BAlert>
         <BAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
             <span>{{ completedMessage }}</span>
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
                 <b>Download here</b>
             </BLink>
+            <p v-if="expirationDate">
+                This result will expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" />.
+            </p>
         </BAlert>
         <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>

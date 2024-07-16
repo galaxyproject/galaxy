@@ -115,8 +115,41 @@ export function usePersistentProgressTaskMonitor(
         return Boolean(currentMonitoringData.value);
     });
 
-    const { waitForTask, isFinalState, loadStatus, isRunning, isCompleted, hasFailed, requestHasFailed, status } =
-        useMonitor;
+    const canExpire = computed(() => {
+        return Boolean(expirationTime);
+    });
+
+    const hasExpired = computed(() => {
+        if (!currentMonitoringData.value || !expirationTime) {
+            return false;
+        }
+
+        const now = new Date();
+        const startedAt = new Date(currentMonitoringData.value.startedAt);
+        const elapsedTimeInMs = now.getTime() - startedAt.getTime();
+        return elapsedTimeInMs > expirationTime!;
+    });
+
+    const expirationDate = computed(() => {
+        if (!currentMonitoringData.value || !expirationTime) {
+            return undefined;
+        }
+
+        const startedAt = new Date(currentMonitoringData.value.startedAt);
+        return new Date(startedAt.getTime() + expirationTime);
+    });
+
+    const {
+        waitForTask,
+        isFinalState,
+        loadStatus,
+        isRunning,
+        isCompleted,
+        hasFailed,
+        requestHasFailed,
+        status,
+        expirationTime,
+    } = useMonitor;
 
     watch(
         status,
@@ -206,5 +239,22 @@ export function usePersistentProgressTaskMonitor(
          * In case of an error, this will be the error message.
          */
         status,
+
+        /**
+         * True if the monitoring data can expire.
+         */
+        canExpire,
+
+        /**
+         * True if the monitoring data has expired.
+         * The monitoring data expires after the expiration time has passed since the task was started.
+         */
+        hasExpired,
+
+        /**
+         * The expiration date for the monitoring data.
+         * After this date, the monitoring data is considered expired and should not be used.
+         */
+        expirationDate,
     };
 }

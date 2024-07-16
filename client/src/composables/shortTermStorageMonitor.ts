@@ -3,6 +3,7 @@ import { fetcher } from "@/api/schema";
 import { useGenericMonitor } from "./genericTaskMonitor";
 
 const DEFAULT_POLL_DELAY = 10000;
+const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
 
 const getTempStorageRequestReady = fetcher
     .path("/api/short_term_storage/{storage_request_id}/ready")
@@ -27,5 +28,6 @@ export function useShortTermStorageMonitor() {
         completedCondition: (status?: string) => status === READY_STATE,
         failedCondition: (status?: string) => typeof status === "string" && !VALID_STATES.includes(status),
         defaultPollDelay: DEFAULT_POLL_DELAY,
+        expirationTime: DEFAULT_EXPIRATION_TIME,
     });
 }
