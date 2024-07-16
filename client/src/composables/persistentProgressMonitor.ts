@@ -169,12 +169,42 @@ export function usePersistentProgressTaskMonitor(
          * Clears the monitoring data in the local storage.
          */
         reset,
+
+        /**
+         * The task is still running.
+         */
         isRunning,
+
+        /**
+         * The task has been completed successfully.
+         */
         isCompleted,
+
+        /**
+         * Indicates the task has failed and will not yield results.
+         */
         hasFailed,
+
+        /**
+         * If true, the status of the task cannot be determined because of a request error.
+         */
         requestHasFailed,
+
+        /**
+         * Indicates that there is monitoring data stored.
+         */
         hasMonitoringData,
+
+        /**
+         * The task ID stored in the monitoring data or undefined if no monitoring data is available.
+         */
         storedTaskId: currentMonitoringData.value?.taskId,
+
+        /**
+         * The current status of the task.
+         * The meaning of the status string is up to the monitor implementation.
+         * In case of an error, this will be the error message.
+         */
         status,
     };
 }
