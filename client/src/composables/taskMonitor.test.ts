@@ -75,4 +75,30 @@ describe("useTaskMonitor", () => {
         expect(isCompleted.value).toBe(false);
         expect(status.value).toBe("Request failed");
     });
+
+    describe("isFinalState", () => {
+        it("should indicate is final state when the task is completed", async () => {
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, status } = useTaskMonitor();
+
+            expect(isFinalState(status.value)).toBe(false);
+            waitForTask(COMPLETED_TASK_ID);
+            await flushPromises();
+            expect(isFinalState(status.value)).toBe(true);
+            expect(isRunning.value).toBe(false);
+            expect(isCompleted.value).toBe(true);
+            expect(hasFailed.value).toBe(false);
+        });
+
+        it("should indicate is final state when the task has failed", async () => {
+            const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, status } = useTaskMonitor();
+
+            expect(isFinalState(status.value)).toBe(false);
+            waitForTask(FAILED_TASK_ID);
+            await flushPromises();
+            expect(isFinalState(status.value)).toBe(true);
+            expect(isRunning.value).toBe(false);
+            expect(isCompleted.value).toBe(false);
+            expect(hasFailed.value).toBe(true);
+        });
+    });
 });

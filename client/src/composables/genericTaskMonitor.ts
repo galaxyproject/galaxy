@@ -43,6 +43,13 @@ export interface TaskMonitor {
      * In case of an error, this will be the error message.
      */
     status: Readonly<Ref<string | undefined>>;
+
+    /**
+     * Determines if the status represents a final state.
+     * @param status The status string to check.
+     * @returns True if the status is a final state and is not expected to change.
+     */
+    isFinalState: (status?: string) => boolean;
 }
 
 /**
@@ -77,6 +84,10 @@ export function useGenericMonitor(options: {
 
     const isCompleted = computed(() => options.completedCondition(status.value));
     const hasFailed = computed(() => options.failedCondition(status.value));
+
+    function isFinalState(status?: string) {
+        return options.completedCondition(status) || options.failedCondition(status);
+    }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {
         pollDelay = pollDelayInMs ?? pollDelay;
@@ -130,6 +141,7 @@ export function useGenericMonitor(options: {
 
     return {
         waitForTask,
+        isFinalState,
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),
