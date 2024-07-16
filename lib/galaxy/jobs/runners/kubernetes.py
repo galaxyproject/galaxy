@@ -961,7 +961,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __check_job_pod_running(self, job_state):
         """
-        checks the state of the pod to see if it is unschedulable.
+        checks the state of the pod to see if it is running.
         """
         pods = find_pod_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
         if not pods.response["items"]:
