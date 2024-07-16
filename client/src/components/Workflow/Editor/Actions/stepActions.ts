@@ -326,7 +326,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `remove ${this.step.label ?? this.step.name}`;
+        return `remove step ${this.step.label ?? this.step.name}`;
     }
 
     run() {
@@ -492,7 +492,7 @@ export function useStepActions(
             step,
             key: "position",
             value: position,
-            name: `move "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `move step "${step.id + 1}: ${step.label ?? step.name}"`,
         });
     }
 
@@ -501,7 +501,7 @@ export function useStepActions(
             step,
             key: "annotation",
             value: annotation,
-            name: `edit annotation of "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `edit annotation of step "${step.id + 1}: ${step.label ?? step.name}"`,
         });
     }
 
@@ -518,7 +518,7 @@ export function useStepActions(
             step,
             key: "workflow_outputs",
             value: workflowOutputs,
-            name: `edit output label of "${step.id + 1}: ${step.label ?? step.name}"`,
+            name: `edit output label of step "${step.id + 1}: ${step.label ?? step.name}"`,
             actionConstructor,
             keepActionAlive: true,
             timeout: 2000,
