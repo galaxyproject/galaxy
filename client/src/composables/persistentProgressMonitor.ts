@@ -1,5 +1,5 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import type { TaskMonitor } from "./genericTaskMonitor";
 
@@ -85,6 +85,13 @@ export interface MonitoringData {
      * The time when the task was started.
      */
     startedAt: Date;
+
+    /**
+     * The status of the task when it was last checked.
+     * The meaning of the status string is up to the monitor implementation.
+     * In case of an error, this will be the error message.
+     */
+    status?: string;
 }
 
 /**
@@ -109,6 +116,19 @@ export function usePersistentProgressTaskMonitor(
     });
 
     const { waitForTask, isRunning, isCompleted, hasFailed, requestHasFailed, status } = useMonitor;
+
+    watch(
+        status,
+        (newStatus) => {
+            if (currentMonitoringData.value) {
+                currentMonitoringData.value = {
+                    ...currentMonitoringData.value,
+                    status: newStatus,
+                };
+            }
+        },
+        { immediate: true }
+    );
 
     async function start(monitoringData?: MonitoringData) {
         if (monitoringData) {
