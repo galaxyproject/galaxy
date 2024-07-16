@@ -45,6 +45,12 @@ export interface TaskMonitor {
     status: Readonly<Ref<string | undefined>>;
 
     /**
+     * Loads the status of the task from a stored value.
+     * @param storedStatus The status string to load.
+     */
+    loadStatus: (storedStatus: string) => void;
+
+    /**
      * Determines if the status represents a final state.
      * @param status The status string to check.
      * @returns True if the status is a final state and is not expected to change.
@@ -87,6 +93,10 @@ export function useGenericMonitor(options: {
 
     function isFinalState(status?: string) {
         return options.completedCondition(status) || options.failedCondition(status);
+    }
+
+    function loadStatus(storedStatus: string) {
+        status.value = storedStatus;
     }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {
@@ -142,6 +152,7 @@ export function useGenericMonitor(options: {
     return {
         waitForTask,
         isFinalState,
+        loadStatus,
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),

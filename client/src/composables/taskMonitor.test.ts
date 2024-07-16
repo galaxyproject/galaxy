@@ -76,6 +76,18 @@ describe("useTaskMonitor", () => {
         expect(status.value).toBe("Request failed");
     });
 
+    it("should load the status from the stored monitoring data", async () => {
+        const { loadStatus, isRunning, isCompleted, hasFailed, status } = useTaskMonitor();
+        const storedStatus = "SUCCESS";
+
+        loadStatus(storedStatus);
+
+        expect(status.value).toBe(storedStatus);
+        expect(isRunning.value).toBe(false);
+        expect(isCompleted.value).toBe(true);
+        expect(hasFailed.value).toBe(false);
+    });
+
     describe("isFinalState", () => {
         it("should indicate is final state when the task is completed", async () => {
             const { waitForTask, isFinalState, isRunning, isCompleted, hasFailed, status } = useTaskMonitor();
