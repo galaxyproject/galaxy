@@ -191,9 +191,10 @@ describe("PersistentTaskProgressMonitorAlert.vue", () => {
         expect(completedAlert.text()).not.toContain("Download here");
     });
 
-    it("should render a warning alert when the task has expired", () => {
+    it("should render a warning alert when the task has expired even if the status is running", () => {
         const useMonitor = {
             ...FAKE_MONITOR,
+            isRunning: ref(true),
         };
         const existingMonitoringData: MonitoringData = {
             taskId: "1",

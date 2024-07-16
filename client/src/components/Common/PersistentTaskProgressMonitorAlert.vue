@@ -107,12 +107,12 @@ function dismissAlert() {
 
 <template>
     <div v-if="hasMonitoringData" class="d-flex justify-content-end">
-        <BAlert v-if="isRunning" variant="info" show>
+        <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
+            The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
+        </BAlert>
+        <BAlert v-else-if="isRunning" variant="info" show>
             <b>{{ inProgressMessage }}</b>
             <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
-        </BAlert>
-        <BAlert v-else-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
-            The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
         </BAlert>
         <BAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
             <span>{{ completedMessage }}</span>

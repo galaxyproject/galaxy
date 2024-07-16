@@ -179,6 +179,12 @@ export function usePersistentProgressTaskMonitor(
             return loadStatus(currentMonitoringData.value.status!);
         }
 
+        if (hasExpired.value) {
+            // The monitoring data has expired. Requesting the status again will likely
+            // return incorrect results. Reset the monitoring data to start fresh.
+            return;
+        }
+
         return waitForTask(currentMonitoringData.value.taskId);
     }
 
