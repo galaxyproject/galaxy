@@ -132,6 +132,7 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
         update_time: "2021-05-25T14:00:00.000Z",
         type_id: "dataset_collection",
         url: "",
+        type: "collection",
     };
 }
 
