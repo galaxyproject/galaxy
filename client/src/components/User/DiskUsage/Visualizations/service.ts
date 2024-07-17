@@ -1,5 +1,7 @@
-import { datasetsFetcher, purgeDataset, undeleteDataset } from "@/api/datasets";
+import { client } from "@/api";
+import { purgeDataset, undeleteDataset } from "@/api/datasets";
 import { archivedHistoriesFetcher, deleteHistory, historiesFetcher, undeleteHistory } from "@/api/histories";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface ItemSizeSummary {
     id: string;
@@ -46,26 +48,42 @@ export async function fetchHistoryContentsSizeSummary(
         qv.push(objectStoreId);
     }
 
-    const response = await datasetsFetcher({
-        history_id: historyId,
-        keys: itemSizeSummaryFields,
-        limit,
-        order: "size-dsc",
-        q: q,
-        qv: qv,
+    const { data, error } = await client.GET("/api/datasets", {
+        params: {
+            query: {
+                history_id: historyId,
+                keys: itemSizeSummaryFields,
+                limit,
+                order: "size-dsc",
+                q: q,
+                qv: qv,
+            },
+        },
     });
-    return response.data as unknown as ItemSizeSummary[];
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as unknown as ItemSizeSummary[];
 }
 
 export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string, limit = 5000) {
-    const response = await datasetsFetcher({
-        keys: itemSizeSummaryFields,
-        limit,
-        order: "size-dsc",
-        q: ["purged", "history_content_type", "object_store_id"],
-        qv: ["false", "dataset", objectStoreId],
+    const { data, error } = await client.GET("/api/datasets", {
+        params: {
+            query: {
+                keys: itemSizeSummaryFields,
+                limit,
+                order: "size-dsc",
+                q: ["purged", "history_content_type", "object_store_id"],
+                qv: ["false", "dataset", objectStoreId],
+            },
+        },
     });
-    return response.data as unknown as ItemSizeSummary[];
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as unknown as ItemSizeSummary[];
 }
 
 export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSummary> {
