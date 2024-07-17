@@ -3,7 +3,7 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { datatypesFetcher } from "@/api/datatypes";
+import { client } from "@/api";
 import { dbKeysFetcher } from "@/api/dbKeys";
 import { remoteFilesFetcher } from "@/api/remoteFiles";
 
@@ -67,7 +67,7 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await datatypesFetcher({ extension_only: false });
+    const { data: datatypes } = await client.GET("/api/datatypes", { params: { query: { extension_only: false } } });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
