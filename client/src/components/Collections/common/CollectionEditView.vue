@@ -7,7 +7,7 @@ import { BAlert, BButton, BSpinner, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { copyCollection } from "@/api/datasetCollections";
+import { client } from "@/api";
 import { updateContentFields } from "@/components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
@@ -96,12 +96,14 @@ async function clickedSave(attribute: string, newValue: any) {
         return;
     }
 
-    const dbKey = newValue.id;
+    const dbKey = newValue.id as string;
 
-    try {
-        await copyCollection(props.collectionId, dbKey);
-    } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+    const { error } = await client.POST("/api/dataset_collections/{id}/copy", {
+        params: { path: { id: props.collectionId } },
+        body: { dbkey: dbKey },
+    });
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, "History import failed.");
     }
 }
 
