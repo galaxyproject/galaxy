@@ -1726,6 +1726,7 @@ def config_to_dict(config):
         "jobs_directory": config.jobs_directory,
         "new_file_path": config.new_file_path,
         "object_store_cache_path": config.object_store_cache_path,
+        "object_store_cache_size": config.object_store_cache_size,
         "gid": config.gid,
     }
 
