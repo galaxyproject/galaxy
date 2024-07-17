@@ -34,6 +34,7 @@ from galaxy.util import (
 from .interface import (
     AssertionList,
     Citation,
+    DynamicOptions,
     InputSource,
     PageSource,
     PagesSource,
@@ -1217,6 +1218,22 @@ class XmlPageSource(PageSource):
         return list(map(XmlInputSource, self.parent_elem))
 
 
+class XmlDynamicOptions(DynamicOptions):
+
+    def __init__(self, options_elem: Element):
+        self._options_elem = options_elem
+
+    def elem(self) -> Element:
+        return self._options_elem
+
+    def get_data_table_name(self) -> Optional[str]:
+        """If dynamic options are loaded from a data table, return the name."""
+        return self._options_elem.get("from_data_table")
+
+    def get_index_file_name(self) -> Optional[str]:
+        return self._options_elem.get("from_file")
+
+
 class XmlInputSource(InputSource):
     def __init__(self, input_elem):
         self.input_elem = input_elem
@@ -1246,12 +1263,10 @@ class XmlInputSource(InputSource):
     def parse_validator_elems(self):
         return self.input_elem.findall("validator")
 
-    def parse_dynamic_options_elem(self):
-        """Return a galaxy.tools.parameters.dynamic_options.DynamicOptions
-        if appropriate.
-        """
+    def parse_dynamic_options(self) -> Optional[XmlDynamicOptions]:
+        """Return a XmlDynamicOptions to describe dynamic options if options elem is available."""
         options_elem = self.input_elem.find("options")
-        return options_elem
+        return XmlDynamicOptions(options_elem) if options_elem is not None else None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """

@@ -118,9 +118,11 @@ def is_runtime_context(trans, other_values):
 
 
 def parse_dynamic_options(param, input_source):
-    if (options_elem := input_source.parse_dynamic_options_elem()) is not None:
-        return dynamic_options.DynamicOptions(options_elem, param)
-    return None
+    dynamic_options_config = input_source.parse_dynamic_options()
+    if not dynamic_options_config:
+        return None
+    options_elem = dynamic_options_config.elem()
+    return dynamic_options.DynamicOptions(options_elem, param)
 
 
 # Describe a parameter value error where there is no actual supplied
