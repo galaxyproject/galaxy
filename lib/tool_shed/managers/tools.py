@@ -12,6 +12,7 @@ from galaxy import exceptions
 from galaxy.exceptions import (
     InternalServerError,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.tool_shed.metadata.metadata_generator import RepositoryMetadataToolDict
 from galaxy.tool_shed.util.basic_util import remove_dir
@@ -28,6 +29,7 @@ from galaxy.tool_util.parser import (
     ToolSource,
 )
 from galaxy.tools.stock import stock_tool_sources
+from galaxy.util import relpath
 from tool_shed.context import (
     ProvidesRepositoriesContext,
     SessionRequestContext,
@@ -82,6 +84,9 @@ def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int =
 def get_repository_metadata_tool_dict(
     trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str
 ) -> Tuple[RepositoryMetadata, RepositoryMetadataToolDict]:
+    if trs_tool_id.count("~") < 2:
+        RequestParameterInvalidException(f"Invalid TRS tool id ({trs_tool_id})")
+
     name, owner, tool_id = trs_tool_id.split("~", 3)
     repository, metadata_by_version = trs_tool_id_to_repository_metadata(trans, trs_tool_id)
     if tool_version not in metadata_by_version:
@@ -143,7 +148,9 @@ def _shed_tool_source_for(
         cloned_ok, error_message = clone_repository(repository_clone_url, work_dir, str(ctx.rev()))
         if error_message:
             raise InternalServerError("Failed to materialize target repository revision")
-        path_to_tool = os.path.join(work_dir, tool_config)
+        repo_files_dir = repository_metadata.repository.repo_path(trans.app)
+        repo_rel_tool_path = relpath(tool_config, repo_files_dir)
+        path_to_tool = os.path.join(work_dir, repo_rel_tool_path)
         tool_source = get_tool_source(path_to_tool)
         return tool_source
     finally:
