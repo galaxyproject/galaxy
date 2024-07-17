@@ -1,8 +1,4 @@
-""" Test Tool testing logic.
-
-I am going to migrate from using galaxy.tools.parameters and Galaxy Tool internals to
-tool sources and I want to ensure the results do not change.
-"""
+"""Tool test parsing to dicts logic."""
 
 import os
 from typing import (
@@ -12,10 +8,9 @@ from typing import (
 
 from pytest import skip
 
-from galaxy.app_unittest_utils import tools_support
+from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
-from galaxy.tools.test import parse_tests
 from galaxy.util import (
     in_packages,
     galaxy_directory,
@@ -65,17 +60,13 @@ BIGWIG_TO_WIG_EXPECTATIONS = [
 ]
 
 
-class TestTestParsing(TestCase, tools_support.UsesTools):
-    tool_action: "MockAction"
-
-    def setUp(self):
-        self.setup_app()
-
-    def tearDown(self):
-        self.tear_down_app()
-
+class TestTestParsing(TestCase):
     def _parse_tests(self):
-        return parse_tests(self.tool, self.tool_source)
+        return parse_tool_test_descriptions(self.tool_source)
+
+    def _init_tool_for_path(self, path):
+        tool_source = get_tool_source(path)
+        self.tool_source = tool_source
 
     def test_simple_state_parsing(self):
         self._init_tool_for_path(functional_test_tool_path("simple_constructs.xml"))
@@ -130,9 +121,3 @@ class TestTestParsing(TestCase, tools_support.UsesTools):
         for path_part in expectation_path:
             rest = rest[path_part]
         assert rest == expectation, f"{rest} != {expectation} for {expectation_path}"
-
-
-class TestToolSourceTestParsing(TestTestParsing):
-
-    def _parse_tests(self):
-        return parse_tool_test_descriptions(self.tool_source)
