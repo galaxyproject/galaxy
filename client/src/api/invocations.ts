@@ -14,8 +14,6 @@ export type StepJobSummary =
     | components["schemas"]["InvocationStepJobsResponseJobModel"]
     | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"];
 
-export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
-
 export const stepJobsSummaryFetcher = fetcher
     .path("/api/invocations/{invocation_id}/step_jobs_summary")
     .method("get")
