@@ -18,11 +18,11 @@ export class ActionOutOfBoundsError extends Error {
     }
 }
 
-export const useUndoRedoStore = defineScopedStore("undoRedoStore", (scope) => {
+export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
 
-    const maxUndoActions = useUserLocalStorage(`undoRedoStore-maxUndoActions-${scope}`, 100);
+    const maxUndoActions = useUserLocalStorage(`undoRedoStore-maxUndoActions`, 100);
 
     /** names of actions which were deleted due to maxUndoActions being exceeded */
     const deletedActions = ref<string[]>([]);
