@@ -1,13 +1,16 @@
+import { client } from "@/api";
 import { type UserFileSourceModel } from "@/api/fileSources";
-import { fetcher } from "@/api/schema/fetcher";
-
-export const create = fetcher.path("/api/file_source_instances").method("post").create();
-export const test = fetcher.path("/api/file_source_instances/test").method("post").create();
-export const update = fetcher.path("/api/file_source_instances/{user_file_source_id}").method("put").create();
+import { rethrowSimple } from "@/utils/simple-error";
 
 export async function hide(instance: UserFileSourceModel) {
-    const payload = { hidden: true };
-    const args = { user_file_source_id: String(instance?.uuid) };
-    const { data: fileSource } = await update({ ...args, ...payload });
+    const { data: fileSource, error } = await client.PUT("/api/file_source_instances/{user_file_source_id}", {
+        params: { path: { user_file_source_id: instance.uuid } },
+        body: {
+            hidden: true,
+        },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
     return fileSource;
 }
