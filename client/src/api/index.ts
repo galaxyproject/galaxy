@@ -2,6 +2,8 @@
 
 import { type components } from "@/api/schema";
 
+export { client } from "./schema";
+
 /**
  * Contains minimal information about a History.
  */

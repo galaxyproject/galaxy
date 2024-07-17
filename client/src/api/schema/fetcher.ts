@@ -1,11 +1,12 @@
+import createClient from "openapi-fetch";
 import { type ApiResponse, Fetcher, type Middleware } from "openapi-typescript-fetch";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import { type paths } from "./schema";
+import { type paths as GalaxyApiPaths } from "./schema";
 
-export { type ApiResponse };
+export type { ApiResponse, GalaxyApiPaths };
 
 const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
     try {
@@ -16,5 +17,8 @@ const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
     }
 };
 
-export const fetcher = Fetcher.for<paths>();
+export const fetcher = Fetcher.for<GalaxyApiPaths>();
 fetcher.configure({ baseUrl: getAppRoot(undefined, true), use: [rethrowSimpleMiddleware] });
+
+//TODO: add a Middleware to rethrow simple errors?
+export const client = createClient<GalaxyApiPaths>({ baseUrl: getAppRoot(undefined, true) });
