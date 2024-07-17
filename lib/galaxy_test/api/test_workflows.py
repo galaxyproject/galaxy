@@ -6982,6 +6982,35 @@ steps:
             # Take a valid stat and make it invalid, assert workflow won't run.
             self._assert_status_code_is(invocation_response, 400)
 
+    @skip_without_tool("collection_paired_test")
+    def test_run_map_over_with_step_parameter_dict(self):
+        # Tests what the legacy run form submits
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()["outputs"][0]
+            workflow_id = self._upload_yaml_workflow(
+                """
+class: GalaxyWorkflow
+steps:
+  "0":
+    tool_id: collection_paired_conditional_structured_like
+    state:
+      cond:
+        input1:
+          __class__: RuntimeValue
+"""
+            )
+            workflow_request = {
+                "history": f"hist_id={history_id}",
+                "parameters": dumps({"0": {"cond|input1": {"values": [{"id": hdca["id"], "src": "hdca"}]}}}),
+                "parameters_normalized": True,
+            }
+            url = f"workflows/{workflow_id}/invocations"
+            invocation_response = self._post(url, data=workflow_request, json=True)
+            invocation_response.raise_for_status()
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_response.json()["id"]
+            )
+
     @skip_without_tool("validation_default")
     def test_parameter_substitution_validation_value_errors_1(self):
         substitions = dict(select_param='" ; echo "moo')

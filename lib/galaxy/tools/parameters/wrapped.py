@@ -3,6 +3,8 @@ from typing import (
     Any,
     Dict,
     List,
+    Sequence,
+    Union,
 )
 
 from galaxy.tools.parameters.basic import (
@@ -187,6 +189,26 @@ def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
 
+def nested_key_to_path(key: str) -> Sequence[Union[str, int]]:
+    """
+    Convert a tool state key that is separated with '|' and '_n' into path iterable.
+    E.g. "cond|repeat_0|paramA" -> ["cond", "repeat", 0, "paramA"].
+    Return value can be used with `boltons.iterutils.get_path`.
+    """
+    path: List[Union[str, int]] = []
+    key_parts = key.split("|")
+    if len(key_parts) == 1:
+        return key_parts
+    for key_part in key_parts:
+        if "_" in key_part:
+            input_name, _index = key_part.rsplit("_", 1)
+            if _index.isdigit():
+                path.extend((input_name, int(_index)))
+                continue
+        path.append(key_part)
+    return path
+
+
 def flat_to_nested_state(incoming: Dict[str, Any]):
     nested_state: Dict[str, Any] = {}
     for key, value in incoming.items():
@@ -194,4 +216,11 @@ def flat_to_nested_state(incoming: Dict[str, Any]):
     return nested_state
 
 
-__all__ = ("LegacyUnprefixedDict", "WrappedParameters", "make_dict_copy", "process_key", "flat_to_nested_state")
+__all__ = (
+    "LegacyUnprefixedDict",
+    "WrappedParameters",
+    "make_dict_copy",
+    "process_key",
+    "flat_to_nested_state",
+    "nested_key_to_path",
+)
