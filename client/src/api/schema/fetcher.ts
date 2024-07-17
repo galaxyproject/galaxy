@@ -1,12 +1,12 @@
 import createClient from "openapi-fetch";
-import { type ApiResponse, Fetcher, type Middleware } from "openapi-typescript-fetch";
+import { Fetcher, type Middleware } from "openapi-typescript-fetch";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { type paths as GalaxyApiPaths } from "./schema";
 
-export type { ApiResponse, GalaxyApiPaths };
+export type { GalaxyApiPaths };
 
 const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
     try {

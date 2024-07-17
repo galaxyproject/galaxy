@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { getAppRoot } from "@/onload";
 
-import { type ApiResponse, type components, fetcher } from "./schema";
+import { type components, fetcher } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
@@ -39,25 +39,17 @@ export async function invocationForJob(params: { jobId: string }): Promise<Workf
 }
 
 // TODO: Replace these provisional functions with fetchers after https://github.com/galaxyproject/galaxy/pull/16707 is merged
-export async function fetchInvocationDetails(params: { id: string }): Promise<ApiResponse<WorkflowInvocation>> {
+export async function fetchInvocationDetails(params: { id: string }): Promise<WorkflowInvocation> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocation>;
+    return data as WorkflowInvocation;
 }
 
-export async function fetchInvocationJobsSummary(params: {
-    id: string;
-}): Promise<ApiResponse<WorkflowInvocationJobsSummary>> {
+export async function fetchInvocationJobsSummary(params: { id: string }): Promise<WorkflowInvocationJobsSummary> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}/jobs_summary`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocationJobsSummary>;
+    return data as WorkflowInvocationJobsSummary;
 }
 
-export async function fetchInvocationStep(params: { id: string }): Promise<ApiResponse<WorkflowInvocationStep>> {
+export async function fetchInvocationStep(params: { id: string }): Promise<WorkflowInvocationStep> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/steps/${params.id}`);
-    return {
-        data,
-    } as ApiResponse<WorkflowInvocationStep>;
+    return data as WorkflowInvocationStep;
 }
