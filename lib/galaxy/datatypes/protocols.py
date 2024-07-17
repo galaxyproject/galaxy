@@ -16,6 +16,10 @@ class HasCreatingJob(Protocol):
     def creating_job(self): ...
 
 
+class HasDeleted(Protocol):
+    deleted: bool
+
+
 class HasExt(Protocol):
     @property
     def ext(self): ...
@@ -55,6 +59,7 @@ class HasExtraFilesAndMetadata(HasExtraFilesPath, HasMetadata, Protocol): ...
 
 class DatasetProtocol(
     HasCreatingJob,
+    HasDeleted,
     HasExt,
     HasExtraFilesPath,
     HasFileName,
