@@ -6,10 +6,17 @@ from urllib.parse import (
 )
 
 from sqlalchemy import (
+    Column,
     create_engine,
+    delete,
+    insert,
+    Integer,
+    MetaData,
     or_,
     select,
-    text,
+    String,
+    Table,
+    Text,
 )
 
 from galaxy import exceptions
@@ -22,7 +29,16 @@ from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 
 log = logging.getLogger(__name__)
 
-DATABASE_TABLE_NAME = "gxitproxy"
+gxitproxy = Table(
+    "gxitproxy",
+    MetaData(),
+    Column("key", String(16), primary_key=True),
+    Column("key_type", Text(), primary_key=True),
+    Column("token", String(32)),
+    Column("host", Text()),
+    Column("port", Integer()),
+    Column("info", Text()),
+)
 
 
 class InteractiveToolPropagatorSQLAlchemy:
@@ -39,33 +55,20 @@ class InteractiveToolPropagatorSQLAlchemy:
         :param encode_id: A helper class that can encode ids as lowercase alphanumeric strings and vice versa.
         """
         self._engine = create_engine(database_url)
+        gxitproxy.create(self._engine, checkfirst=True)
         self._encode_id = encode_id
 
     def get(self, key, key_type):
+        columns = ("token", "host", "port", "info")
+
         with self._engine.connect() as conn:
-            query = text(
-                f"""
-            SELECT token, host, port, info
-            FROM {DATABASE_TABLE_NAME} WHERE key=:key AND key_type=:key_type
-            """
+            query = select(gxitproxy.c[columns]).where(
+                gxitproxy.c["key"] == key,
+                gxitproxy.c["key_type"] == key_type,
             )
-            parameters = dict(
-                key=key,
-                key_type=key_type,
-            )
-            result = conn.execute(query, parameters).fetchone()
-        return (
-            None
-            if result is None
-            else dict(
-                key=key,
-                key_type=key_type,
-                token=result[0],
-                host=result[1],
-                port=result[2],
-                info=result[3],
-            )
-        )
+            result = conn.execute(query).fetchone()
+
+        return dict(key=key, key_type=key_type, **dict(zip(columns, result))) if result else None
 
     def save(self, key, key_type, token, host, port, info=None):
         """
@@ -75,42 +78,15 @@ class InteractiveToolPropagatorSQLAlchemy:
         assert key_type, ValueError("A non-zero length key_type is required.")
         assert token, ValueError("A non-zero length token is required.")
         with self._engine.connect() as conn:
-            # create gx-it-proxy table if not exists
-            query = text(
-                f"""
-            CREATE TABLE IF NOT EXISTS {DATABASE_TABLE_NAME} (
-                key TEXT,
-                key_type TEXT,
-                token TEXT,
-                host TEXT,
-                port INTEGER,
-                info TEXT,
-                PRIMARY KEY (key, key_type)
-            )
-            """
-            )
-            conn.execute(query)
-
             # delete existing data with same key
-            query = text(
-                f"""
-                DELETE FROM {DATABASE_TABLE_NAME} WHERE key=:key AND key_type=:key_type
-            """
+            query_delete = delete(gxitproxy).where(
+                gxitproxy.c["key"] == key,
+                gxitproxy.c["key_type"] == key_type,
             )
-            parameters = dict(
-                key=key,
-                key_type=key_type,
-            )
-            conn.execute(query, parameters)
+            conn.execute(query_delete)
 
             # save data
-            query = text(
-                f"""
-                INSERT INTO {DATABASE_TABLE_NAME} (key, key_type, token, host, port, info)
-                VALUES (:key, :key_type, :token, :host, :port, :info)
-            """
-            )
-            parameters = dict(
+            query_insert = insert(gxitproxy).values(
                 key=key,
                 key_type=key_type,
                 token=token,
@@ -118,7 +94,7 @@ class InteractiveToolPropagatorSQLAlchemy:
                 port=port,
                 info=info,
             )
-            conn.execute(query, parameters)
+            conn.execute(query_insert)
 
             conn.commit()
 
@@ -129,17 +105,10 @@ class InteractiveToolPropagatorSQLAlchemy:
         """
         assert kwd, ValueError("You must provide some values to key upon")
         with self._engine.connect() as conn:
-            query_template = f"DELETE FROM {DATABASE_TABLE_NAME} WHERE {{conditions}}"
-            conditions = (
-                "{key}=:{value}".format(
-                    key=key,
-                    value=f"value_{i}",
-                )
-                for i, key in enumerate(kwd)
+            query = delete(gxitproxy).where(
+                *(gxitproxy.c[key] == value for key, value in kwd.items()),
             )
-            query = text(query_template.format(conditions=" AND ".join(conditions)))
-            parameters = {f"value_{i}": value for i, value in enumerate(kwd.values())}
-            conn.execute(query, parameters)
+            conn.execute(query)
             conn.commit()
 
     def save_entry_point(self, entry_point):
