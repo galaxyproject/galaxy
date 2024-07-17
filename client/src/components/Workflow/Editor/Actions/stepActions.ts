@@ -326,7 +326,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `remove step ${this.step.label ?? this.step.name}`;
+        return `remove step "${this.step.id} ${this.step.label ?? this.step.name}"`;
     }
 
     run() {
