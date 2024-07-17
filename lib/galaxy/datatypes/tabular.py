@@ -135,7 +135,8 @@ class TabularData(Text):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
