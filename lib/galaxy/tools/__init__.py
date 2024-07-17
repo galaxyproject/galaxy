@@ -81,6 +81,10 @@ from galaxy.tool_util.parser.interface import (
     PageSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.util import (
+    parse_profile_version,
+    parse_tool_version_with_defaults,
+)
 from galaxy.tool_util.parser.xml import (
     XmlPageSource,
     XmlToolSource,
@@ -1006,7 +1010,7 @@ class Tool(Dictifiable):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
-        self.profile = float(tool_source.parse_profile())
+        self.profile = parse_profile_version(tool_source)
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -1037,14 +1041,7 @@ class Tool(Dictifiable):
         if not dynamic and not self.name:
             raise Exception(f"Missing tool 'name' for tool with id '{self.id}' at '{tool_source}'")
 
-        version = tool_source.parse_version()
-        if not version:
-            if profile < Version("16.04"):
-                # For backward compatibility, some tools may not have versions yet.
-                version = "1.0.0"
-            else:
-                raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
-
+        version = parse_tool_version_with_defaults(self.id, tool_source, profile)
         self.version = version
 
         # Legacy feature, ignored by UI.
