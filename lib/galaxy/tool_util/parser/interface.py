@@ -42,10 +42,13 @@ class AssertionDict(TypedDict):
 AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
+ToolSourceTestInputs = Any
+ToolSourceTestOutputs = Any
+
 
 class ToolSourceTest(TypedDict):
-    inputs: Any
-    outputs: Any
+    inputs: ToolSourceTestInputs
+    outputs: ToolSourceTestOutputs
     output_collections: List[Any]
     stdout: AssertionList
     stderr: AssertionList
@@ -245,7 +248,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> "PagesSource":
         """Return a PagesSource representing inputs by page for tool."""
 
     def parse_provided_metadata_style(self):

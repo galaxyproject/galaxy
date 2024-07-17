@@ -391,7 +391,7 @@ class XmlToolSource(ToolSource):
     def parse_requirements_and_containers(self):
         return requirements.parse_requirements_from_xml(self.root, parse_resources=True)
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> "XmlPagesSource":
         return XmlPagesSource(self.root)
 
     def parse_provided_metadata_style(self):
