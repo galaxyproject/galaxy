@@ -4,7 +4,7 @@
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
 import { client } from "@/api";
-import { dbKeysFetcher } from "@/api/dbKeys";
+import { getDbKeys } from "@/api/dbKeys";
 import { remoteFilesFetcher } from "@/api/remoteFiles";
 
 export const AUTO_EXTENSION = {
@@ -51,7 +51,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await dbKeysFetcher();
+    const { data: dbKeys } = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
