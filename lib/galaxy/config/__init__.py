@@ -1108,6 +1108,32 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.interactivetools_map = "sqlite:///" + self._in_root_dir(
             kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
         )
+        if self.interactivetools_map_sqlalchemy:
+            # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
+            urls = {
+                setting: parse_sqlalchemy_url(value)
+                for setting, value in (
+                    ("interactivetools_map_sqlalchemy", self.interactivetools_map_sqlalchemy),
+                    ("database_connection", self.database_connection),
+                    ("install_database_connection", self.install_database_connection),
+                )
+                if value is not None
+            }
+
+            def is_in_conflict(url1, url2):
+                return all((url1.host == url2.host, url1.port == url2.port, url1.database == url2.database))
+
+            conflicting_settings = {
+                setting
+                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetools_map_sqlalchemy"
+                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetools_map_sqlalchemy"
+            }
+
+            if conflicting_settings:
+                raise ConfigurationError(
+                    f"Option `{tuple(urls)[0]}` cannot take the same value as: %s"
+                    % ", ".join(f"`{setting}`" for setting in conflicting_settings)
+                )
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False
