@@ -6,9 +6,6 @@ export const workflowFetcher = fetcher.path("/api/workflows/{workflow_id}").meth
 
 export const invocationCountsFetcher = fetcher.path("/api/workflows/{workflow_id}/counts").method("get").create();
 
-export const sharing = fetcher.path("/api/workflows/{workflow_id}/sharing").method("get").create();
-export const enableLink = fetcher.path("/api/workflows/{workflow_id}/enable_link_access").method("put").create();
-
 //TODO: replace with generated schema model when available
 export interface WorkflowSummary {
     name: string;
