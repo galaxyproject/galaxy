@@ -12,11 +12,10 @@ from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.util import (
-    in_packages,
     galaxy_directory,
+    in_packages,
 )
 from galaxy.util.unittest import TestCase
-
 
 # Not the whole response, just some keys and such to test...
 SIMPLE_CONSTRUCTS_EXPECTATIONS_0 = [

@@ -5,7 +5,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -31,12 +30,16 @@ from galaxy.util import (
     string_as_bool_or_none,
     unicodify,
 )
+from ._types import (
+    ExtraFileInfoDictT,
+    RequiredDataTablesT,
+    RequiredFilesT,
+    RequiredLocFileT,
+)
 
 log = logging.getLogger(__name__)
 
-RequiredFilesT = List[Tuple[str, dict]]
-RequiredDataTablesT = List[str]
-RequiredLocFileT = List[str]
+AnyParamContext = Union["ParamContext", "RootParamContext"]
 
 
 def parse_tool_test_descriptions(
@@ -127,7 +130,7 @@ def _process_raw_inputs(
     required_files: RequiredFilesT,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
-    parent_context: Optional[Union["ParamContext", "RootParamContext"]] = None,
+    parent_context: Optional[AnyParamContext] = None,
 ):
     """
     Recursively expand flat list of inputs into "tree" form of flat list
@@ -192,7 +195,7 @@ def _process_raw_inputs(
         elif input_type == "repeat":
             repeat_index = 0
             while True:
-                context = ParamContext(name=name, index=repeat_index, parent_context=parent_context)
+                context = ParamContext(name=name, parent_context=parent_context, index=repeat_index)
                 updated = False
                 page_source = input_source.parse_nested_inputs_source()
                 for r_value in page_source.parse_input_sources():
@@ -268,12 +271,12 @@ def input_sources(tool_source: ToolSource) -> List[InputSource]:
 
 
 class ParamContext:
-    def __init__(self, name, index=None, parent_context=None):
+    def __init__(self, name: str, parent_context: AnyParamContext, index: Optional[int] = None):
         self.parent_context = parent_context
         self.name = name
         self.index = None if index is None else int(index)
 
-    def for_state(self):
+    def for_state(self) -> str:
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
         parent_for_state = self.parent_context.for_state()
         if parent_for_state:
@@ -281,7 +284,7 @@ class ParamContext:
         else:
             return name
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Context[for_state={self.for_state()}]"
 
     def param_names(self):
@@ -295,14 +298,14 @@ class ParamContext:
         else:
             yield self.name
 
-    def extract_value(self, raw_inputs):
+    def extract_value(self, raw_inputs: ToolSourceTestInputs):
         for param_name in self.param_names():
             value = self.__raw_param_found(param_name, raw_inputs)
             if value:
                 return value
         return None
 
-    def __raw_param_found(self, param_name, raw_inputs):
+    def __raw_param_found(self, param_name: str, raw_inputs: ToolSourceTestInputs):
         index = None
         for i, raw_input_dict in enumerate(raw_inputs):
             if raw_input_dict["name"] == param_name:
@@ -442,20 +445,26 @@ def _matching_case_for_value(tool_source: ToolSource, cond: InputSource, test_pa
     return None
 
 
-def _add_uploaded_dataset(name: str, value: Any, extra, input_parameter: InputSource, required_files: RequiredFilesT):
+def _add_uploaded_dataset(
+    name: str,
+    value: Optional[str],
+    extra: ExtraFileInfoDictT,
+    input_parameter: InputSource,
+    required_files: RequiredFilesT,
+) -> Optional[str]:
     if value is None:
         assert input_parameter.parse_optional(), f"{name} is not optional. You must provide a valid filename."
         return value
     return require_file(name, value, extra, required_files)
 
 
-def require_file(name, value, extra, required_files):
+def require_file(name: str, value: str, extra: ExtraFileInfoDictT, required_files: RequiredFilesT) -> str:
     if (value, extra) not in required_files:
         required_files.append((value, extra))  # these files will be uploaded
-    name_change = [att for att in extra.get("edit_attributes", []) if att.get("type") == "name"]
-    if name_change:
-        name_change = name_change[-1].get("value")  # only the last name change really matters
-        value = name_change  # change value for select to renamed uploaded file for e.g. composite dataset
+    name_changes = [att for att in extra.get("edit_attributes", []) if att.get("type") == "name"]
+    if name_changes:
+        name_change = name_changes[-1].get("value")  # only the last name change really matters
+        value = str(name_change)  # change value for select to renamed uploaded file for e.g. composite dataset
     else:
         for end in [".zip", ".gz"]:
             if value.endswith(end):

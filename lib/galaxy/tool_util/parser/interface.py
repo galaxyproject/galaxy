@@ -45,12 +45,13 @@ XmlInt = Union[str, int]
 
 ToolSourceTestInputs = Any
 ToolSourceTestOutputs = Any
+TestSourceTestOutputColllection = Any
 
 
 class ToolSourceTest(TypedDict):
     inputs: ToolSourceTestInputs
     outputs: ToolSourceTestOutputs
-    output_collections: List[Any]
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
     expect_exit_code: Optional[XmlInt]
