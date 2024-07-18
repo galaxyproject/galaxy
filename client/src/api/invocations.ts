@@ -39,11 +39,6 @@ export async function invocationForJob(params: { jobId: string }): Promise<Workf
 }
 
 // TODO: Replace these provisional functions with fetchers after https://github.com/galaxyproject/galaxy/pull/16707 is merged
-export async function fetchInvocationDetails(params: { id: string }): Promise<WorkflowInvocation> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}`);
-    return data as WorkflowInvocation;
-}
-
 export async function fetchInvocationJobsSummary(params: { id: string }): Promise<WorkflowInvocationJobsSummary> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}/jobs_summary`);
     return data as WorkflowInvocationJobsSummary;
