@@ -10,6 +10,7 @@ from typing import (
     Union,
 )
 
+from boltons.iterutils import get_path
 from typing_extensions import Protocol
 
 from galaxy import model
@@ -35,6 +36,7 @@ from galaxy.schema.invocation import (
     WarningReason,
 )
 from galaxy.tools.parameters.basic import raw_to_galaxy
+from galaxy.tools.parameters.wrapped import nested_key_to_path
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
@@ -444,6 +446,10 @@ class WorkflowProgress:
                     replacement = temp
             else:
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+        elif step.state and (state_input := get_path(step.state.inputs, nested_key_to_path(prefixed_name), None)):
+            # workflow submitted with step parameters populates state directly
+            # via populate_module_and_state
+            replacement = state_input
         else:
             for step_input in step.inputs:
                 if step_input.name == prefixed_name and step_input.default_value_set:

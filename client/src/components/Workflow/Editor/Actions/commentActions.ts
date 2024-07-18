@@ -177,3 +177,28 @@ export class ToggleCommentSelectedAction extends UndoRedoAction {
         this.store.setCommentMultiSelected(this.commentId, !this.toggleTo);
     }
 }
+
+export class RemoveAllFreehandCommentsAction extends UndoRedoAction {
+    store;
+    comments;
+
+    constructor(store: WorkflowCommentStore) {
+        super();
+
+        this.store = store;
+        const freehandComments = store.comments.filter((comment) => comment.type === "freehand");
+        this.comments = structuredClone(freehandComments);
+    }
+
+    get name() {
+        return "remove all freehand comments";
+    }
+
+    run() {
+        this.store.deleteFreehandComments();
+    }
+
+    undo() {
+        this.store.addComments(structuredClone(this.comments));
+    }
+}
