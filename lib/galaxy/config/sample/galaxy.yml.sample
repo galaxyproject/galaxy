@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -721,15 +721,6 @@ galaxy:
   # Configured user file source templates embedded into Galaxy's config.
   #file_source_templates: null
 
-  # Configure URIs for user object stores to use either the object ID
-  # ('id') or UUIDs ('uuid'). Either is fine really, Galaxy doesn't
-  # typically expose database objects by 'id' but there isn't any
-  # obvious disadvantage to doing it in this case and it keeps user
-  # exposed URIs much smaller. The default of UUID feels a little more
-  # like a typical way to do this within Galaxy though. Do not change
-  # this value once user object stores have been created.
-  #user_config_templates_index_by: uuid
-
   # User defined object stores and file sources are saved in the
   # database with their last valid configuration. It may be the case
   # that the admin changes file source and object store templates over
@@ -1113,8 +1104,8 @@ galaxy:
   # <cache_dir>.
   #object_store_cache_path: object_store_cache
 
-  # Default cache size for caching object stores if cache not configured
-  # for that object store entry.
+  # Default cache size, in GB, for caching object stores if the cache is
+  # not configured for that object store entry.
   #object_store_cache_size: -1
 
   # Set this to true to indicate in the UI that a user's object store
@@ -2974,4 +2965,3 @@ galaxy:
   # Enable the integration of the Galaxy Help Forum in the tool panel.
   # This requires the help_forum_api_url to be set.
   #enable_help_forum_tool_panel_integration: false
-

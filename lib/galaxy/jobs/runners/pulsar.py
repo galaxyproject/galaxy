@@ -57,6 +57,7 @@ from galaxy.util import (
     galaxy_directory,
     specs,
     string_as_bool_or_none,
+    unicodify,
 )
 
 log = logging.getLogger(__name__)
@@ -649,8 +650,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
             remote_metadata_directory = run_results.get("metadata_directory", None)
-            tool_stdout = run_results.get("stdout", "")
-            tool_stderr = run_results.get("stderr", "")
+            tool_stdout = unicodify(run_results.get("stdout", ""), strip_null=True)
+            tool_stderr = unicodify(run_results.get("stderr", ""), strip_null=True)
             job_stdout = run_results.get("job_stdout")
             job_stderr = run_results.get("job_stderr")
             exit_code = run_results.get("returncode")

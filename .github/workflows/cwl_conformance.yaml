@@ -4,10 +4,12 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
 concurrency:
@@ -59,7 +61,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
         run: ./run_tests.sh --coverage --skip_flakey_fails -cwl lib/galaxy_test/api/cwl -- -m "${{ matrix.marker }} and ${{ matrix.conformance-version }}"
         working-directory: 'galaxy root'

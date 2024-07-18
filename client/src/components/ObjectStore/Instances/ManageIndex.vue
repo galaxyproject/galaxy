@@ -59,9 +59,9 @@ function reload() {
             :fixed="true"
             :show-empty="true">
             <template v-slot:empty>
-                <LoadingSpan v-if="loading" message="Loading object store instances" />
+                <LoadingSpan v-if="loading" message="Loading storage location instances" />
                 <b-alert v-else id="no-object-store-instances" variant="info" show>
-                    <div>No object store instances found, click the create button to configure a new one.</div>
+                    <div>No storage location instances found, click the create button to configure a new one.</div>
                 </b-alert>
             </template>
             <template v-slot:cell(badges)="row">

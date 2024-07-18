@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router/composables";
 
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
+import localize from "@/utils/localization";
+
 import { fetchObjectStoreContentsSizeSummary } from "./service";
 import { buildTopNDatasetsBySizeData, byteFormattingForChart, useDataLoading, useDatasetsToDisplay } from "./util";
 
@@ -18,6 +21,8 @@ interface Props {
 const props = defineProps<Props>();
 
 const router = useRouter();
+
+const { getObjectStoreNameById } = useObjectStoreStore();
 
 const {
     numberOfDatasetsToDisplayOptions,
@@ -69,11 +74,11 @@ function onUndelete(datasetId: string) {
 </script>
 
 <template>
-    <OverviewPage title="Object Store Storage Overview">
+    <OverviewPage title="Storage overview by location">
         <p class="text-justify">
-            Here you will find some Graphs displaying the storage taken by datasets in the object store:
-            <b>{{ objectStoreId }}</b
-            >. You can use these graphs to identify the datasets that take the most space in this object store.
+            Here you will find some Graphs displaying the storage taken by datasets in the storage location:
+            <b>{{ getObjectStoreNameById(objectStoreId) }}</b
+            >. You can use these graphs to identify the datasets that take the most space in this storage location.
         </p>
         <WarnDeletedDatasets />
         <div v-if="isLoading" class="text-center">

@@ -17,6 +17,7 @@ import tool_shed.repository_registry
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import safe_makedirs
 from tool_shed.context import ProvidesRepositoriesContext
+from tool_shed.managers.model_cache import ModelCache
 from tool_shed.managers.repositories import upload_tar_and_set_metadata
 from tool_shed.managers.users import create_user
 from tool_shed.repository_types import util as rt_util
@@ -80,6 +81,7 @@ class TestToolShedApp(ToolShedApp):
         self.config = TestToolShedConfig(temp_directory)
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.repository_registry = tool_shed.repository_registry.Registry(self)
+        self.model_cache = ModelCache(os.path.join(temp_directory, "model_cache"))
 
     @property
     def security_agent(self):

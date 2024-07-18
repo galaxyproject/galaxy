@@ -33,6 +33,7 @@ from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.managers.model_cache import ModelCache
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp.model.migrations import verify_database
@@ -83,6 +84,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
+        self.model_cache = ModelCache(self.config.model_cache_dir)
         self.user_manager = self._register_singleton(UserManager, UserManager(self, app_type="tool_shed"))
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.

@@ -2532,13 +2532,13 @@ class CwlPopulator:
             raise Exception("Expected run to fail but it didn't.")
 
         expected_outputs = test["output"]
-        try:
-            for key, value in expected_outputs.items():
+        for key, value in expected_outputs.items():
+            try:
                 actual_output = run.get_output_as_object(key)
                 cwltest.compare.compare(value, actual_output)
-        except Exception:
-            self.dataset_populator._summarize_history(run.history_id)
-            raise
+            except Exception:
+                self.dataset_populator._summarize_history(run.history_id)
+                raise
 
 
 class LibraryPopulator:

@@ -17,6 +17,7 @@ from typing import (
 )
 
 import packaging.version
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
@@ -61,6 +62,16 @@ class ToolSourceTests(TypedDict):
     tests: List[ToolSourceTest]
 
 
+class XrefDict(TypedDict):
+    value: str
+    reftype: str
+
+
+class Citation(BaseModel):
+    type: str
+    content: str
+
+
 class ToolSource(metaclass=ABCMeta):
     """This interface represents an abstract source to parse tool
     information from.
@@ -76,7 +87,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_version(self):
+    def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
 
     def parse_tool_module(self):
@@ -98,12 +109,15 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_name(self):
+    def parse_name(self) -> str:
         """Parse a short name for tool (required)."""
 
     @abstractmethod
-    def parse_description(self):
-        """Parse a description for tool. Longer than name, shorted than help."""
+    def parse_description(self) -> str:
+        """Parse a description for tool. Longer than name, shorted than help.
+
+        We parse this out as "" if it isn't explicitly declared.
+        """
 
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
@@ -114,7 +128,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @abstractmethod
-    def parse_xrefs(self) -> List[Dict[str, str]]:
+    def parse_xrefs(self) -> List[XrefDict]:
         """Parse list of external resource URIs and types."""
 
     def parse_display_interface(self, default):
@@ -276,12 +290,16 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         """Return license corresponding to tool wrapper."""
+
+    def parse_citations(self) -> List[Citation]:
+        """Return a list of citations."""
+        return []
 
     @abstractmethod
     def parse_python_template_version(self) -> Optional[packaging.version.Version]:

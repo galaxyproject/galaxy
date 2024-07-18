@@ -566,6 +566,8 @@ class ToolBox(AbstractToolBox):
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format
         tool_representation = dynamic_tool.value
+        if "name" not in tool_representation:
+            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
         tool_source = get_tool_source_from_representation(
             tool_format=tool_format,
             tool_representation=tool_representation,
@@ -1030,18 +1032,20 @@ class Tool(Dictifiable):
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
-        if not self.name and dynamic:
+        if not self.name and dynamic and self.id:
             self.name = self.id
         if not dynamic and not self.name:
             raise Exception(f"Missing tool 'name' for tool with id '{self.id}' at '{tool_source}'")
 
-        self.version = tool_source.parse_version()
-        if not self.version:
+        version = tool_source.parse_version()
+        if not version:
             if profile < Version("16.04"):
                 # For backward compatibility, some tools may not have versions yet.
-                self.version = "1.0.0"
+                version = "1.0.0"
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
+
+        self.version = version
 
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
@@ -1476,22 +1480,12 @@ class Tool(Dictifiable):
         self.stdio_regexes = regexes
 
     def _parse_citations(self, tool_source):
-        # TODO: Move following logic into ToolSource abstraction.
-        if not hasattr(tool_source, "root"):
-            return []
-
-        root = tool_source.root
-        citations: List[str] = []
-        citations_elem = root.find("citations")
-        if citations_elem is None:
-            return citations
-
-        for citation_elem in citations_elem:
-            if citation_elem.tag != "citation":
-                pass
-            citations_manager = getattr(self.app, "citations_manager", None)
-            if citations_manager is not None:
-                citation = citations_manager.parse_citation(citation_elem)
+        citation_models = tool_source.parse_citations()
+        citations_manager = getattr(self.app, "citations_manager", None)
+        citations = []
+        if citations_manager is not None:
+            for citation_model in citation_models:
+                citation = citations_manager.parse_citation(citation_model)
                 if citation:
                     citations.append(citation)
         return citations

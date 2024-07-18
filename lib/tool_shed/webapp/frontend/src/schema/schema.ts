@@ -168,6 +168,17 @@ export interface paths {
          */
         put: operations["tools__build_search_index"]
     }
+    "/api/tools/{tool_id}/versions/{tool_version}": {
+        /** Return Galaxy's meta model description of the tool's inputs */
+        get: operations["tools__parameter_model"]
+    }
+    "/api/tools/{tool_id}/versions/{tool_version}/parameter_request_schema": {
+        /**
+         * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+         * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+         */
+        get: operations["tools__parameter_request_model"]
+    }
     "/api/users": {
         /**
          * Index
@@ -259,6 +270,48 @@ export interface components {
             /** Files */
             files?: string[] | null
         }
+        /** BooleanParameterModel */
+        BooleanParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Falsevalue */
+            falsevalue?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_boolean"
+            /** Truevalue */
+            truevalue?: string | null
+            /**
+             * Value
+             * @default false
+             */
+            value?: boolean | null
+        }
         /** BuildSearchIndexResponse */
         BuildSearchIndexResponse: {
             /** Repositories Indexed */
@@ -294,6 +347,119 @@ export interface components {
              * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
              */
             type: string
+        }
+        /** Citation */
+        Citation: {
+            /** Content */
+            content: string
+            /** Type */
+            type: string
+        }
+        /** ColorParameterModel */
+        ColorParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_color
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_color"
+            /** Value */
+            value?: string | null
+        }
+        /** ConditionalParameterModel */
+        ConditionalParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_conditional
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_conditional"
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+            /** Whens */
+            whens: components["schemas"]["ConditionalWhen"][]
+        }
+        /** ConditionalWhen */
+        ConditionalWhen: {
+            /** Discriminator */
+            discriminator: boolean | string
+            /** Is Default When */
+            is_default_when: boolean
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
         }
         /** CreateCategoryRequest */
         CreateCategoryRequest: {
@@ -331,6 +497,246 @@ export interface components {
             password: string
             /** Username */
             username: string
+        }
+        /** CwlBooleanParameterModel */
+        CwlBooleanParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_boolean
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_boolean"
+        }
+        /** CwlDirectoryParameterModel */
+        CwlDirectoryParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default cwl_directory
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_directory"
+        }
+        /** CwlFileParameterModel */
+        CwlFileParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default cwl_file
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_file"
+        }
+        /** CwlFloatParameterModel */
+        CwlFloatParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_float"
+        }
+        /** CwlIntegerParameterModel */
+        CwlIntegerParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_integer"
+        }
+        /** CwlNullParameterModel */
+        CwlNullParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_null
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_null"
+        }
+        /** CwlStringParameterModel */
+        CwlStringParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_string
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_string"
+        }
+        /** CwlUnionParameterModel */
+        CwlUnionParameterModel: {
+            /** Name */
+            name: string
+            /**
+             * Parameter Type
+             * @default cwl_union
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "cwl_union"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+            )[]
+        }
+        /** DataCollectionParameterModel */
+        DataCollectionParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Collection Type */
+            collection_type?: string | null
+            /**
+             * Extensions
+             * @default [
+             *   "data"
+             * ]
+             */
+            extensions?: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_data_collection
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_data_collection"
+        }
+        /** DataParameterModel */
+        DataParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /**
+             * Extensions
+             * @default [
+             *   "data"
+             * ]
+             */
+            extensions?: string[]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple?: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_data
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_data"
         }
         /**
          * DescriptorType
@@ -375,15 +781,149 @@ export interface components {
             /** User Id */
             user_id: string
         }
+        /** DirectoryUriParameterModel */
+        DirectoryUriParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @constant
+             * @enum {string}
+             */
+            parameter_type: "gx_directory_uri"
+            /** Value */
+            value: string | null
+        }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
             /** Err Msg */
             err_msg: string
         }
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][]
+        /** FilePatternDatasetCollectionDescription */
+        FilePatternDatasetCollectionDescription: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean
+            /** Directory */
+            directory: string | null
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "pattern"
+            /** Format */
+            format: string | null
+            /** Match Relative Path */
+            match_relative_path: boolean
+            /** Pattern */
+            pattern: string
+            /** Recurse */
+            recurse: boolean
+            /**
+             * Sort Comp
+             * @enum {string}
+             */
+            sort_comp: "lexical" | "numeric"
+            /**
+             * Sort Key
+             * @enum {string}
+             */
+            sort_key: "filename" | "name" | "designation" | "dbkey"
+            /** Visible */
+            visible: boolean
+        }
+        /** FloatParameterModel */
+        FloatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_float
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_float"
+            /** Value */
+            value?: number | null
+        }
+        /** HiddenParameterModel */
+        HiddenParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_hidden
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_hidden"
         }
         /** ImageData */
         ImageData: {
@@ -424,6 +964,58 @@ export interface components {
             metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
             repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
         }
+        /** IntegerParameterModel */
+        IntegerParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /** Optional */
+            optional: boolean
+            /**
+             * Parameter Type
+             * @default gx_integer
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_integer"
+            /** Value */
+            value?: number | null
+        }
+        /** LabelValue */
+        LabelValue: {
+            /** Label */
+            label: string
+            /** Selected */
+            selected: boolean
+            /** Value */
+            value: string
+        }
+        /** MessageExceptionModel */
+        MessageExceptionModel: {
+            /** Err Code */
+            err_code: number
+            /** Err Msg */
+            err_msg: string
+        }
         /** Organization */
         Organization: {
             /**
@@ -437,6 +1029,127 @@ export interface components {
              * @description URL of the website of the organization (RFC 3986 format)
              */
             url: string
+        }
+        /** ParsedTool */
+        ParsedTool: {
+            /** Citations */
+            citations: components["schemas"]["Citation"][]
+            /** Description */
+            description: string | null
+            /** Edam Operations */
+            edam_operations: string[]
+            /** Edam Topics */
+            edam_topics: string[]
+            /** Help */
+            help: string | null
+            /** Id */
+            id: string
+            /** Inputs */
+            inputs: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+            /** License */
+            license: string | null
+            /** Name */
+            name: string
+            /** Outputs */
+            outputs: (
+                | components["schemas"]["ToolOutputDataset"]
+                | components["schemas"]["ToolOutputCollection"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[]
+            /** Profile */
+            profile: string | null
+            /** Version */
+            version: string | null
+            /** Xrefs */
+            xrefs: components["schemas"]["XrefDict"][]
+        }
+        /** RepeatParameterModel */
+        RepeatParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Max */
+            max?: number | null
+            /** Min */
+            min?: number | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_repeat
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_repeat"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
         }
         /** RepositoriesByCategory */
         RepositoriesByCategory: {
@@ -693,6 +1406,134 @@ export interface components {
             /** Stop Time */
             stop_time: string
         }
+        /** RulesParameterModel */
+        RulesParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_rules
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_rules"
+        }
+        /** SectionParameterModel */
+        SectionParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_section
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_section"
+            /** Parameters */
+            parameters: (
+                | components["schemas"]["CwlIntegerParameterModel"]
+                | components["schemas"]["CwlFloatParameterModel"]
+                | components["schemas"]["CwlStringParameterModel"]
+                | components["schemas"]["CwlBooleanParameterModel"]
+                | components["schemas"]["CwlNullParameterModel"]
+                | components["schemas"]["CwlFileParameterModel"]
+                | components["schemas"]["CwlDirectoryParameterModel"]
+                | components["schemas"]["CwlUnionParameterModel"]
+                | components["schemas"]["TextParameterModel"]
+                | components["schemas"]["IntegerParameterModel"]
+                | components["schemas"]["FloatParameterModel"]
+                | components["schemas"]["BooleanParameterModel"]
+                | components["schemas"]["HiddenParameterModel"]
+                | components["schemas"]["SelectParameterModel"]
+                | components["schemas"]["DataParameterModel"]
+                | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DirectoryUriParameterModel"]
+                | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["ColorParameterModel"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
+            )[]
+        }
+        /** SelectParameterModel */
+        SelectParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /** Options */
+            options?: components["schemas"]["LabelValue"][] | null
+            /**
+             * Parameter Type
+             * @default gx_select
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_select"
+        }
         /** Service */
         Service: {
             /**
@@ -761,6 +1602,51 @@ export interface components {
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
              */
             version: string
+        }
+        /** TextParameterModel */
+        TextParameterModel: {
+            /**
+             * Area
+             * @default false
+             */
+            area?: boolean
+            /** Argument */
+            argument?: string | null
+            /**
+             * Default Options
+             * @default []
+             */
+            default_options?: components["schemas"]["LabelValue"][]
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_text
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_text"
+            /** Value */
+            value?: string | null
         }
         /** Tool */
         Tool: {
@@ -836,6 +1722,149 @@ export interface components {
              * @description A short friendly name for the class.
              */
             name?: string | null
+        }
+        /** ToolOutputBoolean */
+        ToolOutputBoolean: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "boolean"
+        }
+        /** ToolOutputCollection */
+        ToolOutputCollection: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            structure: components["schemas"]["ToolOutputCollectionStructure"]
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "collection"
+        }
+        /** ToolOutputCollectionStructure */
+        ToolOutputCollectionStructure: {
+            /** Collection Type */
+            collection_type: string | null
+            /** Collection Type From Rules */
+            collection_type_from_rules: string | null
+            /** Collection Type Source */
+            collection_type_source: string | null
+            /** Discover Datasets */
+            discover_datasets:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null
+            /** Structured Like */
+            structured_like: string | null
+        }
+        /** ToolOutputDataset */
+        ToolOutputDataset: {
+            /** Discover Datasets */
+            discover_datasets:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null
+            /** Format */
+            format: string
+            /** Format Source */
+            format_source: string | null
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Metadata Source */
+            metadata_source: string | null
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "data"
+        }
+        /** ToolOutputFloat */
+        ToolOutputFloat: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "float"
+        }
+        /** ToolOutputInteger */
+        ToolOutputInteger: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "integer"
+        }
+        /** ToolOutputText */
+        ToolOutputText: {
+            /** Hidden */
+            hidden: boolean
+            /** Label */
+            label: string | null
+            /** Name */
+            name: string
+            /**
+             * Type
+             * @constant
+             * @enum {string}
+             */
+            type: "text"
+        }
+        /** ToolProvidedMetadataDatasetCollection */
+        ToolProvidedMetadataDatasetCollection: {
+            /** Assign Primary Output */
+            assign_primary_output: boolean
+            /** Directory */
+            directory: string | null
+            /**
+             * Discover Via
+             * @constant
+             * @enum {string}
+             */
+            discover_via: "tool_provided_metadata"
+            /** Format */
+            format: string | null
+            /** Match Relative Path */
+            match_relative_path: boolean
+            /** Recurse */
+            recurse: boolean
+            /** Visible */
+            visible: boolean
         }
         /** ToolVersion */
         ToolVersion: {
@@ -1009,15 +2038,6 @@ export interface components {
             /** Version String Cmd */
             version_string_cmd?: string | null
         }
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[]
-            /** Message */
-            msg: string
-            /** Error Type */
-            type: string
-        }
         /** Version */
         Version: {
             /**
@@ -1029,6 +2049,13 @@ export interface components {
             version: string
             /** Version Major */
             version_major: string
+        }
+        /** XrefDict */
+        XrefDict: {
+            /** Reftype */
+            reftype: string
+            /** Value */
+            value: string
         }
     }
     responses: never
@@ -1052,6 +2079,18 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyResponse"]
                 }
             }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     /**
@@ -1064,6 +2103,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Category"][]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1085,10 +2136,16 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1111,10 +2168,16 @@ export interface operations {
                     "application/json": components["schemas"]["Category"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1143,10 +2206,16 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoriesByCategory"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1160,6 +2229,18 @@ export interface operations {
                     "application/json": components["schemas"]["Service"]
                 }
             }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     /** Tool Classes */
@@ -1171,6 +2252,18 @@ export interface operations {
                     "application/json": components["schemas"]["ToolClass"][]
                 }
             }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     /** Trs Index */
@@ -1180,6 +2273,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1199,10 +2304,16 @@ export interface operations {
                     "application/json": components["schemas"]["Tool"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1222,10 +2333,16 @@ export interface operations {
                     "application/json": components["schemas"]["ToolVersion"][]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1254,10 +2371,16 @@ export interface operations {
                         | components["schemas"]["Repository"][]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1279,10 +2402,16 @@ export interface operations {
                     "application/json": components["schemas"]["Repository"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1306,10 +2435,16 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1336,10 +2471,16 @@ export interface operations {
                     "application/json": unknown[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1366,10 +2507,16 @@ export interface operations {
                     "application/json": components["schemas"]["InstallInfo"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1384,6 +2531,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1405,10 +2564,16 @@ export interface operations {
                     "application/json": unknown
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1428,10 +2593,16 @@ export interface operations {
                     "application/json": components["schemas"]["DetailedRepository"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1451,10 +2622,16 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1476,10 +2653,16 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1501,10 +2684,16 @@ export interface operations {
                     "application/json": string[]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1536,10 +2725,16 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryUpdate"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1557,10 +2752,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1578,10 +2779,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1608,10 +2815,16 @@ export interface operations {
                     "application/json": Record<string, never>
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1631,10 +2844,16 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryPermissions"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1657,10 +2876,16 @@ export interface operations {
                     "application/json": components["schemas"]["ResetMetadataOnRepositoryResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1680,10 +2905,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1703,10 +2934,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1731,10 +2968,16 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryRevisionReadmes"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1755,10 +2998,16 @@ export interface operations {
                     "application/json": unknown
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1776,6 +3025,83 @@ export interface operations {
                     "application/json": components["schemas"]["BuildSearchIndexResponse"]
                 }
             }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    /** Return Galaxy's meta model description of the tool's inputs */
+    tools__parameter_model: {
+        parameters: {
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ParsedTool"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    /**
+     * Return a JSON schema description of the tool's inputs for the tool request API that will be added to Galaxy at some point
+     * @description The tool request schema includes validation of map/reduce concepts that can be consumed by the tool execution API and not just the request for a single execution.
+     */
+    tools__parameter_request_model: {
+        parameters: {
+            path: {
+                /** @description See also https://ga4gh.github.io/tool-registry-service-schemas/DataModel/#trs-tool-and-trs-tool-version-ids */
+                tool_id: string
+                /** @description The full version string defined on the Galaxy tool wrapper. */
+                tool_version: string
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": unknown
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
         }
     }
     /**
@@ -1788,6 +3114,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"][]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1809,10 +3147,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1827,6 +3171,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserV2"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1849,10 +3205,16 @@ export interface operations {
                     "application/json": components["schemas"]["UserV2"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1872,10 +3234,16 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1895,10 +3263,16 @@ export interface operations {
                     "application/json": string
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1916,10 +3290,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1931,6 +3311,18 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["Version"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1950,10 +3342,16 @@ export interface operations {
             204: {
                 content: never
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -1975,10 +3373,16 @@ export interface operations {
                     "application/json": components["schemas"]["UiLoginResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -2000,10 +3404,16 @@ export interface operations {
                     "application/json": components["schemas"]["UiLogoutResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -2025,10 +3435,16 @@ export interface operations {
                     "application/json": components["schemas"]["UiRegisterResponse"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }
@@ -2055,10 +3471,16 @@ export interface operations {
                     "application/json": components["schemas"]["RepositoryMetadata"]
                 }
             }
-            /** @description Validation Error */
-            422: {
+            /** @description Request Error */
+            "4XX": {
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"]
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
                 }
             }
         }

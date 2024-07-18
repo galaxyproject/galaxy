@@ -2,9 +2,21 @@
 dataset collection after jobs are finished.
 """
 
-from typing import List
+import abc
+from typing import (
+    List,
+    Optional,
+)
 
 from galaxy.util import asbool
+from .output_models import (
+    DatasetCollectionDescriptionT,
+    DiscoverViaT,
+    FilePatternDatasetCollectionDescription as FilePatternDatasetCollectionDescriptionModel,
+    SortCompT,
+    SortKeyT,
+    ToolProvidedMetadataDatasetCollection as ToolProvidedMetadataDatasetCollectionModel,
+)
 from .util import is_dict
 
 DEFAULT_EXTRA_FILENAME_PATTERN = (
@@ -81,7 +93,15 @@ def dataset_collection_description(**kwargs):
         return FilePatternDatasetCollectionDescription(**kwargs)
 
 
-class DatasetCollectionDescription:
+class DatasetCollectionDescription(metaclass=abc.ABCMeta):
+    discover_via: DiscoverViaT
+    default_ext: Optional[str]
+    default_visible: bool
+    assign_primary_output: bool
+    directory: Optional[str]
+    recurse: bool
+    match_relative_path: bool
+
     def __init__(self, **kwargs):
         self.default_dbkey = kwargs.get("dbkey", INPUT_DBKEY_TOKEN)
         self.default_ext = kwargs.get("ext", None)
@@ -91,9 +111,9 @@ class DatasetCollectionDescription:
         self.assign_primary_output = asbool(kwargs.get("assign_primary_output", False))
         self.directory = kwargs.get("directory", None)
         self.recurse = False
-        self.match_relative_path = kwargs.get("match_relative_path", False)
+        self.match_relative_path = asbool(kwargs.get("match_relative_path", False))
 
-    def to_dict(self):
+    def _common_model_props(self):
         return {
             "discover_via": self.discover_via,
             "dbkey": self.default_dbkey,
@@ -105,6 +125,12 @@ class DatasetCollectionDescription:
             "match_relative_path": self.match_relative_path,
         }
 
+    @abc.abstractmethod
+    def to_model(self) -> DatasetCollectionDescriptionT: ...
+
+    def to_dict(self) -> dict:
+        return self.to_model().model_dump()
+
     @property
     def discover_patterns(self) -> List[str]:
         return []
@@ -113,9 +139,27 @@ class DatasetCollectionDescription:
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
     discover_via = "tool_provided_metadata"
 
+    def to_model(self) -> ToolProvidedMetadataDatasetCollectionModel:
+        return ToolProvidedMetadataDatasetCollectionModel(
+            discover_via=self.discover_via,
+            dbkey=self.default_dbkey,
+            format=self.default_ext,
+            visible=self.default_visible,
+            assign_primary_output=self.assign_primary_output,
+            directory=self.directory,
+            recurse=self.recurse,
+            match_relative_path=self.match_relative_path,
+        )
+
+    def to_dict(self) -> dict:
+        return self.to_model().model_dump()
+
 
 class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     discover_via = "pattern"
+    sort_key: SortKeyT
+    sort_comp: SortCompT
+    pattern: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -140,18 +184,21 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         self.sort_key = sort_by
         self.sort_comp = sort_comp
 
-    def to_dict(self):
-        as_dict = super().to_dict()
-        as_dict.update(
-            {
-                "sort_key": self.sort_key,
-                "sort_comp": self.sort_comp,
-                "pattern": self.pattern,
-                "recurse": self.recurse,
-                "sort_by": self.sort_by,
-            }
+    def to_model(self) -> FilePatternDatasetCollectionDescriptionModel:
+        return FilePatternDatasetCollectionDescriptionModel(
+            discover_via=self.discover_via,
+            dbkey=self.default_dbkey,
+            format=self.default_ext,
+            visible=self.default_visible,
+            assign_primary_output=self.assign_primary_output,
+            directory=self.directory,
+            recurse=self.recurse,
+            match_relative_path=self.match_relative_path,
+            sort_key=self.sort_key,
+            sort_comp=self.sort_comp,
+            pattern=self.pattern,
+            sort_by=self.sort_by,
         )
-        return as_dict
 
     @property
     def discover_patterns(self) -> List[str]:

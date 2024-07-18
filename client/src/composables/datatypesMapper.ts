@@ -11,19 +11,11 @@ export function useDatatypesMapper() {
     const datatypes: Ref<string[]> = ref([]);
 
     async function getDatatypesMapper() {
-        try {
-            await datatypesMapperStore.createMapper();
-            datatypesMapper.value = datatypesMapperStore.datatypesMapper;
-            if (datatypesMapperStore.datatypesMapper) {
-                datatypes.value = datatypesMapperStore.datatypesMapper.datatypes;
-            }
-        } catch (e) {
-            console.error("unable to create datatypes mapper\n", e);
-        } finally {
-            datatypesMapperLoading.value = false;
-        }
-        if (!datatypesMapperStore.datatypesMapper) {
-            throw Error("Error creating datatypesMapper");
+        await datatypesMapperStore.createMapper();
+        datatypesMapperLoading.value = datatypesMapperStore.loading;
+        datatypesMapper.value = datatypesMapperStore.datatypesMapper;
+        if (datatypesMapperStore.datatypesMapper) {
+            datatypes.value = datatypesMapperStore.datatypesMapper.datatypes;
         }
     }
 
