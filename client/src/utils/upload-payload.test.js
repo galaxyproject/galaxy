@@ -66,13 +66,22 @@ describe("uploadPayload", () => {
                     spaceToTab: false,
                     toPosixLines: false,
                 },
-                { fileContent: " PreviousGalaxyFileContent ", fileMode: "new", fileName: "Galaxy-1[PreviousGalaxyFile].bed" },
+                {
+                    dbKey: "dbKey5",
+                    deferred: true,
+                    extension: "extension5",
+                    fileData: { size: 1 },
+                    fileMode: "local",
+                    fileName: "Galaxy5-[PreviousGalaxyFile].bed",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
             ],
             "historyId"
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: [{ size: 1 }],
+            files: [{ size: 1 }, { size: 1}],
             history_id: "historyId",
             targets: [
                 {
@@ -128,14 +137,13 @@ describe("uploadPayload", () => {
                             url: "http://test.me",
                         },
                         {
-                            dbkey: "?",
-                            deferred: undefined,
-                            ext: "auto",
+                            dbkey: "dbKey5",
+                            deferred: true,
+                            ext: "extension5",
                             name: "PreviousGalaxyFile",
-                            paste_content: " PreviousGalaxyFileContent ",
-                            space_to_tab: undefined,
-                            src: "pasted",
-                            to_posix_lines: undefined,
+                            space_to_tab: true,
+                            src: "files",
+                            to_posix_lines: true,
                         },
                     ],
                 },
@@ -158,14 +166,24 @@ describe("uploadPayload", () => {
                     spaceToTab: true,
                     toPosixLines: true,
                 },
-                { fileContent: " PreviousGalaxyFileContent ", fileMode: "new", fileName: "Galaxy-1[PreviousGalaxyFile].bed" },
+                {
+                    dbKey: "dbKey2",
+                    deferred: true,
+                    extension: "extension2",
+                    fileContent: "fileContent",
+                    fileData: "fileData",
+                    fileMode: "local",
+                    fileName: "Galaxy2-[PreviousGalaxyFile].bed",
+                    spaceToTab: true,
+                    toPosixLines: true,
+                },
             ],
             "historyId",
             true
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: ["fileData"],
+            files: ["fileData", "fileData"],
             history_id: "historyId",
             targets: [
                 {
@@ -194,14 +212,13 @@ describe("uploadPayload", () => {
                                         to_posix_lines: true,
                                     },
                                     {
-                                        dbkey: "?",
-                                        deferred: undefined,
-                                        ext: "auto",
+                                        dbkey: "dbKey2",
+                                        deferred: true,
+                                        ext: "extension2",
                                         name: "PreviousGalaxyFile",
-                                        paste_content: " PreviousGalaxyFileContent ",
-                                        space_to_tab: undefined,
-                                        src: "pasted",
-                                        to_posix_lines: undefined,
+                                        space_to_tab: true,
+                                        src: "files",
+                                        to_posix_lines: true,
                                     },
                                 ],
                             },
