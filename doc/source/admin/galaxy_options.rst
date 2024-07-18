@@ -2128,13 +2128,30 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Map for interactivetool proxy. It may be either a path to a SQLite
-    database or a SQLAlchemy database URL (see
-    https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls).
-    In either case, mappings will be written to the table "gxitproxy" within the
-    database. If it is a path, the value of this option will be resolved with
-    respect to <data_dir>.
+    Map for the interactivetool proxy. Mappings are stored on a SQLite
+    database file located on this path. As an alternative, you may
+    also store them on any other RDBMS supported by SQLAlchemy using
+    the option ``interactivetools_map_sqlalchemy``.
+    The value of this option will be resolved with respect to
+    <data_dir>.
 :Default: ``interactivetools_map.sqlite``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_map_sqlalchemy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use a database supported by SQLAlchemy as map for the
+    interactivetool proxy. When this option is set, the value of
+    ``interactivetools_map`` is ignored. The value of this option must
+    be a `SQLAlchemy database URL
+    <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+    Mappings are written to the table "gxitproxy" within the database.
+    This value cannot match ``database_connection`` nor
+    ``install_database_connection``.
+:Default: ``None``
 :Type: str
 
 

@@ -33,6 +33,7 @@ from typing import (
 from urllib.parse import urlparse
 
 import yaml
+from sqlalchemy.engine import make_url as parse_sqlalchemy_url
 
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
@@ -1104,11 +1105,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping
-        interactivetools_map = kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
-        self.interactivetools_map = (
-            interactivetools_map
-            if urlparse(interactivetools_map).scheme
-            else "sqlite:///" + self._in_root_dir(interactivetools_map)
+        self.interactivetools_map = "sqlite:///" + self._in_root_dir(
+            kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
         )
 
         # Compliance/Policy variables
@@ -1230,6 +1228,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        if self.interactivetools_map_sqlalchemy is not None:
+            try_parsing(self.interactivetools_map_sqlalchemy, "interactivetools_map_sqlalchemy")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):

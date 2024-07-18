@@ -144,7 +144,10 @@ class InteractiveToolManager:
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
         self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
-        self.propagator = InteractiveToolPropagatorSQLAlchemy(app.config.interactivetools_map, self.encoder.encode_id)
+        self.propagator = InteractiveToolPropagatorSQLAlchemy(
+            app.config.interactivetools_map_sqlalchemy or app.config.interactivetools_map,
+            self.encoder.encode_id,
+        )
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports

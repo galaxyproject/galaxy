@@ -190,8 +190,9 @@ gravity:
     # port: 4002
 
     # Database to monitor.
-    # Should be set to the same value as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Should be set to the same value as ``interactivetools_map`` (or ``interactivetools_map_sqlalchemy``) in the
+    # ``galaxy:`` section. This is ignored if either ``interactivetools_map`` or ``interactivetools_map_sqlalchemy`` are
+    # set.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -1357,10 +1358,23 @@ galaxy:
   # subdomain. Defaults to "/".
   #interactivetools_base_path: /
 
-  # Map for interactivetool proxy.
+  # Map for the interactivetool proxy. Mappings are stored on a SQLite
+  # database file located on this path. As an alternative, you may also
+  # store them on any other RDBMS supported by SQLAlchemy using the
+  # option ``interactivetools_map_sqlalchemy``.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+
+  # Use a database supported by SQLAlchemy as map for the
+  # interactivetool proxy. When this option is set, the value of
+  # ``interactivetools_map`` is ignored. The value of this option must
+  # be a `SQLAlchemy database URL
+  # <https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls>`_.
+  # Mappings are written to the table "gxitproxy" within the database.
+  # This value cannot match ``database_connection`` nor
+  # ``install_database_connection``.
+  #interactivetools_map_sqlalchemy: null
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
