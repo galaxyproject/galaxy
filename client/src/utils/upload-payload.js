@@ -41,7 +41,6 @@ export function uploadPayload(items, historyId, composite = false) {
                 }
                 if (isGalaxyFile(fileName)) {
                     const modifiedFileName = fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
-
                     const keepModifiedName = confirm(`This looks like a previous Galaxy file. We have renamed it.\n\nOriginal Name: ${fileName}\nModified Name: ${modifiedFileName}\n\n Do you want to keep the modified name?`)
                     if (keepModifiedName) {
                         fileName = modifiedFileName;
