@@ -20,8 +20,8 @@ from .mulled_build import (
     add_single_image_arguments,
     args_to_mull_targets_kwds,
     mull_targets,
+    target_str_to_targets,
 )
-from .util import build_target
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.conda_util import CondaTarget
@@ -61,7 +61,8 @@ def requirements_to_mulled_targets(requirements) -> List["CondaTarget"]:
     Only package requirements are retained.
     """
     package_requirements = [r for r in requirements if r.type == "package"]
-    targets = [build_target(r.name, r.version) for r in package_requirements]
+    target_str = ",".join([f"{r.name}={r.version}" for r in package_requirements])
+    targets = target_str_to_targets(target_str)
     return targets
 
 
