@@ -19,6 +19,9 @@ export function isUrl(content) {
 }
 
 export function isGalaxyFile(content) {
+    if (content === undefined || content === null) {
+        return false;
+    }
     const galaxyRegexPattern = /Galaxy\d+-\[(.*?)\](\..+)/;
     const match = content.match(galaxyRegexPattern);
     if (match) {
@@ -39,10 +42,11 @@ export function uploadPayload(items, historyId, composite = false) {
                 if (fileName === DEFAULT_FILE_NAME) {
                     fileName = null;
                 }
-                if (isGalaxyFile(fileName)) {
-                    const modifiedFileName = fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
-                    const keepModifiedName = confirm(`This looks like a previous Galaxy file. We have renamed it.\n\nOriginal Name: ${fileName}\nModified Name: ${modifiedFileName}\n\n Do you want to keep the modified name?`)
+                if (isGalaxyFile(item.fileName)) {
+                    const modifiedFileName = item.fileName.replace(/Galaxy\d+-\[(.*?)\](\..+)/, "$1");
+                    const keepModifiedName = confirm(`This looks like a previous Galaxy file. We have renamed it.\n\nOriginal Name: ${item.fileName}\nModified Name: ${modifiedFileName}\n\n Do you want to keep the modified name?`)
                     if (keepModifiedName) {
+                        item.fileName = modifiedFileName;
                         fileName = modifiedFileName;
                     }
                 }
