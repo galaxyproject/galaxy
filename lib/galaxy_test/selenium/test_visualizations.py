@@ -54,6 +54,7 @@ class TestVisualizations(SeleniumTestCase):
     def test_charts_h5web(self):
         hid = 1
         self.perform_upload(self.get_filename("chopper.h5"))
+        self.history_panel_wait_for_hid_ok(hid)
         dataset_component = self.history_panel_click_item_title(hid, wait=True)
         dataset_component.visualize_button.wait_for_and_click()
 
