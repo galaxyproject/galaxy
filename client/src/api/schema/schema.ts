@@ -3981,6 +3981,11 @@ export interface components {
             name: string;
         };
         /**
+         * DatasetPermissionAction
+         * @enum {string}
+         */
+        DatasetPermissionAction: "set_permissions" | "make_private" | "remove_restrictions";
+        /**
          * DatasetPermissions
          * @description Role-based permissions for accessing and managing a dataset.
          */
@@ -12272,6 +12277,69 @@ export interface components {
             /** Creator */
             creator?: unknown;
         };
+        /** UpdateDatasetPermissionsPayload */
+        UpdateDatasetPermissionsPayload: {
+            /** Access Ids[] */
+            "access_ids[]"?: string[] | string | null;
+            /**
+             * Action
+             * @description Indicates what action should be performed on the dataset.
+             * @default set_permissions
+             */
+            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            /** Manage Ids[] */
+            "manage_ids[]"?: string[] | string | null;
+            /** Modify Ids[] */
+            "modify_ids[]"?: string[] | string | null;
+        };
+        /** UpdateDatasetPermissionsPayloadAliasB */
+        UpdateDatasetPermissionsPayloadAliasB: {
+            /**
+             * Access IDs
+             * @description A list of role encoded IDs defining roles that should have access permission on the dataset.
+             */
+            access?: string[] | string | null;
+            /**
+             * Action
+             * @description Indicates what action should be performed on the dataset.
+             * @default set_permissions
+             */
+            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            /**
+             * Manage IDs
+             * @description A list of role encoded IDs defining roles that should have manage permission on the dataset.
+             */
+            manage?: string[] | string | null;
+            /**
+             * Modify IDs
+             * @description A list of role encoded IDs defining roles that should have modify permission on the dataset.
+             */
+            modify?: string[] | string | null;
+        };
+        /** UpdateDatasetPermissionsPayloadAliasC */
+        UpdateDatasetPermissionsPayloadAliasC: {
+            /**
+             * Access IDs
+             * @description A list of role encoded IDs defining roles that should have access permission on the dataset.
+             */
+            access_ids?: string[] | string | null;
+            /**
+             * Action
+             * @description Indicates what action should be performed on the dataset.
+             * @default set_permissions
+             */
+            action?: components["schemas"]["DatasetPermissionAction"] | null;
+            /**
+             * Manage IDs
+             * @description A list of role encoded IDs defining roles that should have manage permission on the dataset.
+             */
+            manage_ids?: string[] | string | null;
+            /**
+             * Modify IDs
+             * @description A list of role encoded IDs defining roles that should have modify permission on the dataset.
+             */
+            modify_ids?: string[] | string | null;
+        };
         /**
          * UpdateHistoryContentsBatchPayload
          * @description Contains property values that will be updated for all the history `items` provided.
@@ -14653,7 +14721,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json":
+                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {
@@ -18165,7 +18236,10 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json":
+                    | components["schemas"]["UpdateDatasetPermissionsPayload"]
+                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasB"]
+                    | components["schemas"]["UpdateDatasetPermissionsPayloadAliasC"];
             };
         };
         responses: {

@@ -3229,30 +3229,65 @@ class DatasetAssociationRoles(Model):
     )
 
 
-class UpdateDatasetPermissionsPayload(Model):
+class UpdateDatasetPermissionsPayloadBase(Model):
     action: Optional[DatasetPermissionAction] = Field(
         DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
-    access_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="access_ids[]",  # Added for backward compatibility but it looks really ugly...
+
+
+AccessIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Access IDs",
         description="A list of role encoded IDs defining roles that should have access permission on the dataset.",
-    )
-    manage_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="manage_ids[]",
+    ),
+]
+
+ManageIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Manage IDs",
         description="A list of role encoded IDs defining roles that should have manage permission on the dataset.",
-    )
-    modify_ids: Optional[RoleIdList] = Field(
-        [],
-        alias="modify_ids[]",
+    ),
+]
+
+ModifyIdsField = Annotated[
+    Optional[RoleIdList],
+    Field(
+        default=None,
         title="Modify IDs",
         description="A list of role encoded IDs defining roles that should have modify permission on the dataset.",
-    )
+    ),
+]
+
+
+class UpdateDatasetPermissionsPayload(UpdateDatasetPermissionsPayloadBase):
+    access_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="access_ids[]")] = None
+    manage_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="manage_ids[]")] = None
+    modify_ids: Annotated[Optional[RoleIdList], Field(default=None, alias="modify_ids[]")] = None
+
+
+class UpdateDatasetPermissionsPayloadAliasB(UpdateDatasetPermissionsPayloadBase):
+    access: AccessIdsField = None
+    manage: ManageIdsField = None
+    modify: ModifyIdsField = None
+
+
+class UpdateDatasetPermissionsPayloadAliasC(UpdateDatasetPermissionsPayloadBase):
+    access_ids: AccessIdsField = None
+    manage_ids: ManageIdsField = None
+    modify_ids: ModifyIdsField = None
+
+
+UpdateDatasetPermissionsPayloadAliases = Union[
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliasB,
+    UpdateDatasetPermissionsPayloadAliasC,
+]
 
 
 @partial_model()

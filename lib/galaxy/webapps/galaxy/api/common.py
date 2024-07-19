@@ -2,13 +2,13 @@
 
 from typing import (
     Any,
-    Dict,
     List,
     Optional,
     Set,
 )
 
 from fastapi import (
+    Body,
     Path,
     Query,
     Request,
@@ -21,7 +21,10 @@ from galaxy.schema import (
     ValueFilterQueryParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import UpdateDatasetPermissionsPayload
+from galaxy.schema.schema import (
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliases,
+)
 from galaxy.util import listify
 
 HistoryIDPathParam = Annotated[
@@ -66,6 +69,20 @@ RoleIDPathParam = Annotated[
     Path(..., title="Role ID", description="The ID of the role."),
 ]
 
+UpdateDatasetPermissionsBody = Annotated[
+    UpdateDatasetPermissionsPayloadAliases,
+    Body(
+        ...,
+        examples=[
+            UpdateDatasetPermissionsPayload(
+                action="set_permissions",
+                access_ids=[],
+                manage_ids=[],
+                modify_ids=[],
+            ).model_dump()
+        ],
+    ),
+]
 
 LibraryIdPathParam = Annotated[
     DecodedDatabaseIdField,
@@ -194,16 +211,23 @@ def get_filter_query_params(
     )
 
 
-def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
-    """Converts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
-    This is an attempt on supporting multiple aliases for the permissions params."""
-    # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
-    # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
+def normalize_permission_payload(
+    payload_aliases: UpdateDatasetPermissionsPayloadAliases,
+) -> UpdateDatasetPermissionsPayload:
+    """Normalize the payload by choosing the first non-None value for each field.
+
+    This is an attempt on supporting multiple aliases for the permissions params.
+    There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
+    """
     # TODO: Maybe we should choose only one way/naming and deprecate the others?
-    payload["access_ids"] = payload.get("access_ids[]") or payload.get("access")
-    payload["manage_ids"] = payload.get("manage_ids[]") or payload.get("manage")
-    payload["modify_ids"] = payload.get("modify_ids[]") or payload.get("modify")
-    update_payload = UpdateDatasetPermissionsPayload(**payload)
+    payload = payload_aliases.model_dump()
+    normalized_payload = {
+        "action": payload.get("action"),
+        "access_ids": payload.get("access_ids") or payload.get("access_ids[]") or payload.get("access"),
+        "manage_ids": payload.get("manage_ids") or payload.get("manage_ids[]") or payload.get("manage"),
+        "modify_ids": payload.get("modify_ids") or payload.get("modify_ids[]") or payload.get("modify"),
+    }
+    update_payload = UpdateDatasetPermissionsPayload.model_construct(**normalized_payload)
     return update_payload
 
 
