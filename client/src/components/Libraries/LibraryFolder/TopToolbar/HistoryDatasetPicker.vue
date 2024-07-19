@@ -37,6 +37,8 @@ const emit = defineEmits<{
     (e: "onClose"): void;
 }>();
 
+const selectionDialog = ref();
+
 const totalItems = ref(0);
 const loading = ref(false);
 const hasValue = ref(false);
@@ -145,6 +147,12 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
     loading.value = true;
 
     try {
+        const filter = ctx.filter;
+
+        if (filter) {
+            selectionDialog.value?.resetPagination();
+        }
+
         const limit = ctx.perPage;
         const offset = (ctx.currentPage - 1) * ctx.perPage;
         const sortDesc = ctx.sortDesc;
@@ -152,9 +160,10 @@ async function historiesProvider(ctx: ItemsProviderContext, url?: string): Promi
         const queryDict = HistoriesFilters.getQueryDict(ctx.filter);
 
         const { data, headers } = await historiesFetcher({
-            search: "",
+            search: filter,
             view: "summary",
             keys: "create_time",
+            show_own: true,
             offset: offset,
             limit: limit,
             q: Object.keys(queryDict),
@@ -217,6 +226,7 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
 
 function onHistoryClick(item: SelectionItem) {
     if (!item.isLeaf) {
+        selectionDialog.value?.resetPagination();
         datasetsVisible.value = true;
         itemsProvider.value = (ctx: ItemsProviderContext) => datasetsProvider(ctx, item as HistoryRecord);
     }
@@ -249,6 +259,7 @@ function selectAll() {
 }
 
 async function onUndo() {
+    selectionDialog.value?.resetPagination();
     selected.value = [];
     datasetsVisible.value = false;
     itemsProvider.value = historiesProvider;
@@ -272,6 +283,7 @@ function onCancel() {
 
 <template>
     <SelectionDialog
+        ref="selectionDialog"
         options-show
         :disable-ok="!hasValue"
         :fields="fields"
