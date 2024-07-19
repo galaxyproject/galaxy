@@ -117,7 +117,11 @@ class ShareableService:
         base_status = self._get_sharing_status(trans, item)
         status = self.share_with_status_cls.model_construct(**base_status.model_dump(), extra=extra)
         status.errors.extend(errors)
-        galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
+        galaxy_url = (
+            str(trans.url_builder("/", qualified=True)).rstrip("/")
+            if trans.url_builder
+            else trans.app.config.galaxy_external_url
+        )
         self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
         return status
 

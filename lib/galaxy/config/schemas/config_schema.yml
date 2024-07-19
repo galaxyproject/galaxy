@@ -1642,15 +1642,24 @@ mapping:
           URL prefix for Galaxy application. If Galaxy should be served under a prefix set this to
           the desired prefix value.
 
+      galaxy_external_url:
+        type: str
+        required: false
+        desc: |
+          URL (with schema http/https) of the Galaxy instance as accessible
+          from external networks, including ``galaxy_url_prefix`` if necessary.
+          This URL is used to determine links outside of the web application,
+          e.g. when requesting job finish emails.
+
       galaxy_infrastructure_url:
         type: str
         default: http://localhost:8080
         required: false
         desc: |
           URL (with schema http/https) of the Galaxy instance as accessible
-          within your local network. This URL is used as a default by pulsar
-          file staging and Interactive Tool containers for communicating back with
-          Galaxy via the API.
+          within your local network, including ``galaxy_url_prefix`` if necessary.
+          This URL is used as a default by pulsar file staging and Interactive Tool
+          containers for communicating back with Galaxy via the API.
 
           If you plan to run Interactive Tools make sure the docker container
           can reach this URL.
