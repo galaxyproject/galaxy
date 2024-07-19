@@ -43,6 +43,25 @@ export interface TaskMonitor {
      * In case of an error, this will be the error message.
      */
     status: Readonly<Ref<string | undefined>>;
+
+    /**
+     * Loads the status of the task from a stored value.
+     * @param storedStatus The status string to load.
+     */
+    loadStatus: (storedStatus: string) => void;
+
+    /**
+     * Determines if the status represents a final state.
+     * @param status The status string to check.
+     * @returns True if the status is a final state and is not expected to change.
+     */
+    isFinalState: (status?: string) => boolean;
+
+    /**
+     * If defined, the time (in milliseconds) after which the task should be considered expired.
+     * Requests to check the task status after this time should be avoided. As they are not guaranteed to return the correct status.
+     */
+    expirationTime?: number;
 }
 
 /**
@@ -66,6 +85,12 @@ export function useGenericMonitor(options: {
      * The delay can be overridden when calling `waitForTask`.
      */
     defaultPollDelay?: number;
+
+    /** Optional expiration time for the task in milliseconds.
+     * After this time, the task should be considered expired.
+     * Requests to check the task status after this time should be avoided.
+     */
+    expirationTime?: number;
 }): TaskMonitor {
     let timeout: NodeJS.Timeout | null = null;
     let pollDelay = options.defaultPollDelay ?? DEFAULT_POLL_DELAY;
@@ -77,6 +102,14 @@ export function useGenericMonitor(options: {
 
     const isCompleted = computed(() => options.completedCondition(status.value));
     const hasFailed = computed(() => options.failedCondition(status.value));
+
+    function isFinalState(status?: string) {
+        return options.completedCondition(status) || options.failedCondition(status);
+    }
+
+    function loadStatus(storedStatus: string) {
+        status.value = storedStatus;
+    }
 
     async function waitForTask(taskId: string, pollDelayInMs?: number) {
         pollDelay = pollDelayInMs ?? pollDelay;
@@ -130,10 +163,13 @@ export function useGenericMonitor(options: {
 
     return {
         waitForTask,
+        isFinalState,
+        loadStatus,
         isRunning: readonly(isRunning),
         isCompleted: readonly(isCompleted),
         hasFailed: readonly(hasFailed),
         requestHasFailed: readonly(requestHasFailed),
         status: readonly(status),
+        expirationTime: options.expirationTime,
     };
 }
