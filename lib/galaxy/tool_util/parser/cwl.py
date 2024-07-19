@@ -113,7 +113,7 @@ class CwlToolSource(ToolSource):
     def parse_interactivetool(self):
         return []
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         page_source = CwlPageSource(self.tool_proxy)
         return PagesSource([page_source])
 

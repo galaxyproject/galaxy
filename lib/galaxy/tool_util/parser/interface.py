@@ -20,6 +20,7 @@ import packaging.version
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from galaxy.util import Element
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
@@ -42,11 +43,15 @@ class AssertionDict(TypedDict):
 AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
+ToolSourceTestInputs = Any
+ToolSourceTestOutputs = Any
+TestSourceTestOutputColllection = Any
+
 
 class ToolSourceTest(TypedDict):
-    inputs: Any
-    outputs: Any
-    output_collections: List[Any]
+    inputs: ToolSourceTestInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
     expect_exit_code: Optional[XmlInt]
@@ -245,7 +250,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> "PagesSource":
         """Return a PagesSource representing inputs by page for tool."""
 
     def parse_provided_metadata_style(self):
@@ -359,6 +364,23 @@ class PagesSource:
         return True
 
 
+class DynamicOptions(metaclass=ABCMeta):
+
+    def elem(self) -> Element:
+        # For things in transition that still depend on XML - provide a way
+        # to grab it and just throw an error if feature is attempted to be
+        # used with other tool sources.
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abstractmethod
+    def get_data_table_name(self) -> Optional[str]:
+        """If dynamic options are loaded from a data table, return the name."""
+
+    @abstractmethod
+    def get_index_file_name(self) -> Optional[str]:
+        """If dynamic options are loaded from an index file, return the name."""
+
+
 class InputSource(metaclass=ABCMeta):
     default_optional = False
 
@@ -418,8 +440,12 @@ class InputSource(metaclass=ABCMeta):
             default = self.default_optional
         return self.get_bool("optional", default)
 
-    def parse_dynamic_options_elem(self):
-        """Return an XML element describing dynamic options."""
+    def parse_dynamic_options(self) -> Optional[DynamicOptions]:
+        """Return an optional element describing dynamic options.
+
+        These options are still very XML based but as they are adapted to the infrastructure, the return
+        type here will evolve.
+        """
         return None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:

@@ -39,6 +39,7 @@ from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
+    TestSourceTestOutputColllection,
 )
 from galaxy.util import requests
 from galaxy.util.bunch import Bunch
@@ -47,6 +48,11 @@ from galaxy.util.hash_util import (
     parse_checksum_hash,
 )
 from . import verify
+from ._types import (
+    RequiredDataTablesT,
+    RequiredFilesT,
+    RequiredLocFileT,
+)
 from .asserts import verify_assertions
 from .wait import wait_on
 
@@ -92,19 +98,19 @@ JobDataCallbackT = Callable[[JobDataT], None]
 class ValidToolTestDict(TypedDict):
     inputs: Any
     outputs: Any
-    output_collections: List[Dict[str, Any]]
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: NotRequired[AssertionList]
     stderr: NotRequired[AssertionList]
-    expect_exit_code: NotRequired[int]
+    expect_exit_code: NotRequired[Optional[Union[str, int]]]
     expect_failure: NotRequired[bool]
     expect_test_failure: NotRequired[bool]
-    maxseconds: NotRequired[int]
-    num_outputs: NotRequired[int]
+    maxseconds: NotRequired[Optional[int]]
+    num_outputs: NotRequired[Optional[Union[str, int]]]
     command_line: NotRequired[AssertionList]
     command_version: NotRequired[AssertionList]
-    required_files: NotRequired[List[Any]]
-    required_data_tables: NotRequired[List[Any]]
-    required_loc_files: NotRequired[List[str]]
+    required_files: NotRequired[RequiredFilesT]
+    required_data_tables: NotRequired[RequiredDataTablesT]
+    required_loc_files: NotRequired[RequiredLocFileT]
     error: Literal[False]
     tool_id: str
     tool_version: str
@@ -1661,7 +1667,7 @@ class ToolTestDescriptionDict(TypedDict):
     name: str
     inputs: Any
     outputs: Any
-    output_collections: List[Dict[str, Any]]
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: Optional[AssertionList]
     stderr: Optional[AssertionList]
     expect_exit_code: Optional[int]
@@ -1693,13 +1699,14 @@ class ToolTestDescription:
     stderr: Optional[AssertionList]
     command_line: Optional[AssertionList]
     command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
+    required_files: RequiredFilesT
+    required_data_tables: RequiredDataTablesT
+    required_loc_files: RequiredLocFileT
     expect_exit_code: Optional[int]
     expect_failure: bool
     expect_test_failure: bool
     exception: Optional[str]
+    output_collections: List[TestCollectionOutputDef]
 
     def __init__(self, processed_test_dict: ToolTestDict):
         assert (
@@ -1708,14 +1715,31 @@ class ToolTestDescription:
         test_index = processed_test_dict["test_index"]
         name = cast(str, processed_test_dict.get("name", f"Test-{test_index + 1}"))
         error_in_test_definition = processed_test_dict["error"]
+        num_outputs: Optional[int] = None
         if not error_in_test_definition:
             processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
             maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
             output_collections = processed_test_dict.get("output_collections", [])
+            if "num_outputs" in processed_test_dict and processed_test_dict["num_outputs"]:
+                num_outputs = int(processed_test_dict["num_outputs"])
+            self.required_files = processed_test_dict.get("required_files", [])
+            self.required_data_tables = processed_test_dict.get("required_data_tables", [])
+            self.required_loc_files = processed_test_dict.get("required_loc_files", [])
+            self.command_line = processed_test_dict.get("command_line", None)
+            self.command_version = processed_test_dict.get("command_version", None)
+            self.stdout = processed_test_dict.get("stdout", None)
+            self.stderr = processed_test_dict.get("stderr", None)
         else:
             processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
             maxseconds = DEFAULT_TOOL_TEST_WAIT
             output_collections = []
+            self.required_files = []
+            self.required_data_tables = []
+            self.required_loc_files = []
+            self.command_line = None
+            self.command_version = None
+            self.stdout = None
+            self.stderr = None
 
         self.test_index = test_index
         assert (
@@ -1725,9 +1749,6 @@ class ToolTestDescription:
         self.tool_version = processed_test_dict.get("tool_version")
         self.name = name
         self.maxseconds = maxseconds
-        self.required_files = cast(List[Any], processed_test_dict.get("required_files", []))
-        self.required_data_tables = cast(List[Any], processed_test_dict.get("required_data_tables", []))
-        self.required_loc_files = cast(List[str], processed_test_dict.get("required_loc_files", []))
 
         inputs = processed_test_dict.get("inputs", {})
         loaded_inputs = {}
@@ -1739,16 +1760,12 @@ class ToolTestDescription:
 
         self.inputs = loaded_inputs
         self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = cast(Optional[int], processed_test_dict.get("num_outputs", None))
+        self.num_outputs = num_outputs
 
         self.error = processed_test_dict.get("error", False)
         self.exception = cast(Optional[str], processed_test_dict.get("exception", None))
 
         self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
-        self.command_line = cast(Optional[AssertionList], processed_test_dict.get("command_line", None))
-        self.command_version = cast(Optional[AssertionList], processed_test_dict.get("command_version", None))
-        self.stdout = cast(Optional[AssertionList], processed_test_dict.get("stdout", None))
-        self.stderr = cast(Optional[AssertionList], processed_test_dict.get("stderr", None))
         self.expect_exit_code = cast(Optional[int], processed_test_dict.get("expect_exit_code", None))
         self.expect_failure = cast(bool, processed_test_dict.get("expect_failure", False))
         self.expect_test_failure = cast(bool, processed_test_dict.get("expect_test_failure", False))

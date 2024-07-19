@@ -18,6 +18,7 @@ from galaxy.tool_util.parser.output_models import (
     ToolOutputCollection,
     ToolOutputDataset,
 )
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
 from galaxy.util import galaxy_directory
 from galaxy.util.unittest import TestCase
 
@@ -719,7 +720,7 @@ class FunctionalTestToolTestCase(BaseLoaderTestCase):
     source_contents: None
 
     def _get_source_file_name(self) -> str:
-        return os.path.join(galaxy_directory(), "test/functional/tools", self.test_path)
+        return functional_test_tool_path(self.test_path)
 
 
 class TestExpressionTestToolLoader(FunctionalTestToolTestCase):

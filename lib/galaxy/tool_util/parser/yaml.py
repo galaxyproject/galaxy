@@ -110,7 +110,7 @@ class YamlToolSource(ToolSource):
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
         )
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
