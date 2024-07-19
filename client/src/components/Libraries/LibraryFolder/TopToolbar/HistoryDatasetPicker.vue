@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
-import { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import { HDASummary, HistorySummary } from "@/api";
 import { getDatasets } from "@/api/datasets";
@@ -120,10 +120,12 @@ function formatRows() {
 
     for (const item of items.value) {
         if (item.isLeaf) {
-            item._rowVariant =
+            const _rowVariant =
                 selected.value.findIndex((i) => i.id === item.id) !== -1
                     ? SELECTION_STATES.SELECTED
                     : SELECTION_STATES.UNSELECTED;
+
+            set(item, "_rowVariant", _rowVariant);
         }
     }
 
