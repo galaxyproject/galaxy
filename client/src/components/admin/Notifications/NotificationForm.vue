@@ -6,10 +6,9 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getAllGroups } from "@/api/groups";
 import { type NotificationCreateRequest, sendNotification } from "@/api/notifications";
 import { getAllRoles } from "@/api/roles";
-import { type components } from "@/api/schema";
+import { client, type components } from "@/api/schema";
 import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -99,9 +98,18 @@ async function loadData<T>(
     try {
         const tmp = await getData();
         target.value = tmp.map(formatter);
-    } catch (error: any) {
+    } catch (error) {
         Toast.error(errorMessageAsString(error));
     }
+}
+
+async function getAllGroups() {
+    const { data, error } = await client.GET("/api/groups");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
 }
 
 loadData(getAllUsers, users, (user) => {
@@ -121,7 +129,7 @@ async function sendNewNotification() {
         await sendNotification(notificationData.value);
         Toast.success("Notification sent");
         router.push("/admin/notifications");
-    } catch (error: any) {
+    } catch (error) {
         Toast.error(errorMessageAsString(error));
     }
 }
