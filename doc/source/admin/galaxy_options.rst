@@ -2279,15 +2279,29 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``galaxy_external_url``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL (with schema http/https) of the Galaxy instance as accessible
+    from external networks, including ``galaxy_url_prefix`` if
+    necessary. This URL is used to determine links outside of the web
+    application, e.g. when requesting job finish emails.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     URL (with schema http/https) of the Galaxy instance as accessible
-    within your local network. This URL is used as a default by pulsar
-    file staging and Interactive Tool containers for communicating
-    back with Galaxy via the API.
+    within your local network, including ``galaxy_url_prefix`` if
+    necessary. This URL is used as a default by pulsar file staging
+    and Interactive Tool containers for communicating back with Galaxy
+    via the API.
     If you plan to run Interactive Tools make sure the docker
     container can reach this URL.
 :Default: ``http://localhost:8080``
