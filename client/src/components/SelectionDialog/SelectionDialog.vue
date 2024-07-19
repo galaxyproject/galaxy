@@ -117,9 +117,9 @@ function selectionIcon(variant: string) {
 }
 
 /** Resets pagination when a filter/search word is entered **/
-function filtered(items: Array<SelectionItem>) {
+function filtered(items: SelectionItem[]) {
     if (props.itemsProvider === undefined) {
-        currentPage.value = 1;
+        resetPagination();
     }
 }
 
@@ -139,6 +139,14 @@ function formatTime(value: string) {
     }
 }
 
+function resetPagination() {
+    currentPage.value = 1;
+}
+
+defineExpose({
+    resetPagination,
+});
+
 watch(
     () => props.items,
     () => {
@@ -151,7 +159,7 @@ watch(
     () => {
         // We need to reset the current page when drilling down sub-folders
         if (props.itemsProvider !== undefined) {
-            currentPage.value = 1;
+            resetPagination();
         }
     }
 );
