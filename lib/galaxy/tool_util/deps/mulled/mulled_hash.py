@@ -21,7 +21,7 @@ def _mulled_hash(hash, targets):
     >>> _mulled_hash(hash="v2", targets="samtools=1.3.1,bedtools=2.26.0")
     'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619'
     >>> _mulled_hash(hash="v2", targets="samtools=1.3.1=h9071d68_10,bedtools=2.26.0=0")
-    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:8e86df67d257ce6494ae12b2c60e1b94025ea529'
+    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619'
     """
     targets = target_str_to_targets(targets)
     image_name = v2_image_name if hash == "v2" else v1_image_name
