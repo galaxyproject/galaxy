@@ -81,7 +81,7 @@ describe("uploadPayload", () => {
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: [{ size: 1 }, { size: 1}],
+            files: [{ size: 1 }, { size: 1 }],
             history_id: "historyId",
             targets: [
                 {
