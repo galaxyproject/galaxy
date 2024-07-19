@@ -18,7 +18,10 @@ from typing import (
 
 import packaging.version
 from pydantic import BaseModel
-from typing_extensions import TypedDict
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+)
 
 from galaxy.util import Element
 from galaxy.util.path import safe_walk
@@ -43,8 +46,48 @@ class AssertionDict(TypedDict):
 AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
-ToolSourceTestInputs = Any
-ToolSourceTestOutputs = Any
+
+class ToolSourceTestOutputAttributes(TypedDict):
+    object: NotRequired[Optional[Any]]
+    compare: str
+    lines_diff: int
+    delta: int
+    delta_frac: Optional[float]
+    sort: bool
+    decompress: bool
+    location: NotRequired[Optional[str]]
+    ftype: NotRequired[Optional[str]]
+    eps: float
+    metric: str
+    pin_labels: Optional[Any]
+    count: Optional[int]
+    metadata: Dict[str, Any]
+    md5: Optional[str]
+    checksum: Optional[str]
+    primary_datasets: Dict[str, Any]
+    elements: Dict[str, Any]
+    assert_list: AssertionList
+    extra_files: List[Dict[str, Any]]
+
+
+class ToolSourceTestOutput(TypedDict):
+    name: str
+    value: Optional[str]
+    attributes: ToolSourceTestOutputAttributes
+
+
+# The unfortunate 'attrib = dict(param_elem.attrib)' makes this difficult to type.
+ToolSourceTestInputAttributes = Dict[str, Any]
+
+
+class ToolSourceTestInput(TypedDict):
+    name: str
+    value: Optional[Any]
+    attributes: ToolSourceTestInputAttributes
+
+
+ToolSourceTestInputs = List[ToolSourceTestInput]
+ToolSourceTestOutputs = List[ToolSourceTestOutput]
 TestSourceTestOutputColllection = Any
 
 

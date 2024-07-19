@@ -1525,7 +1525,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             return [
                 {
                     "inputs": inputs,
-                    "outputs": {},
+                    "outputs": [],
                     "required_files": required_files,
                     "output_collections": [],
                     "test_index": 0,
