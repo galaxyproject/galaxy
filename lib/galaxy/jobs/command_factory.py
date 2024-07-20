@@ -181,6 +181,10 @@ def __externalize_commands(
     source_command = ""
     if container:
         source_command = container.source_environment
+        with open(join(job_wrapper.working_directory, "__container.json"), "w") as container_file:
+            container_file.write(
+                json.dumps({"container_id": container.container_id, "container_type": container.container_type})
+            )
     script_contents = f"#!{shell}\n{integrity_injection}{set_e}{source_command}{tool_commands}"
     write_script(
         local_container_script,
