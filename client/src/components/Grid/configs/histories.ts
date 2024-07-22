@@ -71,6 +71,8 @@ const batch: BatchOperationArray = [
                 try {
                     const historyIds = data.map((x) => String(x.id));
                     await deleteHistories({ ids: historyIds });
+                    const historyStore = useHistoryStore();
+                    await historyStore.handleTotalCountChange(data.length, true);
                     return {
                         status: "success",
                         message: `Deleted ${data.length} histories.`,
@@ -93,6 +95,8 @@ const batch: BatchOperationArray = [
                 try {
                     const historyIds = data.map((x) => String(x.id));
                     await undeleteHistories({ ids: historyIds });
+                    const historyStore = useHistoryStore();
+                    await historyStore.handleTotalCountChange(data.length);
                     return {
                         status: "success",
                         message: `Restored ${data.length} histories.`,
@@ -115,6 +119,8 @@ const batch: BatchOperationArray = [
                 try {
                     const historyIds = data.map((x) => String(x.id));
                     await deleteHistories({ ids: historyIds, purge: true });
+                    const historyStore = useHistoryStore();
+                    await historyStore.handleTotalCountChange(data.length, true);
                     return {
                         status: "success",
                         message: `Purged ${data.length} histories.`,
@@ -186,6 +192,8 @@ const fields: FieldArray = [
                     if (confirm(_l("Are you sure that you want to delete this history?"))) {
                         try {
                             await deleteHistory({ history_id: String(data.id) });
+                            const historyStore = useHistoryStore();
+                            await historyStore.handleTotalCountChange(1, true);
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been deleted.`,
@@ -207,6 +215,8 @@ const fields: FieldArray = [
                     if (confirm(_l("Are you sure that you want to permanently delete this history?"))) {
                         try {
                             await deleteHistory({ history_id: String(data.id), purge: true });
+                            const historyStore = useHistoryStore();
+                            await historyStore.handleTotalCountChange(1, true);
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been permanently deleted.`,
@@ -227,6 +237,8 @@ const fields: FieldArray = [
                 handler: async (data: HistoryEntry) => {
                     try {
                         await undeleteHistory({ history_id: String(data.id) });
+                        const historyStore = useHistoryStore();
+                        await historyStore.handleTotalCountChange(1);
                         return {
                             status: "success",
                             message: `'${data.name}' has been restored.`,
