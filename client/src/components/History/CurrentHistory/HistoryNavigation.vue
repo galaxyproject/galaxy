@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArchive,
     faBars,
+    faBurn,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -44,6 +45,7 @@ import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 library.add(
     faArchive,
     faBars,
+    faBurn,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -87,6 +89,10 @@ const { totalHistoryCount } = storeToRefs(historyStore);
 
 const canEditHistory = computed(() => {
     return canMutateHistory(props.history);
+});
+
+const isDeletedNotPurged = computed(() => {
+    return props.history.deleted && !props.history.purged;
 });
 
 const historyState = computed(() => {
@@ -216,10 +222,11 @@ function userTitle(title: string) {
 
                     <BDropdownItem
                         :disabled="!canEditHistory"
-                        :title="localize('Permanently Delete History')"
+                        :title="localize(isDeletedNotPurged ? 'Permanently Delete History' : 'Delete History')"
                         @click="showDeleteModal = !showDeleteModal">
-                        <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
-                        <span v-localize>Delete this History</span>
+                        <FontAwesomeIcon fixed-width :icon="isDeletedNotPurged ? faBurn : faTrash" class="mr-1" />
+                        <span v-if="isDeletedNotPurged" v-localize>Purge this History</span>
+                        <span v-else v-localize>Delete this History</span>
                     </BDropdownItem>
 
                     <BDropdownItem
@@ -324,14 +331,14 @@ function userTitle(title: string) {
 
         <BModal
             v-model="showDeleteModal"
-            title="Delete History?"
+            :title="isDeletedNotPurged ? 'Purge History?' : 'Delete History?'"
             title-tag="h2"
             @ok="onDelete"
-            @show="purgeHistory = false">
+            @show="purgeHistory = isDeletedNotPurged">
             <p v-localize>
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
-            <BFormCheckbox id="purge-history" v-model="purgeHistory">
+            <BFormCheckbox id="purge-history" v-model="purgeHistory" :disabled="isDeletedNotPurged">
                 <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
         </BModal>
