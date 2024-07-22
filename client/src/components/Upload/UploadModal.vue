@@ -4,7 +4,7 @@ import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
@@ -68,10 +68,26 @@ watch(
 defineExpose({
     open,
 });
+
+// Handle escape key press in modal
+// (modal stays open when esc key is pressed in some child components, hence using `no-close-on-esc`)
+const uploadModal = ref(null);
+onMounted(() => {
+    uploadModal.value?.$el.addEventListener("keyup", handleKeyUp);
+});
+onBeforeUnmount(() => {
+    uploadModal.value?.$el.removeEventListener("keyup", handleKeyUp);
+});
+function handleKeyUp(event) {
+    if (event.key === "Escape") {
+        dismiss();
+    }
+}
 </script>
 
 <template>
     <BModal
+        ref="uploadModal"
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
