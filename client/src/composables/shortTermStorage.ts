@@ -8,7 +8,7 @@ export const DEFAULT_EXPORT_PARAMS: ExportParams = {
     modelStoreFormat: "rocrate.zip",
     includeFiles: true,
     includeDeleted: false,
-    includeHidden: false,
+    includeHidden: true,
 };
 
 interface Options {
