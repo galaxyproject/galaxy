@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { faArchive, faArrowDown, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
@@ -54,7 +54,7 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare);
+library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare, faBurn, faTrash, faArchive);
 
 const busy = ref(false);
 const showAdvanced = ref(false);
@@ -278,6 +278,21 @@ async function loadMore(noScroll = false) {
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
+                                    <BBadge pill>
+                                        <FontAwesomeIcon
+                                            v-if="history.purged"
+                                            title="Purged"
+                                            :icon="faBurn"
+                                            fixed-width />
+                                        <FontAwesomeIcon
+                                            v-else-if="history.deleted"
+                                            title="Deleted"
+                                            :icon="faTrash"
+                                            fixed-width />
+                                    </BBadge>
+                                    <BBadge v-if="history.archived" pill>
+                                        <FontAwesomeIcon title="Archived" :icon="faArchive" fixed-width />
+                                    </BBadge>
                                     <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
                                     </BBadge>
