@@ -235,7 +235,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
             await createNewHistory();
         }
         del(storedHistories.value, deletedHistory.id);
-        unpinHistories([deletedHistory.id]);
         await handleTotalCountChange(1, true);
     }
 
@@ -389,6 +388,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         copyHistory,
         createNewHistory,
         deleteHistory,
+        handleTotalCountChange,
         loadCurrentHistory,
         loadHistories,
         loadHistoryById,
