@@ -1,0 +1,13 @@
+- doc: |
+    Test to verify text parameters can be implicitly used as replacement parameters in subworkflows if they are connected up.
+  job:
+    replacemeouter: 
+      value: moocow
+      type: raw
+  outputs:
+    out1:
+      metadata:
+        name: 'moocow name'
+    out2:
+      metadata:
+        name: 'moocow name 2'
