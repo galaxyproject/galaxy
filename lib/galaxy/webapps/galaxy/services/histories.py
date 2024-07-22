@@ -686,7 +686,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         history: model.History,
         serialization_params: SerializationParams,
         default_view: str = "detailed",
-    ) -> AnyHistoryView:
+    ):
         """
         Returns a dictionary with the corresponding values depending on the
         serialization parameters provided.
@@ -793,7 +793,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             filters=filters, order_by=order_by, limit=filter_query_params.limit, offset=filter_query_params.offset
         )
 
-        histories = [self._serialize_archived_history(trans, history, serialization_params) for history in histories]
+        histories = [
+            self._serialize_archived_history(trans, history, serialization_params, default_view="summary")
+            for history in histories
+        ]
         return histories, total_matches
 
     def _serialize_archived_history(
@@ -801,14 +804,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans: ProvidesHistoryContext,
         history: model.History,
         serialization_params: Optional[SerializationParams] = None,
+        default_view: str = "detailed",
     ):
         if serialization_params is None:
-            serialization_params = SerializationParams(default_view="summary")
-        archived_history = self.serializer.serialize_to_view(
-            history, user=trans.user, trans=trans, **serialization_params.dict()
-        )
+            serialization_params = SerializationParams()
+        archived_history = self._serialize_history(trans, history, serialization_params, default_view)
         export_record_data = self._get_export_record_data(history)
-        archived_history["export_record_data"] = export_record_data.dict() if export_record_data else None
+        archived_history["export_record_data"] = export_record_data.model_dump() if export_record_data else None
         return archived_history
 
     def _get_export_record_data(self, history: model.History) -> Optional[WriteStoreToPayload]:

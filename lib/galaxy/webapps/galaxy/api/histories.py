@@ -271,6 +271,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/archived",
         summary="Get a list of all archived histories for the current user.",
+        response_model_exclude_unset=True,
     )
     def get_archived_histories(
         self,
@@ -613,6 +614,7 @@ class FastAPIHistories:
     @router.post(
         "/api/histories/{history_id}/archive",
         summary="Archive a history.",
+        response_model_exclude_unset=True,
     )
     def archive_history(
         self,

@@ -1896,12 +1896,24 @@ class ArchivedHistoryDetailed(HistoryDetailed, ExportAssociationData):
     pass
 
 
-AnyArchivedHistoryView = Union[
-    ArchivedHistorySummary,
-    ArchivedHistoryDetailed,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
+@partial_model()
+class CustomArchivedHistoryView(CustomHistoryView, ExportAssociationData):
+    """Archived History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter.
+    """
+
+    pass
+
+
+AnyArchivedHistoryView = Annotated[
+    Union[
+        CustomArchivedHistoryView,
+        ArchivedHistoryDetailed,
+        ArchivedHistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
