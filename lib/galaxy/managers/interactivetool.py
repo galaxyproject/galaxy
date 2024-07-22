@@ -62,7 +62,7 @@ class InteractiveToolPropagatorSQLAlchemy:
         columns = ("token", "host", "port", "info")
 
         with self._engine.connect() as conn:
-            query = select(gxitproxy.c[columns]).where(
+            query = select(*gxitproxy.c[columns]).where(
                 gxitproxy.c["key"] == key,
                 gxitproxy.c["key_type"] == key_type,
             )
