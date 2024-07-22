@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from "bootstrap-vue";
+import { BAlert, BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
 import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
@@ -75,6 +75,17 @@ function onValueChanged() {
                         @change="onValueChanged">
                         Include Hidden
                     </BFormCheckbox>
+
+                    <BAlert v-if="!localOptions.includeHidden" variant="warning" show class="mt-2 mb-0">
+                        <strong>Warning:</strong> Dataset collections usually have their elements hidden by default.
+                        <br />
+                        <b>
+                            To ensure collections are usable when re-imported, include hidden datasets when exporting
+                            your history.
+                        </b>
+                        <br />
+                        If you are unsure, include hidden datasets.
+                    </BAlert>
                 </BFormGroup>
             </BCard>
         </BCollapse>
