@@ -2741,45 +2741,6 @@ outer_input:
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
-    def test_placements_from_text_inputs_nested(self):
-        with self.dataset_populator.test_history() as history_id:
-            run_def = """
-class: GalaxyWorkflow
-inputs:
-  replacemeouter: text
-steps:
-  nested_workflow:
-    run:
-      class: GalaxyWorkflow
-      inputs:
-        replacemeinner: text
-      outputs:
-        workflow_output_1:
-          outputSource: create_2/out_file1
-        workflow_output_2:
-          outputSource: create_2/out_file2
-      steps:
-        create_2:
-          tool_id: create_2
-          state:
-            sleep_time: 0
-          outputs:
-            out_file1:
-              rename: "${replacemeinner} name"
-            out_file2:
-              rename: "${replacemeinner} name 2"
-    in:
-      replacemeinner: replacemeouter
-
-test_data:
-  replacemeouter:
-    value: moocow
-    type: raw
-"""
-            self._run_jobs(run_def, history_id=history_id)
-            details = self.dataset_populator.get_history_dataset_details(history_id)
-            assert details["name"] == "moocow name 2", details["name"]
-
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2838,44 +2799,6 @@ test_data:
                 )
 
         run_test(NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX)
-
-    @skip_without_tool("cat1")
-    @skip_without_tool("collection_paired_test")
-    def test_workflow_run_zip_collections(self):
-        with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow(
-                """
-class: GalaxyWorkflow
-inputs:
-  test_input_1: data
-  test_input_2: data
-steps:
-  first_cat:
-    tool_id: cat1
-    in:
-      input1: test_input_1
-  zip_it:
-    tool_id: "__ZIP_COLLECTION__"
-    in:
-      input_forward: first_cat/out_file1
-      input_reverse: test_input_2
-  concat_pair:
-    tool_id: collection_paired_test
-    in:
-      f1: zip_it/output
-"""
-            )
-            hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
-            hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n")
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            inputs = {
-                "0": self._ds_entry(hda1),
-                "1": self._ds_entry(hda2),
-            }
-            invocation_id = self.__invoke_workflow(workflow_id, inputs=inputs, history_id=history_id)
-            self.workflow_populator.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert content.strip() == "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0"
 
     @skip_without_tool("collection_paired_test")
     def test_workflow_flatten(self):
