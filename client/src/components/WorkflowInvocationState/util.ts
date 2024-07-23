@@ -1,4 +1,4 @@
-import { InvocationJobsSummary } from "@/api/invocations";
+import { type InvocationJobsSummary } from "@/api/invocations";
 
 export const NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
 export const ERROR_STATES = ["error", "deleted"];

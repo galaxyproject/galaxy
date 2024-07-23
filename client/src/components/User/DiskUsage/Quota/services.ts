@@ -1,6 +1,6 @@
 import { fetchQuotaUsages } from "@/api/users";
 
-import { QuotaUsage, UserQuotaUsageData } from "./model/index";
+import { QuotaUsage, type UserQuotaUsageData } from "./model/index";
 
 export async function fetch() {
     const { data } = await fetchQuotaUsages({ user_id: "current" });

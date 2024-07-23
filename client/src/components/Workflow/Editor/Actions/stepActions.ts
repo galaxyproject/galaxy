@@ -1,10 +1,10 @@
 import { replaceLabel } from "@/components/Markdown/parse";
 import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
-import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
-import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
-import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import { LazyUndoRedoAction, UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
+import { type Connection, type WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
+import { type WorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { type NewStep, type Step, type WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { cloneStepWithUniqueLabel, getLabelSet } from "./cloneStep";

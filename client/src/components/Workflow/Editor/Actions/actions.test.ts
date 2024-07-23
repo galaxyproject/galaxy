@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 
-import { LazyUndoRedoAction, UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";

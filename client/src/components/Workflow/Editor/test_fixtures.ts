@@ -1,7 +1,7 @@
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { type UseElementBoundingReturn } from "@vueuse/core";
 import { reactive, toRefs } from "vue";
 
-import type { Steps } from "@/stores/workflowStepStore";
+import { type Steps } from "@/stores/workflowStepStore";
 
 import * as _advancedSteps from "./test-data/parameter_steps.json";
 import * as _simpleSteps from "./test-data/simple_steps.json";

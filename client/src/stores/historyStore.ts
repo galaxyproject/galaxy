@@ -1,12 +1,12 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import type {
-    AnyHistory,
-    HistoryContentsStats,
-    HistoryDevDetailed,
-    HistorySummary,
-    HistorySummaryExtended,
+import {
+    type AnyHistory,
+    type HistoryContentsStats,
+    type HistoryDevDetailed,
+    type HistorySummary,
+    type HistorySummaryExtended,
 } from "@/api";
 import { historyFetcher } from "@/api/histories";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";

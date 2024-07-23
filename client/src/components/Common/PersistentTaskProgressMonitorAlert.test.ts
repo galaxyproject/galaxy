@@ -1,10 +1,10 @@
 import { shallowMount } from "@vue/test-utils";
 import { type PropType, ref } from "vue";
 
-import { TaskMonitor } from "@/composables/genericTaskMonitor";
+import { type TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
     type MonitoringData,
-    MonitoringRequest,
+    type MonitoringRequest,
     usePersistentProgressTaskMonitor,
 } from "@/composables/persistentProgressMonitor";
 

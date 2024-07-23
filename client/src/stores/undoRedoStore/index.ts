@@ -2,7 +2,7 @@ import { computed, ref } from "vue";
 
 import { defineScopedStore } from "@/stores/scopedStore";
 
-import { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
+import { type LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 

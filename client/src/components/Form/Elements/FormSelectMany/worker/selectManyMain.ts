@@ -1,7 +1,7 @@
-import type { UnwrapNestedRefs } from "vue";
+import { type UnwrapNestedRefs } from "vue";
 
 import { filterOptions } from "./filterOptions";
-import type { SelectOption, SelectValue, UseSelectManyOptions, UseSelectManyReturn } from "./selectMany";
+import { type SelectOption, type SelectValue, type UseSelectManyOptions, type UseSelectManyReturn } from "./selectMany";
 
 export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNestedRefs<UseSelectManyReturn> {
     const unselectedOptionsFiltered: SelectOption[] = [];

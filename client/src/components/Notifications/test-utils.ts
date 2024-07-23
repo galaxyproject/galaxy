@@ -1,9 +1,9 @@
-import type {
-    MessageNotification,
-    NewSharedItemNotificationContentItemType,
-    NotificationVariants,
-    SharedItemNotification,
-    UserNotification,
+import {
+    type MessageNotification,
+    type NewSharedItemNotificationContentItemType,
+    type NotificationVariants,
+    type SharedItemNotification,
+    type UserNotification,
 } from "@/api/notifications";
 
 export function generateRandomItemType() {

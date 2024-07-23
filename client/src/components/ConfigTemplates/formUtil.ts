@@ -1,12 +1,12 @@
-import type {
-    Instance,
-    PluginStatus,
-    SecretData,
-    TemplateSecret,
-    TemplateSummary,
-    TemplateVariable,
-    VariableData,
-    VariableValueType,
+import {
+    type Instance,
+    type PluginStatus,
+    type SecretData,
+    type TemplateSecret,
+    type TemplateSummary,
+    type TemplateVariable,
+    type VariableData,
+    type VariableValueType,
 } from "@/api/configTemplates";
 import { markup } from "@/components/ObjectStore/configurationMarkdown";
 

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import type { DatasetCollectionAttributes } from "@/api";
+import { type DatasetCollectionAttributes } from "@/api";
 import { fetchCollectionAttributes } from "@/api/datasetCollections";
 import { useKeyedCache } from "@/composables/keyedCache";
 

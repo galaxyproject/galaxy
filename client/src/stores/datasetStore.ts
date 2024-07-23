@@ -3,7 +3,7 @@ import { computed, set } from "vue";
 
 import { type DatasetEntry, type HDADetailed, type HistoryContentItemBase, isInaccessible } from "@/api";
 import { fetchDataset } from "@/api/datasets";
-import { ApiResponse } from "@/api/schema";
+import { type ApiResponse } from "@/api/schema";
 import { useKeyedCache } from "@/composables/keyedCache";
 
 async function fetchDatasetDetails(params: { id: string }): Promise<ApiResponse<HDADetailed>> {

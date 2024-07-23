@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { getAppRoot } from "@/onload";
 
-import { ApiResponse, components, fetcher } from "./schema";
+import { type ApiResponse, type components, fetcher } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];

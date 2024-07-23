@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { GenericUser } from "@/api";
+import { type GenericUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 
 async function hash32(value: string): Promise<string> {

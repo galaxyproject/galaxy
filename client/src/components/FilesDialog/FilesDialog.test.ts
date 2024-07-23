@@ -1,11 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
-import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
-import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 
 /**
  * The following imports mock a remote file resource directory structure,
@@ -27,6 +26,7 @@ import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
  * |-- file1
  * |-- file2
  */
+import { type RemoteFilesList } from "./testingData";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -34,7 +34,6 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
-    RemoteFilesList,
     rootId,
     rootResponse,
     someErrorText,

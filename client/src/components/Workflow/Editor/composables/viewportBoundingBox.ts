@@ -1,4 +1,4 @@
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { type UseElementBoundingReturn } from "@vueuse/core";
 import { type Ref, ref, unref, watch } from "vue";
 
 import { useAnimationFrameThrottle } from "@/composables/throttle";

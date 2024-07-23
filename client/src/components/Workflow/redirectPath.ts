@@ -1,4 +1,4 @@
-import type { RawLocation } from "vue-router";
+import { type RawLocation } from "vue-router";
 
 import { Toast } from "@/composables/toast";
 

@@ -1,7 +1,7 @@
 import { computed, type Ref } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { Step } from "@/stores/workflowStepStore";
+import { type Step } from "@/stores/workflowStepStore";
 import { ensureDefined } from "@/utils/assertions";
 
 import { ClearSelectionAction } from "../Actions/workflowActions";

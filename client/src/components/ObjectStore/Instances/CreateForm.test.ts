@@ -2,9 +2,9 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { PluginStatus } from "@/api/configTemplates";
+import { type PluginStatus } from "@/api/configTemplates";
 import { mockFetcher } from "@/api/schema/__mocks__";
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 import CreateForm from "./CreateForm.vue";
 

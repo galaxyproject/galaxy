@@ -1,7 +1,7 @@
-import { FreehandWorkflowComment, WorkflowComment } from "@/stores/workflowEditorCommentStore";
-import type { Step } from "@/stores/workflowStepStore";
+import { type FreehandWorkflowComment, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { type Step } from "@/stores/workflowStepStore";
 
-import type { Workflow } from "../modules/model";
+import { type Workflow } from "../modules/model";
 
 export function mockToolStep(id: number): Step {
     return {

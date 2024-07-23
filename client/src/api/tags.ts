@@ -1,4 +1,4 @@
-import { components, fetcher } from "@/api/schema";
+import { type components, fetcher } from "@/api/schema";
 
 type TaggableItemClass = components["schemas"]["TaggableItemClass"];
 

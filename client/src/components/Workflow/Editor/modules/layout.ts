@@ -2,7 +2,7 @@ import ELK from "elkjs/lib/elk.bundled.js";
 
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
+import { type Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 const elk = new ELK();

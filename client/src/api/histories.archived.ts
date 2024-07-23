@@ -1,4 +1,4 @@
-import type { FetchArgType } from "openapi-typescript-fetch";
+import { type FetchArgType } from "openapi-typescript-fetch";
 
 import { type components, fetcher } from "@/api/schema";
 

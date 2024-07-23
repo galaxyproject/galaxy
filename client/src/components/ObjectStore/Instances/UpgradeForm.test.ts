@@ -3,9 +3,9 @@ import flushPromises from "flush-promises";
 import { getLocalVue, injectTestRouter } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
-import type { UserConcreteObjectStore } from "./types";
+import { type UserConcreteObjectStore } from "./types";
 
 import UpgradeForm from "./UpgradeForm.vue";
 

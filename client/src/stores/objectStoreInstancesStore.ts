@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
 import { fetcher } from "@/api/schema/fetcher";
-import type { components } from "@/api/schema/schema";
+import { type components } from "@/api/schema/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const getObjectStoreInstances = fetcher.path("/api/object_store_instances").method("get").create();

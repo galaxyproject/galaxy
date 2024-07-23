@@ -5,7 +5,7 @@ import { historiesFetcher } from "@/api/histories";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
-import type { FieldArray, GridConfig } from "./types";
+import { type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

@@ -1,5 +1,5 @@
 import { format, parseISO } from "date-fns";
-import { computed, Ref, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { fetcher } from "@/api/schema";
 

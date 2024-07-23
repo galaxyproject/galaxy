@@ -1,5 +1,4 @@
-import type { components } from "@/api/schema";
-import { fetcher } from "@/api/schema";
+import { type components, fetcher } from "@/api/schema";
 import {
     type ExportRecord,
     ExportRecordModel,

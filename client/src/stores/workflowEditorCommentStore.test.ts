@@ -1,9 +1,9 @@
 import { createPinia, setActivePinia } from "pinia";
 
 import {
-    FrameWorkflowComment,
+    type FrameWorkflowComment,
     type FreehandWorkflowComment,
-    MarkdownWorkflowComment,
+    type MarkdownWorkflowComment,
     type TextWorkflowComment,
     useWorkflowCommentStore,
 } from "./workflowEditorCommentStore";

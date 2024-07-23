@@ -1,16 +1,16 @@
 import EventEmitter from "events";
 
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { useWorkflowStores } from "@/composables/workflowStores";
+import { type DatatypesMapperModel } from "@/components/Datatypes/model";
+import { type useWorkflowStores } from "@/composables/workflowStores";
 import { type Connection, type ConnectionId, getConnectionId } from "@/stores/workflowConnectionStore";
-import type {
-    CollectionOutput,
-    DataCollectionStepInput,
-    DataOutput,
-    DataStepInput,
-    ParameterOutput,
-    ParameterStepInput,
-    TerminalSource,
+import {
+    type CollectionOutput,
+    type DataCollectionStepInput,
+    type DataOutput,
+    type DataStepInput,
+    type ParameterOutput,
+    type ParameterStepInput,
+    type TerminalSource,
 } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 

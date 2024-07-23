@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { AnonymousUser, User } from "@/api";
+import { type AnonymousUser, type User } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
