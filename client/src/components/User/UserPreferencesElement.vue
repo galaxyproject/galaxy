@@ -1,14 +1,19 @@
-<script setup>
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BRow } from "bootstrap-vue";
 
-defineProps({
+library.add(faCog);
+
+const props = defineProps({
     id: {
         type: String,
         default: null,
     },
     icon: {
         type: String,
-        default: "fa-gear",
+        default: "fa-cog",
     },
     title: {
         type: String,
@@ -28,21 +33,22 @@ defineProps({
     },
 });
 </script>
+
 <template>
     <BRow class="ml-3 mb-1">
-        <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
+        <FontAwesomeIcon class="pref-icon pt-1" :icon="props.icon" />
         <div class="pref-content pr-1">
-            <b-badge v-if="!!badge" variant="danger">
-                {{ badge }}
+            <b-badge v-if="Boolean(props.badge)" variant="danger">
+                {{ props.badge }}
             </b-badge>
-            <router-link v-if="to" :id="id" :to="to">
-                <b v-localize>{{ title }}</b>
+            <router-link v-if="Boolean(props.to)" :id="props.id" :to="props.to">
+                <b v-localize> {{ props.title }} </b>
             </router-link>
-            <a v-else :id="id" href="#" @click="$emit('click')">
-                <b v-localize>{{ title }}</b>
-            </a>
+            <button v-else :id="props.id" class="ui-link" @click="$emit('click')">
+                <b v-localize> {{ props.title }} </b>
+            </button>
             <div class="form-text text-muted">
-                {{ description }}
+                {{ props.description }}
             </div>
             <slot />
         </div>
