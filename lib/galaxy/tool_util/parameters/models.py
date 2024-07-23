@@ -479,6 +479,18 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         return self.options is not None and any(o.selected for o in self.options)
 
     @property
+    def default_value(self) -> Optional[str]:
+        if self.options:
+            for option in self.options:
+                if option.selected:
+                    return option.value
+            # single value pick up first value
+            if not self.optional:
+                return self.options[0].value
+
+        return None
+
+    @property
     def request_requires_value(self) -> bool:
         # API will allow an empty value and just grab the first static option
         # see API Tests -> test_tools.py -> test_select_first_by_default

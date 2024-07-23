@@ -1,8 +1,10 @@
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from galaxy.tool_util.parser.cwl import CwlInputSource
@@ -152,11 +154,19 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")
     elif input_type == "conditional":
         test_param_input_source = input_source.parse_test_input_source()
-        test_parameter = _from_input_source_galaxy(test_param_input_source)
+        test_parameter = cast(
+            Union[BooleanParameterModel, SelectParameterModel], _from_input_source_galaxy(test_param_input_source)
+        )
         whens = []
         default_value = object()
         if isinstance(test_parameter, BooleanParameterModel):
             default_value = test_parameter.value
+        elif isinstance(test_parameter, SelectParameterModel):
+            select_parameter = cast(SelectParameterModel, test_parameter)
+            select_default_value = select_parameter.default_value
+            if select_default_value is not None:
+                default_value = select_default_value
+
         # TODO: handle select parameter model...
         for value, case_inputs_sources in input_source.parse_when_input_sources():
             if isinstance(test_parameter, BooleanParameterModel):
