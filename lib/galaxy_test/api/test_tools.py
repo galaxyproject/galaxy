@@ -885,7 +885,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # tool test framework filling in a default. Creating a raw request here
         # verifies that currently select parameters don't require a selection.
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            inputs = {}
+            inputs: Dict[str, Any] = {}
             response = self._run("gx_select", history_id, inputs, assert_ok=True)
             output = response["outputs"][0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
@@ -923,6 +923,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[1])
             assert output1_content.strip() == "--ex1"
             assert output2_content.strip() == "None", output2_content
+
+    @skip_without_tool("gx_repeat_boolean_min")
+    def test_optional_repeats_with_mins_filled_id(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_repeat_boolean_min", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert "false" in output1_content
+            assert "length: 2" in output1_content
 
     @skip_without_tool("library_data")
     def test_library_data_param(self):

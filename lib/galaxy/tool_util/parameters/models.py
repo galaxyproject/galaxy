@@ -601,18 +601,31 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
             self.parameters, f"Repeat_{self.name}", state_representation
         )
 
+        initialize_repeat: Any
+        if self.request_requires_value:
+            initialize_repeat = ...
+        else:
+            initialize_repeat = None
+
         class RepeatType(RootModel):
-            root: List[instance_class] = Field(..., min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
+            root: List[instance_class] = Field(initialize_repeat, min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
 
         return DynamicModelInformation(
             self.name,
-            (RepeatType, ...),
+            (RepeatType, initialize_repeat),
             {},
         )
 
     @property
     def request_requires_value(self) -> bool:
-        return True  # TODO:
+        if self.min is None or self.min == 0:
+            return False
+        # so we know we need at least one value, but maybe none of the parameters in the list
+        # are required
+        for parameter in self.parameters:
+            if parameter.request_requires_value:
+                return True
+        return False
 
 
 class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):

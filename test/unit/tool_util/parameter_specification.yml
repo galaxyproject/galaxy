@@ -535,6 +535,10 @@ gx_repeat_boolean_min:
       - { boolean_parameter: true }
       - { boolean_parameter: false }
     - parameter: [{}, {}]
+    # even though a minimum is set here - each instance of the repeat does not require a value
+    # so we can skip the repeat all together and Galaxy I think will just use the defaults at
+    # each stage - see API tests -> test_tools.py -> test_optional_repeats_with_mins_filled_id
+    - {}
   request_invalid:
     - parameter: []
     - parameter: [{}]
@@ -558,6 +562,8 @@ gx_repeat_data:
     - parameter: []
     - parameter:
       - { data_parameter: {src: hda, id: abcdabcd} }
+    # an empty repeat is fine
+    - {}
   request_invalid:
     - parameter: [{}, {}]
     - parameter: [{}]
@@ -575,6 +581,8 @@ gx_repeat_data_min:
       - { data_parameter: {src: hda, id: abcdabcd} }
       - { data_parameter: {src: hda, id: abcdabcd} }
   request_invalid:
+    # data isn't optional and so we need at least one list element
+    - {}
     - parameter: []
     - parameter:
       - { data_parameter: {src: hda, id: abcdabcd} }
