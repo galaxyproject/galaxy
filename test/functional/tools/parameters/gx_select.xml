@@ -23,5 +23,15 @@ echo '$parameter' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <!-- Selects have an implicit first option default in tool tests.
+                 Do they in the actual API also?
+            -->
+            <output name="output">
+                <assert_contents>
+                    <has_line line="--ex1" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

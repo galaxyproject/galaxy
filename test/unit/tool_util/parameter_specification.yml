@@ -82,6 +82,8 @@ gx_select:
   request_valid:
   - parameter: "--ex1"
   - parameter: "ex2"
+  # see API Tests -> test_tools.py -> test_select_first_by_default
+  - {}
   request_invalid:
   # Not allowing selecting booleans by truevalue/falsevalue - don't allow selecting
   # selects by label.
@@ -91,7 +93,18 @@ gx_select:
   - parameter: null
   - parameter: {}
   - parameter: 5
+  request_internal_valid:
+  - parameter: "--ex1"
+  - parameter: "ex2"
+  request_internal_invalid:
+  - parameter: {}
+  test_case_valid:
+  - parameter: 'ex2'
+  - parameter: '--ex1'
   - {}
+  test_case_invalid:
+  - parameter: {}
+  - parameter: null
 
 gx_select_optional:
   request_valid:

@@ -879,6 +879,25 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
             assert not output_details["visible"]
 
+    @skip_without_tool("gx_select")
+    def test_select_first_by_default(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs = {}
+            response = self._run("gx_select", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "--ex1"
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_select", history_id, inputs, assert_ok=False)
+            assert "an invalid option" in response.text
+            self._assert_status_code_is(response, 400)
+
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:

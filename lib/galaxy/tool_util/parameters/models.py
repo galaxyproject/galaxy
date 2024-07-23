@@ -480,7 +480,10 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional and not self.has_selected_static_option
+        # API will allow an empty value and just grab the first static option
+        # see API Tests -> test_tools.py -> test_select_first_by_default
+        # so only require a value in the multiple case if optional is False
+        return self.multiple and not self.optional
 
 
 DiscriminatorType = Union[bool, str]
