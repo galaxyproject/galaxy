@@ -55,7 +55,6 @@ class InteractiveToolPropagatorSQLAlchemy:
         :param encode_id: A helper class that can encode ids as lowercase alphanumeric strings and vice versa.
         """
         self._engine = create_engine(database_url)
-        gxitproxy.create(self._engine, checkfirst=True)
         self._encode_id = encode_id
 
     def get(self, key, key_type):
@@ -78,6 +77,9 @@ class InteractiveToolPropagatorSQLAlchemy:
         assert key_type, ValueError("A non-zero length key_type is required.")
         assert token, ValueError("A non-zero length token is required.")
         with self._engine.connect() as conn:
+            # create database table if not exists
+            gxitproxy.create(conn, checkfirst=True)
+
             # delete existing data with same key
             query_delete = delete(gxitproxy).where(
                 gxitproxy.c["key"] == key,
