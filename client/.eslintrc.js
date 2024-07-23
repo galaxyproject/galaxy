@@ -134,6 +134,7 @@ module.exports = {
                 "@typescript-eslint/ban-ts-comment": "warn",
                 "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
                 "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
+                "@typescript-eslint/consistent-type-imports": "error",
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {
