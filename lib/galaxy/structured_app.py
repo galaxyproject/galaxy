@@ -46,7 +46,10 @@ if TYPE_CHECKING:
     from galaxy.managers.collections import DatasetCollectionManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
-    from galaxy.managers.workflows import WorkflowsManager
+    from galaxy.managers.workflows import (
+        WorkflowContentsManager,
+        WorkflowsManager,
+    )
     from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
@@ -110,7 +113,7 @@ class MinimalManagerApp(MinimalApp):
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
     workflow_manager: "WorkflowsManager"
-    workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
+    workflow_contents_manager: "WorkflowContentsManager"
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'

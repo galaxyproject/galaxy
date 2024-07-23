@@ -489,12 +489,16 @@ class DatasetAssociationManager(
 
     def ensure_dataset_on_disk(self, trans, dataset):
         # Not a guarantee data is really present, but excludes a lot of expected cases
+        if not dataset.dataset:
+            raise exceptions.InternalServerError("Item has no associated dataset.")
         if dataset.purged or dataset.dataset.purged:
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been purged.")
         elif dataset.deleted and not (trans.user_is_admin or self.is_owner(dataset, trans.get_user())):
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been deleted.")
         elif dataset.state == Dataset.states.UPLOAD:
             raise exceptions.Conflict("Please wait until this dataset finishes uploading before attempting to view it.")
+        elif dataset.state == Dataset.states.NEW:
+            raise exceptions.Conflict("The dataset you are attempting to view is new and has no data.")
         elif dataset.state == Dataset.states.DISCARDED:
             raise exceptions.ItemDeletionException("The dataset you are attempting to view has been discarded.")
         elif dataset.state == Dataset.states.DEFERRED:

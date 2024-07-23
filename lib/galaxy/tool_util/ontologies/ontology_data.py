@@ -8,7 +8,10 @@ from typing import (
 )
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
-from galaxy.tool_util.parser import ToolSource
+from galaxy.tool_util.parser import (
+    ToolSource,
+    XrefDict,
+)
 from galaxy.util.resources import resource_string
 
 
@@ -46,7 +49,7 @@ EDAM_TOPIC_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_TOPIC_MAPPIN
 
 
 class OntologyData(NamedTuple):
-    xrefs: List[Dict[str, str]]
+    xrefs: List[XrefDict]
     edam_operations: Optional[List[str]]
     edam_topics: Optional[List[str]]
 

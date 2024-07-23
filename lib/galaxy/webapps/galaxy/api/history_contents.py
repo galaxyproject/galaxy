@@ -4,8 +4,6 @@ API operations on the contents of a history.
 
 import logging
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -51,7 +49,6 @@ from galaxy.schema.schema import (
     MaterializeDatasetInstanceAPIRequest,
     MaterializeDatasetInstanceRequest,
     StoreExportPayload,
-    UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
     WriteStoreToPayload,
@@ -64,12 +61,13 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
-    get_update_permission_payload,
     get_value_filter_query_params,
     HistoryHDCAIDPathParam,
     HistoryIDPathParam,
     HistoryItemIDPathParam,
+    normalize_permission_payload,
     query_serialization_params,
+    UpdateDatasetPermissionsBody,
 )
 from galaxy.webapps.galaxy.services.history_contents import (
     CreateHistoryContentFromStore,
@@ -727,15 +725,11 @@ class FastAPIHistoryContents:
         self,
         history_id: HistoryIDPathParam,
         dataset_id: HistoryItemIDPathParam,
+        payload: UpdateDatasetPermissionsBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
-        payload: Dict[str, Any] = Body(
-            default=...,
-            examples=[UpdateDatasetPermissionsPayload().model_dump()],
-        ),
     ) -> DatasetAssociationRoles:
         """Set permissions of the given history dataset to the given role ids."""
-        update_payload = get_update_permission_payload(payload)
+        update_payload = normalize_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
     @router.put(

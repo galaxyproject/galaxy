@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 import packaging.version
@@ -22,6 +23,7 @@ from .interface import (
     ToolSource,
     ToolSourceTest,
     ToolSourceTests,
+    XrefDict,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
@@ -51,24 +53,27 @@ class YamlToolSource(ToolSource):
     def parse_id(self):
         return self.root_dict.get("id")
 
-    def parse_version(self):
-        return str(self.root_dict.get("version"))
+    def parse_version(self) -> Optional[str]:
+        version_raw = self.root_dict.get("version")
+        return str(version_raw) if version_raw is not None else None
 
-    def parse_name(self):
-        return self.root_dict.get("name")
+    def parse_name(self) -> str:
+        rval = self.root_dict.get("name") or self.parse_id()
+        assert rval
+        return str(rval)
 
-    def parse_description(self):
+    def parse_description(self) -> str:
         return self.root_dict.get("description", "")
 
-    def parse_edam_operations(self):
+    def parse_edam_operations(self) -> List[str]:
         return self.root_dict.get("edam_operations", [])
 
-    def parse_edam_topics(self):
+    def parse_edam_topics(self) -> List[str]:
         return self.root_dict.get("edam_topics", [])
 
-    def parse_xrefs(self):
+    def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs", [])
-        return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
+        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -105,7 +110,7 @@ class YamlToolSource(ToolSource):
             resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
         )
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
@@ -191,10 +196,10 @@ class YamlToolSource(ToolSource):
 
         return rval
 
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         return self.root_dict.get("profile", "16.04")
 
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
 
     def parse_interactivetool(self):
@@ -360,7 +365,7 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
-    def parse_static_options(self):
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         static_options = []
         input_dict = self.input_dict
         for option in input_dict.get("options", {}):

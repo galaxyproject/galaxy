@@ -81,6 +81,10 @@ from galaxy.tool_util.parser.interface import (
     PageSource,
     ToolSource,
 )
+from galaxy.tool_util.parser.util import (
+    parse_profile_version,
+    parse_tool_version_with_defaults,
+)
 from galaxy.tool_util.parser.xml import (
     XmlPageSource,
     XmlToolSource,
@@ -93,6 +97,7 @@ from galaxy.tool_util.toolbox import (
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
+from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -145,7 +150,6 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.test import parse_tests
 from galaxy.util import (
     in_directory,
     listify,
@@ -566,6 +570,8 @@ class ToolBox(AbstractToolBox):
     def create_dynamic_tool(self, dynamic_tool, **kwds):
         tool_format = dynamic_tool.tool_format
         tool_representation = dynamic_tool.value
+        if "name" not in tool_representation:
+            tool_representation["name"] = f"dynamic tool {dynamic_tool.uuid}"
         tool_source = get_tool_source_from_representation(
             tool_format=tool_format,
             tool_representation=tool_representation,
@@ -1004,7 +1010,7 @@ class Tool(Dictifiable):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
-        self.profile = float(tool_source.parse_profile())
+        self.profile = parse_profile_version(tool_source)
         # Get the UNIQUE id for the tool
         self.old_id = tool_source.parse_id()
         if guid is None:
@@ -1030,18 +1036,13 @@ class Tool(Dictifiable):
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
-        if not self.name and dynamic:
+        if not self.name and dynamic and self.id:
             self.name = self.id
         if not dynamic and not self.name:
             raise Exception(f"Missing tool 'name' for tool with id '{self.id}' at '{tool_source}'")
 
-        self.version = tool_source.parse_version()
-        if not self.version:
-            if profile < Version("16.04"):
-                # For backward compatibility, some tools may not have versions yet.
-                self.version = "1.0.0"
-            else:
-                raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
+        version = parse_tool_version_with_defaults(self.id, tool_source, profile)
+        self.version = version
 
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
@@ -1305,9 +1306,10 @@ class Tool(Dictifiable):
             self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
     def parse_tests(self):
-        if tests_source := self.tool_source:
+        if self.tool_source:
+            test_descriptions = parse_tool_test_descriptions(self.tool_source, self.id)
             try:
-                self.__tests = json.dumps([t.to_dict() for t in parse_tests(self, tests_source)], indent=None)
+                self.__tests = json.dumps([t.to_dict() for t in test_descriptions], indent=None)
             except Exception:
                 self.__tests = None
                 log.exception("Failed to parse tool tests for tool '%s'", self.id)
@@ -1476,22 +1478,12 @@ class Tool(Dictifiable):
         self.stdio_regexes = regexes
 
     def _parse_citations(self, tool_source):
-        # TODO: Move following logic into ToolSource abstraction.
-        if not hasattr(tool_source, "root"):
-            return []
-
-        root = tool_source.root
-        citations: List[str] = []
-        citations_elem = root.find("citations")
-        if citations_elem is None:
-            return citations
-
-        for citation_elem in citations_elem:
-            if citation_elem.tag != "citation":
-                pass
-            citations_manager = getattr(self.app, "citations_manager", None)
-            if citations_manager is not None:
-                citation = citations_manager.parse_citation(citation_elem)
+        citation_models = tool_source.parse_citations()
+        citations_manager = getattr(self.app, "citations_manager", None)
+        citations = []
+        if citations_manager is not None:
+            for citation_model in citation_models:
+                citation = citations_manager.parse_citation(citation_model)
                 if citation:
                     citations.append(citation)
         return citations

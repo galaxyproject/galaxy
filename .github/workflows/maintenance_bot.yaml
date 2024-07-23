@@ -8,6 +8,7 @@ jobs:
     if: github.repository_owner == 'galaxyproject'
     permissions:
       contents: read
+      issues: write
       pull-requests: write
     runs-on: ubuntu-latest
     env:

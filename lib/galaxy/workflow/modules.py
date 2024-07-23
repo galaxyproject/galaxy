@@ -746,7 +746,8 @@ class SubWorkflowModule(WorkflowModule):
                         # This can happen when importing workflows with missing tools.
                         # We can't raise an exception here, as that would prevent loading
                         # the workflow.
-                        log.error(
+                        # This is also listed when opening such a workflow in the workflow editor.
+                        log.warning(
                             f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs"
                         )
                         continue

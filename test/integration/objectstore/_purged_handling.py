@@ -9,7 +9,7 @@ def purge_while_job_running(dataset_populator: DatasetPopulator, extra_sleep=0):
         response = dataset_populator.run_tool(
             "all_output_types",
             inputs={
-                "sleep_param": 5,
+                "sleep_param": 5 + extra_sleep,
             },
             history_id=history_id,
         )

@@ -17,8 +17,10 @@ from typing import (
 )
 
 import packaging.version
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from galaxy.util import Element
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
@@ -41,11 +43,15 @@ class AssertionDict(TypedDict):
 AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
+ToolSourceTestInputs = Any
+ToolSourceTestOutputs = Any
+TestSourceTestOutputColllection = Any
+
 
 class ToolSourceTest(TypedDict):
-    inputs: Any
-    outputs: Any
-    output_collections: List[Any]
+    inputs: ToolSourceTestInputs
+    outputs: ToolSourceTestOutputs
+    output_collections: List[TestSourceTestOutputColllection]
     stdout: AssertionList
     stderr: AssertionList
     expect_exit_code: Optional[XmlInt]
@@ -59,6 +65,16 @@ class ToolSourceTest(TypedDict):
 
 class ToolSourceTests(TypedDict):
     tests: List[ToolSourceTest]
+
+
+class XrefDict(TypedDict):
+    value: str
+    reftype: str
+
+
+class Citation(BaseModel):
+    type: str
+    content: str
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -76,7 +92,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_version(self):
+    def parse_version(self) -> Optional[str]:
         """Parse a version describing the abstract tool."""
 
     def parse_tool_module(self):
@@ -98,12 +114,15 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_name(self):
+    def parse_name(self) -> str:
         """Parse a short name for tool (required)."""
 
     @abstractmethod
-    def parse_description(self):
-        """Parse a description for tool. Longer than name, shorted than help."""
+    def parse_description(self) -> str:
+        """Parse a description for tool. Longer than name, shorted than help.
+
+        We parse this out as "" if it isn't explicitly declared.
+        """
 
     def parse_edam_operations(self) -> List[str]:
         """Parse list of edam operation codes."""
@@ -114,7 +133,7 @@ class ToolSource(metaclass=ABCMeta):
         return []
 
     @abstractmethod
-    def parse_xrefs(self) -> List[Dict[str, str]]:
+    def parse_xrefs(self) -> List[XrefDict]:
         """Parse list of external resource URIs and types."""
 
     def parse_display_interface(self, default):
@@ -231,7 +250,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> "PagesSource":
         """Return a PagesSource representing inputs by page for tool."""
 
     def parse_provided_metadata_style(self):
@@ -276,12 +295,16 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
-    def parse_license(self):
+    def parse_license(self) -> Optional[str]:
         """Return license corresponding to tool wrapper."""
+
+    def parse_citations(self) -> List[Citation]:
+        """Return a list of citations."""
+        return []
 
     @abstractmethod
     def parse_python_template_version(self) -> Optional[packaging.version.Version]:
@@ -339,6 +362,23 @@ class PagesSource:
     @property
     def inputs_defined(self):
         return True
+
+
+class DynamicOptions(metaclass=ABCMeta):
+
+    def elem(self) -> Element:
+        # For things in transition that still depend on XML - provide a way
+        # to grab it and just throw an error if feature is attempted to be
+        # used with other tool sources.
+        raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    @abstractmethod
+    def get_data_table_name(self) -> Optional[str]:
+        """If dynamic options are loaded from a data table, return the name."""
+
+    @abstractmethod
+    def get_index_file_name(self) -> Optional[str]:
+        """If dynamic options are loaded from an index file, return the name."""
 
 
 class InputSource(metaclass=ABCMeta):
@@ -400,8 +440,12 @@ class InputSource(metaclass=ABCMeta):
             default = self.default_optional
         return self.get_bool("optional", default)
 
-    def parse_dynamic_options_elem(self):
-        """Return an XML element describing dynamic options."""
+    def parse_dynamic_options(self) -> Optional[DynamicOptions]:
+        """Return an optional element describing dynamic options.
+
+        These options are still very XML based but as they are adapted to the infrastructure, the return
+        type here will evolve.
+        """
         return None
 
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:

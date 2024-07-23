@@ -266,6 +266,8 @@
   <tool file="for_workflows/create_input_collection.xml" />
   <tool file="for_workflows/randomlines.xml" />
 
+  <tool_dir dir="parameters/" />
+
   <section id="filter" name="For Tours">
     <tool file="for_tours/filtering.xml" />
   </section>

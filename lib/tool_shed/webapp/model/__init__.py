@@ -644,6 +644,8 @@ class Tag(Base):
 
 
 class RepositoryMetadata(Dictifiable):
+    repository: "Repository"
+
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.
     table = Table(

@@ -14,9 +14,10 @@ import {
     LazyChangeDataAction,
     LazyChangePositionAction,
     LazyChangeSizeAction,
+    RemoveAllFreehandCommentsAction,
     ToggleCommentSelectedAction,
 } from "./commentActions";
-import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
+import { mockComment, mockFreehandComment, mockToolStep, mockWorkflow } from "./mockData";
 import {
     CopyStepAction,
     InsertStepAction,
@@ -90,6 +91,12 @@ describe("Workflow Undo Redo Actions", () => {
         return comment;
     }
 
+    function addFreehandComment() {
+        const comment = mockFreehandComment(commentStore.highestCommentId + 1);
+        commentStore.addComments([comment]);
+        return comment;
+    }
+
     function addStep() {
         const step = mockToolStep(stepStore.getStepIndex + 1);
         stepStore.addStep(step);
@@ -139,6 +146,15 @@ describe("Workflow Undo Redo Actions", () => {
         it("ToggleCommentSelectedAction", () => {
             const comment = addComment();
             const action = new ToggleCommentSelectedAction(commentStore, comment);
+            testUndoRedo(action);
+        });
+
+        it("RemoveAllFreehandCommentsAction", () => {
+            addFreehandComment();
+            addFreehandComment();
+            addFreehandComment();
+
+            const action = new RemoveAllFreehandCommentsAction(commentStore);
             testUndoRedo(action);
         });
     });

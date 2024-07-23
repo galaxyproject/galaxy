@@ -10,7 +10,7 @@ export type TemplateVariable =
     | components["schemas"]["TemplateVariablePathComponent"]
     | components["schemas"]["TemplateVariableBoolean"];
 export type TemplateSecret = components["schemas"]["TemplateSecret"];
-export type VariableValueType = (string | boolean | number) | undefined;
+export type VariableValueType = string | boolean | number;
 export type VariableData = { [key: string]: VariableValueType };
 export type SecretData = { [key: string]: string };
 

@@ -65,6 +65,7 @@ from galaxy.datatypes.sniff import (
     iter_headers,
     validate_tabular,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import (
     FileObjType,
@@ -134,7 +135,8 @@ class TabularData(Text):
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
@@ -156,12 +158,15 @@ class TabularData(Text):
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
-            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != "\n":
-                cursor = f.read(1)
-                while cursor and cursor != "\n":
-                    ck_data += cursor
+            try:
+                ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+                if ck_data and ck_data[-1] != "\n":
                     cursor = f.read(1)
+                    while cursor and cursor != "\n":
+                        ck_data += cursor
+                        cursor = f.read(1)
+            except UnicodeDecodeError:
+                raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
             last_read = f.tell()
         return ck_data, last_read
 
@@ -193,14 +198,15 @@ class TabularData(Text):
                 return open(dataset.get_file_name(), mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako",
-                        truncated_data=open(dataset.get_file_name()).read(max_peek_size),
-                        data=dataset,
-                    ),
-                    headers,
-                )
+                with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
+                    return (
+                        trans.fill_template_mako(
+                            "/dataset/large_file.mako",
+                            truncated_data=fh.read(max_peek_size),
+                            data=dataset,
+                        ),
+                        headers,
+                    )
         else:
             column_names = "null"
             if dataset.metadata.column_names:

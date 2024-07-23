@@ -1,4 +1,4 @@
-import { WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { FreehandWorkflowComment, WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
 import type { Workflow } from "../modules/model";
@@ -225,5 +225,23 @@ export function mockComment(id: number): WorkflowComment {
         type: "text",
         color: "none",
         data: { size: 2, text: "Enter Text" },
+    };
+}
+
+export function mockFreehandComment(id: number): FreehandWorkflowComment {
+    return {
+        id,
+        position: [0, 0],
+        size: [100, 200],
+        type: "freehand",
+        color: "none",
+        data: {
+            thickness: 1,
+            line: [
+                [0, 0],
+                [10, 20],
+                [100, 200],
+            ],
+        },
     };
 }

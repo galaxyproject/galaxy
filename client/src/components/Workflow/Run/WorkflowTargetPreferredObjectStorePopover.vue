@@ -13,7 +13,7 @@
                 used.
             </div>
             <div v-localize>
-                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the worklfow
+                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the workflow
                 run header.
             </div>
         </div>
