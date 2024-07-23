@@ -3,6 +3,7 @@ import { computed, del, ref, set } from "vue";
 
 import {
     type AnyHistory,
+    client,
     type HistoryContentsStats,
     type HistoryDevDetailed,
     type HistorySummary,
@@ -15,7 +16,7 @@ import {
     undeleteHistories,
     undeleteHistory,
 } from "@/api/histories";
-import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
+import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
@@ -340,11 +341,26 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
-        const history = await archiveHistory(historyId, archiveExportId, purgeHistory);
+        const { data, error } = await client.POST("/api/histories/{history_id}/archive", {
+            params: {
+                path: { history_id: historyId },
+            },
+            body: {
+                archive_export_id: archiveExportId,
+                purge_history: purgeHistory,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const history = data as ArchivedHistoryDetailed;
         setHistory(history);
         if (!history.archived) {
             return;
         }
+
         // If the current history is archived, we need to switch to another one as it is
         // no longer part of the active histories.
         const nextHistoryId = getNextAvailableHistoryId([historyId]);
@@ -356,7 +372,18 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
-        const history = await unarchiveHistory(historyId, force);
+        const { data, error } = await client.PUT("/api/histories/{history_id}/archive/restore", {
+            params: {
+                path: { history_id: historyId },
+                query: { force },
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const history = data as ArchivedHistoryDetailed;
         setHistory(history);
         return history;
     }
