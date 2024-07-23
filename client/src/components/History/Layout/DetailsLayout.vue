@@ -9,6 +9,8 @@ import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
 
+import type { DetailsLayoutSummarized } from "./types";
+
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -20,7 +22,7 @@ interface Props {
     writeable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
-    summarized?: "both" | "annotation" | "tags" | "none" | "hidden";
+    summarized?: DetailsLayoutSummarized;
 }
 
 const props = withDefaults(defineProps<Props>(), {

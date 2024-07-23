@@ -278,20 +278,18 @@ async function loadMore(noScroll = false) {
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge pill>
-                                        <FontAwesomeIcon
-                                            v-if="history.purged"
-                                            title="Purged"
-                                            :icon="faBurn"
-                                            fixed-width />
-                                        <FontAwesomeIcon
-                                            v-else-if="history.deleted"
-                                            title="Deleted"
-                                            :icon="faTrash"
-                                            fixed-width />
+                                    <BBadge v-if="history.purged" pill class="alert-warning" title="Purged">
+                                        <FontAwesomeIcon :icon="faBurn" fixed-width />
                                     </BBadge>
-                                    <BBadge v-if="history.archived" pill>
-                                        <FontAwesomeIcon title="Archived" :icon="faArchive" fixed-width />
+                                    <BBadge v-else-if="history.deleted" pill class="alert-danger" title="Deleted">
+                                        <FontAwesomeIcon :icon="faTrash" fixed-width />
+                                    </BBadge>
+                                    <BBadge
+                                        v-if="history.archived && userOwnsHistory(currentUser, history)"
+                                        pill
+                                        class="alert-warning"
+                                        title="Archived">
+                                        <FontAwesomeIcon :icon="faArchive" fixed-width />
                                     </BBadge>
                                     <BBadge pill :title="localize('Amount of items in history')">
                                         {{ history.count }} {{ localize("items") }}
