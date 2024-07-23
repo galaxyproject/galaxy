@@ -82,6 +82,11 @@ const baseRules = {
     "import/first": "error",
     "import/newline-after-import": "error",
     "import/no-duplicates": "error",
+
+    "@typescript-eslint/consistent-type-imports": [
+        "error",
+        { prefer: "type-imports", fixStyle: "inline-type-imports" },
+    ],
 };
 
 const baseExtends = [
@@ -134,10 +139,6 @@ module.exports = {
                 "@typescript-eslint/ban-ts-comment": "warn",
                 "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
                 "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
-                "@typescript-eslint/consistent-type-imports": [
-                    "error",
-                    { prefer: "type-imports", fixStyle: "inline-type-imports" },
-                ],
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {
