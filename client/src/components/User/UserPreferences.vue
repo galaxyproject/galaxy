@@ -114,13 +114,18 @@
             :user-id="userId">
         </UserDeletion>
         <UserPreferencesElement
+            icon="fa-laptop"
+            title="Local Preferences"
+            description="All settings specific to this client device.">
+        </UserPreferencesElement>
+        <UserPreferencesElement
             v-if="hasLogout"
             id="edit-preferences-sign-out"
             icon="fa-sign-out-alt"
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="showLogoutModal = true" />
-        <UserPreferencesElement> </UserPreferencesElement>
+
         <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
             <span v-localize>
                 All of your histories and datasets have been made private. If you'd like to make all *future* histories
