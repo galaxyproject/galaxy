@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BLink } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
-import { TaskMonitor } from "@/composables/genericTaskMonitor";
-import { MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
+import { type TaskMonitor } from "@/composables/genericTaskMonitor";
+import { type MonitoringRequest, usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
 import UtcDate from "@/components/UtcDate.vue";

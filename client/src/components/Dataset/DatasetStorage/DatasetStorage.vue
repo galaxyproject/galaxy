@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import { DatasetStorageDetails } from "@/api";
+import { type DatasetStorageDetails } from "@/api";
 import { fetchDatasetStorage } from "@/api/datasets";
 import { errorMessageAsString } from "@/utils/simple-error";
 

@@ -18,7 +18,7 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { HistoryContentBulkOperationPayload, updateHistoryItemsBulk } from "./services";
+import { type HistoryContentBulkOperationPayload, updateHistoryItemsBulk } from "./services";
 
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";

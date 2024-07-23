@@ -9,7 +9,7 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
-import { QuotaUsage } from "./Quota/model";
+import { type QuotaUsage } from "./Quota/model";
 import { fetch } from "./Quota/services";
 
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";

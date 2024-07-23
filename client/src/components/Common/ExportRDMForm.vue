@@ -3,10 +3,10 @@ import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } f
 import { computed, ref } from "vue";
 
 import {
-    BrowsableFilesSourcePlugin,
-    CreatedEntry,
+    type BrowsableFilesSourcePlugin,
+    type CreatedEntry,
     createRemoteEntry,
-    FilterFileSourcesOptions,
+    type FilterFileSourcesOptions,
 } from "@/api/remoteFiles";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";

@@ -3,7 +3,7 @@ import { BAlert, BTable } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { HDASummary } from "@/api";
+import { type HDASummary } from "@/api";
 import { copyDataset, getDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";

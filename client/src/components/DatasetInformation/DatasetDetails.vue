@@ -6,7 +6,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 
 import { type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { fetchJobDetails, JobDetails } from "@/api/jobs";
+import { fetchJobDetails, type JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { stateIsTerminal } from "@/utils/utils";
