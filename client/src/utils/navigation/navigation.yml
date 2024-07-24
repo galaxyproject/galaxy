@@ -1032,6 +1032,14 @@ libraries:
       # TODO: Most of these aren't very good selectors but the same DOM elements
       # are reused without adding specific classes, IDs, or roles to anything.
       import_modal: '.modal'
+      import_datasets_from_history_modal: '.selection-dialog-modal'
+      import_datasets_from_history_modal_history_search: '.selection-dialog-modal .search-query'
+      import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
+      import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal .selection-dialog-table[aria-busy="false"]'
+      import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
+      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[aria-colindex="1"]'
+      import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
+      import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       import_datasets_ok_button: '.modal-footer .buttons #button-0'
       import_datasets_cancel_button: '.modal-footer .buttons #button-1'
       export_to_history_options: '#library-collection-type-select'
@@ -1040,8 +1048,6 @@ libraries:
       export_to_history_new_history: 'input[name=history_name]'
       clear_filters: '.clear-filters-link'
       import_progress_bar: '.progress-bar-import'
-      import_history_content: '.library_selected_history_content'
-      import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
       select_one: '.lib-folder-checkbox'
@@ -1070,7 +1076,6 @@ libraries:
       private_dataset_icon: '.fa-key'
       open_location_details_btn: '.details-btn'
       location_details_ok_btn: '#details-modal .btn-primary'
-      add_history_items: '#dataset_add_bulk'
 
     labels:
       from_history: 'from History'
