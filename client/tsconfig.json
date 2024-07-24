@@ -4,13 +4,7 @@
         "target": "es2016",
         "module": "es2020",
 
-        // @vue/tsconfig now sets this by default, but this doesn't play well
-        // with the ts-jest presets.
-        // It doesn't seem to have any immediate impact, and may not be worth
-        // fighting with as we want to swap to vitest anyway
-        // TODO: revisit and drop this override
-        // See https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax for context
-        "verbatimModuleSyntax": false,
+        "verbatimModuleSyntax": true,
 
         "baseUrl": ".",
         "paths": {

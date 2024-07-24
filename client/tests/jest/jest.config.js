@@ -48,7 +48,17 @@ module.exports = {
         "^.*\\.(vue)$": "@vue/vue2-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
         "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
-        ...tsjPreset.transform,
+        ".ts": [
+            "ts-jest",
+            {
+                // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
+                // This is necessary to allow jest to transform the module syntax to commonjs, which is necessary for
+                // jest to work properly.  I think.
+                tsconfig: {
+                    verbatimModuleSyntax: false,
+                },
+            },
+        ],
     },
     transformIgnorePatterns: [`/node_modules/(?!${modulesToTransform})`],
 };
