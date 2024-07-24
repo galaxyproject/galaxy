@@ -25,6 +25,7 @@ from galaxy.model.base import (
 )
 from galaxy.schema.invocation import (
     CancelReason,
+    FAILURE_REASONS_EXPECTED,
     FailureReason,
     InvocationCancellationHistoryDeleted,
     InvocationFailureCollectionFailed,
@@ -252,10 +253,7 @@ class WorkflowInvoker:
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
             except Exception as e:
                 log_function = log.exception
-                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason not in (
-                    "unexpected_failure",
-                    "expression_evaluation_failed",
-                ):
+                if isinstance(e, modules.FailWorkflowEvaluation) and e.why.reason in FAILURE_REASONS_EXPECTED:
                     log_function = log.info
                 log_function(
                     "Failed to schedule %s for %s, problem occurred on %s.",
