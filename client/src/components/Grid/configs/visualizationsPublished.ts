@@ -4,7 +4,7 @@ import { fetcher } from "@/api/schema";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 
-import type { FieldArray, GridConfig } from "./types";
+import { type FieldArray, type GridConfig } from "./types";
 
 /**
  * Api endpoint handlers

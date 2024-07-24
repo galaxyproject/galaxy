@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, type Ref, ref } from "vue";
 
-import { ApiResponse } from "@/api/schema";
+import { type ApiResponse } from "@/api/schema";
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { errorMessageAsString } from "@/utils/simple-error";
 

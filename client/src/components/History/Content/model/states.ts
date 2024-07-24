@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.

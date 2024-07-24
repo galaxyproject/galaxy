@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 import { fetcher } from "@/api/schema/fetcher";
 
 /** The browsing mode:

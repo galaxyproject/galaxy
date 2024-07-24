@@ -14,8 +14,8 @@ import { stepJobsSummaryFetcher, type StepJobSummary, type WorkflowInvocationEle
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
-import type { Step } from "@/stores/workflowStepStore";
-import type { Workflow } from "@/stores/workflowStore";
+import { type Step } from "@/stores/workflowStepStore";
+import { type Workflow } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";

@@ -9,7 +9,7 @@ import { jobsFetcher } from "@/api/jobs";
 import { workflowsFetcher } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { WorkflowLabel, WorkflowLabels } from "./labels";
+import { type WorkflowLabel, type WorkflowLabels } from "./labels";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
 import MarkdownVisualization from "./MarkdownVisualization.vue";

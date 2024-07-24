@@ -1,4 +1,4 @@
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 
 type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];

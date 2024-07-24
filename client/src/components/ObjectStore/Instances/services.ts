@@ -1,6 +1,6 @@
 import { fetcher } from "@/api/schema/fetcher";
 
-import type { UserConcreteObjectStore } from "./types";
+import { type UserConcreteObjectStore } from "./types";
 
 export const create = fetcher.path("/api/object_store_instances").method("post").create();
 export const test = fetcher.path("/api/object_store_instances/test").method("post").create();

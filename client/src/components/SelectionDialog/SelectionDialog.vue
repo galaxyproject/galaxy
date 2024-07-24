@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
+import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
 import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 

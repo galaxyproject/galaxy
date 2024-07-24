@@ -1,4 +1,4 @@
-import type { UserFileSourceModel } from "@/api/fileSources";
+import { type UserFileSourceModel } from "@/api/fileSources";
 import { fetcher } from "@/api/schema/fetcher";
 
 export const create = fetcher.path("/api/file_source_instances").method("post").create();

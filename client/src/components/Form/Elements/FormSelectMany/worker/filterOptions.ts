@@ -1,4 +1,4 @@
-import { SelectOption } from "./selectMany";
+import { type SelectOption } from "./selectMany";
 
 export function filterOptions(options: SelectOption[], filter: string | RegExp, caseSensitive: boolean) {
     let filteredSelectOptions;

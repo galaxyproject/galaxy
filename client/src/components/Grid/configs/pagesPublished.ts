@@ -4,7 +4,7 @@ import { useEventBus } from "@vueuse/core";
 import { fetcher } from "@/api/schema";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

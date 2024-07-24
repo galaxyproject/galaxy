@@ -4,7 +4,7 @@ import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { Citation } from ".";
+import { type Citation } from ".";
 
 library.add(faExternalLinkAlt);
 

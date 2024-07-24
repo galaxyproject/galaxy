@@ -7,7 +7,7 @@ import { mockFetcher } from "@/api/schema/__mocks__";
 import { getCurrentUser } from "@/stores/users/queries";
 import { useUserStore } from "@/stores/userStore";
 
-import { UserQuotaUsageData } from "./Quota/model";
+import { type UserQuotaUsageData } from "./Quota/model";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 

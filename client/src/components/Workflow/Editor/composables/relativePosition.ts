@@ -1,4 +1,4 @@
-import type { ZoomTransform } from "d3-zoom";
+import { type ZoomTransform } from "d3-zoom";
 import { inject, onScopeDispose, type Ref, ref, watch } from "vue";
 
 /**

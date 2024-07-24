@@ -2,7 +2,7 @@
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
 import { withPrefix } from "@/utils/redirect";

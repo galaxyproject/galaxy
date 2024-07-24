@@ -6,7 +6,7 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import { HistoryItemSummary, isHistoryItem } from "@/api";
+import { type HistoryItemSummary, isHistoryItem } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";

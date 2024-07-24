@@ -6,7 +6,7 @@ import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend, BMod
 import { capitalize } from "lodash";
 import { computed, onMounted, ref, type UnwrapRef, watch } from "vue";
 
-import { QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
+import { type QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { type FilterType, type ValidFilter } from "@/utils/filtering";
 import { errorMessageAsString } from "@/utils/simple-error";
 

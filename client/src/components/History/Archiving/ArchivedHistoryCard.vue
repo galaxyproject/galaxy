@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { ArchivedHistorySummary } from "@/api/histories.archived";
+import { type ArchivedHistorySummary } from "@/api/histories.archived";
 import localize from "@/utils/localization";
 
 import ExportRecordDOILink from "@/components/Common/ExportRecordDOILink.vue";

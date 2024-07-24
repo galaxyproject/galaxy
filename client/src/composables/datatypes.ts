@@ -1,5 +1,4 @@
-import type { Ref } from "vue";
-import { ref } from "vue";
+import { type Ref, ref } from "vue";
 
 import { datatypesFetcher, edamDataFetcher, edamFormatsFetcher } from "@/api/datatypes";
 

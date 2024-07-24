@@ -12,7 +12,7 @@ import {
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
 } from "../services";
-import type { CleanupCategory } from "./model";
+import { type CleanupCategory } from "./model";
 
 export function useCleanupCategories() {
     const cleanupCategories = ref<CleanupCategory[]>([

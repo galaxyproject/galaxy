@@ -1,9 +1,9 @@
 import { ref } from "vue";
 
-import { TaskMonitor } from "@/composables/genericTaskMonitor";
+import { type TaskMonitor } from "@/composables/genericTaskMonitor";
 import {
-    MonitoringData,
-    MonitoringRequest,
+    type MonitoringData,
+    type MonitoringRequest,
     usePersistentProgressTaskMonitor,
 } from "@/composables/persistentProgressMonitor";
 

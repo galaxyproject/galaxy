@@ -2,7 +2,7 @@
 import { computed, ref, watch } from "vue";
 
 import { useSelectableObjectStores } from "@/composables/useObjectStores";
-import { ValidFilter } from "@/utils/filtering";
+import { type ValidFilter } from "@/utils/filtering";
 
 import FilterObjectStoreLink from "./FilterObjectStoreLink.vue";
 

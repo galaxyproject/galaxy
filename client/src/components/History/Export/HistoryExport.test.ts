@@ -6,9 +6,9 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import type { HistorySummary } from "@/api";
+import { type HistorySummary } from "@/api";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
-import type { FilesSourcePlugin } from "@/api/remoteFiles";
+import { type FilesSourcePlugin } from "@/api/remoteFiles";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,

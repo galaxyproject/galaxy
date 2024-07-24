@@ -17,7 +17,7 @@ import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } 
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, BatchOperationArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type BatchOperationArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

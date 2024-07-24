@@ -1,6 +1,6 @@
-import type { FileSourceTemplateSummary } from "@/api/fileSources";
-import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
-import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { type FileSourceTemplateSummary } from "@/api/fileSources";
+import { type UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
+import { type ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 
 export const STANDARD_OBJECT_STORE_TEMPLATE: ObjectStoreTemplateSummary = {
     type: "aws_s3",

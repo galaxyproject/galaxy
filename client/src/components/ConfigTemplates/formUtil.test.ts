@@ -1,4 +1,4 @@
-import { TemplateVariable } from "@/api/configTemplates";
+import { type TemplateVariable } from "@/api/configTemplates";
 
 import { createTemplateForm, templateVariableFormEntry, upgradeForm } from "./formUtil";
 import {

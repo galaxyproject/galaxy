@@ -1,11 +1,13 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
 import {
     loadNotificationsFromServer,
     loadNotificationsStatus,
+    type NotificationChanges,
     updateBatchNotificationsOnServer,
+    type UserNotification,
+    type UserNotificationsBatchUpdateRequest,
 } from "@/api/notifications";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { mergeObjectListsById } from "@/utils/utils";

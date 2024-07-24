@@ -1,7 +1,7 @@
-import { MaybeRefOrGetter, toValue } from "@vueuse/core";
+import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
-import type { ApiResponse } from "@/api/schema";
+import { type ApiResponse } from "@/api/schema";
 
 /**
  * Parameters for fetching an item from the server.

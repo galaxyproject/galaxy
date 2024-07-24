@@ -1,7 +1,7 @@
 import { StorageSerializers, useLocalStorage } from "@vueuse/core";
 import { computed, watch } from "vue";
 
-import type { TaskMonitor } from "./genericTaskMonitor";
+import { type TaskMonitor } from "./genericTaskMonitor";
 
 type TaskType = "task" | "short_term_storage";
 

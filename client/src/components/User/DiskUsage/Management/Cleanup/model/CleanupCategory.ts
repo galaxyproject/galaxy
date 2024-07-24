@@ -1,4 +1,4 @@
-import type { CleanupOperation } from ".";
+import { type CleanupOperation } from ".";
 
 /**
  * Defines a new category to display in the Storage Management Dashboard to

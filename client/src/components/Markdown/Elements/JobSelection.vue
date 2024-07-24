@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { SelectOption } from "./handlesMappingJobs";
+import { type SelectOption } from "./handlesMappingJobs";
 
 interface JobSelectionProps {
     jobId?: string;

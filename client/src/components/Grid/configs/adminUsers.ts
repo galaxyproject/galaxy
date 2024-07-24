@@ -15,13 +15,13 @@ import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
 import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
-import type { GalaxyConfiguration } from "@/stores/configurationStore";
+import { type GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

@@ -1,5 +1,4 @@
-import type { Component, SelectorTemplate } from "./index";
-import { ROOT_COMPONENT as raw_root_component } from "./index";
+import { type Component, ROOT_COMPONENT as raw_root_component, type SelectorTemplate } from "./index";
 
 interface Root_messages extends Component {
     all: SelectorTemplate;

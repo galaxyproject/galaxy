@@ -2,14 +2,20 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBug } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { AxiosError } from "axios";
+import { type AxiosError } from "axios";
 import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
-import { fetchJobCommonProblems, fetchJobDetails, JobDetails, JobInputSummary, postJobErrorReport } from "@/api/jobs";
+import {
+    fetchJobCommonProblems,
+    fetchJobDetails,
+    type JobDetails,
+    type JobInputSummary,
+    postJobErrorReport,
+} from "@/api/jobs";
 import { useMarkdown } from "@/composables/markdown";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";

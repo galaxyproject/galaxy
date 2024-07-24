@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 
 import { fetcher } from "@/api/schema/fetcher";
-import type { components } from "@/api/schema/schema";
+import { type components } from "@/api/schema/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const getFileSourceInstances = fetcher.path("/api/file_source_instances").method("get").create();

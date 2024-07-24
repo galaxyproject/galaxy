@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import Vue, { computed, Ref, ref, watch } from "vue";
+import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { enableLink, sharing } from "@/api/histories";

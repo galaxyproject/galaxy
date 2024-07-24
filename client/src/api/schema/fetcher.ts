@@ -1,12 +1,11 @@
-import type { ApiResponse, Middleware } from "openapi-typescript-fetch";
-import { Fetcher } from "openapi-typescript-fetch";
+import { type ApiResponse, Fetcher, type Middleware } from "openapi-typescript-fetch";
 
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import type { paths } from "./schema";
+import { type paths } from "./schema";
 
-export { ApiResponse };
+export { type ApiResponse };
 
 const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
     try {

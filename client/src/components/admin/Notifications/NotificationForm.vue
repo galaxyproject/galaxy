@@ -7,7 +7,7 @@ import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getAllGroups } from "@/api/groups";
-import { NotificationCreateRequest, sendNotification } from "@/api/notifications";
+import { type NotificationCreateRequest, sendNotification } from "@/api/notifications";
 import { getAllRoles } from "@/api/roles";
 import { type components } from "@/api/schema";
 import { getAllUsers } from "@/api/users";

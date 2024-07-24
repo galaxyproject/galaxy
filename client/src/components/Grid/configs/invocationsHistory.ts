@@ -2,12 +2,12 @@ import { faArrowLeft, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { invocationsFetcher, type WorkflowInvocation } from "@/api/invocations";
-import type { StoredWorkflowDetailed } from "@/api/workflows";
+import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 

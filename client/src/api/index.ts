@@ -1,6 +1,6 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 /**
  * Contains minimal information about a History.

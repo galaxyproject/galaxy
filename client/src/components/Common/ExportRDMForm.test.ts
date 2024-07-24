@@ -1,8 +1,8 @@
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, Wrapper } from "@vue/test-utils";
+import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
-import { type BrowsableFilesSourcePlugin, CreatedEntry } from "@/api/remoteFiles";
+import { type BrowsableFilesSourcePlugin, type CreatedEntry } from "@/api/remoteFiles";
 import { mockFetcher } from "@/api/schema/__mocks__";
 
 import ExportRDMForm from "./ExportRDMForm.vue";

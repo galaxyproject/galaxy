@@ -1,7 +1,7 @@
 <template>
     <div>
         <FolderTopBar
-            :canAddLibraryItem="canAddLibraryItem"
+            :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
             :include-deleted.sync="includeDeleted"
             :folder_id="currentFolderId"

@@ -1,9 +1,9 @@
 import { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
-import type {
-    BaseWorkflowComment,
-    WorkflowComment,
-    WorkflowCommentColor,
-    WorkflowCommentStore,
+import {
+    type BaseWorkflowComment,
+    type WorkflowComment,
+    type WorkflowCommentColor,
+    type WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
 
 class CommentAction extends UndoRedoAction {
