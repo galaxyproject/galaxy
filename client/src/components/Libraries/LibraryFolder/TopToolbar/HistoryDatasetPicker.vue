@@ -226,6 +226,7 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
 
 function onHistoryClick(item: SelectionItem) {
     if (!item.isLeaf) {
+        selectionDialog.value?.resetFilter();
         selectionDialog.value?.resetPagination();
         datasetsVisible.value = true;
         itemsProvider.value = (ctx: ItemsProviderContext) => datasetsProvider(ctx, item as HistoryRecord);
