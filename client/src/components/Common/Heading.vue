@@ -59,6 +59,7 @@ const element = computed(() => {
             <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </b-button>
         <div v-else class="stripe"></div>
+
         <component
             :is="element"
             :class="[
@@ -68,6 +69,7 @@ const element = computed(() => {
                 props.truncate ? 'truncate' : '',
             ]"
             @click="$emit('click')">
+            <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
             <slot />
         </component>
         <div class="stripe"></div>
@@ -85,8 +87,8 @@ const element = computed(() => {
         ]"
         @click="$emit('click')">
         <b-button v-if="collapsible" variant="link" size="sm">
-            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
-            <icon v-else fixed-width icon="angle-double-up" />
+            <FontAwesomeIcon v-if="collapsed" fixed-width icon="angle-double-down" />
+            <FontAwesomeIcon v-else fixed-width icon="angle-double-up" />
         </b-button>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
