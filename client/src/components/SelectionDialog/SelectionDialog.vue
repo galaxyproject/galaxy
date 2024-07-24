@@ -139,11 +139,16 @@ function formatTime(value: string) {
     }
 }
 
+function resetFilter() {
+    filter.value = "";
+}
+
 function resetPagination() {
     currentPage.value = 1;
 }
 
 defineExpose({
+    resetFilter,
     resetPagination,
 });
 
