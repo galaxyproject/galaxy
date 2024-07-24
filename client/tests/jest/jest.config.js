@@ -1,5 +1,6 @@
 const path = require("path");
 const { defaults: tsjPreset } = require("ts-jest/presets");
+const ts = require("typescript");
 
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
@@ -14,6 +15,13 @@ const modulesToTransform = [
     "@fortawesome",
     "openapi-typescript-fetch",
 ].join("|");
+
+const tsjPresetTransform = tsjPreset.transform;
+
+// Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
+// This is necessary to allow jest to transform the module syntax to commonjs, which is necessary for
+// jest to work properly.  I think.
+tsjPresetTransform[0].tsconfig.verbatimModuleSyntax = false;
 
 module.exports = {
     preset: "ts-jest",
@@ -48,17 +56,7 @@ module.exports = {
         "^.*\\.(vue)$": "@vue/vue2-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
         "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
-        ".ts": [
-            "ts-jest",
-            {
-                // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
-                // This is necessary to allow jest to transform the module syntax to commonjs, which is necessary for
-                // jest to work properly.  I think.
-                tsconfig: {
-                    verbatimModuleSyntax: false,
-                },
-            },
-        ],
+        ...tsjPresetTransform,
     },
     transformIgnorePatterns: [`/node_modules/(?!${modulesToTransform})`],
 };
