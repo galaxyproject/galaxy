@@ -276,3 +276,9 @@ export type DatasetTransform = {
  * Base type for all exceptions returned by the API.
  */
 export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
+export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
