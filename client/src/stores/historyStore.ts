@@ -195,18 +195,22 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return filteredHistoryIds[0];
     }
 
+    async function setNextAvailableHistoryId(excludedIds: string[]) {
+        if (currentHistoryId.value && excludedIds.includes(currentHistoryId.value)) {
+            const nextAvailableHistoryId = getNextAvailableHistoryId(excludedIds);
+            if (nextAvailableHistoryId) {
+                await setCurrentHistory(nextAvailableHistoryId);
+            } else {
+                await createNewHistory();
+            }
+        }
+    }
+
     async function deleteHistory(historyId: string, purge = false) {
         try {
             const { data } = await deleteHistoryById({ history_id: historyId, purge });
             const deletedHistory = data as AnyHistory;
-            if (currentHistoryId.value === historyId) {
-                const nextAvailableHistoryId = getNextAvailableHistoryId([deletedHistory.id]);
-                if (nextAvailableHistoryId) {
-                    await setCurrentHistory(nextAvailableHistoryId);
-                } else {
-                    await createNewHistory();
-                }
-            }
+            await setNextAvailableHistoryId([deletedHistory.id]);
             del(storedHistories.value, deletedHistory.id);
             await handleTotalCountChange(1, true);
         } catch (error) {
@@ -219,14 +223,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             const { data } = await deleteHistoriesByIds({ ids, purge });
             const deletedHistories = data as AnyHistory[];
             const historyIds = deletedHistories.map((x) => String(x.id));
-            if (currentHistoryId.value && historyIds.includes(currentHistoryId.value)) {
-                const nextAvailableHistoryId = getNextAvailableHistoryId(historyIds);
-                if (nextAvailableHistoryId) {
-                    await setCurrentHistory(nextAvailableHistoryId);
-                } else {
-                    await createNewHistory();
-                }
-            }
+            await setNextAvailableHistoryId(historyIds);
             deletedHistories.forEach((history) => {
                 del(storedHistories.value, history.id);
             });
