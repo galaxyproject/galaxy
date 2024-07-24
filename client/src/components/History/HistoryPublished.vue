@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { historyFetcher } from "@/api/histories";
+import { client, type HistoryDetailed } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import PublishedItem from "@/components/Common/PublishedItem.vue";
 import HistoryView from "@/components/History/HistoryView.vue";
@@ -11,10 +12,20 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const history = ref({});
+const history = ref<HistoryDetailed>();
 
 onMounted(async () => {
-    const { data } = await historyFetcher({ history_id: props.id });
+    const { data, error } = await client.GET("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: props.id },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+        return;
+    }
+
     history.value = data;
 });
 </script>
