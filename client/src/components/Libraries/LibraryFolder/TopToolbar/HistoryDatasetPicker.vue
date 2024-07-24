@@ -14,6 +14,7 @@ import {
     SELECTION_STATES,
     SelectionItem,
 } from "@/components/SelectionDialog/selectionTypes";
+import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
@@ -44,6 +45,7 @@ const loading = ref(false);
 const hasValue = ref(false);
 const modalShow = ref(true);
 const errorMessage = ref("");
+const submitting = ref(false);
 const allSelected = ref(false);
 const datasetsVisible = ref(false);
 
@@ -62,9 +64,11 @@ const searchTitle = computed(() => {
 const okButtonText = computed(() => {
     if (selected.value.length === 0) {
         return "Add";
+    } else if (submitting.value) {
+        return "Adding...";
+    } else {
+        return `Add ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
-
-    return `Add ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
 });
 const fields = computed(() => {
     if (datasetsVisible.value) {
@@ -267,12 +271,22 @@ async function onUndo() {
 }
 
 async function onOk() {
-    for (const item of selected.value) {
-        await postFolderContent({ folder_id: props.folderId, from_hda_id: item.id });
-    }
+    try {
+        submitting.value = true;
 
-    emit("reload");
-    emit("onClose");
+        for (const item of selected.value) {
+            await postFolderContent({ folder_id: props.folderId, from_hda_id: item.id });
+        }
+
+        Toast.success(`Added ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""} to the folder`);
+
+        emit("reload");
+        emit("onClose");
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    } finally {
+        submitting.value = false;
+    }
 }
 
 function onCancel() {
@@ -286,7 +300,7 @@ function onCancel() {
     <SelectionDialog
         ref="selectionDialog"
         options-show
-        :disable-ok="!hasValue"
+        :disable-ok="!hasValue || submitting"
         :fields="fields"
         :ok-button-text="okButtonText"
         :modal-show="modalShow"
