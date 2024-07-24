@@ -18,8 +18,6 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { type HistoryContentBulkOperationPayload, updateHistoryItemsBulk } from "./services";
-
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
 import SuitableConvertersTab from "@/components/Collections/common/SuitableConvertersTab.vue";
@@ -127,26 +125,33 @@ async function clickedConvert(selectedConverter: any) {
 
 // TODO: Replace with actual datatype type
 async function clickedDatatypeChange(selectedDatatype: any) {
-    const data: HistoryContentBulkOperationPayload = {
-        items: [
-            {
-                history_content_type: "dataset_collection",
-                id: props.collectionId,
-            },
-        ],
-        operation: "change_datatype",
-        params: {
-            type: "change_datatype",
-            datatype: selectedDatatype.id,
-        },
-    };
-
-    try {
-        await updateHistoryItemsBulk(currentHistoryId.value ?? "", data);
-        successMessage.value = "Datatype changed successfully.";
-    } catch (err) {
-        errorMessage.value = errorMessageAsString(err, "History import failed.");
+    if (!currentHistoryId.value) {
+        errorMessage.value = "No current history selected.";
+        return;
     }
+
+    const { error } = await client.PUT("/api/histories/{history_id}/contents/bulk", {
+        params: { path: { history_id: currentHistoryId.value } },
+        body: {
+            items: [
+                {
+                    history_content_type: "dataset_collection",
+                    id: props.collectionId,
+                },
+            ],
+            operation: "change_datatype",
+            params: {
+                type: "change_datatype",
+                datatype: selectedDatatype.id,
+            },
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error, "History import failed.");
+        return;
+    }
+    successMessage.value = "Datatype changed successfully.";
 }
 
 function handleError(err: any) {

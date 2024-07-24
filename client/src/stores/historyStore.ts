@@ -9,13 +9,6 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import {
-    deleteHistories as deleteHistoriesByIds,
-    deleteHistory as deleteHistoryById,
-    historyFetcher,
-    undeleteHistories,
-    undeleteHistory,
-} from "@/api/histories";
 import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -208,52 +201,64 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function deleteHistory(historyId: string, purge = false) {
-        try {
-            const { data } = await deleteHistoryById({ history_id: historyId, purge });
-            const deletedHistory = data as AnyHistory;
-            await setNextAvailableHistoryId([deletedHistory.id]);
-            del(storedHistories.value, deletedHistory.id);
-            await handleTotalCountChange(1, true);
-        } catch (error) {
+        const { data, error } = await client.DELETE("/api/histories/{history_id}", {
+            params: { path: { history_id: historyId }, query: { purge } },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const deletedHistory = data as AnyHistory;
+        await setNextAvailableHistoryId([deletedHistory.id]);
+        del(storedHistories.value, deletedHistory.id);
+        await handleTotalCountChange(1, true);
     }
 
     async function deleteHistories(ids: string[], purge = false) {
-        try {
-            const { data } = await deleteHistoriesByIds({ ids, purge });
-            const deletedHistories = data as AnyHistory[];
-            const historyIds = deletedHistories.map((x) => String(x.id));
-            await setNextAvailableHistoryId(historyIds);
-            deletedHistories.forEach((history) => {
-                del(storedHistories.value, history.id);
-            });
-            await handleTotalCountChange(deletedHistories.length, true);
-        } catch (error) {
+        const { data, error } = await client.PUT("/api/histories/batch/delete", {
+            body: { ids, purge },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const deletedHistories = data as AnyHistory[];
+        const historyIds = deletedHistories.map((history) => history.id);
+        await setNextAvailableHistoryId(historyIds);
+        deletedHistories.forEach((history) => {
+            del(storedHistories.value, history.id);
+        });
+        await handleTotalCountChange(deletedHistories.length, true);
     }
 
     async function restoreHistory(historyId: string) {
-        try {
-            const { data } = await undeleteHistory({ history_id: historyId });
-            const restoredHistory = data as AnyHistory;
-            await handleTotalCountChange(1);
-            setHistory(restoredHistory);
-        } catch (error) {
+        const { data, error } = await client.POST("/api/histories/deleted/{history_id}/undelete", {
+            params: { path: { history_id: historyId } },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const restoredHistory = data as AnyHistory;
+        await handleTotalCountChange(1);
+        setHistory(restoredHistory);
     }
 
     async function restoreHistories(ids: string[]) {
-        try {
-            const { data } = await undeleteHistories({ ids });
-            const restoredHistories = data as AnyHistory[];
-            await handleTotalCountChange(restoredHistories.length);
-            setHistories(restoredHistories);
-        } catch (error) {
+        const { data, error } = await client.PUT("/api/histories/batch/undelete", {
+            body: { ids },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const restoredHistories = data as AnyHistory[];
+        await handleTotalCountChange(restoredHistories.length);
+        setHistories(restoredHistories);
     }
 
     async function loadCurrentHistory(since?: string): Promise<HistoryDevDetailed | undefined> {
@@ -394,17 +399,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function updateContentStats(historyId: string) {
-        try {
-            const { data } = await historyFetcher({
-                history_id: historyId,
-                keys: CONTENT_STATS_KEYS.join(","),
-            });
-            const contentStats = { id: historyId, ...data } as HistoryContentsStats;
-            setHistory(contentStats);
-            return contentStats;
-        } catch (error) {
+        const { data, error } = await client.GET("/api/histories/{history_id}", {
+            params: {
+                path: { history_id: historyId },
+                query: { keys: CONTENT_STATS_KEYS.join(",") },
+            },
+        });
+
+        if (error) {
             rethrowSimple(error);
         }
+
+        const contentStats = { id: historyId, ...data } as HistoryContentsStats;
+        setHistory(contentStats);
+        return contentStats;
     }
 
     return {

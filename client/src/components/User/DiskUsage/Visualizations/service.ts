@@ -1,6 +1,5 @@
 import { client } from "@/api";
 import { purgeDataset, undeleteDataset } from "@/api/datasets";
-import { archivedHistoriesFetcher, deleteHistory, historiesFetcher, undeleteHistory } from "@/api/histories";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export interface ItemSizeSummary {
@@ -18,19 +17,40 @@ interface PurgeableItemSizeSummary extends ItemSizeSummary {
 const itemSizeSummaryFields = "id,name,size,deleted,archived";
 
 export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]> {
-    const nonPurgedHistoriesResponse = await historiesFetcher({
-        keys: itemSizeSummaryFields,
-        q: ["deleted", "purged"],
-        qv: ["None", "false"],
+    const { data: nonPurgedHistories, error: nonPurgedHistoriesError } = await client.GET("/api/histories", {
+        params: {
+            query: {
+                keys: itemSizeSummaryFields,
+                q: ["deleted", "purged"],
+                qv: ["None", "false"],
+            },
+        },
     });
-    const nonPurgedArchivedHistories = await archivedHistoriesFetcher({
-        keys: itemSizeSummaryFields,
-        q: ["purged"],
-        qv: ["false"],
-    });
+
+    if (nonPurgedHistoriesError) {
+        rethrowSimple(nonPurgedHistoriesError);
+    }
+
+    const { data: nonPurgedArchivedHistories, error: nonPurgedArchivedHistoriesError } = await client.GET(
+        "/api/histories/archived",
+        {
+            params: {
+                query: {
+                    keys: itemSizeSummaryFields,
+                    q: ["purged"],
+                    qv: ["false"],
+                },
+            },
+        }
+    );
+
+    if (nonPurgedArchivedHistoriesError) {
+        rethrowSimple(nonPurgedArchivedHistoriesError);
+    }
+
     const allHistoriesTakingStorageResponse = [
-        ...(nonPurgedHistoriesResponse.data as ItemSizeSummary[]),
-        ...(nonPurgedArchivedHistories.data as ItemSizeSummary[]),
+        ...(nonPurgedHistories as ItemSizeSummary[]),
+        ...(nonPurgedArchivedHistories as ItemSizeSummary[]),
     ];
     return allHistoriesTakingStorageResponse;
 }
@@ -87,13 +107,31 @@ export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string,
 }
 
 export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSummary> {
-    const response = await undeleteHistory({ history_id: historyId });
-    return response.data as unknown as ItemSizeSummary;
+    const { data, error } = await client.POST("/api/histories/deleted/{history_id}/undelete", {
+        params: {
+            path: { history_id: historyId },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data as ItemSizeSummary;
 }
 
 export async function purgeHistoryById(historyId: string): Promise<PurgeableItemSizeSummary> {
-    const response = await deleteHistory({ history_id: historyId, purge: true });
-    return response.data as unknown as PurgeableItemSizeSummary;
+    const { data, error } = await client.DELETE("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: historyId },
+            query: { purge: true },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as PurgeableItemSizeSummary;
 }
 
 export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSummary> {
