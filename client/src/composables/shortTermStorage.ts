@@ -1,7 +1,8 @@
 import { readonly, ref, watch } from "vue";
 
+import { type StoreExportPayload } from "@/api";
 import { fetcher } from "@/api/schema";
-import { type ExportParams, type StoreExportPayload } from "@/components/Common/models/exportRecordModel";
+import { type ExportParams } from "@/components/Common/models/exportRecordModel";
 import { withPrefix } from "@/utils/redirect";
 
 import { useShortTermStorageMonitor } from "./shortTermStorageMonitor";
