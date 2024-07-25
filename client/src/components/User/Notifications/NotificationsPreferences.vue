@@ -5,11 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import {
-    getNotificationsPreferencesFromServer,
-    updateNotificationsPreferencesOnServer,
-    type UserNotificationPreferencesExtended,
-} from "@/api/notifications.preferences";
+import { client } from "@/api";
+import { type NotificationChannel, type UserNotificationPreferences } from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import {
@@ -17,6 +14,7 @@ import {
     pushNotificationsEnabled,
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -39,8 +37,8 @@ const { config } = useConfig(true);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const pushNotificationsGranted = ref(pushNotificationsEnabled());
-const notificationsPreferences = ref<UserNotificationPreferencesExtended["preferences"]>({});
-const supportedChannels = ref<string[]>([]);
+const notificationsPreferences = ref<UserNotificationPreferences>({});
+const supportedChannels = ref<NotificationChannel[]>([]);
 
 const categories = computed(() => Object.keys(notificationsPreferences.value));
 const showPreferences = computed(() => {
@@ -58,28 +56,36 @@ const categoryDescriptionMap: Record<string, string> = {
 
 async function getNotificationsPreferences() {
     loading.value = true;
-    await getNotificationsPreferencesFromServer()
-        .then((data) => {
-            supportedChannels.value = data.supportedChannels;
-            notificationsPreferences.value = data.preferences;
-        })
-        .catch((error: any) => {
-            errorMessage.value = error;
-        })
-        .finally(() => {
-            loading.value = false;
-        });
+    try {
+        const { response, data, error } = await client.GET("/api/notifications/preferences");
+
+        if (error) {
+            errorMessage.value = errorMessageAsString(error);
+            return;
+        }
+
+        const serverSupportedChannels = response.headers.get("supported-channels")?.split(",") ?? [];
+        supportedChannels.value = serverSupportedChannels as NotificationChannel[];
+        notificationsPreferences.value = data.preferences;
+    } finally {
+        loading.value = false;
+    }
 }
 
 async function updateNotificationsPreferences() {
-    await updateNotificationsPreferencesOnServer({ preferences: notificationsPreferences.value })
-        .then((data) => {
-            notificationsPreferences.value = data.preferences;
-            Toast.success("Notifications preferences updated");
-        })
-        .catch((error: any) => {
-            errorMessage.value = error;
-        });
+    const { data, error } = await client.PUT("/api/notifications/preferences", {
+        body: {
+            preferences: notificationsPreferences.value,
+        },
+    });
+
+    if (error) {
+        errorMessage.value = errorMessageAsString(error);
+        return;
+    }
+
+    notificationsPreferences.value = data.preferences;
+    Toast.success("Notifications preferences updated");
 }
 
 function capitalizeWords(str: string): string {
@@ -136,10 +142,10 @@ watch(
             <div v-for="category in categories" :key="category" class="card-container">
                 <div class="category-header">
                     <BFormCheckbox
-                        v-model="notificationsPreferences[category].enabled"
+                        v-model="notificationsPreferences[category]!.enabled"
                         v-b-tooltip.hover
                         :title="
-                            notificationsPreferences[category].enabled
+                            notificationsPreferences[category]!.enabled
                                 ? 'Disable notifications'
                                 : 'Enable notifications'
                         "
@@ -154,9 +160,9 @@ watch(
 
                 <div v-for="channel in supportedChannels" :key="channel" class="category-channel">
                     <BFormCheckbox
-                        v-model="notificationsPreferences[category].channels[channel]"
+                        v-model="notificationsPreferences[category]!.channels[channel]"
                         v-localize
-                        :disabled="!notificationsPreferences[category].enabled">
+                        :disabled="!notificationsPreferences[category]!.enabled">
                         {{ capitalizeWords(channel) }}
                     </BFormCheckbox>
 
