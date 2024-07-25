@@ -4,15 +4,15 @@ import { faBook, faCaretDown, faDownload, faHome, faPlus, faTrash } from "@forta
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownDivider, BDropdownGroup, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 
-import { getGalaxyInstance } from "@/app";
 import { Services } from "@/components/Libraries/LibraryFolder/services";
 import mod_add_datasets from "@/components/Libraries/LibraryFolder/TopToolbar/add-datasets";
 import { deleteSelectedItems } from "@/components/Libraries/LibraryFolder/TopToolbar/delete-selected";
 import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
 import mod_import_collection from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-collection";
 import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { useConfig } from "@/composables/config";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { Toast } from "@/composables/toast";
 import { useDbKeyStore } from "@/stores/dbKeyStore";
@@ -52,6 +52,8 @@ const emit = defineEmits<{
     (e: "update:includeDeleted", value: boolean): void;
 }>();
 
+const { config, isConfigLoaded } = useConfig();
+
 const userStore = useUserStore();
 const { isAdmin } = storeToRefs(userStore);
 
@@ -60,11 +62,8 @@ const { datatypes } = useDetailedDatatypes();
 const dbKeyStore = useDbKeyStore();
 
 const modalShow = ref("");
-const libraryImportDir = ref(false);
-const allowLibraryPathPaste = ref(false);
 const genomesList = ref<GenomesList>([]);
 const extensionsList = ref<DetailedDatatypes[]>([]);
-const userLibraryImportDirAvailable = ref(false);
 const auto = ref({
     id: "auto",
     extension: "auto",
@@ -78,10 +77,11 @@ const auto = ref({
     description_url: "",
 });
 
-const Galaxy = getGalaxyInstance();
-
 const services = new Services();
 
+const libraryImportDir = computed(() => isConfigLoaded && config.value?.library_import_dir);
+const allowLibraryPathPaste = computed(() => isConfigLoaded && config.value?.allow_library_path_paste);
+const userLibraryImportDirAvailable = computed(() => isConfigLoaded && config.value?.user_library_import_dir_available);
 const containsFileOrFolder = computed(() => {
     return props.folderContents.find((el) => el.type === "folder" || el.type === "file");
 });
@@ -89,7 +89,7 @@ const canDelete = computed(() => {
     return !!(containsFileOrFolder.value && isAdmin.value);
 });
 const datasetManipulation = computed(() => {
-    return !!(containsFileOrFolder.value && Galaxy.user);
+    return !!(containsFileOrFolder.value && userStore.currentUser);
 });
 const totalRows = computed(() => {
     return props.metadata?.total_rows ?? 0;
@@ -246,12 +246,6 @@ async function fetchExtAndGenomes() {
         console.error(err);
     }
 }
-
-onMounted(async () => {
-    libraryImportDir.value = Galaxy.config.library_import_dir;
-    allowLibraryPathPaste.value = Galaxy.config.allow_library_path_paste;
-    userLibraryImportDirAvailable.value = Galaxy.config.user_library_import_dir_available;
-});
 </script>
 
 <template>
