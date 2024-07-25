@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArchive, faArrowDown, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
@@ -19,10 +19,10 @@ import localize from "@/utils/localization";
 import { HistoriesFilters } from "./HistoriesFilters";
 
 import TextSummary from "../Common/TextSummary.vue";
+import HistoryIndicators from "./HistoryIndicators.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
-import UtcDate from "@/components/UtcDate.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -54,7 +54,7 @@ const emit = defineEmits<{
     (e: "update:show-modal", showModal: boolean): void;
 }>();
 
-library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare, faBurn, faTrash, faArchive);
+library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSquare);
 
 const busy = ref(false);
 const showAdvanced = ref(false);
@@ -277,35 +277,7 @@ async function loadMore(noScroll = false) {
                                     </i>
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
-                                <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge
-                                        v-if="history.purged"
-                                        pill
-                                        class="alert-warning"
-                                        title="Permanently deleted">
-                                        <FontAwesomeIcon :icon="faBurn" fixed-width />
-                                    </BBadge>
-                                    <BBadge v-else-if="history.deleted" pill class="alert-danger" title="Deleted">
-                                        <FontAwesomeIcon :icon="faTrash" fixed-width />
-                                    </BBadge>
-                                    <BBadge
-                                        v-if="history.archived && userOwnsHistory(currentUser, history)"
-                                        pill
-                                        class="alert-warning"
-                                        title="Archived">
-                                        <FontAwesomeIcon :icon="faArchive" fixed-width />
-                                    </BBadge>
-                                    <BBadge pill :title="localize('Amount of items in history')">
-                                        {{ history.count }} {{ localize("items") }}
-                                    </BBadge>
-                                    <BBadge
-                                        v-if="history.update_time"
-                                        v-b-tooltip.noninteractive.hover
-                                        pill
-                                        :title="localize('Last edited')">
-                                        <UtcDate :date="history.update_time" mode="elapsed" />
-                                    </BBadge>
-                                </div>
+                                <HistoryIndicators :history="history" include-count />
                             </div>
 
                             <p v-if="!isMultiviewPanel && history.annotation" class="my-1">{{ history.annotation }}</p>
