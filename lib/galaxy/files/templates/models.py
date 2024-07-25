@@ -103,6 +103,7 @@ class AzureFileSourceConfiguration(StrictModel):
     namespace_type: str = "hierarchical"
     writable: bool = False
 
+
 class WebdavFileSourceTemplateConfiguration(StrictModel):
     type: Literal["webdav"]
     url: Union[str, TemplateExpansion]
