@@ -9035,7 +9035,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav";
             /** Variables */
             variables?:
                 | (
@@ -17366,7 +17366,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata" | "webdav";
             /** Uri Root */
             uri_root: string;
             /**

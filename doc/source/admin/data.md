@@ -350,6 +350,19 @@ configuration).
 
 ![](file_source_azure_configuration.png)
 
+#### `webdav`
+
+The syntax for the `configuration` section of `webdav` templates looks like this.
+
+![](file_source_webdav_configuration_template.png)
+
+At runtime, after the `configuration` template is expanded, the resulting dictionary
+passed to Galaxy's file source plugin infrastructure looks like this and should match a subset
+of what you'd be able to add directly to `file_sources_conf.yml` (Galaxy's global file source
+configuration).
+
+![](file_source_webdav_configuration.png)
+
 ### YAML Syntax
 
 ![galaxy.files.templates.models](file_source_templates.png)
@@ -397,6 +410,14 @@ and you are comfortable with it storing your user's secrets.
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_aws_private_bucket.yml
 :language: yaml
 ```
+
+#### Allow Users to Define WebDAV Servers as File Sources
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_webdav.yml
+:language: yaml
+```
+
+![Screenshot](user_file_source_form_full_webdav.png)
 
 ## Playing Nicer with Ansible
 
