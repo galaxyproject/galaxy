@@ -278,7 +278,11 @@ async function loadMore(noScroll = false) {
                                 </div>
                                 <TextSummary v-else component="h4" :description="history.name" one-line-summary />
                                 <div class="d-flex align-items-center flex-gapx-1">
-                                    <BBadge v-if="history.purged" pill class="alert-warning" title="Purged">
+                                    <BBadge
+                                        v-if="history.purged"
+                                        pill
+                                        class="alert-warning"
+                                        title="Permanently deleted">
                                         <FontAwesomeIcon :icon="faBurn" fixed-width />
                                     </BBadge>
                                     <BBadge v-else-if="history.deleted" pill class="alert-danger" title="Deleted">

@@ -225,7 +225,7 @@ function userTitle(title: string) {
                         :title="localize(isDeletedNotPurged ? 'Permanently Delete History' : 'Delete History')"
                         @click="showDeleteModal = !showDeleteModal">
                         <FontAwesomeIcon fixed-width :icon="isDeletedNotPurged ? faBurn : faTrash" class="mr-1" />
-                        <span v-if="isDeletedNotPurged" v-localize>Purge this History</span>
+                        <span v-if="isDeletedNotPurged" v-localize>Permanently Delete History</span>
                         <span v-else v-localize>Delete this History</span>
                     </BDropdownItem>
 
@@ -318,9 +318,9 @@ function userTitle(title: string) {
             @ok="historyStore.secureHistory(history)">
             <h4>
                 History:
-                <b
-                    ><i>{{ history.name }}</i></b
-                >
+                <b>
+                    <i>{{ history.name }}</i>
+                </b>
             </h4>
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
@@ -331,7 +331,7 @@ function userTitle(title: string) {
 
         <BModal
             v-model="showDeleteModal"
-            :title="isDeletedNotPurged ? 'Purge History?' : 'Delete History?'"
+            :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
             title-tag="h2"
             @ok="onDelete"
             @show="purgeHistory = isDeletedNotPurged">
