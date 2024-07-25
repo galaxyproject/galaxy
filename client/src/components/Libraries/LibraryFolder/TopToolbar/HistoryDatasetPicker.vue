@@ -264,6 +264,7 @@ function selectAll() {
 }
 
 async function onUndo() {
+    selectionDialog.value?.resetFilter();
     selectionDialog.value?.resetPagination();
     selected.value = [];
     datasetsVisible.value = false;
