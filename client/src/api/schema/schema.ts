@@ -12902,8 +12902,7 @@ export interface components {
              */
             content:
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"]
-                | components["schemas"]["BroadcastNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"];
             /**
              * Create time
              * Format: date-time
