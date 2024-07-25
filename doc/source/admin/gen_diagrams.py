@@ -15,6 +15,8 @@ from galaxy.files.templates.models import (
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
+    WebdavFileSourceTemplateConfiguration,
+    WebdavFileSourceConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
@@ -53,6 +55,8 @@ class_to_diagram = {
     S3FSFileSourceConfiguration: "file_source_s3fs_configuration",
     FtpFileSourceTemplateConfiguration: "file_source_ftp_configuration_template",
     FtpFileSourceConfiguration: "file_source_ftp_configuration",
+    WebdavFileSourceTemplateConfiguration: "file_source_webdav_configuration_template",
+    WebdavFileSourceConfiguration: "file_source_webdav_configuration",
 }
 
 for clazz, diagram_name in class_to_diagram.items():

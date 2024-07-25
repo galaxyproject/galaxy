@@ -25,7 +25,7 @@ from galaxy.util.config_templates import (
     UserDetailsDict,
 )
 
-FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure"]
+FileSourceTemplateType = Literal["ftp", "posix", "s3fs", "azure", "webdav"]
 
 
 class PosixFileSourceTemplateConfiguration(StrictModel):
@@ -103,18 +103,43 @@ class AzureFileSourceConfiguration(StrictModel):
     namespace_type: str = "hierarchical"
     writable: bool = False
 
+class WebdavFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["webdav"]
+    url: Union[str, TemplateExpansion]
+    root: Union[str, TemplateExpansion]
+    login: Union[str, TemplateExpansion]
+    password: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    use_temp_files: Optional[Union[bool, TemplateExpansion]] = None
+    temp_path: Optional[Union[str, TemplateExpansion]] = None
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class WebdavFileSourceConfiguration(StrictModel):
+    type: Literal["webdav"]
+    url: str
+    root: str
+    login: str
+    password: str
+    writable: bool = False
+    use_temp_files: Optional[bool] = None
+    temp_path: Optional[str] = None
+
 
 FileSourceTemplateConfiguration = Union[
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceTemplateConfiguration,
     FtpFileSourceTemplateConfiguration,
     AzureFileSourceTemplateConfiguration,
+    WebdavFileSourceTemplateConfiguration,
 ]
 FileSourceConfiguration = Union[
     PosixFileSourceConfiguration,
     S3FSFileSourceConfiguration,
     FtpFileSourceConfiguration,
     AzureFileSourceConfiguration,
+    WebdavFileSourceConfiguration,
 ]
 
 
@@ -175,6 +200,7 @@ TypesToConfigurationClasses: Dict[FileSourceTemplateType, Type[FileSourceConfigu
     "posix": PosixFileSourceConfiguration,
     "s3fs": S3FSFileSourceConfiguration,
     "azure": AzureFileSourceConfiguration,
+    "webdav": WebdavFileSourceConfiguration,
 }
 
 
