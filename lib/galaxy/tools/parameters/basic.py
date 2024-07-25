@@ -1517,7 +1517,7 @@ class ColumnListParameter(SelectToolParameter):
                 except Exception:
                     column_list = self.get_column_list(trans, other_values)
             if self.numerical:  # If numerical was requested, filter columns based on metadata
-                if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
+                if hasattr(dataset, "metadata") and getattr(dataset.metadata, "column_types", None) is not None:
                     if len(dataset.metadata.column_types) >= len(column_list):
                         numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
                         column_list = [column_list[i] for i in numerics]
