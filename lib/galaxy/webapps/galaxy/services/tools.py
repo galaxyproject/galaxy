@@ -281,7 +281,8 @@ class ToolsService(ServiceBase):
     def _patch_library_dataset(self, trans: ProvidesHistoryContext, v, target_history):
         if isinstance(v, dict) and "id" in v and v.get("src") == "ldda":
             ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, self.decode_id(v["id"]))
-            assert ldda
+            if not ldda:
+                raise exceptions.ObjectNotFound("Could not find library dataset dataset association.")
             if trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), ldda.dataset
             ):
