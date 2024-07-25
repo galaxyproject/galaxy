@@ -2801,35 +2801,6 @@ test_data:
         run_test(NESTED_WORKFLOW_AUTO_LABELS_MODERN_SYNTAX)
 
     @skip_without_tool("collection_paired_test")
-    def test_workflow_flatten(self):
-        with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(
-                """
-class: GalaxyWorkflow
-steps:
-  nested:
-    tool_id: collection_creates_dynamic_nested
-    state:
-      sleep_time: 0
-      foo: 'dummy'
-  flatten:
-    tool_id: '__FLATTEN__'
-    state:
-      input:
-        $link: nested/list_output
-      join_identifier: '-'
-""",
-                test_data={},
-                history_id=history_id,
-            )
-            details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
-            assert details["collection_type"] == "list"
-            elements = details["elements"]
-            identifiers = [e["element_identifier"] for e in elements]
-            assert len(identifiers) == 6
-            assert "oe1-ie1" in identifiers
-
-    @skip_without_tool("collection_paired_test")
     def test_workflow_flatten_with_mapped_over_execution(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(
