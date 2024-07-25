@@ -199,7 +199,7 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
         const offset = (ctx.currentPage - 1) * ctx.perPage;
         const query = ctx.filter;
 
-        const data = await getDatasets({
+        const { data, total_matches } = await getDatasets({
             history_id: selectedHistory.id,
             query: query,
             sortBy: ctx.sortBy === "time" ? "update_time" : "name",
@@ -208,13 +208,9 @@ async function datasetsProvider(ctx: ItemsProviderContext, selectedHistory: Hist
             limit: limit,
         });
 
-        items.value = (data as HDASummary[]).map(datasetEntryToRecord);
+        totalItems.value = total_matches;
 
-        if (query) {
-            totalItems.value = items.value.length;
-        } else {
-            totalItems.value = selectedHistory.size;
-        }
+        items.value = (data as HDASummary[]).map(datasetEntryToRecord);
 
         formatRows();
 
