@@ -6,9 +6,9 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type NotificationCreateRequest, sendNotification } from "@/api/notifications";
+import { type MessageNotificationCreateRequest } from "@/api/notifications";
 import { getAllRoles } from "@/api/roles";
-import { client, type components } from "@/api/schema";
+import { client } from "@/api/schema";
 import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -23,16 +23,6 @@ import MessageNotification from "@/components/Notifications/Categories/MessageNo
 library.add(faInfoCircle);
 
 type SelectOption = [string, string];
-type NotificationCreateData = components["schemas"]["NotificationCreateData"];
-
-interface MessageNotificationCreateData extends NotificationCreateData {
-    category: "message";
-    content: components["schemas"]["MessageNotificationContent"];
-}
-
-interface MessageNotificationCreateRequest extends NotificationCreateRequest {
-    notification: MessageNotificationCreateData;
-}
 
 const router = useRouter();
 
@@ -125,13 +115,17 @@ loadData(getAllGroups, groups, (group) => {
 });
 
 async function sendNewNotification() {
-    try {
-        await sendNotification(notificationData.value);
-        Toast.success("Notification sent");
-        router.push("/admin/notifications");
-    } catch (error) {
+    const { error } = await client.POST("/api/notifications", {
+        body: notificationData.value,
+    });
+
+    if (error) {
         Toast.error(errorMessageAsString(error));
+        return;
     }
+
+    Toast.success("Notification sent");
+    router.push("/admin/notifications");
 }
 </script>
 
