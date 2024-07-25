@@ -7,7 +7,7 @@ import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { computed, ref } from "vue";
 
-import { invocationForJob } from "@/api/invocations";
+import { client } from "@/api";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -59,7 +59,11 @@ function filterMetadata(jobMessages) {
 
 async function fetchInvocation(jobId) {
     if (jobId) {
-        const invocation = await invocationForJob({ jobId: jobId });
+        const { data: invocation } = await client.GET("/api/invocations", {
+            params: {
+                query: { job_id: jobId },
+            },
+        });
         if (invocation) {
             invocationId.value = invocation.id;
         }
