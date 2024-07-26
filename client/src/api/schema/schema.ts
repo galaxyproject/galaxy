@@ -13020,6 +13020,24 @@ export interface components {
             /** Total Disk Usage */
             total_disk_usage: number;
         };
+        /** UserUpdatePayload */
+        UserUpdatePayload: {
+            /**
+             * Active
+             * @description User is active
+             */
+            active?: boolean | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Username
+             * @description The name of the user.
+             */
+            username?: string | null;
+        };
         /** Visualization */
         Visualization: Record<string, never>;
         /** VisualizationSummary */
@@ -24966,7 +24984,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": Record<string, never>;
+                "application/json": components["schemas"]["UserUpdatePayload"];
             };
         };
         responses: {
