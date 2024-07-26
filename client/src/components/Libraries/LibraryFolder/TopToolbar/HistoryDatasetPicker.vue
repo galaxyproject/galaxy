@@ -3,16 +3,16 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
-import { HDASummary, HistorySummary } from "@/api";
+import { type HDASummary, type HistorySummary } from "@/api";
 import { getDatasets } from "@/api/datasets";
 import { postFolderContent } from "@/api/folders";
 import { historiesFetcher } from "@/api/histories";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
-    ItemsProvider,
-    ItemsProviderContext,
+    type ItemsProvider,
+    type ItemsProviderContext,
     SELECTION_STATES,
-    SelectionItem,
+    type SelectionItem,
 } from "@/components/SelectionDialog/selectionTypes";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
