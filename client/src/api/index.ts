@@ -282,3 +282,5 @@ export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
 export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
+export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

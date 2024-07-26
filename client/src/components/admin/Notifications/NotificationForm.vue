@@ -8,7 +8,6 @@ import { useRouter } from "vue-router/composables";
 
 import { type MessageNotificationCreateRequest } from "@/api/notifications";
 import { client } from "@/api/schema";
-import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -103,6 +102,16 @@ async function getAllGroups() {
 
 async function getAllRoles() {
     const { data, error } = await client.GET("/api/roles");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+// TODO: this can potentially be a very large list, consider adding filters
+async function getAllUsers() {
+    const { data, error } = await client.GET("/api/users");
     if (error) {
         Toast.error(errorMessageAsString(error));
         return [];

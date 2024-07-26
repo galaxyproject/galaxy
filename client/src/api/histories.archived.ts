@@ -4,7 +4,6 @@ import { rethrowSimple } from "@/utils/simple-error";
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
 export type ArchivedHistoryDetailed = components["schemas"]["ArchivedHistoryDetailed"];
 export type AnyArchivedHistory = ArchivedHistorySummary | ArchivedHistoryDetailed;
-export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];
 
 type MaybeArchivedHistoriesQueryParams = GalaxyApiPaths["/api/histories/archived"]["get"]["parameters"]["query"];
 type ArchivedHistoriesQueryParams = Exclude<MaybeArchivedHistoriesQueryParams, undefined>;
