@@ -3,13 +3,12 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { type AsyncTaskResultSummary, client } from "@/api";
+import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
-
-import { QuotaUsage } from "./Quota/model";
 
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
@@ -76,18 +75,12 @@ async function onRefresh() {
 }
 
 async function loadQuotaUsages() {
-    const { data, error } = await client.GET("/api/users/{user_id}/usage", {
-        params: {
-            path: { user_id: "current" },
-        },
-    });
-
-    if (error) {
+    try {
+        const currentUserQuotaUsages = await fetchCurrentUserQuotaUsages();
+        quotaUsages.value = currentUserQuotaUsages;
+    } catch (error) {
         errorMessage.value = errorMessageAsString(error);
-        return;
     }
-
-    quotaUsages.value = data.map((usage) => new QuotaUsage(usage));
 }
 
 onMounted(async () => {

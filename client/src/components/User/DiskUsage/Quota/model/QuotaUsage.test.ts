@@ -1,4 +1,4 @@
-import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
+import { DEFAULT_QUOTA_SOURCE_LABEL, toQuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
 
 const RAW_DEFAULT_QUOTA_USAGE: UserQuotaUsageData = {
     quota_source_label: undefined,
@@ -22,9 +22,9 @@ const RAW_UNLIMITED_SOURCE_QUOTA_USAGE: UserQuotaUsageData = {
 };
 
 describe("QuotaUsage", () => {
-    const defaultQuotaUsage = new QuotaUsage(RAW_DEFAULT_QUOTA_USAGE);
-    const limitedQuotaUsage = new QuotaUsage(RAW_LIMITED_SOURCE_QUOTA_USAGE);
-    const unlimitedQuotaUsage = new QuotaUsage(RAW_UNLIMITED_SOURCE_QUOTA_USAGE);
+    const defaultQuotaUsage = toQuotaUsage(RAW_DEFAULT_QUOTA_USAGE);
+    const limitedQuotaUsage = toQuotaUsage(RAW_LIMITED_SOURCE_QUOTA_USAGE);
+    const unlimitedQuotaUsage = toQuotaUsage(RAW_UNLIMITED_SOURCE_QUOTA_USAGE);
 
     test("default quota source label should have the default value", () => {
         expect(defaultQuotaUsage.sourceLabel).toBe(DEFAULT_QUOTA_SOURCE_LABEL);
