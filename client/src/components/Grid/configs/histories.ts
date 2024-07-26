@@ -1,4 +1,5 @@
 import {
+    faBurn,
     faExchangeAlt,
     faEye,
     faPlus,
@@ -10,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistories, deleteHistory, historiesFetcher, undeleteHistories, undeleteHistory } from "@/api/histories";
+import { historiesFetcher } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -70,7 +71,8 @@ const batch: BatchOperationArray = [
             if (confirm(_l(`Are you sure that you want to delete the selected histories?`))) {
                 try {
                     const historyIds = data.map((x) => String(x.id));
-                    await deleteHistories({ ids: historyIds });
+                    const historyStore = useHistoryStore();
+                    await historyStore.deleteHistories(historyIds);
                     return {
                         status: "success",
                         message: `Deleted ${data.length} histories.`,
@@ -92,7 +94,8 @@ const batch: BatchOperationArray = [
             if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
                 try {
                     const historyIds = data.map((x) => String(x.id));
-                    await undeleteHistories({ ids: historyIds });
+                    const historyStore = useHistoryStore();
+                    await historyStore.restoreHistories(historyIds);
                     return {
                         status: "success",
                         message: `Restored ${data.length} histories.`,
@@ -108,13 +111,14 @@ const batch: BatchOperationArray = [
     },
     {
         title: "Purge",
-        icon: faTrash,
+        icon: faBurn,
         condition: (data: Array<HistoryEntry>) => !data.some((x) => x.purged),
         handler: async (data: Array<HistoryEntry>) => {
             if (confirm(_l(`Are you sure that you want to permanently delete the selected histories?`))) {
                 try {
                     const historyIds = data.map((x) => String(x.id));
-                    await deleteHistories({ ids: historyIds, purge: true });
+                    const historyStore = useHistoryStore();
+                    await historyStore.deleteHistories(historyIds, true);
                     return {
                         status: "success",
                         message: `Purged ${data.length} histories.`,
@@ -185,7 +189,8 @@ const fields: FieldArray = [
                 handler: async (data: HistoryEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this history?"))) {
                         try {
-                            await deleteHistory({ history_id: String(data.id) });
+                            const historyStore = useHistoryStore();
+                            await historyStore.deleteHistory(String(data.id));
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been deleted.`,
@@ -201,12 +206,13 @@ const fields: FieldArray = [
             },
             {
                 title: "Delete Permanently",
-                icon: faTrash,
+                icon: faBurn,
                 condition: (data: HistoryEntry) => !data.purged,
                 handler: async (data: HistoryEntry) => {
                     if (confirm(_l("Are you sure that you want to permanently delete this history?"))) {
                         try {
-                            await deleteHistory({ history_id: String(data.id), purge: true });
+                            const historyStore = useHistoryStore();
+                            await historyStore.deleteHistory(String(data.id), true);
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been permanently deleted.`,
@@ -226,7 +232,8 @@ const fields: FieldArray = [
                 condition: (data: HistoryEntry) => !!data.deleted && !data.purged,
                 handler: async (data: HistoryEntry) => {
                     try {
-                        await undeleteHistory({ history_id: String(data.id) });
+                        const historyStore = useHistoryStore();
+                        await historyStore.restoreHistory(String(data.id));
                         return {
                             status: "success",
                             message: `'${data.name}' has been restored.`,

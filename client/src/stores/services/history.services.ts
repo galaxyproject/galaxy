@@ -1,14 +1,17 @@
-import axios from "axios";
-import { prependPath } from "utils/redirect";
+import axios, { type AxiosResponse } from "axios";
+import type { ApiResponse } from "openapi-typescript-fetch";
+
+import type { AnyHistory } from "@/api";
+import { prependPath } from "@/utils/redirect";
 
 /**
  * Generic json getter
- * @param {*} response
- * @return {Object} response.data or throws an error if response status is not 200
+ * @param response
+ * @return response.data or throws an error if response status is not 200
  */
-function doResponse(response) {
+function doResponse(response: AxiosResponse | ApiResponse) {
     if (response.status !== 200) {
-        throw new Error(response);
+        throw new Error(response.statusText);
     }
     return response.data;
 }
@@ -16,18 +19,15 @@ function doResponse(response) {
 /**
  * Some current endpoints don't accept JSON, so we need to
  * do some massaging to send in old form post data.
- * @param {Object} fields
  */
-function formData(fields = {}) {
+function formData(fields = {} as Record<string, any>) {
     return Object.keys(fields).reduce((result, fieldName) => {
         result.set(fieldName, fields[fieldName]);
         return result;
     }, new FormData());
 }
 
-/**
- * Default history request parameters.
- */
+/** Default history request parameters. */
 const stdHistoryParams = {
     view: "summary",
 };
@@ -43,7 +43,7 @@ const extendedHistoryParams = {
 
 /**
  * Create a new history, select it as the current history, and return it if successful.
- * @return {Object} the new history or throws an error if new history creation fails
+ * @return the new history or throws an error if new history creation fails
  */
 export async function createAndSelectNewHistory() {
     const url = "history/create_new_current";
@@ -57,11 +57,11 @@ export async function createAndSelectNewHistory() {
 
 /**
  * Generates copy of history on server.
- * @param {Object} history Source history
- * @param {String} name New history name
- * @param {Boolean} copyAll Copy existing contents
+ * @param history Source history
+ * @param name New history name
+ * @param copyAll Copy existing contents
  */
-export async function cloneHistory(history, name, copyAll) {
+export async function cloneHistory(history: AnyHistory, name: string, copyAll: boolean) {
     const url = "api/histories";
     const payload = {
         name,
@@ -74,22 +74,11 @@ export async function cloneHistory(history, name, copyAll) {
 }
 
 /**
- * Delete history on server and return the deleted history.
- * @param {String} id Encoded history id
- * @param {Boolean} [purge=false] Permanent delete
- */
-export async function deleteHistoryById(id, purge = false) {
-    const url = `api/histories/${id}` + (purge ? "?purge=True" : "");
-    const response = await axios.delete(prependPath(url), { params: stdHistoryParams });
-    return doResponse(response);
-}
-
-/**
  * Get current history from server and return it.
- * @param {String} since timestamp to get histories since
- * @return {Object} the current history
+ * @param since timestamp to get histories since
+ * @return the current history
  */
-export async function getCurrentHistoryFromServer(since = undefined) {
+export async function getCurrentHistoryFromServer(since: string | undefined = undefined) {
     const url = "history/current_history_json";
     const response = await axios.get(prependPath(url), { params: { since: since } });
     return doResponse(response);
@@ -97,10 +86,10 @@ export async function getCurrentHistoryFromServer(since = undefined) {
 
 /**
  * Set current history on server and return it.
- * @param {String} historyId Encoded history id
- * @return {Object} the current history
+ * @param historyId Encoded history id
+ * @return the current history
  */
-export async function setCurrentHistoryOnServer(historyId) {
+export async function setCurrentHistoryOnServer(historyId: string) {
     const url = "history/set_as_current";
     const response = await axios.get(prependPath(url), { params: { id: historyId } });
     return doResponse(response);
@@ -108,12 +97,12 @@ export async function setCurrentHistoryOnServer(historyId) {
 
 /**
  * Get list of histories from server and return them.
- * @param {Number} offset to start from (default = 0)
- * @param {Number | null} limit of histories to load (default = null; in which case no limit)
- * @param {String} queryString to append to url in the form `q=filter&qv=val&q=...`
- * @return {Promise.<Array>} list of histories
+ * @param offset to start from (default = 0)
+ * @param limit of histories to load (default = null; in which case no limit)
+ * @param queryString to append to url in the form `q=filter&qv=val&q=...`
+ * @return list of histories
  */
-export async function getHistoryList(offset = 0, limit = null, queryString = "") {
+export async function getHistoryList(offset = 0, limit: number | null = null, queryString = "") {
     const params = `view=summary&order=update_time&offset=${offset}`;
     let url = `api/histories?${params}`;
     if (limit !== null) {
@@ -128,7 +117,7 @@ export async function getHistoryList(offset = 0, limit = null, queryString = "")
 
 /**
  * Get number of histories for current user from server and return them.
- * @return {Promise.<Number>} number of histories
+ * @return number of histories
  */
 export async function getHistoryCount() {
     // This url is temp. for this PR, waiting on:
@@ -138,11 +127,8 @@ export async function getHistoryCount() {
     return doResponse(response);
 }
 
-/**
- * Load one history by id
- * @param {String} id
- */
-export async function getHistoryByIdFromServer(id) {
+/** Load one history by id */
+export async function getHistoryByIdFromServer(id: string) {
     const path = `api/histories/${id}`;
     const response = await axios.get(prependPath(path), { params: extendedHistoryParams });
     return doResponse(response);
@@ -151,10 +137,10 @@ export async function getHistoryByIdFromServer(id) {
 /**
  * Set permissions to private for indicated history
  * TODO: rewrite API endpoint for this
- * @param {Object} history the history to secure
- * @return {Object} the secured history
+ * @param history the history to secure
+ * @return the secured history
  */
-export async function secureHistoryOnServer(history) {
+export async function secureHistoryOnServer(history: AnyHistory) {
     const { id } = history;
     const url = "history/make_private";
     const response = await axios.post(prependPath(url), formData({ history_id: id }));
@@ -166,11 +152,11 @@ export async function secureHistoryOnServer(history) {
 
 /**
  * Update specific fields in history
- * @param {Object} historyId the history id to update
- * @param {Object} payload fields to update
- * @return {Object} the updated history
+ * @param historyId the history id to update
+ * @param payload fields to update
+ * @return the updated history
  */
-export async function updateHistoryFields(historyId, payload) {
+export async function updateHistoryFields(historyId: string, payload: Record<string, any>) {
     const url = `api/histories/${historyId}`;
     const response = await axios.put(prependPath(url), payload, { params: extendedHistoryParams });
     return doResponse(response);

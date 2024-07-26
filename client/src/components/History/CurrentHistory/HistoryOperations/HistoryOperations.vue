@@ -12,6 +12,7 @@ library.add(faCheckSquare, faCompress);
 interface Props {
     history: HistorySummaryExtended;
     hasMatches: boolean;
+    editable: boolean;
     expandedCount: number;
     showSelection: boolean;
     isMultiViewItem: boolean;
@@ -32,7 +33,7 @@ function onUpdateOperationStatus(updateTime: number) {
 
 <template>
     <section>
-        <nav class="content-operations d-flex justify-content-between bg-secondary">
+        <nav v-if="editable" class="content-operations d-flex justify-content-between bg-secondary">
             <BButtonGroup>
                 <BButton
                     title="Select Items"
@@ -65,6 +66,17 @@ function onUpdateOperationStatus(updateTime: number) {
                 v-show="!showSelection"
                 :history="history"
                 @update:operation-running="onUpdateOperationStatus" />
+        </nav>
+        <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
+            <BButton
+                title="Collapse Items"
+                class="rounded-0"
+                size="sm"
+                variant="link"
+                :disabled="!expandedCount"
+                @click="$emit('collapse-all')">
+                <FontAwesomeIcon :icon="faCompress" fixed-width />
+            </BButton>
         </nav>
     </section>
 </template>

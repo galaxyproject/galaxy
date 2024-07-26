@@ -32,7 +32,7 @@ const currentUserOwnsHistory = computed(() => {
     <div v-if="hasMessages" class="mx-3 mt-2" data-description="history messages">
         <BAlert v-if="history.purged" :show="history.purged" variant="warning">
             <FontAwesomeIcon :icon="faBurn" fixed-width />
-            {{ localize("History has been purged") }}
+            {{ localize("History has been permanently deleted") }}
         </BAlert>
         <BAlert v-else-if="history.deleted" :show="history.deleted" variant="warning">
             <FontAwesomeIcon :icon="faTrash" fixed-width />

@@ -8,14 +8,19 @@ import {
     type HistorySummary,
     type HistorySummaryExtended,
 } from "@/api";
-import { historyFetcher } from "@/api/histories";
+import {
+    deleteHistories as deleteHistoriesByIds,
+    deleteHistory as deleteHistoryById,
+    historyFetcher,
+    undeleteHistories,
+    undeleteHistory,
+} from "@/api/histories";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
     cloneHistory,
     createAndSelectNewHistory,
-    deleteHistoryById,
     getCurrentHistoryFromServer,
     getHistoryByIdFromServer,
     getHistoryCount,
@@ -190,17 +195,64 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return filteredHistoryIds[0];
     }
 
-    async function deleteHistory(historyId: string, purge: boolean) {
-        const deletedHistory = (await deleteHistoryById(historyId, purge)) as HistorySummary;
-        const nextAvailableHistoryId = getNextAvailableHistoryId([deletedHistory.id]);
-        if (nextAvailableHistoryId) {
-            await setCurrentHistory(nextAvailableHistoryId);
-        } else {
-            await createNewHistory();
+    async function setNextAvailableHistoryId(excludedIds: string[]) {
+        if (currentHistoryId.value && excludedIds.includes(currentHistoryId.value)) {
+            const nextAvailableHistoryId = getNextAvailableHistoryId(excludedIds);
+            if (nextAvailableHistoryId) {
+                await setCurrentHistory(nextAvailableHistoryId);
+            } else {
+                await createNewHistory();
+            }
         }
-        del(storedHistories.value, deletedHistory.id);
-        unpinHistories([deletedHistory.id]);
-        await handleTotalCountChange(1, true);
+    }
+
+    async function deleteHistory(historyId: string, purge = false) {
+        try {
+            const { data } = await deleteHistoryById({ history_id: historyId, purge });
+            const deletedHistory = data as AnyHistory;
+            await setNextAvailableHistoryId([deletedHistory.id]);
+            del(storedHistories.value, deletedHistory.id);
+            await handleTotalCountChange(1, true);
+        } catch (error) {
+            rethrowSimple(error);
+        }
+    }
+
+    async function deleteHistories(ids: string[], purge = false) {
+        try {
+            const { data } = await deleteHistoriesByIds({ ids, purge });
+            const deletedHistories = data as AnyHistory[];
+            const historyIds = deletedHistories.map((x) => String(x.id));
+            await setNextAvailableHistoryId(historyIds);
+            deletedHistories.forEach((history) => {
+                del(storedHistories.value, history.id);
+            });
+            await handleTotalCountChange(deletedHistories.length, true);
+        } catch (error) {
+            rethrowSimple(error);
+        }
+    }
+
+    async function restoreHistory(historyId: string) {
+        try {
+            const { data } = await undeleteHistory({ history_id: historyId });
+            const restoredHistory = data as AnyHistory;
+            await handleTotalCountChange(1);
+            setHistory(restoredHistory);
+        } catch (error) {
+            rethrowSimple(error);
+        }
+    }
+
+    async function restoreHistories(ids: string[]) {
+        try {
+            const { data } = await undeleteHistories({ ids });
+            const restoredHistories = data as AnyHistory[];
+            await handleTotalCountChange(restoredHistories.length);
+            setHistories(restoredHistories);
+        } catch (error) {
+            rethrowSimple(error);
+        }
     }
 
     async function loadCurrentHistory(since?: string): Promise<HistoryDevDetailed | undefined> {
@@ -334,6 +386,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         currentHistoryId,
         currentFilterText,
         pinnedHistories,
+        storedHistories,
         getHistoryById,
         getHistoryNameById,
         setCurrentHistory,
@@ -348,6 +401,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
         copyHistory,
         createNewHistory,
         deleteHistory,
+        deleteHistories,
+        restoreHistory,
+        restoreHistories,
+        handleTotalCountChange,
         loadCurrentHistory,
         loadHistories,
         loadHistoryById,
