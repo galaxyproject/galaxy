@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import { bytesToString } from "@/utils/utils";
 
-import type { QuotaUsage } from "./model";
+import { type QuotaUsage } from "./model";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
