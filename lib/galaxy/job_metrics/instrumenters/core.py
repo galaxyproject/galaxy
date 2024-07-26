@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 import time
 from typing import (
     Any,
@@ -25,7 +24,6 @@ GALAXY_MEMORY_MB_KEY = "galaxy_memory_mb"
 START_EPOCH_KEY = "start_epoch"
 END_EPOCH_KEY = "end_epoch"
 RUNTIME_SECONDS_KEY = "runtime_seconds"
-CONTAINER_FILE = "__container.json"
 CONTAINER_ID = "container_id"
 CONTAINER_TYPE = "container_type"
 
@@ -89,9 +87,12 @@ class CorePlugin(InstrumentPlugin):
             properties[RUNTIME_SECONDS_KEY] = end - start
         return properties
 
+    def get_container_file_path(self, job_directory):
+        return self._instrument_file_path(job_directory, "container")
+
     def __read_container_details(self, job_directory) -> Dict[str, str]:
         try:
-            with open(os.path.join(job_directory, CONTAINER_FILE)) as fh:
+            with open(self.get_container_file_path(job_directory)) as fh:
                 return json.load(fh)
         except FileNotFoundError:
             return {}

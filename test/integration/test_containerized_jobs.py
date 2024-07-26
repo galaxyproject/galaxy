@@ -36,8 +36,7 @@ class MulledJobTestCases:
         run_response = self.dataset_populator.run_tool(tool_id, {}, history_id)
         job_id = run_response["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id=job_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
-        job_details = self.dataset_populator.get_job_details(job_id=job_id, full=True).json()
-        job_metrics = job_details["job_metrics"]
+        job_metrics = self.dataset_populator._get(f"/api/jobs/{job_id}/metrics").json()
         # would be nice if it wasn't just a list of unpredictable order ...
         container_id = None
         container_type = None
