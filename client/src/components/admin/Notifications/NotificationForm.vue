@@ -7,7 +7,6 @@ import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type MessageNotificationCreateRequest } from "@/api/notifications";
-import { getAllRoles } from "@/api/roles";
 import { client } from "@/api/schema";
 import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
@@ -95,6 +94,15 @@ async function loadData<T>(
 
 async function getAllGroups() {
     const { data, error } = await client.GET("/api/groups");
+    if (error) {
+        Toast.error(errorMessageAsString(error));
+        return [];
+    }
+    return data;
+}
+
+async function getAllRoles() {
+    const { data, error } = await client.GET("/api/roles");
     if (error) {
         Toast.error(errorMessageAsString(error));
         return [];
