@@ -28,29 +28,30 @@ const inputs = computed(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
-    const { data: pluginStatus, error: requestError } = await client.POST("/api/file_source_instances/test", {
+    const { data: pluginStatus, error: testRequestError } = await client.POST("/api/file_source_instances/test", {
         body: payload,
     });
-    if (requestError) {
-        rethrowSimple(requestError);
+
+    if (testRequestError) {
+        rethrowSimple(testRequestError);
     }
+
     const testError = pluginStatusToErrorMessage(pluginStatus);
     if (testError) {
         error.value = testError;
         return;
     }
-    try {
-        const { data: fileSource, error: requestError } = await client.POST("/api/file_source_instances", {
-            body: payload,
-        });
-        if (requestError) {
-            rethrowSimple(requestError);
-        }
-        emit("created", fileSource);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
+
+    const { data: fileSource, error: requestError } = await client.POST("/api/file_source_instances", {
+        body: payload,
+    });
+
+    if (requestError) {
+        error.value = errorMessageAsString(requestError);
         return;
     }
+
+    emit("created", fileSource);
 }
 
 const emit = defineEmits<{
