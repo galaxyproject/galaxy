@@ -1,10 +1,8 @@
 import { defineStore } from "pinia";
 
-import { fetcher } from "@/api/schema/fetcher";
+import { client } from "@/api";
 import { type components } from "@/api/schema/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-const getFileSourceInstances = fetcher.path("/api/file_source_instances").method("get").create();
 
 type UserFileSourceModel = components["schemas"]["UserFileSourceModel"];
 
@@ -35,12 +33,14 @@ export const useFileSourceInstancesStore = defineStore("fileSourceInstances", {
             this.error = errorMessageAsString(err);
         },
         async fetchInstances() {
-            try {
-                const { data: instances } = await getFileSourceInstances({});
-                this.handleInit(instances);
-            } catch (err) {
-                this.handleError(err);
+            const { data: instances, error } = await client.GET("/api/file_source_instances");
+
+            if (error) {
+                this.handleError(error);
+                return;
             }
+
+            this.handleInit(instances);
         },
         async ensureTemplates() {
             if (!this.fetched || this.error != null) {
