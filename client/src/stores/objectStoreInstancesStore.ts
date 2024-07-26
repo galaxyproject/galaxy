@@ -1,10 +1,8 @@
 import { defineStore } from "pinia";
 
-import { fetcher } from "@/api/schema/fetcher";
+import { client } from "@/api";
 import { type components } from "@/api/schema/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-const getObjectStoreInstances = fetcher.path("/api/object_store_instances").method("get").create();
 
 type UserConcreteObjectStoreModel = components["schemas"]["UserConcreteObjectStoreModel"];
 
@@ -35,12 +33,14 @@ export const useObjectStoreInstancesStore = defineStore("objectStoreInstances", 
             this.error = errorMessageAsString(err);
         },
         async fetchInstances() {
-            try {
-                const { data: instances } = await getObjectStoreInstances({});
-                this.handleInit(instances);
-            } catch (err) {
-                this.handleError(err);
+            const { data: instances, error } = await client.GET("/api/object_store_instances");
+
+            if (error) {
+                this.handleError(error);
+                return;
             }
+
+            this.handleInit(instances);
         },
         async ensureTemplates() {
             if (!this.fetched || this.error != null) {
