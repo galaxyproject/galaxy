@@ -375,6 +375,12 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 
+class UserUpdatePayload(Model):
+    active: Annotated[Optional[bool], Field(None, title="Active", description="User is active")]
+    username: Annotated[Optional[str], Field(None, title="Username", description="The name of the user.")]
+    preferred_object_store_id: Annotated[Optional[str], PreferredObjectStoreIdField]
+
+
 class UserCreationPayload(Model):
     password: str = Field(default=..., title="user_password", description="The password of the user.")
     email: str = UserEmailField
