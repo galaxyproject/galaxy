@@ -118,19 +118,29 @@ class NewSharedItemNotificationContent(Model):
     slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
 
-AnyNotificationContent = Annotated[
+NotificationContentField = Field(
+    default=...,
+    discriminator="category",
+    title="Content",
+    description="The content of the notification. The structure depends on the category.",
+)
+
+AnyUserNotificationContent = Annotated[
     Union[
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+    ],
+    NotificationContentField,
+]
+
+AnyNotificationContent = Annotated[
+    Union[
+        AnyUserNotificationContent,
         BroadcastNotificationContent,
     ],
-    Field(
-        default=...,
-        discriminator="category",
-        title="Content",
-        description="The content of the notification. The structure depends on the category.",
-    ),
+    NotificationContentField,
 ]
+
 
 NotificationIdField = Field(
     ...,
@@ -200,6 +210,7 @@ class UserNotificationResponse(NotificationResponse):
     """A notification response specific to the user."""
 
     category: PersonalNotificationCategory = NotificationCategoryField
+    content: AnyUserNotificationContent
     seen_time: Optional[datetime] = Field(
         None,
         title="Seen time",
