@@ -5,7 +5,6 @@ import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
 import { client } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";
-import { remoteFilesFetcher } from "@/api/remoteFiles";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -111,22 +110,28 @@ export async function getUploadDbKeys(defaultDbKey) {
     return dbKeyList;
 }
 
-export async function getRemoteEntries(success, error) {
-    try {
-        const { data } = await remoteFilesFetcher();
-        success(data);
-    } catch (e) {
-        error(errorMessageAsString(e));
+export async function getRemoteEntries(onSuccess, onError) {
+    const { data, error } = await client.GET("/api/remote_files");
+
+    if (error) {
+        onError(errorMessageAsString(error));
     }
+
+    onSuccess(data);
 }
 
 export async function getRemoteEntriesAt(target) {
-    try {
-        const { data: files } = await remoteFilesFetcher({ target });
-        return files;
-    } catch (e) {
-        rethrowSimple(e);
+    const { data: files, error } = await client.GET("/api/remote_files", {
+        params: {
+            query: { target },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return files;
 }
 
 export function hasBrowserSupport() {
