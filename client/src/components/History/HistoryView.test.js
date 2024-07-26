@@ -185,7 +185,9 @@ describe("History center panel View", () => {
         expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         // instead we have an alert
-        expect(wrapper.find("[data-description='history messages']").text()).toBe("History has been purged");
+        expect(wrapper.find("[data-description='history messages']").text()).toBe(
+            "History has been permanently deleted"
+        );
     });
 
     it("should not display archived message and should be importable when user is not owner and history is archived", async () => {
