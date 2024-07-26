@@ -1,0 +1,19 @@
+- doc: | 
+    Test to verify collection flatten collection operation mid workflow.
+  job:
+    input_fastqs:
+      collection_type: list
+      elements:
+        - identifier: samp1
+          content: "0 mycoolline\n1 mysecondline\n"
+  outputs:
+    out:
+      elements:
+        'samp1-0':
+          asserts:
+          - that: has_text
+            text: "mycoolline"
+        'samp1-1':
+          asserts:
+          - that: has_text
+            text: "mysecondline"
