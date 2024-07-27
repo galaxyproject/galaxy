@@ -26,7 +26,8 @@ onMounted(async () => {
         return;
     }
 
-    history.value = data;
+    // The default view is the detailed view
+    history.value = data as HistoryDetailed;
 });
 </script>
 
