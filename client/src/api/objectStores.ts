@@ -1,5 +1,4 @@
-import { client } from "@/api/schema";
-import { type components } from "@/api/schema/schema";
+import { client, type components } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export type UserConcreteObjectStore = components["schemas"]["UserConcreteObjectStoreModel"];

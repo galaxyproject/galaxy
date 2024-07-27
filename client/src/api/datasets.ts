@@ -1,7 +1,6 @@
 import axios from "axios";
 
-import { type HDADetailed } from "@/api";
-import { client, type components, type GalaxyApiPaths } from "@/api/schema";
+import { client, type components, type GalaxyApiPaths, type HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 

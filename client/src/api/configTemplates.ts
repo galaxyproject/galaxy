@@ -1,4 +1,4 @@
-import { type components } from "@/api/schema/schema";
+import { type components } from "@/api/schema";
 
 export type Instance =
     | components["schemas"]["UserFileSourceModel"]

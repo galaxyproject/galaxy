@@ -6,8 +6,8 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { client } from "@/api";
 import { type MessageNotificationCreateRequest } from "@/api/notifications";
-import { client } from "@/api/schema";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 

@@ -1,8 +1,8 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { type components } from "@/api/schema";
+import { client, type components, type GalaxyApiPaths } from "@/api/schema";
 
-export { client } from "./schema";
+export { client, type components, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
