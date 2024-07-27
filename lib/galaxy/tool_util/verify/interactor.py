@@ -55,6 +55,7 @@ from ._types import (
     RequiredDataTablesT,
     RequiredFilesT,
     RequiredLocFileT,
+    ToolTestDescriptionDict,
 )
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -234,7 +235,7 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List["ToolTestDescriptionDict"]:
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List[ToolTestDescriptionDict]:
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
@@ -1314,7 +1315,7 @@ def verify_tool(
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
-    _tool_test_dicts: Optional[List["ToolTestDescriptionDict"]] = None,  # extension point only for tests
+    _tool_test_dicts: Optional[List[ToolTestDescriptionDict]] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1633,30 +1634,6 @@ class JobOutputsError(AssertionError):
         self.output_exceptions = output_exceptions
 
 
-class ToolTestDescriptionDict(TypedDict):
-    tool_id: str
-    tool_version: Optional[str]
-    name: str
-    test_index: int
-    inputs: ExpandedToolInputsJsonified
-    outputs: ToolSourceTestOutputs
-    output_collections: List[TestSourceTestOutputColllection]
-    stdout: Optional[AssertionList]
-    stderr: Optional[AssertionList]
-    expect_exit_code: Optional[int]
-    expect_failure: bool
-    expect_test_failure: bool
-    num_outputs: Optional[int]
-    command_line: Optional[AssertionList]
-    command_version: Optional[AssertionList]
-    required_files: List[Any]
-    required_data_tables: List[Any]
-    required_loc_files: List[str]
-    error: bool
-    exception: Optional[str]
-    maxseconds: NotRequired[Optional[int]]
-
-
 DEFAULT_NUM_OUTPUTS: Optional[int] = None
 DEFAULT_OUTPUT_COLLECTIONS: List[TestSourceTestOutputColllection] = []
 DEFAULT_REQUIRED_FILES: RequiredFilesT = []
@@ -1673,7 +1650,7 @@ DEFAULT_EXPECT_TEST_FAILURE: bool = False
 DEFAULT_EXCEPTION: Optional[str] = None
 
 
-def adapt_tool_source_dict(processed_dict: ToolTestDict) -> "ToolTestDescriptionDict":
+def adapt_tool_source_dict(processed_dict: ToolTestDict) -> ToolTestDescriptionDict:
     """Convert the dictionaries parsed from tool sources (ToolTestDict) to a ToolTestDescriptionDict.
 
     ToolTestDescription is used inside and outside of Galaxy, so convert the dictionaries to the format
