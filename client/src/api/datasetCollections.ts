@@ -1,5 +1,4 @@
-import { type CollectionEntry, type DCESummary, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
-import { client } from "@/api/schema";
+import { client, type CollectionEntry, type DCESummary, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;

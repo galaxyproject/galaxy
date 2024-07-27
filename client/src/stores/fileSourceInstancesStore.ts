@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 
-import { client } from "@/api";
-import { type components } from "@/api/schema/schema";
+import { client, type components } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 type UserFileSourceModel = components["schemas"]["UserFileSourceModel"];

@@ -1,4 +1,4 @@
-import { client, type GalaxyApiPaths } from "@/api/schema";
+import { client, type GalaxyApiPaths } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 // TODO: Move these functions to broadcastStore and refactor other calls to go through the store

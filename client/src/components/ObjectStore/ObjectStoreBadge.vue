@@ -4,7 +4,7 @@ import "./badgeIcons";
 import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import type { components } from "@/api/schema";
+import { type components } from "@/api/schema";
 
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 

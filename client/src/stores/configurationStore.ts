@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { client } from "@/api/schema";
+import { client } from "@/api";
 
 // Temporary set to any until schema model is defined
 export type GalaxyConfiguration = any;

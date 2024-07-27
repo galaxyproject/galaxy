@@ -1,7 +1,7 @@
 import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { client } from "@/api/schema";
+import { client } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";

@@ -1,4 +1,4 @@
-import { client } from "@/api/schema";
+import { client } from "@/api";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { type CleanableItem, CleanableSummary, CleanupResult, PaginationOptions } from "./Cleanup/model";

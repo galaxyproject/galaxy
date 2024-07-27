@@ -1,5 +1,4 @@
-import { client } from "@/api";
-import { type components } from "@/api/schema";
+import { client, type components } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 /** The browsing mode:

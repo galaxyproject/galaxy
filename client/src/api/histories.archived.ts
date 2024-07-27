@@ -1,4 +1,4 @@
-import { client, type components, type GalaxyApiPaths } from "@/api/schema";
+import { client, type components, type GalaxyApiPaths } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
