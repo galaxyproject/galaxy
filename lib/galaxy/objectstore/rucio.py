@@ -306,7 +306,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         self._ensure_staging_path_writable()
         self._start_cache_monitor_if_needed()
 
-    def _pull_into_cache(self, rel_path, auth_token):
+    def _pull_into_cache(self, rel_path, **kwargs) -> bool:
         log.debug("rucio _pull_into_cache: %s", rel_path)
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
@@ -314,6 +314,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         dest = self._get_cache_path(rel_path)
+        auth_token = self._get_token(**kwargs)
         file_ok = self.rucio_broker.download(rel_path, dest, auth_token)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
         return file_ok
@@ -491,7 +492,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path, auth_token):
+                if self._pull_into_cache(rel_path, auth_token=auth_token):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 

@@ -14,13 +14,13 @@ from galaxy.tool_util.parameters import (
     encode,
     RequestInternalToolState,
     RequestToolState,
-    ToolParameterModel,
     validate_internal_job,
     validate_internal_request,
     validate_request,
     validate_test_case,
 )
 from galaxy.tool_util.parameters.json import to_json_schema_string
+from galaxy.tool_util.parameters.models import ToolParameterT
 from galaxy.tool_util.unittest_utils.parameters import (
     parameter_bundle,
     parameter_bundle_for_file,
@@ -85,12 +85,12 @@ def _test_file(file: str, specification=None):
         _assert_internal_requests_invalid(tool_parameter_model, combos["request_invalid"])
 
 
-def _for_each(test: Callable, parameter: ToolParameterModel, requests: List[Dict[str, Any]]) -> None:
+def _for_each(test: Callable, parameter: ToolParameterT, requests: List[Dict[str, Any]]) -> None:
     for request in requests:
         test(parameter, request)
 
 
-def _assert_request_validates(parameter, request) -> None:
+def _assert_request_validates(parameter: ToolParameterT, request: Dict[str, Any]) -> None:
     try:
         validate_request(parameter_bundle(parameter), request)
     except RequestParameterInvalidException as e:

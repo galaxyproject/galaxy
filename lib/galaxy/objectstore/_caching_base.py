@@ -112,7 +112,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
-    def _pull_into_cache(self, rel_path) -> bool:
+    def _pull_into_cache(self, rel_path, **kwargs) -> bool:
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
@@ -129,7 +129,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
         if not self._in_cache(rel_path):
-            self._pull_into_cache(rel_path)
+            self._pull_into_cache(rel_path, **kwargs)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path))
         data_file.seek(start)
@@ -298,7 +298,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._download_directory_into_cache(rel_path, cache_path)
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path):
+                if self._pull_into_cache(rel_path, **kwargs):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 

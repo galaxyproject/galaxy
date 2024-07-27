@@ -81,26 +81,26 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
                 session.commit()
         return dataset
 
-    def copy(self, dataset, **kwargs):
+    def copy(self, item, **kwargs):
         raise exceptions.NotImplemented("Datasets cannot be copied")
 
-    def purge(self, dataset, flush=True):
+    def purge(self, item, flush=True, **kwargs):
         """
         Remove the object_store/file for this dataset from storage and mark
         as purged.
 
         :raises exceptions.ConfigDoesNotAllowException: if the instance doesn't allow
         """
-        self.error_unless_dataset_purge_allowed(dataset)
+        self.error_unless_dataset_purge_allowed(item)
 
         # the following also marks dataset as purged and deleted
-        dataset.full_delete()
-        self.session().add(dataset)
+        item.full_delete()
+        self.session().add(item)
         if flush:
             session = self.session()
             with transaction(session):
                 session.commit()
-        return dataset
+        return item
 
     def purge_datasets(self, request: PurgeDatasetsTaskRequest):
         """
@@ -376,7 +376,7 @@ class DatasetAssociationManager(
             self.stop_creating_job(item, flush=flush)
         return item
 
-    def purge(self, dataset_assoc, flush=True):
+    def purge(self, item, flush=True, **kwargs):
         """
         Purge this DatasetInstance and the dataset underlying it.
         """
@@ -388,15 +388,15 @@ class DatasetAssociationManager(
         # so that job cleanup associated with stop_creating_job will see
         # the dataset as purged.
         flush_required = not self.app.config.track_jobs_in_database
-        super().purge(dataset_assoc, flush=flush or flush_required)
+        super().purge(item, flush=flush or flush_required, **kwargs)
 
-        # stop any jobs outputing the dataset_assoc
-        self.stop_creating_job(dataset_assoc, flush=True)
+        # stop any jobs outputing the dataset association
+        self.stop_creating_job(item, flush=True)
 
         # more importantly, purge underlying dataset as well
-        if dataset_assoc.dataset.user_can_purge:
-            self.dataset_manager.purge(dataset_assoc.dataset)
-        return dataset_assoc
+        if item.dataset.user_can_purge:
+            self.dataset_manager.purge(item.dataset, flush=flush, **kwargs)
+        return item
 
     def by_user(self, user):
         raise exceptions.NotImplemented("Abstract Method")
@@ -782,7 +782,7 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # remove the single nesting key here
         del self.serializers["metadata"]
 
-    def serialize(self, dataset_assoc, keys, **context):
+    def serialize(self, item, keys, **context):
         """
         Override to add metadata as flattened keys on the serialized DatasetInstance.
         """
@@ -790,11 +790,11 @@ class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSeriali
         # TODO: remove these when metadata is sub-object
         KEYS_HANDLED_SEPARATELY = ("metadata",)
         left_to_handle = self._pluck_from_list(keys, KEYS_HANDLED_SEPARATELY)
-        serialized = super().serialize(dataset_assoc, keys, **context)
+        serialized = super().serialize(item, keys, **context)
 
         # add metadata directly to the dict instead of as a sub-object
         if "metadata" in left_to_handle:
-            metadata = self._prefixed_metadata(dataset_assoc)
+            metadata = self._prefixed_metadata(item)
             serialized.update(metadata)
         return serialized
 
