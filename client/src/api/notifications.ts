@@ -3,6 +3,7 @@ import { type components } from "@/api/schema";
 export type BaseUserNotification = components["schemas"]["UserNotificationResponse"];
 export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"]["preferences"];
 export type NotificationChannel = keyof components["schemas"]["NotificationChannelSettings"];
+export type NotificationCategory = components["schemas"]["PersonalNotificationCategory"];
 
 export interface MessageNotification extends BaseUserNotification {
     category: "message";

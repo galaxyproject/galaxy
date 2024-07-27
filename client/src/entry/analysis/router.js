@@ -26,7 +26,7 @@ import TourRunner from "components/Tour/TourRunner";
 import { APIKey } from "components/User/APIKey";
 import CustomBuilds from "components/User/CustomBuilds";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
-import { NotificationsPreferences } from "components/User/Notifications";
+import NotificationsPreferences from "components/User/Notifications/NotificationsPreferences";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
