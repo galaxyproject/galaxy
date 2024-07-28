@@ -56,7 +56,7 @@ tensorflow==2.9.3
 # xref https://github.com/galaxyproject/galaxy/pull/9651
 # Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
 # to install weasyprint as part of Galaxy's conditonal dependency instalation process.
-weasyprint
+weasyprint>=62.3
 
 # AWS Batch runner
 boto3
