@@ -5832,6 +5832,8 @@ on Human (hg18)``.
       <xs:element name="data" type="OutputCollectionDataElement" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
+      <xs:element name="actions" type="Actions" />
+      <xs:element name="change_format" type="ChangeFormat" />
     </xs:choice>
   </xs:group>
 
