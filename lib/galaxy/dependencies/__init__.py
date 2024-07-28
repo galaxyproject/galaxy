@@ -290,7 +290,7 @@ class ConditionalDependencies:
 
     def check_pydyf(self):
         # See notes in ./conditional-requirements.txt for more information.
-        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1" and sys.version_info < (3, 9)
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
     def check_custos_sdk(self):
         return "custos" == self.vault_type
