@@ -19,6 +19,9 @@
         <change_format>
           <when input="out_format" value="interval" format="interval" />
         </change_format>
+        <actions>
+            <action name="dbkey" type="metadata" default="hg38" />
+        </actions>
       </data>
       <data name="reverse" format_source="input1" from_work_dir="reverse.txt" />
     </collection>
@@ -37,6 +40,7 @@
       <param name="input1" ftype="bed" value="simple_lines_interleaved.txt" />
       <output_collection name="paired_output" type="paired">
         <element name="forward" ftype="txt">
+          <metadata name="dbkey" value="hg38"/>
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>
@@ -49,6 +53,7 @@
       </output_collection>
       <output_collection name="paired_output_default_format" type="paired">
         <element name="forward" ftype="fasta">
+          <metadata name="dbkey" value="hg38"/>
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>
@@ -65,6 +70,7 @@
       <param name="out_format" value="interval"/>
       <output_collection name="paired_output" type="paired">
         <element name="forward" ftype="interval">
+          <metadata name="dbkey" value="hg38"/>
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>
@@ -77,6 +83,7 @@
       </output_collection>
       <output_collection name="paired_output_default_format" type="paired">
         <element name="forward" ftype="interval">
+          <metadata name="dbkey" value="hg38"/>
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>
