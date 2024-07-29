@@ -191,6 +191,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
     jobs_directory: str
     persistent_volume_claims: List[KubeSetupConfigTuple]
     persistent_volumes: List[KubeSetupConfigTuple]
+    container_type = "docker"
 
     def setUp(self) -> None:
         super().setUp()
