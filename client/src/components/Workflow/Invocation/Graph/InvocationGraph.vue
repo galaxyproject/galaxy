@@ -341,7 +341,6 @@ function toggleActiveStep(stepId: number) {
 
 .graph-steps-aside {
     overflow-y: scroll;
-    scroll-behavior: smooth;
     &.steps-fixed-height {
         max-height: 60vh;
     }
