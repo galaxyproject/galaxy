@@ -1,5 +1,6 @@
 """Tool test parsing to dicts logic."""
 
+import json
 import os
 from typing import (
     Any,
@@ -110,6 +111,7 @@ class TestTestParsing(TestCase):
         self._verify_each(test_dicts[1].to_dict(), BIGWIG_TO_WIG_EXPECTATIONS)
 
     def _verify_each(self, target_dict: dict, expectations: List[Any]):
+        assert_json_encodable(target_dict)
         for path, expectation in expectations:
             exception = target_dict.get("exception")
             assert not exception, f"Test failed to generate with exception {exception}"
@@ -120,3 +122,7 @@ class TestTestParsing(TestCase):
         for path_part in expectation_path:
             rest = rest[path_part]
         assert rest == expectation, f"{rest} != {expectation} for {expectation_path}"
+
+
+def assert_json_encodable(as_dict: dict):
+    json.dumps(as_dict)

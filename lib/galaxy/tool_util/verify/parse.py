@@ -31,6 +31,7 @@ from galaxy.util import (
     unicodify,
 )
 from ._types import (
+    ExpandedToolInputs,
     ExtraFileInfoDictT,
     RequiredDataTablesT,
     RequiredFilesT,
@@ -120,7 +121,7 @@ def _description_from_tool_source(
             }
         )
 
-    return ToolTestDescription(processed_test_dict)
+    return ToolTestDescription.from_tool_source_dict(processed_test_dict)
 
 
 def _process_raw_inputs(
@@ -131,14 +132,14 @@ def _process_raw_inputs(
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
     parent_context: Optional[AnyParamContext] = None,
-):
+) -> ExpandedToolInputs:
     """
     Recursively expand flat list of inputs into "tree" form of flat list
     (| using to nest to new levels) structure and expand dataset
     information as proceeding to populate self.required_files.
     """
     parent_context = parent_context or RootParamContext()
-    expanded_inputs = {}
+    expanded_inputs: ExpandedToolInputs = {}
     for input_source in input_sources:
         input_type = input_source.parse_input_type()
         name = input_source.parse_name()

@@ -11,8 +11,10 @@ import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
+    DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_SORT,
 )
 from .interface import (
     AssertionDict,
@@ -250,7 +252,8 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
             "lines_diff": 0,
             "delta": DEFAULT_DELTA,
             "delta_frac": DEFAULT_DELTA_FRAC,
-            "sort": False,
+            "sort": DEFAULT_SORT,
+            "decompress": DEFAULT_DECOMPRESS,
         }
         # TODO
         attributes["extra_files"] = []

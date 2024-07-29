@@ -18,11 +18,13 @@ from packaging.version import Version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
+    DEFAULT_DECOMPRESS,
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
     DEFAULT_EPS,
     DEFAULT_METRIC,
     DEFAULT_PIN_LABELS,
+    DEFAULT_SORT,
 )
 from galaxy.util import (
     Element,
@@ -43,6 +45,12 @@ from .interface import (
     TestCollectionOutputDef,
     ToolSource,
     ToolSourceTest,
+    ToolSourceTestInput,
+    ToolSourceTestInputAttributes,
+    ToolSourceTestInputs,
+    ToolSourceTestOutput,
+    ToolSourceTestOutputAttributes,
+    ToolSourceTestOutputs,
     ToolSourceTests,
     XrefDict,
 )
@@ -726,16 +734,16 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
     return rval
 
 
-def __parse_input_elems(test_elem, i):
+def __parse_input_elems(test_elem, i) -> ToolSourceTestInputs:
     __expand_input_elems(test_elem)
     return __parse_inputs_elems(test_elem, i)
 
 
-def __parse_output_elems(test_elem):
-    outputs = []
+def __parse_output_elems(test_elem) -> ToolSourceTestOutputs:
+    outputs: ToolSourceTestOutputs = []
     for output_elem in test_elem.findall("output"):
         name, file, attributes = __parse_output_elem(output_elem)
-        outputs.append({"name": name, "value": file, "attributes": attributes})
+        outputs.append(ToolSourceTestOutput({"name": name, "value": file, "attributes": attributes}))
     return outputs
 
 
@@ -786,56 +794,62 @@ def __parse_element_tests(parent_element, profile=None):
     return element_tests
 
 
-def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_discovered_datasets=False, profile=None):
+VALUE_OBJECT_UNSET = object()
+
+
+def __parse_test_attributes(
+    output_elem, attrib, parse_elements=False, parse_discovered_datasets=False, profile=None
+) -> Tuple[Optional[str], ToolSourceTestOutputAttributes]:
     assert_list = __parse_assert_list(output_elem)
 
     # Allow either file or value to specify a target file to compare result with
     # file was traditionally used by outputs and value by extra files.
-    file = attrib.pop("file", attrib.pop("value", None))
+    file: Optional[str] = attrib.pop("file", attrib.pop("value", None))
 
     # File no longer required if an list of assertions was present.
-    attributes = {}
 
+    value_object: Any = VALUE_OBJECT_UNSET
     if "value_json" in attrib:
-        attributes["object"] = json.loads(attrib.pop("value_json"))
+        value_object = json.loads(attrib.pop("value_json"))
 
     # Method of comparison
-    attributes["compare"] = attrib.pop("compare", "diff").lower()
+    compare: str = attrib.pop("compare", "diff").lower()
     # Number of lines to allow to vary in logs (for dates, etc)
-    attributes["lines_diff"] = int(attrib.pop("lines_diff", "0"))
+    lines_diff: int = int(attrib.pop("lines_diff", "0"))
     # Allow a file size to vary if sim_size compare
-    attributes["delta"] = int(attrib.pop("delta", DEFAULT_DELTA))
-    attributes["delta_frac"] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
-    attributes["sort"] = string_as_bool(attrib.pop("sort", False))
-    attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
+    delta: int = int(attrib.pop("delta", DEFAULT_DELTA))
+    delta_frac: Optional[float] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
+    sort: bool = string_as_bool(attrib.pop("sort", DEFAULT_SORT))
+    decompress: bool = string_as_bool(attrib.pop("decompress", DEFAULT_DECOMPRESS))
     # `location` may contain an URL to a remote file that will be used to download `file` (if not already present on disk).
-    location = attrib.get("location")
-    # Parameters for "image_diff" comparison
-    attributes["metric"] = attrib.pop("metric", DEFAULT_METRIC)
-    attributes["eps"] = float(attrib.pop("eps", DEFAULT_EPS))
-    attributes["pin_labels"] = attrib.pop("pin_labels", DEFAULT_PIN_LABELS)
+    location: Optional[str] = attrib.get("location")
     if location and file is None:
         file = os.path.basename(location)  # If no file specified, try to get filename from URL last component
-    attributes["location"] = location
+    # Parameters for "image_diff" comparison
+    metric: str = attrib.pop("metric", DEFAULT_METRIC)
+    eps: float = float(attrib.pop("eps", DEFAULT_EPS))
+    pin_labels: Optional[Any] = attrib.pop("pin_labels", DEFAULT_PIN_LABELS)
+    count: Optional[int] = None
     try:
-        attributes["count"] = int(attrib.pop("count"))
+        count = int(attrib.pop("count"))
     except KeyError:
-        attributes["count"] = None
-    extra_files = []
+        pass
+    extra_files: List[Dict[str, Any]] = []
+    ftype: Optional[str] = None
     if "ftype" in attrib:
-        attributes["ftype"] = attrib["ftype"]
+        ftype = attrib["ftype"]
     for extra in output_elem.findall("extra_files"):
         extra_files.append(__parse_extra_files_elem(extra))
-    metadata = {}
+    metadata: Dict[str, Any] = {}
     for metadata_elem in output_elem.findall("metadata"):
         metadata[metadata_elem.get("name")] = metadata_elem.get("value")
     md5sum = attrib.get("md5", None)
     checksum = attrib.get("checksum", None)
-    element_tests = {}
+    element_tests: Dict[str, Any] = {}
     if parse_elements:
         element_tests = __parse_element_tests(output_elem, profile=profile)
 
-    primary_datasets = {}
+    primary_datasets: Dict[str, Any] = {}
     if parse_discovered_datasets:
         for primary_elem in output_elem.findall("discovered_dataset") or []:
             primary_attrib = dict(primary_elem.attrib)
@@ -846,22 +860,38 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
-    has_object = "object" in attributes
+    has_object = value_object is not VALUE_OBJECT_UNSET
     if not (assert_list or file or metadata or has_checksum or has_nested_tests or has_object):
         raise Exception(
             "Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)"
         )
-    attributes["assert_list"] = assert_list
-    attributes["extra_files"] = extra_files
-    attributes["metadata"] = metadata
-    attributes["md5"] = md5sum
-    attributes["checksum"] = checksum
-    attributes["elements"] = element_tests
-    attributes["primary_datasets"] = primary_datasets
+    attributes = ToolSourceTestOutputAttributes(
+        ftype=ftype,
+        compare=compare,
+        lines_diff=lines_diff,
+        delta=delta,
+        delta_frac=delta_frac,
+        sort=sort,
+        decompress=decompress,
+        metric=metric,
+        eps=eps,
+        pin_labels=pin_labels,
+        location=location,
+        count=count,
+        metadata=metadata,
+        md5=md5sum,
+        checksum=checksum,
+        primary_datasets=primary_datasets,
+        elements=element_tests,
+        assert_list=assert_list,
+        extra_files=extra_files,
+    )
+    if value_object is not VALUE_OBJECT_UNSET:
+        attributes["object"] = value_object
     return file, attributes
 
 
-def __parse_assert_list(output_elem):
+def __parse_assert_list(output_elem) -> AssertionList:
     assert_elem = output_elem.find("assert_contents")
     return __parse_assert_list_from_elem(assert_elem)
 
@@ -952,16 +982,16 @@ def _copy_to_dict_if_present(elem, rval, attributes):
     return rval
 
 
-def __parse_inputs_elems(test_elem, i):
-    raw_inputs = []
+def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
+    raw_inputs: ToolSourceTestInputs = []
     for param_elem in test_elem.findall("param"):
         raw_inputs.append(__parse_param_elem(param_elem, i))
 
     return raw_inputs
 
 
-def __parse_param_elem(param_elem, i=0):
-    attrib = dict(param_elem.attrib)
+def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
+    attrib: ToolSourceTestInputAttributes = dict(param_elem.attrib)
     if "values" in attrib:
         value = attrib["values"].split(",")
     elif "value" in attrib:
