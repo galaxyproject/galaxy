@@ -401,11 +401,13 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         msg = "(name!r/runner!r) is still in {state!s} state, adding to the runner monitor queue"
         job_id = job.get_job_runner_external_id()
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
-        ajs.job_name = job_name
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
+        ajs = AsynchronousJobState(
+            files_dir=job_wrapper.working_directory,
+            job_wrapper=job_wrapper,
+            job_id=str(job_id),
+            job_name=job_name,
+            job_destination=job_wrapper.job_destination,
+        )
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(msg.format(name=job.id, runner=job.job_runner_name, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
@@ -417,14 +419,20 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             ajs.running = False
             self.monitor_queue.put(ajs)
 
-    def fail_job(self, job_state, exception=False):
+    def fail_job(self, job_state: JobState, exception=False, message="Job failed", full_status=None):
         if getattr(job_state, "stop_job", True):
             self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state("failure", job_state)
         if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(getattr(job_state, "fail_message", "Job failed"), exception=exception)
-            self._finish_or_resubmit_job(job_state, "", job_state.fail_message, job_id=job_state.job_id)
+            full_status = full_status or {}
+            tool_stdout = full_status.get("stdout")
+            tool_stderr = full_status.get("stderr")
+            fail_message = getattr(job_state, "fail_message", message)
+            job_state.job_wrapper.fail(
+                fail_message, tool_stdout=tool_stdout, tool_stderr=tool_stderr, exception=exception
+            )
+            self._finish_or_resubmit_job(job_state, "", fail_message)
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
