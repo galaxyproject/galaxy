@@ -12,7 +12,6 @@ const modulesToTransform = [
     "winbox",
     "pretty-bytes",
     "@fortawesome",
-    "openapi-typescript-fetch",
 ].join("|");
 
 // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.

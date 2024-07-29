@@ -1,1 +1,1 @@
-export { fetcher, mockFetcher } from "./fetcher";
+export { mockFetcher } from "./fetcher";
