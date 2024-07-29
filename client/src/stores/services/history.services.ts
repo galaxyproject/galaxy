@@ -1,5 +1,4 @@
 import axios, { type AxiosResponse } from "axios";
-import type { ApiResponse } from "openapi-typescript-fetch";
 
 import type { AnyHistory } from "@/api";
 import { prependPath } from "@/utils/redirect";
@@ -9,7 +8,7 @@ import { prependPath } from "@/utils/redirect";
  * @param response
  * @return response.data or throws an error if response status is not 200
  */
-function doResponse(response: AxiosResponse | ApiResponse) {
+function doResponse(response: AxiosResponse) {
     if (response.status !== 200) {
         throw new Error(response.statusText);
     }
