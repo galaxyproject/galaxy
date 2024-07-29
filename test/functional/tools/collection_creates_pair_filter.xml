@@ -1,0 +1,59 @@
+<tool id="collection_creates_pair_filter" name="collection_creates_pair_filter" version="0.1.0">
+  <description>test if filters in statically defined collection elements work</description>
+  <command>
+    for i in A B C D; do
+      echo "\$i" > "\$i".txt;
+    done
+  </command>
+  <inputs>
+    <param name="decide" type="boolean"/>
+  </inputs>
+  <outputs>
+    <collection name="paired_output" format="txt" type="list" label="Split Pair">
+      <data name="A" from_work_dir="A.txt">
+        <filter>decide</filter>
+      </data>
+      <data name="B" from_work_dir="B.txt">
+        <filter>decide</filter>
+      </data>
+      <data name="C" from_work_dir="C.txt">
+        <filter>not decide</filter>
+      </data>
+      <data name="D" from_work_dir="D.txt">
+        <filter>not decide</filter>
+      </data>
+    </collection>
+  </outputs>
+  <tests>
+    <test expect_num_outputs="3">
+      <param name="decide" value="true" />
+      <output_collection name="paired_output" type="paired">
+        <element name="A" ftype="txt">
+          <assert_contents>
+            <has_line line="A" />
+          </assert_contents>
+        </element>
+        <element name="B" ftype="txt">
+          <assert_contents>
+            <has_line line="B" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+    <test expect_num_outputs="3">
+      <param name="decide" value="false" />
+      <output_collection name="paired_output" type="paired">
+        <element name="C" ftype="txt">
+          <assert_contents>
+            <has_line line="C" />
+          </assert_contents>
+        </element>
+        <element name="D" ftype="txt">
+          <assert_contents>
+            <has_line line="D" />
+          </assert_contents>
+        </element>
+      </output_collection>
+    </test>
+  </tests>
+</tool>
