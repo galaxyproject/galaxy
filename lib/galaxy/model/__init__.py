@@ -29,6 +29,7 @@ from string import Template
 from typing import (
     Any,
     cast,
+    ClassVar,
     Dict,
     Generic,
     Iterable,
@@ -159,7 +160,6 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from galaxy.objectstore import ObjectStorePopulator
 from galaxy.objectstore.templates import (
     ObjectStoreConfiguration,
     ObjectStoreTemplate,
@@ -219,6 +219,10 @@ from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
+    from galaxy.objectstore import (
+        BaseObjectStore,
+        ObjectStorePopulator,
+    )
     from galaxy.schema.invocation import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
@@ -2708,11 +2712,12 @@ class JobExternalOutputMetadata(Base, RepresentById):
 class FakeDatasetAssociation:
     fake_dataset_association = True
 
-    def __init__(self, dataset=None):
+    def __init__(self, dataset: Optional["Dataset"] = None) -> None:
         self.dataset = dataset
-        self.metadata = {}
+        self.metadata: Dict = {}
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
+        assert self.dataset
         return self.dataset.get_file_name(sync_cache)
 
     def __eq__(self, other):
@@ -4041,7 +4046,7 @@ class StorableObject:
                 sa_session.commit()
 
 
-def setup_global_object_store_for_models(object_store):
+def setup_global_object_store_for_models(object_store: "BaseObjectStore") -> None:
     Dataset.object_store = object_store
 
 
@@ -4133,7 +4138,9 @@ class Dataset(Base, StorableObject, Serializable):
 
     permitted_actions = get_permitted_actions(filter="DATASET")
     file_path = "/tmp/"
-    object_store = None  # This get initialized in mapping.py (method init) by app.py
+    object_store: ClassVar[Optional["BaseObjectStore"]] = (
+        None  # This get initialized in mapping.py (method init) by app.py
+    )
     engine = None
 
     def __init__(
@@ -4167,7 +4174,7 @@ class Dataset(Base, StorableObject, Serializable):
         return self.state in self.ready_states
 
     @property
-    def shareable(self):
+    def shareable(self) -> bool:
         """Return True if placed into an objectstore not labeled as ``private``."""
         if self.external_filename:
             return True
@@ -4179,7 +4186,7 @@ class Dataset(Base, StorableObject, Serializable):
         if not self.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
@@ -4225,20 +4232,19 @@ class Dataset(Base, StorableObject, Serializable):
         else:
             self.external_filename = filename
 
-    def _assert_object_store_set(self):
-        assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
+    def _assert_object_store_set(self) -> "BaseObjectStore":
+        assert self.object_store is not None, "Object Store has not been initialized"
         return self.object_store
 
-    def get_extra_files_path(self):
+    def get_extra_files_path(self) -> str:
         # Unlike get_file_name - external_extra_files_path is not backed by an
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
-            if self.object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
-                return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
-            return self.object_store.construct_path(
-                self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True
-            )
+            object_store = self._assert_object_store_set()
+            if object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
+                return object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
+            return object_store.construct_path(self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True)
         else:
             return os.path.abspath(self.external_extra_files_path)
 
@@ -4283,7 +4289,7 @@ class Dataset(Base, StorableObject, Serializable):
             except OSError:
                 return 0
         assert self.object_store
-        return self.object_store.size(self)  # type:ignore[unreachable]
+        return self.object_store.size(self)
 
     @overload
     def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
@@ -4663,7 +4669,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     quota_source_label = property(get_quota_source_label)
 
-    def set_skipped(self, object_store_populator: ObjectStorePopulator):
+    def set_skipped(self, object_store_populator: "ObjectStorePopulator") -> None:
         assert self.dataset
         object_store_populator.set_object_store_id(self)
         self.extension = "expression.json"
@@ -4674,7 +4680,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             out.write(json.dumps(None))
         self.set_total_size()
 
-    def get_file_name(self, sync_cache=True) -> str:
+    def get_file_name(self, sync_cache: bool = True) -> str:
         if self.dataset.purged:
             return ""
         return self.dataset.get_file_name(sync_cache=sync_cache)
@@ -9692,16 +9698,17 @@ class MetadataFile(Base, StorableObject, Serializable):
                 alt_name=os.path.basename(self.get_file_name()),
             )
 
-    def get_file_name(self, sync_cache=True):
+    def get_file_name(self, sync_cache: bool = True) -> str:
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
-            if self.object_store_id is None and da is not None:
+            assert da is not None
+            if self.object_store_id is None:
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
             store_by = object_store.get_store_by(da.dataset)
             if store_by == "id" and self.id is None:
-                self.flush()
+                self.flush()  # type:ignore[unreachable]
             identifier = getattr(self, store_by)
             alt_name = f"metadata_{identifier}.dat"
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
@@ -9710,7 +9717,7 @@ class MetadataFile(Base, StorableObject, Serializable):
                 self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=sync_cache
             )
             return path
-        except AttributeError:
+        except (AssertionError, AttributeError):
             assert (
                 self.id is not None
             ), "ID must be set before MetadataFile used without an HDA/LDDA (commit the object)"

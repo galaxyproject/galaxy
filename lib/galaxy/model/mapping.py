@@ -3,6 +3,7 @@ from threading import local
 from typing import (
     Optional,
     Type,
+    TYPE_CHECKING,
 )
 
 from galaxy import model
@@ -15,6 +16,9 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
+
+if TYPE_CHECKING:
+    from galaxy.objectstore import BaseObjectStore
 
 log = logging.getLogger(__name__)
 
@@ -99,8 +103,11 @@ def _build_model_mapping(engine, map_install_models, thread_local_log) -> Galaxy
 
 
 def init_models_from_config(
-    config: GalaxyAppConfiguration, map_install_models=False, object_store=None, trace_logger=None
-):
+    config: GalaxyAppConfiguration,
+    map_install_models: bool = False,
+    object_store: Optional["BaseObjectStore"] = None,
+    trace_logger=None,
+) -> GalaxyModelMapping:
     model = init(
         config.file_path,
         config.database_connection,

@@ -2,6 +2,7 @@ import hashlib
 import logging
 import os
 import shutil
+from typing import Optional
 
 try:
     import rucio.common
@@ -249,12 +250,12 @@ class RucioBroker:
         except Exception:
             return False
 
-    def get_size(self, key):
+    def get_size(self, key) -> int:
         key = _encode_key(key)
         dids = [{"scope": self.scope, "name": key}]
         try:
             repl = next(self.get_rucio_client().list_replicas(dids))
-            return repl["bytes"]
+            return int(repl["bytes"])
         except Exception:
             return 0
 
@@ -335,7 +336,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
 
     # "interfaces to implement"
 
-    def _exists(self, obj, **kwargs):
+    def _exists(self, obj, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         log.debug("rucio _exists: %s", rel_path)
 
@@ -388,26 +389,27 @@ class RucioObjectStore(CachingConcreteObjectStore):
             log.debug("rucio _create: %s", rel_path)
         return self
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         rel_path = self._construct_path(obj, **kwargs)
         log.debug("rucio _size: %s", rel_path)
 
         if self._in_cache(rel_path):
+            size: Optional[int] = None
             try:
                 size = os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:
                 log.info("Could not get size of file '%s' in local cache, will try iRODS. Error: %s", rel_path, ex)
-            if size != 0:
+            if size is not None:
                 return size
         if self._exists(obj, **kwargs):
             return self._get_remote_size(rel_path)
         log.warning("Did not find dataset '%s', returning 0 for size", rel_path)
         return 0
 
-    def _get_remote_size(self, rel_path):
+    def _get_remote_size(self, rel_path) -> int:
         return self.rucio_broker.get_size(rel_path)
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get("extra_dir", None)
         base_dir = kwargs.get("base_dir", None)
@@ -455,12 +457,11 @@ class RucioObjectStore(CachingConcreteObjectStore):
             log.debug("Failed to get auth token: %s", e)
             return None
 
-    def _get_filename(self, obj, **kwargs):
+    def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         auth_token = self._get_token(**kwargs)
         rel_path = self._construct_path(obj, **kwargs)
-        sync_cache = kwargs.get("sync_cache", True)
 
         log.debug("rucio _get_filename: %s", rel_path)
 
@@ -509,7 +510,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
         log.debug("rucio _register_file: %s", file_name)
         return
 
-    def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
+    def _update_from_file(
+        self, obj, file_name=None, create: bool = False, preserve_symlinks: bool = False, **kwargs
+    ) -> None:
         rel_path = self._construct_path(obj, **kwargs)
         log.debug("rucio _update_from_file: %s", rel_path)
 

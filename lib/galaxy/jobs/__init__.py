@@ -1319,7 +1319,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
         return self.__working_directory
 
-    def working_directory_exists(self):
+    def working_directory_exists(self) -> bool:
         job = self.get_job()
         return self.app.object_store.exists(job, base_dir="job_work", dir_only=True, obj_dir=True)
 
@@ -2117,7 +2117,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         return state
 
-    def cleanup(self, delete_files=True):
+    def cleanup(self, delete_files: bool = True) -> None:
         # At least one of these tool cleanup actions (job import), is needed
         # for the tool to work properly, that is why one might want to run
         # cleanup but not delete files.
@@ -2130,9 +2130,7 @@ class MinimalJobWrapper(HasResourceParameters):
                         if e.errno != errno.ENOENT:
                             raise
             if delete_files:
-                self.object_store.delete(
-                    self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
-                )
+                self.object_store.delete(self.get_job(), base_dir="job_work", entire_dir=True, obj_dir=True)
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
