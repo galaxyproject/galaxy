@@ -5827,9 +5827,9 @@ on Human (hg18)``.
     <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
 
-  <xs:group name="OutputCollectionElement">
+  <!-- Allowed tags included in collection-data -->
+  <xs:group name="OutputCollectionDataElement">
     <xs:choice>
-      <xs:element name="data" type="OutputCollectionDataElement" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
       <xs:element name="actions" type="Actions" />
@@ -5837,7 +5837,18 @@ on Human (hg18)``.
     </xs:choice>
   </xs:group>
 
-  <xs:complexType name="OutputCollectionDataElement">
+  <!-- Allowed tags included in collection -->
+  <xs:group name="OutputCollectionElement">
+    <xs:choice>
+      <xs:element name="data" type="OutputCollectionData" />
+      <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
+      <xs:element name="filter" type="OutputFilter" />
+      <xs:element name="actions" type="Actions" />
+      <xs:element name="change_format" type="ChangeFormat" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="OutputCollectionData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -5846,7 +5857,7 @@ define the elements of a collection statically. See also [Planemo's documentatio
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionDataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon" />
     <xs:attributeGroup ref="OutputDataAttributes" />
