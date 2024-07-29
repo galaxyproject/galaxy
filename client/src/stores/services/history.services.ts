@@ -1,7 +1,9 @@
 import axios, { type AxiosResponse } from "axios";
 
-import type { AnyHistory } from "@/api";
+import type { AnyHistory, HistorySummaryExtended } from "@/api";
+import { client } from "@/api";
 import { prependPath } from "@/utils/redirect";
+import { rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Generic json getter
@@ -26,11 +28,6 @@ function formData(fields = {} as Record<string, any>) {
     }, new FormData());
 }
 
-/** Default history request parameters. */
-const stdHistoryParams = {
-    view: "summary",
-};
-
 /**
  * Extended history request parameters.
  * Retrieves additional details which are usually more "expensive".
@@ -51,24 +48,6 @@ export async function createAndSelectNewHistory() {
     if (!newHistoryId) {
         throw new Error("failed to create and select new history");
     }
-    return doResponse(response);
-}
-
-/**
- * Generates copy of history on server.
- * @param history Source history
- * @param name New history name
- * @param copyAll Copy existing contents
- */
-export async function cloneHistory(history: AnyHistory, name: string, copyAll: boolean) {
-    const url = "api/histories";
-    const payload = {
-        name,
-        current: true,
-        all_datasets: copyAll,
-        history_id: history.id,
-    };
-    const response = await axios.post(prependPath(url), payload, { params: stdHistoryParams });
     return doResponse(response);
 }
 
@@ -102,6 +81,9 @@ export async function setCurrentHistoryOnServer(historyId: string) {
  * @return list of histories
  */
 export async function getHistoryList(offset = 0, limit: number | null = null, queryString = "") {
+    // TODO: to convert this to openapi-fetch we need to fix the query string handling
+    // in the caller code to use the query object instead of a string
+
     const params = `view=summary&order=update_time&offset=${offset}`;
     let url = `api/histories?${params}`;
     if (limit !== null) {
@@ -114,23 +96,22 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
     return doResponse(response);
 }
 
-/**
- * Get number of histories for current user from server and return them.
- * @return number of histories
- */
-export async function getHistoryCount() {
-    // This url is temp. for this PR, waiting on:
-    // https://github.com/galaxyproject/galaxy/pull/16075
-    const url = "api/histories/count";
-    const response = await axios.get(prependPath(url));
-    return doResponse(response);
-}
-
 /** Load one history by id */
 export async function getHistoryByIdFromServer(id: string) {
-    const path = `api/histories/${id}`;
-    const response = await axios.get(prependPath(path), { params: extendedHistoryParams });
-    return doResponse(response);
+    const { data, error } = await client.GET("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: id },
+            query: extendedHistoryParams,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    // We know that the data is a HistorySummaryExtended because we requested it
+    // with the extendedHistoryParams
+    return data as HistorySummaryExtended;
 }
 
 /**
@@ -156,7 +137,19 @@ export async function secureHistoryOnServer(history: AnyHistory) {
  * @return the updated history
  */
 export async function updateHistoryFields(historyId: string, payload: Record<string, any>) {
-    const url = `api/histories/${historyId}`;
-    const response = await axios.put(prependPath(url), payload, { params: extendedHistoryParams });
-    return doResponse(response);
+    const { data, error } = await client.PUT("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: historyId },
+            query: extendedHistoryParams,
+        },
+        body: payload,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    // We know that the data is a HistorySummaryExtended because we requested it
+    // with the extendedHistoryParams
+    return data as HistorySummaryExtended;
 }

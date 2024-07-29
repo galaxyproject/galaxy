@@ -5,6 +5,7 @@ import {
     type AnyHistory,
     client,
     type HistoryContentsStats,
+    type HistoryDetailed,
     type HistoryDevDetailed,
     type HistorySummary,
     type HistorySummaryExtended,
@@ -13,11 +14,9 @@ import { type ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
-    cloneHistory,
     createAndSelectNewHistory,
     getCurrentHistoryFromServer,
     getHistoryByIdFromServer,
-    getHistoryCount,
     getHistoryList,
     secureHistoryOnServer,
     setCurrentHistoryOnServer,
@@ -172,7 +171,21 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
-        const newHistory = (await cloneHistory(history, name, copyAll)) as HistorySummary;
+        const { data, error } = await client.POST("/api/histories", {
+            params: { query: { view: "detailed" } },
+            body: {
+                name,
+                all_datasets: copyAll,
+                history_id: history.id,
+                archive_type: undefined,
+            },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const newHistory = data as HistoryDetailed;
         await handleTotalCountChange(1);
         return setCurrentHistory(newHistory.id);
     }
@@ -287,7 +300,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadTotalHistoryCount() {
-        totalHistoryCount.value = await getHistoryCount();
+        const { data, error } = await client.GET("/api/histories/count");
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        totalHistoryCount.value = data;
     }
 
     /** TODO:
