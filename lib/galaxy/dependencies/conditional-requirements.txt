@@ -61,7 +61,7 @@ weasyprint>=61.2
 # not compatible with the last weasyprint version that still supports python 3.8.
 # This dependency is ignored on python >= 3.9 and should be removed when deprecating
 # support for python 3.8.
-pydyf<0.12; python_version<"3.9"
+pydyf<0.11; python_version<"3.9"
 
 # AWS Batch runner
 boto3
