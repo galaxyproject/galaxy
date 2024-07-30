@@ -15,8 +15,8 @@ from galaxy.files.templates.models import (
     PosixFileSourceTemplateConfiguration,
     S3FSFileSourceConfiguration,
     S3FSFileSourceTemplateConfiguration,
-    WebdavFileSourceTemplateConfiguration,
     WebdavFileSourceConfiguration,
+    WebdavFileSourceTemplateConfiguration,
 )
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
