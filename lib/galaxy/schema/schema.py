@@ -1456,11 +1456,6 @@ class UpdateHistoryPayload(Model):
     genome_build: Optional[str] = None
     preferred_object_store_id: Optional[str] = None
 
-    # Potentially deprecated fields that are registered in the deserializer
-    # TODO: Expose or remove?
-    # user_rating: Optional[int] = None
-    # users_shared_with: Optional[List[DecodedDatabaseIdField]] = None
-
 
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
