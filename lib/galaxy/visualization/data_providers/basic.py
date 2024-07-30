@@ -30,7 +30,7 @@ class BaseDataProvider:
         self.dependencies = dependencies
         self.error_max_vals = error_max_vals
 
-    def has_data(self, **kwargs):
+    def has_data(self, chrom):
         """
         Returns true if dataset has data in the specified genome window, false
         otherwise.
