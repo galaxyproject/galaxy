@@ -77,4 +77,33 @@ will result in the following::
     chr2  100000030  200000955  P  0  +
     chr2  100000015  200000999  Q  0  +
     ]]></help>
+    <citations>
+        <citation type="doi">10.1093/bioinformatics/btp352</citation>
+    </citations>
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
+    <funding>
+        <grant 
+            name="EuroScienceGateway"
+            description="EuroScienceGateway will leverage a distributed computing network across 
+            13 European countries, accessible via 6 national, user-friendly web portals, 
+            facilitating access to compute and storage infrastructures across Europe as well as to data, 
+            tools, workflows and services that can be customized to suit researchers' needs."
+            identifier="101057388"
+            url="https://cordis.europa.eu/project/id/101057388"
+            blub="random text">
+                <funder>
+                    <organization
+                        url="https://ec.europa.eu/info/departments/informatics_en"
+                        name="European Commission" />
+                </funder>
+            </grant>
+    </funding>
 </tool>
