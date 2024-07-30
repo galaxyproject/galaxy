@@ -30,13 +30,6 @@ class BaseDataProvider:
         self.dependencies = dependencies
         self.error_max_vals = error_max_vals
 
-    def has_data(self, chrom):
-        """
-        Returns true if dataset has data in the specified genome window, false
-        otherwise.
-        """
-        raise Exception("Unimplemented Function")
-
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         """
         Returns an iterator that provides data in the region chrom:start-end
