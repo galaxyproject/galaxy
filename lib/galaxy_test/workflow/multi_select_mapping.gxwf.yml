@@ -1,0 +1,14 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: list
+outputs:
+  output:
+    outputSource: map_over_multi_select/output2
+steps:
+  map_over_multi_select:
+    tool_id: multi_select
+    in:
+      select_ex: input
+      select_optional: input
