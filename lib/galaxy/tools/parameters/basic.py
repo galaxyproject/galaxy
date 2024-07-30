@@ -1668,9 +1668,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         elif not self.dynamic_options:
             recurse_option_elems(self.options, elem.find("options").findall("option"))
 
-    def _get_options_from_code(self, trans=None, value=None, other_values=None):
+    def _get_options_from_code(self, trans=None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")
-        call_other_values = ExpressionContext({"__trans__": trans, "__value__": value})
+        call_other_values = ExpressionContext({"__trans__": trans, "__value__": None})
         if other_values:
             call_other_values.parent = other_values.parent
             call_other_values.update(other_values.dict)
@@ -1679,11 +1679,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, value=None, other_values=None):
+    def get_options(self, trans=None, other_values=None):
         other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
-                options = self._get_options_from_code(trans=trans, value=value, other_values=other_values)
+                options = self._get_options_from_code(trans=trans, other_values=other_values)
             else:
                 options = []
             for filter_key, filter_value in self.filtered.items():
