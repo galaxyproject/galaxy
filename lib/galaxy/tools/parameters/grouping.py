@@ -29,7 +29,7 @@ from galaxy.util import (
     sanitize_for_filename,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ URI_PREFIXES = [
 ]
 
 
-class Group(Dictifiable):
+class Group(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["name", "type"]
     type: str
 
@@ -87,7 +87,7 @@ class Group(Dictifiable):
         raise TypeError("Not implemented")
 
     def to_dict(self, trans):
-        group_dict = super().to_dict()
+        group_dict = self._dictify_view_keys()
         return group_dict
 
 
@@ -822,7 +822,7 @@ class Conditional(Group):
         return cond_dict
 
 
-class ConditionalWhen(Dictifiable):
+class ConditionalWhen(UsesDictVisibleKeys):
     dict_collection_visible_keys = ["value"]
 
     def __init__(self):
@@ -832,7 +832,7 @@ class ConditionalWhen(Dictifiable):
     def to_dict(self, trans):
         if self.inputs is None:
             raise Exception("Must set 'inputs' attribute to use.")
-        when_dict = super().to_dict()
+        when_dict = self._dictify_view_keys()
 
         def input_to_dict(input):
             return input.to_dict(trans)

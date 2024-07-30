@@ -60,12 +60,6 @@ class BaseDataProvider:
         iterator = self.get_iterator(chrom, start, end)
         return self.process_data(iterator, start_val, max_vals, **kwargs)
 
-    def write_data_to_file(self, filename, **kwargs):
-        """
-        Write data in region defined by chrom, start, and end to a file.
-        """
-        raise Exception("Unimplemented Function")
-
 
 class ColumnDataProvider(BaseDataProvider):
     """Data provider for columnar data"""

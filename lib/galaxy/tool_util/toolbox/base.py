@@ -33,7 +33,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dictifiable import Dictifiable
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -134,7 +133,7 @@ class NullToolTagManager(AbstractToolTagManager):
         return None
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
+class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.

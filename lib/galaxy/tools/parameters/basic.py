@@ -55,7 +55,7 @@ from galaxy.util import (
     unicodify,
     XML,
 )
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
@@ -161,7 +161,7 @@ class ParameterValueError(ValueError):
         return as_dict
 
 
-class ToolParameter(Dictifiable):
+class ToolParameter(UsesDictVisibleKeys):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
@@ -318,7 +318,7 @@ class ToolParameter(Dictifiable):
     def to_dict(self, trans, other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
         other_values = other_values or {}
-        tool_dict = super().to_dict()
+        tool_dict = self._dictify_view_keys()
         tool_dict["model_class"] = self.__class__.__name__
         tool_dict["optional"] = self.optional
         tool_dict["hidden"] = self.hidden

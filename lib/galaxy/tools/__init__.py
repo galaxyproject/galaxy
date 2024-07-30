@@ -164,7 +164,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import get_fileobj_raw
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import (
@@ -730,7 +730,7 @@ class _Options(Bunch):
     refresh: str
 
 
-class Tool(Dictifiable):
+class Tool(UsesDictVisibleKeys):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -2397,7 +2397,7 @@ class Tool(Dictifiable):
         """Returns dict of tool."""
 
         # Basic information
-        tool_dict = super().to_dict()
+        tool_dict = self._dictify_view_keys()
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics

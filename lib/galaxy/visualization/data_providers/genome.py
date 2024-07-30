@@ -185,12 +185,6 @@ class GenomeDataProvider(BaseDataProvider):
             error_max_vals=error_max_vals,
         )
 
-    def write_data_to_file(self, regions, filename):
-        """
-        Write data in region defined by chrom, start, and end to a file.
-        """
-        raise Exception("Unimplemented Function")
-
     def valid_chroms(self):
         """
         Returns chroms/contigs that the dataset contains
@@ -384,14 +378,6 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
 
         return iterator
 
-    def write_data_to_file(self, regions, filename):
-        with self.open_data_file() as data_file, open(filename, "w") as out:
-            for region in regions:
-                # Write data in region.
-                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-                for line in iterator:
-                    out.write(f"{line}\n")
-
 
 #
 # -- Interval data providers --
@@ -467,9 +453,6 @@ class IntervalDataProvider(GenomeDataProvider):
             rval.append(payload)
 
         return {"data": rval, "message": message}
-
-    def write_data_to_file(self, regions, filename):
-        raise Exception("Unimplemented Function")
 
 
 class IntervalTabixDataProvider(TabixDataProvider, IntervalDataProvider):
@@ -560,18 +543,6 @@ class BedDataProvider(GenomeDataProvider):
             rval.append(payload)
 
         return {"data": rval, "dataset_type": self.dataset_type, "message": message}
-
-    def write_data_to_file(self, regions, filename):
-        with open(filename, "w") as out:
-            for region in regions:
-                # Write data in region.
-                chrom = region.chrom
-                start = region.start
-                end = region.end
-                with self.open_data_file() as data_file:
-                    iterator = self.get_iterator(data_file, chrom, start, end)
-                    for line in iterator:
-                        out.write(f"{line}\n")
 
 
 class BedTabixDataProvider(TabixDataProvider, BedDataProvider):
@@ -757,15 +728,6 @@ class VcfDataProvider(GenomeDataProvider):
 
         return {"data": data, "message": message}
 
-    def write_data_to_file(self, regions, filename):
-        out = open(filename, "w")
-        with self.open_data_file() as data_file:
-            for region in regions:
-                # Write data in region.
-                iterator = self.get_iterator(data_file, region.chrom, region.start, region.end)
-                for line in iterator:
-                    out.write(f"{line}\n")
-
 
 class VcfTabixDataProvider(TabixDataProvider, VcfDataProvider):
     """
@@ -843,43 +805,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         filters = []
         filters.append({"name": "Mapping Quality", "type": "number", "index": filter_col})
         return filters
-
-    def write_data_to_file(self, regions, filename):
-        """
-        Write reads in regions to file.
-        """
-
-        # Open current BAM file using index.
-        bamfile = pysam.AlignmentFile(
-            self.original_dataset.get_file_name(), mode="rb", index_filename=self.converted_dataset.get_file_name()
-        )
-
-        # TODO: write headers as well?
-        new_bamfile = pysam.AlignmentFile(filename, template=bamfile, mode="wb")
-
-        for region in regions:
-            # Write data from region.
-            chrom = region.chrom
-            start = region.start
-            end = region.end
-
-            try:
-                data = bamfile.fetch(start=start, end=end, reference=chrom)
-            except ValueError:
-                # Try alternative chrom naming.
-                chrom = _convert_between_ucsc_and_ensemble_naming(chrom)
-                try:
-                    data = bamfile.fetch(start=start, end=end, reference=chrom)
-                except ValueError:
-                    return None
-
-            # Write reads in region.
-            for read in data:
-                new_bamfile.write(read)
-
-        # Cleanup.
-        new_bamfile.close()
-        bamfile.close()
 
     @contextmanager
     def open_data_file(self):
@@ -1327,27 +1252,6 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
     col_name_data_attr_mapping = {4: {"index": 4, "name": "Score"}}
 
     dataset_type = "interval_index"
-
-    def write_data_to_file(self, regions, filename):
-        index = Indexes(self.converted_dataset.get_file_name())
-        with open(self.original_dataset.get_file_name()) as source, open(filename, "w") as out:
-            for region in regions:
-                # Write data from region.
-                chrom = region.chrom
-                start = region.start
-                end = region.end
-                for _start, _end, offset in index.find(chrom, start, end):
-                    source.seek(offset)
-
-                    # HACK: write differently depending on original dataset format.
-                    if self.original_dataset.ext not in ["gff", "gff3", "gtf"]:
-                        line = source.readline()
-                        out.write(line)
-                    else:
-                        reader = GFFReaderWrapper(source, fix_strand=True)
-                        feature = next(reader)
-                        for interval in feature.intervals:
-                            out.write("\t".join(interval.fields) + "\n")
 
     @contextmanager
     def open_data_file(self):
