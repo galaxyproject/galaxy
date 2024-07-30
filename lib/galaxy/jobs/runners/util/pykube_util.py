@@ -95,11 +95,7 @@ def find_pod_object_by_name(pykube_api, job_name, namespace=None):
 
 
 def is_pod_running(pykube_api, pod, namespace=None):
-    is_running = all(
-        c.get("state", {}).get("running", {}).get("startedAt", False)
-        for c in pod.obj["status"].get("containerStatuses", [])
-    )
-    if pod.obj["status"].get("phase") == "Running" and is_running:
+    if pod.obj["status"].get("phase") == "Running":
         return True
 
     return False
