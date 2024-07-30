@@ -98,7 +98,10 @@ def _chrom_naming_matches(chrom1, chrom2):
     )
 
 
-class FeatureLocationIndexDataProvider(BaseDataProvider):
+# Was previously a BaseDataProvider but it doesn't have the same interface or use any of
+# the parent methods. It is also only used explicitly, constructed by name, and access with
+# get_data directly using a specified query.
+class FeatureLocationIndexDataProvider:
     """
     Reads/writes/queries feature location index (FLI) datasets.
     """
