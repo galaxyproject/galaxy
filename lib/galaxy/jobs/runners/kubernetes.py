@@ -808,7 +808,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                         job_state.running = True
                         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                     else:
-                        log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name} scheduled and is waiting to start...")
+                        log.debug(
+                            f"Job id: {job_state.job_id} with k8s id: {job.name} scheduled and is waiting to start..."
+                        )
                 return job_state
             elif job_persisted_state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job and job has not been deleted,
