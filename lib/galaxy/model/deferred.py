@@ -177,7 +177,10 @@ class DatasetInstanceMaterializer:
         return materialized_dataset_instance
 
     def _stream_source(self, target_source: DatasetSource, datatype) -> str:
-        path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
+        source_uri = target_source.source_uri
+        if source_uri is None:
+            raise Exception("Cannot stream from dataset source without specified source_uri")
+        path = stream_url_to_file(source_uri, file_sources=self._file_sources)
         transform = target_source.transform or []
         to_posix_lines = False
         spaces_to_tabs = False

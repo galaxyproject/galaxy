@@ -43,7 +43,7 @@ class IdentityProvider:
     def refresh(self, trans, token):
         raise NotImplementedError()
 
-    def authenticate(self, provider, trans):
+    def authenticate(self, trans, idphint=None):
         """Runs for authentication process. Checks the database if a
         valid identity exists in the database; if yes, then the  user
         is authenticated, if not, it generates a provider-specific
@@ -72,7 +72,7 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None, email=None, association_id=None):
         raise NotImplementedError()
 
     def logout(self, trans, post_user_logout_href=None):
