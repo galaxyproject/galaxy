@@ -57,6 +57,7 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     SharingStatus,
     StoreExportPayload,
+    UpdateHistoryPayload,
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
@@ -457,13 +458,14 @@ class FastAPIHistories:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        payload: Any = Body(
+        payload: UpdateHistoryPayload = Body(
             ...,
             description="Object containing any of the editable fields of the history.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
-        return self.service.update(trans, history_id, payload, serialization_params)
+        data = payload.model_dump(exclude_unset=True)
+        return self.service.update(trans, history_id, data, serialization_params)
 
     @router.post(
         "/api/histories/from_store",
