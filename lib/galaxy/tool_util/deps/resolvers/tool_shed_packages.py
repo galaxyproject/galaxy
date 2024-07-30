@@ -31,7 +31,7 @@ class ToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver, Use
         else:
             return NullDependency(version=version, name=name)
 
-    def _find_dep_default(self, name, type="package", **kwds):
+    def _find_dep_default(self, name, type="package", exact=True, **kwds):
         if type == "set_environment" and kwds.get("installed_tool_dependencies", None):
             installed_tool_dependency = self._get_installed_dependency(name, type, version=None, **kwds)
             if installed_tool_dependency:
