@@ -44,6 +44,8 @@ from galaxy.model import DatasetInstance
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 
+IntWebParam = Union[str, int]
+
 #
 # Utility functions.
 #
@@ -194,7 +196,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         return None  # by default
 
-    def has_data(self, chrom, start, end, **kwargs):
+    def has_data(self, chrom):
         """
         Returns true if dataset has data in the specified genome window, false
         otherwise.
@@ -214,13 +216,13 @@ class GenomeDataProvider(BaseDataProvider):
         """
         raise Exception("Unimplemented Function")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Process data from an iterator to a format that can be provided to client.
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom=None, low=None, high=None, start_val=0, max_vals=sys.maxsize, **kwargs):
+    def get_data(self, chrom: str, start: IntWebParam, end: IntWebParam, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns data in region defined by chrom, start, and end. start_val and
         max_vals are used to denote the data to return: start_val is the first element to
@@ -229,7 +231,7 @@ class GenomeDataProvider(BaseDataProvider):
         Return value must be a dictionary with the following attributes:
             dataset_type, data
         """
-        start, end = int(low), int(high)
+        start, end = int(start), int(end)
         with self.open_data_file() as data_file:
             iterator = self.get_iterator(data_file, chrom, start, end, **kwargs)
             data = self.process_data(iterator, start_val, max_vals, start=start, end=end, **kwargs)
@@ -399,7 +401,7 @@ class IntervalDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Function")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -481,7 +483,7 @@ class BedDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Method")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -619,7 +621,7 @@ class VcfDataProvider(GenomeDataProvider):
 
     dataset_type = "variant"
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns a dict with the following attributes::
 
@@ -841,7 +843,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
         self,
         iterator,
         start_val=0,
-        max_vals=None,
+        max_vals=sys.maxsize,
         ref_seq=None,
         iterator_type="nth",
         mean_depth=None,
@@ -1117,7 +1119,7 @@ class BBIDataProvider(GenomeDataProvider):
         f.close()
         return all_dat is not None
 
-    def get_data(self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs):
+    def get_data(self, chrom: str, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
         start = int(start)
         end = int(end)
 
@@ -1189,7 +1191,7 @@ class BBIDataProvider(GenomeDataProvider):
             return result
 
         # Approach is different depending on region size.
-        num_samples = int(num_samples)
+        num_samples = int(kwargs.get("num_samples", 100))
         if end - start < num_samples:
             # Get values for individual bases in region, including start and end.
             # To do this, need to increase end to next base and request number of points.
@@ -1271,7 +1273,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
 
         return data_file.find(chrom, start, end)
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         results = []
         message = None
         with open(self.original_dataset.get_file_name()) as source:
@@ -1345,7 +1347,7 @@ class RawGFFDataProvider(GenomeDataProvider):
 
         return features_in_region_iter()
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Process data from an iterator to a format that can be provided to client.
         """
@@ -1373,7 +1375,7 @@ class GtfTabixDataProvider(TabixDataProvider):
     Returns data from GTF datasets that are indexed via tabix.
     """
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         # Loop through lines and group by transcript_id; each group is a feature.
 
         # TODO: extend this code or use code in gff_util to process GFF/3 as well
@@ -1428,7 +1430,7 @@ class ENCODEPeakDataProvider(GenomeDataProvider):
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Method")
 
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
@@ -1528,7 +1530,7 @@ class ENCODEPeakTabixDataProvider(TabixDataProvider, ENCODEPeakDataProvider):
 
 
 class ChromatinInteractionsDataProvider(GenomeDataProvider):
-    def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
+    def process_data(self, iterator, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Provides
         """
