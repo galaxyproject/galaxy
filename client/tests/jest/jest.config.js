@@ -59,8 +59,12 @@ module.exports = {
     modulePathIgnorePatterns: ["<rootDir>/src/.*/__mocks__"],
     rootDir: path.join(__dirname, "../../"),
     roots: ["<rootDir>/src/", "<rootDir>/tests/jest/standalone/"],
+    setupFiles: ["<rootDir>/tests/jest/jest.polyfills.js"],
     setupFilesAfterEnv: ["<rootDir>/tests/jest/jest.setup.js"],
     testEnvironment: "<rootDir>/tests/jest/jest-environment.js",
+    testEnvironmentOptions: {
+        customExportConditions: ["msw"],
+    },
     testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",
