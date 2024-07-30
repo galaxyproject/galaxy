@@ -9,7 +9,9 @@ from typing import (
     cast,
     Dict,
     List,
+    Optional,
     Set,
+    Tuple,
     TYPE_CHECKING,
     Union,
 )
@@ -24,6 +26,7 @@ from galaxy.exceptions import (
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
+    History,
     HistoryDatasetAssociation,
     Job,
     LibraryDatasetDatasetAssociation,
@@ -31,12 +34,23 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+    ToolParameterRequestInstanceT,
+)
 from galaxy.tools.execution_helpers import (
-    ToolExecutionCache,
     filter_output,
     on_text_for_names,
+    ToolExecutionCache,
 )
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
@@ -59,6 +73,10 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+OutputDatasetsT = Dict[str, "DatasetInstance"]
+ToolActionExecuteResult = Union[Tuple[Job, OutputDatasetsT, Optional[History]], Tuple[Job, OutputDatasetsT]]
+
+
 class ToolAction:
     """
     The actions to be taken when a tool is run (after parameters have
@@ -66,14 +84,31 @@ class ToolAction:
     """
 
     @abstractmethod
-    def execute(self, tool, trans, incoming=None, set_output_hid=True, **kwargs):
-        pass
+    def execute(
+        self,
+        tool,
+        trans,
+        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        history: Optional[History] = None,
+        job_params=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
+        """Perform target tool action."""
 
 
 class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
 
-    produces_real_jobs = True
+    produces_real_jobs: bool = True
 
     def _collect_input_datasets(
         self,
@@ -366,21 +401,20 @@ class DefaultToolAction(ToolAction):
         self,
         tool,
         trans,
-        incoming=None,
-        return_job=False,
-        set_output_hid=True,
-        history=None,
+        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        history: Optional[History] = None,
         job_params=None,
-        rerun_remap_job_id=None,
-        execution_cache=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
         dataset_collection_elements=None,
-        completed_job=None,
-        collection_info=None,
-        job_callback=None,
-        preferred_object_store_id=None,
-        flush_job=True,
-        skip=False,
-    ):
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -401,6 +435,7 @@ class DefaultToolAction(ToolAction):
             preserved_hdca_tags,
             all_permissions,
         ) = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        assert history  # tell type system we've set history and it is no longer optional
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -823,7 +858,7 @@ class DefaultToolAction(ToolAction):
 
         return on_text_for_names(input_names)
 
-    def _new_job_for_session(self, trans, tool, history):
+    def _new_job_for_session(self, trans, tool, history) -> Tuple[model.Job, Optional[model.GalaxySession]]:
         job = trans.app.model.Job()
         job.galaxy_version = trans.app.config.version_major
         galaxy_session = None

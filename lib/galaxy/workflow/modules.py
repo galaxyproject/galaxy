@@ -52,12 +52,12 @@ from galaxy.tools import (
     DefaultToolState,
     get_safe_version,
 )
-from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import (
     execute,
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.execution_helpers import filter_output
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
