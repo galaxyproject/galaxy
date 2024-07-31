@@ -3,8 +3,8 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocationElementView } from "@/api/invocations";
-import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
+import type { Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
 import {
@@ -34,13 +34,12 @@ interface Props {
     jobStatesSummary: InvocationJobsSummary;
     index?: number;
     isSubworkflow?: boolean;
+    workflow?: Workflow;
 }
 
 const props = defineProps<Props>();
 
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
-
-const { workflow } = useWorkflowInstance(props.invocation?.workflow_id ?? "");
 
 const invocationId = computed<string | undefined>(() => props.invocation?.id);
 
@@ -227,11 +226,11 @@ function onCancel() {
         </div>
         <!-- An invocation has been loaded, display the graph -->
         <div v-if="invocation">
-            <div v-if="workflow && !isSubworkflow">
+            <div v-if="props.workflow && !isSubworkflow">
                 <InvocationGraph
                     class="mt-1"
                     :invocation="invocation"
-                    :workflow="workflow"
+                    :workflow="props.workflow"
                     :is-terminal="invocationAndJobTerminal"
                     :is-scheduled="invocationSchedulingTerminal"
                     :is-full-page="isFullPage"
