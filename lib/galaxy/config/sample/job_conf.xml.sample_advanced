@@ -629,6 +629,24 @@
                argument by default. You can turn this off by setting singularity_cleanenv to `false`.
           -->
           <!-- <param id="singularity_cleanenv">true</param> -->
+          <!-- Singularity by default inherits the PID namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `pid` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_pid to `false`.
+          -->
+          <!-- <param id="singularity_pid">true</param> -->
+          <!-- Singularity by default inherits the IPC namespace, this can give
+               issues with multiprocessing, hence galaxy passes the `ipc` argument
+               by default to isolate the PID namespace. You can turn this of by setting
+               singularity_ipc to `false`.
+          -->
+          <!-- <param id="singularity_ipc">true</param> -->
+          <!-- Singularity mounts $HOME by default. This can be problematic if home
+               contains sensitive data, is shared across nodes or has configuration
+               files affecting reproducibility. Therefore Galaxy passes the `contain`
+               argument to isolate $HOME. If $HOME must be mounted, it can be
+               turned on by setting singularity_mount_home to `true`. -->
+          <!-- <param id="singularity_mount_home">false</param> -->
           <!-- Pass extra arguments to the singularity exec command not covered by the
                above options. -->
           <!-- <param id="singularity_run_extra_arguments"></param> -->
