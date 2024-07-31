@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useToolStore } from "@/stores/toolStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -27,6 +28,11 @@ const services = new Services();
 const { config } = useConfig(true);
 const { panel, fetchPanel } = useToolStore();
 
+const repositoryWatcher = useResourceWatcher(loadInstalledRepositories, {
+    shortPollingInterval: 2000,
+    enableBackgroundPolling: false,
+});
+
 const repoChecked = "fa fa-check text-success";
 const repoUnchecked = "fa fa-times text-danger";
 const repoFields = [
@@ -37,8 +43,6 @@ const repoFields = [
     { key: "status" },
     { key: "actions", label: "", class: "toolshed-repo-actions" },
 ];
-const delay = 2000;
-let watchTimeout = null;
 
 const selectedChangeset = ref();
 const selectedRequiresPanel = ref(false);
@@ -55,7 +59,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    stopPolling();
+    stopWatchingResource();
 });
 
 async function load() {
@@ -79,13 +83,12 @@ async function loadInstalledRepositories() {
                 x.status = revision.status;
                 x.installed = revision.installed;
                 changed = true;
-                return false;
+                return;
             }
         });
         if (changed) {
             repoTable.value = [...repoTable.value];
         }
-        startPolling();
     } catch (e) {
         error.value = errorMessageAsString(e);
     } finally {
@@ -93,11 +96,15 @@ async function loadInstalledRepositories() {
     }
 }
 
-async function onOk(details) {
-    console.debug("onOk", details);
+function isFinalState(status) {
+    return ["Error", "Installed", "Uninstalled"].includes(status);
+}
+
+async function onInstallRepository(details) {
     try {
         await services.installRepository(details);
         showSettings.value = false;
+        startWatchingResource();
     } catch (e) {
         error.value = errorMessageAsString(e);
     }
@@ -122,23 +129,18 @@ async function uninstallRepository(details) {
             owner: props.repo.owner,
             changeset_revision: details.changeset_revision,
         });
+        startWatchingResource();
     } catch (e) {
         error.value = errorMessageAsString(e);
     }
 }
 
-function stopPolling() {
-    if (watchTimeout) {
-        clearTimeout(watchTimeout);
-        watchTimeout = null;
-    }
+function startWatchingResource() {
+    repositoryWatcher.startWatchingResource();
 }
 
-function startPolling() {
-    stopPolling();
-    watchTimeout = setTimeout(() => {
-        loadInstalledRepositories();
-    }, delay);
+function stopWatchingResource() {
+    repositoryWatcher.stopWatchingResource();
 }
 </script>
 
@@ -174,9 +176,7 @@ function startPolling() {
                         </template>
                         <template v-slot:cell(status)="row">
                             <span v-if="row.item.status">
-                                <span
-                                    v-if="!['Error', 'Installed', 'Uninstalled'].includes(row.item.status)"
-                                    class="fa fa-spinner fa-spin" />
+                                <span v-if="!isFinalState(row.item.status)" class="fa fa-spinner fa-spin" />
                                 {{ row.item.status }}
                             </span>
                             <span v-else> - </span>
@@ -189,7 +189,7 @@ function startPolling() {
                         </template>
                     </b-table>
                     <InstallationSettings
-                        v-if="showSettings"
+                        v-if="showSettings && selectedChangeset"
                         :repo="repo"
                         :toolshed-url="toolshedUrl"
                         :changeset-revision="selectedChangeset"
@@ -197,7 +197,7 @@ function startPolling() {
                         :current-panel="panel['default']"
                         :tool-dynamic-configs="config.tool_dynamic_configs"
                         @hide="onHide"
-                        @ok="onOk" />
+                        @ok="onInstallRepository" />
                 </div>
             </div>
         </div>
