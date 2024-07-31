@@ -33,6 +33,11 @@ from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools.execution_helpers import (
+    ToolExecutionCache,
+    filter_output,
+    on_text_for_names,
+)
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -52,34 +57,6 @@ if TYPE_CHECKING:
     from galaxy.tool_util.parser.output_objects import ToolOutput
 
 log = logging.getLogger(__name__)
-
-
-class ToolExecutionCache:
-    """An object mean to cache calculation caused by repeatedly evaluting
-    the same tool by the same user with slightly different parameters.
-    """
-
-    def __init__(self, trans):
-        self.trans = trans
-        self.current_user_roles = trans.get_current_user_roles()
-        self.chrom_info = {}
-        self.cached_collection_elements = {}
-
-    def get_chrom_info(self, tool_id, input_dbkey):
-        genome_builds = self.trans.app.genome_builds
-        custom_build_hack_get_len_from_fasta_conversion = tool_id != "CONVERTER_fasta_to_len"
-        if custom_build_hack_get_len_from_fasta_conversion and input_dbkey in self.chrom_info:
-            return self.chrom_info[input_dbkey]
-
-        chrom_info_pair = genome_builds.get_chrom_info(
-            input_dbkey,
-            trans=self.trans,
-            custom_build_hack_get_len_from_fasta_conversion=custom_build_hack_get_len_from_fasta_conversion,
-        )
-        if custom_build_hack_get_len_from_fasta_conversion:
-            self.chrom_info[input_dbkey] = chrom_info_pair
-
-        return chrom_info_pair
 
 
 class ToolAction:
@@ -1095,40 +1072,6 @@ class OutputCollections:
             # of the hdca.
             self.history.stage_addition(hdca)
             self.out_collection_instances[name] = hdca
-
-
-def on_text_for_names(input_names):
-    # input_names may contain duplicates... this is because the first value in
-    # multiple input dataset parameters will appear twice once as param_name
-    # and once as param_name1.
-    unique_names = []
-    for name in input_names:
-        if name not in unique_names:
-            unique_names.append(name)
-    input_names = unique_names
-
-    # Build name for output datasets based on tool name and input names
-    if len(input_names) == 0:
-        on_text = ""
-    elif len(input_names) == 1:
-        on_text = input_names[0]
-    elif len(input_names) == 2:
-        on_text = "{} and {}".format(*input_names)
-    elif len(input_names) == 3:
-        on_text = "{}, {}, and {}".format(*input_names)
-    else:
-        on_text = "{}, {}, and others".format(*input_names[:2])
-    return on_text
-
-
-def filter_output(tool, output, incoming):
-    for filter in output.filters:
-        try:
-            if not eval(filter.text.strip(), globals(), incoming):
-                return True  # do not create this dataset
-        except Exception as e:
-            log.debug(f"Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}")
-    return False
 
 
 def get_ext_or_implicit_ext(hda):

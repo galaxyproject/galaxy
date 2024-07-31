@@ -29,7 +29,7 @@ from galaxy.model.dataset_collections.structure import (
     tool_output_to_structure,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
-from galaxy.tools.actions import (
+from galaxy.tools.execution_helpers import (
     filter_output,
     on_text_for_names,
     ToolExecutionCache,
