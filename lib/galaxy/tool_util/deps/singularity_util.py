@@ -24,6 +24,7 @@ DEFAULT_CLEANENV = True
 DEFAULT_CONTAIN = True
 DEFAULT_IPC = True
 DEFAULT_PID = True
+DEFAULT_MOUNT_HOME = False
 DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
@@ -84,6 +85,7 @@ def build_singularity_run_command(
     ipc: bool = DEFAULT_IPC,
     pid: bool = DEFAULT_PID,
     contain: bool = DEFAULT_CONTAIN,
+    mount_home: bool = DEFAULT_MOUNT_HOME,
     no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
     volumes = volumes or []
@@ -116,7 +118,7 @@ def build_singularity_run_command(
         command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
-    if home is not None:
+    if mount_home and home is not None:
         command_parts.extend(["--home", f"{home}:{home}"])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
