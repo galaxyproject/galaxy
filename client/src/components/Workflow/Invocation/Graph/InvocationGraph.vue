@@ -212,7 +212,7 @@ function scrollStepToView() {
                 <BCardHeader
                     class="d-flex justify-content-between align-items-center"
                     :class="activeNodeId ? steps[activeNodeId]?.headerClass : ''">
-                    <Heading inline size="md" class="w-100 mr-2">
+                    <Heading inline size="sm" class="w-100 mr-2">
                         <WorkflowInvocationStepHeader
                             v-if="activeNodeId !== null"
                             class="w-100"
@@ -221,11 +221,15 @@ function scrollStepToView() {
                             :invocation-step="props.invocation.steps[activeNodeId]" />
                         <span v-else>No Step Selected</span>
                     </Heading>
-                    <div class="d-flex">
-                        <BButton v-if="activeNodeId !== null" title="Scroll to Step" @click="scrollStepToView()">
+                    <div class="d-flex flex-gapx-1">
+                        <BButton
+                            v-if="activeNodeId !== null"
+                            title="Scroll to Step"
+                            size="sm"
+                            @click="scrollStepToView()">
                             <FontAwesomeIcon :icon="faArrowDown" />
                         </BButton>
-                        <BButton v-if="activeNodeId !== null" title="Hide Step" @click="activeNodeId = null">
+                        <BButton v-if="activeNodeId !== null" title="Hide Step" size="sm" @click="activeNodeId = null">
                             <FontAwesomeIcon :icon="faTimes" />
                         </BButton>
                     </div>
