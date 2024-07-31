@@ -21,7 +21,6 @@ DEFAULT_SINGULARITY_COMMAND = "singularity"
 # the ipc namespace, this fixes some issues with python multiprocessing.
 # --cleanenv makes sure the current environment is not inherited.
 DEFAULT_CLEANENV = True
-DEFAULT_CONTAIN = True
 DEFAULT_IPC = True
 DEFAULT_PID = True
 DEFAULT_MOUNT_HOME = False
@@ -84,7 +83,6 @@ def build_singularity_run_command(
     cleanenv: bool = DEFAULT_CLEANENV,
     ipc: bool = DEFAULT_IPC,
     pid: bool = DEFAULT_PID,
-    contain: bool = DEFAULT_CONTAIN,
     mount_home: bool = DEFAULT_MOUNT_HOME,
     no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
@@ -104,6 +102,11 @@ def build_singularity_run_command(
     )
     command_parts.append("-s")
     command_parts.append("exec")
+    # Singularity mounts some directories, such as $HOME and $PWD by default.
+    # using --contain disables this behaviour and only allows explicitly
+    # requested volumes to be mounted. Since galaxy already mounts $PWD and
+    # mount_home can be activated, a switch for --contain is redundant.
+    command_parts.append("--contain")
     if working_directory:
         command_parts.extend(["--pwd", working_directory])
     if cleanenv:
@@ -112,8 +115,6 @@ def build_singularity_run_command(
         command_parts.append("--ipc")
     if pid:
         command_parts.append("--pid")
-    if contain:
-        command_parts.append("--contain")
     if no_mount:
         command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:
