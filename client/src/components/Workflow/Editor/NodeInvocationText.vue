@@ -2,16 +2,11 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { isWorkflowInput } from "@/components/Workflow/constants";
-import { type GraphStep, iconClasses } from "@/composables/useInvocationGraph";
+import { type GraphStep, iconClasses, statePlaceholders } from "@/composables/useInvocationGraph";
 
 const props = defineProps<{
     invocationStep: GraphStep;
 }>();
-
-const statePlaceholders: Record<string, string> = {
-    ok: "successful",
-    error: "failed",
-};
 </script>
 <template>
     <div class="p-1 unselectable">

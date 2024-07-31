@@ -8,6 +8,7 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
+import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, set } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -15,6 +16,7 @@ import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElemen
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
+import { useInvocationStore } from "@/stores/invocationStore";
 import { type Step } from "@/stores/workflowStepStore";
 import { type Workflow } from "@/stores/workflowStore";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -57,6 +59,11 @@ export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean;
     skipped: { icon: faForward, class: "text-warning" },
 };
 
+export const statePlaceholders: Record<string, string> = {
+    ok: "successful",
+    error: "failed",
+};
+
 /** Only one job needs to be in one of these states for the graph step to be in that state */
 const SINGLE_INSTANCE_STATES = ["error", "running", "paused"];
 /** All jobs need to be in one of these states for the graph step to be in that state */
@@ -78,6 +85,8 @@ export function useInvocationGraph(
     const storeId = computed(() => `invocation-${invocation.value.id}`);
 
     const lastStepsJobsSummary = ref<StepJobSummary[]>([]);
+    const invocationStore = useInvocationStore();
+    const { graphStepsByStoreId } = storeToRefs(invocationStore);
 
     /** The full invocation mapped onto the original workflow */
     const invocationGraph = ref<InvocationGraph | null>(null);
@@ -181,6 +190,10 @@ export function useInvocationGraph(
             if (!steps.value[i]) {
                 set(steps.value, i, graphStepFromWfStep);
             }
+
+            // update the invocation store's graph steps object
+            // TODO: Find a better way of doing this, instead of using two separate objects...?
+            set(graphStepsByStoreId.value, storeId.value, steps.value);
         }
 
         lastStepsJobsSummary.value = stepsJobsSummary;
