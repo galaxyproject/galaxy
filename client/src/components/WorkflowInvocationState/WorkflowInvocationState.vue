@@ -11,6 +11,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { cancelWorkflowScheduling } from "./services";
 import { isTerminal, jobCount, runningCount } from "./util";
 
+import WorkflowInvocationSteps from "../Workflow/Invocation/Graph/WorkflowInvocationSteps.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationHeader from "./WorkflowInvocationHeader.vue";
@@ -116,6 +117,8 @@ watch(
     { immediate: true }
 );
 
+const storeId = computed(() => (invocation.value ? `invocation-${invocation.value.id}` : undefined));
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -162,6 +165,14 @@ function cancelWorkflowSchedulingLocal() {
                     :job-states-summary="jobStatesSummary"
                     :is-subworkflow="isSubworkflow"
                     @invocation-cancelled="cancelWorkflowSchedulingLocal" />
+            </BTab>
+            <BTab title="Steps" lazy>
+                <WorkflowInvocationSteps
+                    v-if="invocation"
+                    :invocation="invocation"
+                    :store-id="storeId"
+                    :is-full-page="props.isFullPage"
+                    :showing-job-id="''" />
             </BTab>
             <WorkflowInvocationInputOutputTabs :invocation="invocation" />
             <!-- <BTab title="Workflow Overview">
