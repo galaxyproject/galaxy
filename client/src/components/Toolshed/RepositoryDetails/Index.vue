@@ -1,3 +1,147 @@
+<script setup>
+import { onMounted, onUnmounted, ref } from "vue";
+
+import { useConfig } from "@/composables/config";
+import { useToolStore } from "@/stores/toolStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { Services } from "../services";
+
+import InstallationActions from "./InstallationActions.vue";
+import InstallationSettings from "./InstallationSettings.vue";
+import RepositoryTools from "./RepositoryTools.vue";
+
+const props = defineProps({
+    repo: {
+        type: Object,
+        required: true,
+    },
+    toolshedUrl: {
+        type: String,
+        required: true,
+    },
+});
+
+const services = new Services();
+
+const { config } = useConfig(true);
+const { panel, fetchPanel } = useToolStore();
+
+const repoChecked = "fa fa-check text-success";
+const repoUnchecked = "fa fa-times text-danger";
+const repoFields = [
+    { key: "numeric_revision", label: "Revision" },
+    { key: "tools", label: "Tools and Versions" },
+    { key: "profile", label: "Requires" },
+    { key: "missing_test_components", label: "Tests" },
+    { key: "status" },
+    { key: "actions", label: "", class: "toolshed-repo-actions" },
+];
+const delay = 2000;
+let watchTimeout = null;
+
+const selectedChangeset = ref();
+const selectedRequiresPanel = ref(false);
+const repoTable = ref([]);
+const showSettings = ref(false);
+const error = ref();
+const loading = ref(true);
+
+onMounted(() => {
+    load();
+    if (!panel["default"]) {
+        fetchPanel("default");
+    }
+});
+
+onUnmounted(() => {
+    stopPolling();
+});
+
+async function load() {
+    try {
+        const response = await services.getRepository(props.toolshedUrl, props.repo.id);
+        repoTable.value = response ?? [];
+        loadInstalledRepositories();
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+        loading.value = false;
+    }
+}
+
+async function loadInstalledRepositories() {
+    try {
+        const revisions = await services.getInstalledRepositoriesByName(props.repo.name, props.repo.owner);
+        let changed = false;
+        repoTable.value.forEach((x) => {
+            const revision = revisions[x.changeset_revision];
+            if (revision && revision.status !== x.status) {
+                x.status = revision.status;
+                x.installed = revision.installed;
+                changed = true;
+                return false;
+            }
+        });
+        if (changed) {
+            repoTable.value = [...repoTable.value];
+        }
+        startPolling();
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function onOk(details) {
+    console.debug("onOk", details);
+    try {
+        await services.installRepository(details);
+        showSettings.value = false;
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    }
+}
+
+function onHide() {
+    showSettings.value = false;
+}
+
+function setupRepository(details) {
+    selectedChangeset.value = details.changeset_revision;
+    selectedRequiresPanel.value =
+        details.includes_tools_for_display_in_tool_panel || details.repository.type === "repository_suite_definition";
+    showSettings.value = true;
+}
+
+async function uninstallRepository(details) {
+    try {
+        await services.uninstallRepository({
+            tool_shed_url: props.toolshedUrl,
+            name: props.repo.name,
+            owner: props.repo.owner,
+            changeset_revision: details.changeset_revision,
+        });
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    }
+}
+
+function stopPolling() {
+    if (watchTimeout) {
+        clearTimeout(watchTimeout);
+        watchTimeout = null;
+    }
+}
+
+function startPolling() {
+    stopPolling();
+    watchTimeout = setTimeout(() => {
+        loadInstalledRepositories();
+    }, delay);
+}
+</script>
+
 <template>
     <b-card>
         <div class="mb-1">{{ repo.long_description }}</div>
@@ -59,161 +203,6 @@
         </div>
     </b-card>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import { mapActions, mapState } from "pinia";
-import { useToolStore } from "stores/toolStore";
-import Vue from "vue";
-
-import { useConfig } from "@/composables/config";
-
-import { Services } from "../services";
-
-import InstallationActions from "./InstallationActions.vue";
-import InstallationSettings from "./InstallationSettings.vue";
-import RepositoryTools from "./RepositoryTools.vue";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: {
-        InstallationSettings,
-        InstallationActions,
-        RepositoryTools,
-    },
-    props: {
-        repo: {
-            type: Object,
-            required: true,
-        },
-        toolshedUrl: {
-            type: String,
-            required: true,
-        },
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data() {
-        return {
-            repoChecked: "fa fa-check text-success",
-            repoUnchecked: "fa fa-times text-danger",
-            selectedChangeset: null,
-            selectedRequiresPanel: false,
-            repoTable: [],
-            repoFields: [
-                { key: "numeric_revision", label: "Revision" },
-                { key: "tools", label: "Tools and Versions" },
-                { key: "profile", label: "Requires" },
-                { key: "missing_test_components", label: "Tests" },
-                { key: "status" },
-                { key: "actions", label: "", class: "toolshed-repo-actions" },
-            ],
-            showSettings: false,
-            error: null,
-            loading: true,
-            delay: 2000,
-        };
-    },
-    computed: {
-        ...mapState(useToolStore, ["panel"]),
-    },
-    created() {
-        this.services = new Services();
-        this.load();
-        if (!this.panel["default"]) {
-            this.fetchPanel("default");
-        }
-    },
-    destroyed() {
-        this.clearTimeout();
-    },
-    methods: {
-        ...mapActions(useToolStore, ["fetchPanel"]),
-        clearTimeout() {
-            if (this.timeout) {
-                clearTimeout(this.timeout);
-            }
-        },
-        setTimeout() {
-            this.clearTimeout();
-            this.timeout = setTimeout(() => {
-                this.loadInstalledRepositories();
-            }, this.delay);
-        },
-        load() {
-            this.services
-                .getRepository(this.toolshedUrl, this.repo.id)
-                .then((response) => {
-                    this.repoTable = response;
-                    this.loadInstalledRepositories();
-                })
-                .catch((error) => {
-                    this.error = error;
-                    this.loading = false;
-                });
-        },
-        loadInstalledRepositories() {
-            this.services
-                .getInstalledRepositoriesByName(this.repo.name, this.repo.owner)
-                .then((revisions) => {
-                    let changed = false;
-                    this.repoTable.forEach((x) => {
-                        const revision = revisions[x.changeset_revision];
-                        if (revision && revision.status !== x.status) {
-                            x.status = revision.status;
-                            x.installed = revision.installed;
-                            changed = true;
-                            return false;
-                        }
-                    });
-                    if (changed) {
-                        this.repoTable = [...this.repoTable];
-                    }
-                    this.setTimeout();
-                    this.loading = false;
-                })
-                .catch((error) => {
-                    this.error = error;
-                    this.loading = false;
-                });
-        },
-        onOk: function (details) {
-            this.services
-                .installRepository(details)
-                .then((response) => {
-                    this.showSettings = false;
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-        },
-        onHide: function () {
-            this.showSettings = false;
-        },
-        setupRepository: function (details) {
-            this.selectedChangeset = details.changeset_revision;
-            this.selectedRequiresPanel =
-                details.includes_tools_for_display_in_tool_panel ||
-                details.repository.type == "repository_suite_definition";
-            this.showSettings = true;
-        },
-        uninstallRepository: function (details) {
-            this.services
-                .uninstallRepository({
-                    tool_shed_url: this.toolshedUrl,
-                    name: this.repo.name,
-                    owner: this.repo.owner,
-                    changeset_revision: details.changeset_revision,
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
-        },
-    },
-};
-</script>
 
 <style lang="scss">
 // make actions take up less space
