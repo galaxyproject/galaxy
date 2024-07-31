@@ -2324,6 +2324,17 @@ mapping:
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
 
+      sentry_client_dsn:
+        type: str
+        required: false
+        desc: |
+          Setting sentry_client_dsn will configure the DSN (see sentry_dsn) for
+          the Galaxy web client separately from the back-end, which is useful
+          for segmenting client-side errors.  If unset, the client will use the
+          same project configured in sentry_dsn (if any).  Note that sentry best
+          practices recommend routing errors from different components of a
+          service into discrete projects.
+
       sentry_event_level:
         type: str
         default: ERROR

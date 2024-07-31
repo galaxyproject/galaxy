@@ -1,7 +1,9 @@
+import * as Sentry from "@sentry/vue";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { type AnonymousUser, type User } from "@/api";
+import { getGalaxyInstance } from "@/app";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -14,9 +16,24 @@ import {
 interface Preferences {
     theme: string;
     favorites: { tools: string[] };
+    sentryReplay?: boolean;
+    extra_user_preferences?: string; // This is actually a big JSON string that needs parsing on access
 }
 
 type ListViewMode = "grid" | "list";
+
+export function allowSentryReplay(userPreferences: Preferences | null) {
+    // TODO: refactor into extra prefs handling to simplify access, this is
+    // overly similar to tool caching pref handling.
+    if (userPreferences?.extra_user_preferences) {
+        const extra_user_preferences = JSON.parse(userPreferences.extra_user_preferences);
+        const key = "use_sentry_replay|use_sentry_replay_checkbox";
+        const hasKey = key in extra_user_preferences;
+        return hasKey ? ["true", true].includes(extra_user_preferences[key]) : false;
+    } else {
+        return false;
+    }
+}
 
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<User | AnonymousUser | null>(null);
@@ -72,6 +89,17 @@ export const useUserStore = defineStore("userStore", () => {
                         const historyStore = useHistoryStore();
                         // load first few histories for user to start pagination
                         await historyStore.loadHistories();
+                    }
+                    // If a user has sentry replay enabled, turn on the integration now.
+                    // TODO: refactor and move this to a more appropriate place
+                    const Galaxy = getGalaxyInstance();
+                    if (Galaxy.Sentry && allowSentryReplay(currentPreferences.value)) {
+                        const replay = Sentry.replayIntegration({
+                            // extra config we might want to configure?  Masking text?
+                        });
+                        if (replay) {
+                            Galaxy.Sentry.addIntegration(replay);
+                        }
                     }
                 })
                 .catch((e) => {

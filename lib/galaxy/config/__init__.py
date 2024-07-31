@@ -588,6 +588,7 @@ class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
     sentry_dsn: str
+    sentry_client_dsn: str
     config_dict: Dict[str, str]
 
     @property
@@ -606,11 +607,17 @@ class CommonConfigurationMixin:
     @property
     def sentry_dsn_public(self):
         """
-        Sentry URL with private key removed for use in client side scripts,
-        sentry server will need to be configured to accept events
+        Sentry URL suitable for external use.  This will prefer
+        sentry_client_dsn if set, but fall back to sentry_dsn.
+
+        There is a (now deprecated) format of the sentry DSN that includes a
+        secret key that we ensure is stripped out here.
         """
-        if self.sentry_dsn:
-            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
+        client_dsn = self.sentry_client_dsn or self.sentry_dsn
+        if client_dsn:
+            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", client_dsn)
+        else:
+            return None
 
     def get_bool(self, key, default):
         # Warning: the value of self.config_dict['foo'] may be different from self.foo

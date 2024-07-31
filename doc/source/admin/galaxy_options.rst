@@ -3212,6 +3212,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``sentry_client_dsn``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Setting sentry_client_dsn will configure the DSN (see sentry_dsn)
+    for the Galaxy web client separately from the back-end, which is
+    useful for segmenting client-side errors.  If unset, the client
+    will use the same project configured in sentry_dsn (if any).  Note
+    that sentry best practices recommend routing errors from different
+    components of a service into discrete projects.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``sentry_event_level``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5581,3 +5596,6 @@
     This requires the help_forum_api_url to be set.
 :Default: ``false``
 :Type: bool
+
+
+

@@ -53,6 +53,7 @@ class Configuration:
         self.cookie_domain = kwargs.get("cookie_domain", None)
         # Error logging with sentry
         self.sentry_dsn = kwargs.get("sentry_dsn", None)
+        self.sentry_client_dsn = kwargs.get("sentry_client_dsn", None)
 
         # Security/Policy Compliance
         self.redact_username_in_logs = False
@@ -75,11 +76,15 @@ class Configuration:
     @property
     def sentry_dsn_public(self):
         """
-        Sentry URL with private key removed for use in client side scripts,
-        sentry server will need to be configured to accept events
+        Sentry URL suitable for external use.  This will prefer
+        sentry_client_dsn if set, but fall back to sentry_dsn.
+
+        There is a (now deprecated) format of the sentry DSN that includes a
+        secret key that we ensure is stripped out here.
         """
-        if self.sentry_dsn:
-            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn)
+        client_dsn = self.sentry_client_dsn or self.sentry_dsn
+        if client_dsn:
+            return re.sub(r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", client_dsn)
         else:
             return None
 

@@ -19,8 +19,8 @@ export const initSentry = (galaxy, config) => {
         Sentry.init({
             Vue,
             dsn: sentry_dsn_public,
-            integrations: [Sentry.browserTracingIntegration({ router }), Sentry.replayIntegration()],
-            replaysSessionSampleRate: 0,
+            integrations: [Sentry.browserTracingIntegration({ router })],
+            replaysSessionSampleRate: 0, // TODO: Set these two later when the replay integration is added when opted into?
             replaysOnErrorSampleRate: 1.0,
             release: release,
             beforeSend(event, hint) {
@@ -33,7 +33,7 @@ export const initSentry = (galaxy, config) => {
             },
         });
         if (email) {
-            Sentry.configureScope((scope) => {
+            Sentry.withScope((scope) => {
                 scope.setUser({
                     email: email,
                 });
