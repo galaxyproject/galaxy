@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { InvocationStep } from "@/api/invocations";
+import { isWorkflowInput } from "@/components/Workflow/constants";
 import { type GraphStep, statePlaceholders } from "@/composables/useInvocationGraph";
 import type { Step } from "@/stores/workflowStepStore";
 
@@ -11,7 +12,7 @@ import ToolLinkPopover from "../Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "./WorkflowStepIcon.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
 
-library.add(faChevronDown, faChevronUp);
+library.add(faChevronDown, faChevronUp, faSignInAlt);
 
 interface Props {
     workflowStep: Step;
@@ -45,12 +46,21 @@ const props = defineProps<Props>();
                 </u>
             </span>
         </div>
-        <span v-if="props.graphStep?.headerIcon">
-            <i v-if="props.graphStep.state" class="mr-1">
-                {{ statePlaceholders[props.graphStep.state] || props.graphStep.state }}
-            </i>
-            <FontAwesomeIcon class="mr-1" :icon="props.graphStep.headerIcon" :spin="props.graphStep.headerIconSpin" />
-            <FontAwesomeIcon v-if="props.canExpand" :icon="props.expanded ? faChevronUp : faChevronDown" />
+
+        <span v-if="props.graphStep">
+            <span v-if="isWorkflowInput(props.workflowStep.type)">
+                <i>workflow input</i>
+                <FontAwesomeIcon class="ml-1" :icon="faSignInAlt" />
+            </span>
+            <span v-else-if="props.graphStep.state">
+                <i>{{ statePlaceholders[props.graphStep.state] || props.graphStep.state }}</i>
+                <FontAwesomeIcon
+                    v-if="props.graphStep.headerIcon"
+                    class="ml-1"
+                    :icon="props.graphStep.headerIcon"
+                    :spin="props.graphStep.headerIconSpin" />
+            </span>
+            <FontAwesomeIcon v-if="props.canExpand" class="ml-1" :icon="props.expanded ? faChevronUp : faChevronDown" />
         </span>
     </div>
 </template>
