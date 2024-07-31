@@ -98,10 +98,12 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
+    app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
         app.model.unset_request_id(request_id)
+        app.install_model.unset_request_id(request_id)
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))

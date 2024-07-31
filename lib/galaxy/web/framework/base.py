@@ -171,9 +171,13 @@ class WebApplication:
 
         try:
             self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            if self._install_model:
+                self._install_model.set_request_id(request_id)
             return self.handle_request(request_id, path_info, environ, start_response)
         finally:
             self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
+            if self._install_model:
+                self._install_model.unset_request_id(request_id)
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")

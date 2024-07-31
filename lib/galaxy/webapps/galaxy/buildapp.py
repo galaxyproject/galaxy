@@ -34,7 +34,6 @@ log = logging.getLogger(__name__)
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware = True
 
-
 def app_factory(*args, **kwargs):
     """
     Return a wsgi application serving the root object
