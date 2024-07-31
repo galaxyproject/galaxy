@@ -12397,6 +12397,26 @@ export interface components {
             visible?: boolean | null;
             [key: string]: unknown;
         };
+        /** UpdateHistoryPayload */
+        UpdateHistoryPayload: {
+            /** Annotation */
+            annotation?: string | null;
+            /** Deleted */
+            deleted?: boolean | null;
+            /** Genome Build */
+            genome_build?: string | null;
+            /** Importable */
+            importable?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Preferred Object Store Id */
+            preferred_object_store_id?: string | null;
+            /** Published */
+            published?: boolean | null;
+            /** Purged */
+            purged?: boolean | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+        };
         /** UpdateInstancePayload */
         UpdateInstancePayload: {
             /** Active */
@@ -17588,7 +17608,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": unknown;
+                "application/json": components["schemas"]["UpdateHistoryPayload"];
             };
         };
         responses: {

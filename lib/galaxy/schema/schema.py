@@ -1445,6 +1445,18 @@ AnyHistoryView = Annotated[
 ]
 
 
+class UpdateHistoryPayload(Model):
+    name: Optional[str] = None
+    annotation: Optional[str] = None
+    tags: Optional[TagCollection] = None
+    published: Optional[bool] = None
+    importable: Optional[bool] = None
+    deleted: Optional[bool] = None
+    purged: Optional[bool] = None
+    genome_build: Optional[str] = None
+    preferred_object_store_id: Optional[str] = None
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,
