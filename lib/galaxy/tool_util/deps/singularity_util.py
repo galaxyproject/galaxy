@@ -89,6 +89,8 @@ def build_singularity_run_command(
     )
     command_parts.append("-s")
     command_parts.append("exec")
+    if working_directory:
+        command_parts.extend(["--pwd", working_directory])
     if cleanenv:
         command_parts.append("--cleanenv")
     if no_mount:
