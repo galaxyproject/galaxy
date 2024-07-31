@@ -604,6 +604,12 @@
         </destination>
         <destination id="singularity_local" runner="local">
           <param id="singularity_enabled">true</param>
+          <!--Galaxy requests an isolated /tmp directory from singularity, which means
+              it will be mounted as read-only. This can cause some problems with tools that
+              do not use the TMP, TEMP, TMPDIR variable family properly. Setting
+              tmp_dir to true ensures that the /tmp directory in the container points
+              to the job specific working tmp directory.-->
+          <param id="tmp_dir">true</param>
           <!-- See the above documentation for docker_volumes, singularity_volumes works
                almost the same way. The only difference is that $default will expand with
                rw directories that in Docker would expand as ro if any of subdirectories are rw.
