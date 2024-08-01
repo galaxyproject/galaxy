@@ -1,5 +1,6 @@
 import { computed, ref } from "vue";
 
+import { useClamp, useStep } from "@/composables/math";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { defineScopedStore } from "@/stores/scopedStore";
 
@@ -22,9 +23,13 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
 
-    const maxUndoActions = useUserLocalStorage(`undoRedoStore-maxUndoActions`, 100);
+    const minUndoActions = ref(10);
+    const maxUndoActions = ref(10000);
 
-    /** names of actions which were deleted due to maxUndoActions being exceeded */
+    const savedUndoActionsValue = useUserLocalStorage(`undoRedoStore-savedUndoActions`, 100);
+    const savedUndoActions = useClamp(useStep(savedUndoActionsValue), minUndoActions, maxUndoActions);
+
+    /** names of actions which were deleted due to savedUndoActions being exceeded */
     const deletedActions = ref<string[]>([]);
 
     function $reset() {
@@ -59,7 +64,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         clearRedoStack();
         undoActionStack.value.push(action);
 
-        while (undoActionStack.value.length > maxUndoActions.value && undoActionStack.value.length > 0) {
+        while (undoActionStack.value.length > savedUndoActions.value && undoActionStack.value.length > 0) {
             const action = undoActionStack.value.shift();
             deletedActions.value.push(action?.name ?? "unnamed action");
             action?.destroy();
@@ -186,7 +191,9 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     return {
         undoActionStack,
         redoActionStack,
+        minUndoActions,
         maxUndoActions,
+        savedUndoActions,
         deletedActions,
         undo,
         redo,

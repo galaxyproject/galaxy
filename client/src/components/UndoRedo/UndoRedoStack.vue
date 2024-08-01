@@ -19,6 +19,21 @@ watch(
     () => props.storeId,
     (id) => (currentStore.value = useUndoRedoStore(id))
 );
+
+function onInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    const valueNumber = parseFloat(value);
+    const nonNanValue = isNaN(valueNumber) ? 0 : valueNumber;
+
+    currentStore.value.savedUndoActions = nonNanValue;
+    savedUndoActions.value = nonNanValue;
+}
+
+const savedUndoActions = ref(currentStore.value.savedUndoActions);
+
+function updateSavedUndoActions() {
+    savedUndoActions.value = currentStore.value.savedUndoActions;
+}
 </script>
 
 <template>
@@ -59,7 +74,16 @@ watch(
 
         <label>
             Max saved changes
-            <input v-model.number="currentStore.maxUndoActions" type="number" step="1" min="10" max="10000" />
+            <input
+                :value="savedUndoActions"
+                type="number"
+                step="1"
+                :min="currentStore.minUndoActions"
+                :max="currentStore.maxUndoActions"
+                @input="onInput"
+                @focusin="updateSavedUndoActions"
+                @focusout="updateSavedUndoActions"
+                @keyup.enter="updateSavedUndoActions" />
         </label>
     </section>
 </template>
