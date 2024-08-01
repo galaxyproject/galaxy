@@ -51,15 +51,18 @@
                                     class="invocation-step-job-details"
                                     :open="inGraphView">
                                     <summary>
-                                        <b>Jobs <i>(Click on any job to view its details)</i></b>
+                                        <b>{{ jobStepHeading(stepDetails) }}</b>
                                     </summary>
-                                    <JobStep
-                                        v-if="stepDetails.jobs?.length"
-                                        :key="inGraphView"
-                                        :jobs="stepDetails.jobs"
-                                        :invocation-graph="inGraphView"
-                                        :showing-job-id="showingJobId"
-                                        @row-clicked="showJob" />
+                                    <span v-if="stepDetails.jobs?.length">
+                                        <JobStep
+                                            v-if="!inGraphView"
+                                            :key="inGraphView"
+                                            :jobs="stepDetails.jobs"
+                                            :invocation-graph="inGraphView"
+                                            :showing-job-id="showingJobId"
+                                            @row-clicked="showJob" />
+                                        <JobStepTabs v-else class="mt-1" :jobs="stepDetails.jobs" />
+                                    </span>
                                     <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
                                 </details>
                                 <ParameterStep
@@ -119,12 +122,14 @@ import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 import WorkflowStepTitle from "./WorkflowStepTitle";
 
+import JobStepTabs from "./JobStepTabs.vue";
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 
 export default {
     components: {
         LoadingSpan,
         JobStep,
+        JobStepTabs,
         ParameterStep,
         InvocationStepProvider,
         GenericHistoryItem,
@@ -196,6 +201,19 @@ export default {
             return Object.values(this.invocation.input_step_parameters).find(
                 (param) => param.workflow_step_id === stepDetails.workflow_step_id
             );
+        },
+        jobStepHeading(stepDetails) {
+            if (stepDetails.jobs?.length > 1) {
+                return "Jobs (Click on any job to view its details)";
+            } else if (stepDetails.jobs?.length === 1) {
+                if (this.inGraphView) {
+                    return "Job";
+                } else {
+                    return "Job (Click on the job to view its details)";
+                }
+            } else {
+                return "No jobs";
+            }
         },
         showJob(id) {
             this.$emit("show-job", id);

@@ -204,10 +204,7 @@ export function useInvocationGraph(
                     }
 
                     /** Setting the header class for the graph step */
-                    graphStepFromWfStep.headerClass = {
-                        "node-header-invocation": true,
-                        [`header-${graphStepFromWfStep.state}`]: !!graphStepFromWfStep.state,
-                    };
+                    graphStepFromWfStep.headerClass = getHeaderClass(graphStepFromWfStep.state as string);
                     // TODO: maybe a different one for inputs? Currently they have no state either.
 
                     /** Setting the header icon for the graph step */
@@ -277,5 +274,12 @@ export function useInvocationGraph(
          * and displays the job states on the workflow graph steps.
          */
         loadInvocationGraph,
+    };
+}
+
+export function getHeaderClass(state: string) {
+    return {
+        "node-header-invocation": true,
+        [`header-${state}`]: !!state,
     };
 }
