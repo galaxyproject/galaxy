@@ -43,6 +43,8 @@ const repoFields = [
     { key: "status" },
     { key: "actions", label: "", class: "toolshed-repo-actions" },
 ];
+const maxRetries = 5;
+let remainingRetries = maxRetries;
 
 const selectedChangeset = ref();
 const selectedRequiresPanel = ref(false);
@@ -89,6 +91,16 @@ async function loadInstalledRepositories() {
         if (changed) {
             repoTable.value = [...repoTable.value];
         }
+
+        // Stop watching for changes if all repositories are in final state and no retries left.
+        // We need to use retries because the status may not be updated immediately after requesting
+        // the install/uninstall of a repository
+        const shouldWatchForChanges = repoTable.value.filter((x) => !isFinalState(x.status)) > 0;
+        if (!shouldWatchForChanges && remainingRetries <= 0) {
+            stopWatchingResource();
+        } else {
+            remainingRetries--;
+        }
     } catch (e) {
         error.value = errorMessageAsString(e);
     } finally {
@@ -98,16 +110,6 @@ async function loadInstalledRepositories() {
 
 function isFinalState(status) {
     return ["Error", "Installed", "Uninstalled"].includes(status);
-}
-
-async function onInstallRepository(details) {
-    try {
-        await services.installRepository(details);
-        showSettings.value = false;
-        startWatchingResource();
-    } catch (e) {
-        error.value = errorMessageAsString(e);
-    }
 }
 
 function onHide() {
@@ -121,21 +123,32 @@ function setupRepository(details) {
     showSettings.value = true;
 }
 
+async function onInstallRepository(details) {
+    try {
+        startWatchingResource();
+        await services.installRepository(details);
+        showSettings.value = false;
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    }
+}
+
 async function uninstallRepository(details) {
     try {
+        startWatchingResource();
         await services.uninstallRepository({
             tool_shed_url: props.toolshedUrl,
             name: props.repo.name,
             owner: props.repo.owner,
             changeset_revision: details.changeset_revision,
         });
-        startWatchingResource();
     } catch (e) {
         error.value = errorMessageAsString(e);
     }
 }
 
 function startWatchingResource() {
+    remainingRetries = maxRetries;
     repositoryWatcher.startWatchingResource();
 }
 
