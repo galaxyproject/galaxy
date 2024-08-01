@@ -43,8 +43,13 @@ const repoFields = [
     { key: "status" },
     { key: "actions", label: "", class: "toolshed-repo-actions" },
 ];
-const maxRetries = 5;
-let remainingRetries = maxRetries;
+
+const statusError = "Error";
+const statusInstalled = "Installed";
+const statusUninstalled = "Uninstalled";
+
+const revisionStateMap = new Map();
+const revisionWaitStateMap = new Map();
 
 const selectedChangeset = ref();
 const selectedRequiresPanel = ref(false);
@@ -61,7 +66,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    stopWatchingResource();
+    stopWatchingRepository();
 });
 
 async function load() {
@@ -78,28 +83,11 @@ async function load() {
 async function loadInstalledRepositories() {
     try {
         const revisions = await services.getInstalledRepositoriesByName(props.repo.name, props.repo.owner);
-        let changed = false;
-        repoTable.value.forEach((x) => {
-            const revision = revisions[x.changeset_revision];
-            if (revision && revision.status !== x.status) {
-                x.status = revision.status;
-                x.installed = revision.installed;
-                changed = true;
-                return;
-            }
-        });
-        if (changed) {
-            repoTable.value = [...repoTable.value];
-        }
 
-        // Stop watching for changes if all repositories are in final state and no retries left.
-        // We need to use retries because the status may not be updated immediately after requesting
-        // the install/uninstall of a repository
-        const shouldWatchForChanges = repoTable.value.filter((x) => !isFinalState(x.status)) > 0;
-        if (!shouldWatchForChanges && remainingRetries <= 0) {
-            stopWatchingResource();
-        } else {
-            remainingRetries--;
+        refreshRepositoryStatus(revisions);
+
+        if (!isAnyChangeExpected()) {
+            stopWatchingRepository();
         }
     } catch (e) {
         error.value = errorMessageAsString(e);
@@ -108,8 +96,61 @@ async function loadInstalledRepositories() {
     }
 }
 
+function refreshRepositoryStatus(updatedRevisions) {
+    repoTable.value.forEach((x) => {
+        const repoRevision = updatedRevisions[x.changeset_revision];
+        if (!repoRevision) {
+            return;
+        }
+        revisionStateMap.set(x.changeset_revision, repoRevision);
+        if (repoRevision.status !== x.status) {
+            x.status = repoRevision.status;
+            x.installed = repoRevision.installed;
+        }
+    });
+
+    repoTable.value = [...repoTable.value];
+}
+
+function isAnyChangeExpected() {
+    for (const changesetRevision of revisionWaitStateMap.keys()) {
+        if (!revisionStateMap.has(changesetRevision)) {
+            return true;
+        }
+    }
+
+    for (const [changesetRevision, revisionState] of revisionStateMap) {
+        if (!isFinalState(revisionState.status)) {
+            return true;
+        }
+
+        if (!hasReachedExpectedState(changesetRevision)) {
+            return true;
+        } else {
+            if (revisionWaitStateMap.has(changesetRevision)) {
+                revisionWaitStateMap.delete(changesetRevision);
+            }
+        }
+    }
+    return false;
+}
+
 function isFinalState(status) {
-    return ["Error", "Installed", "Uninstalled"].includes(status);
+    return [statusError, statusInstalled, statusUninstalled].includes(status);
+}
+
+function hasReachedExpectedState(changesetRevision) {
+    const revisionState = revisionStateMap.get(changesetRevision);
+    if (!revisionState) {
+        return false;
+    }
+    const revisionWaitState = revisionWaitStateMap.get(changesetRevision);
+    if (!revisionWaitState) {
+        // No expected state set, consider it done
+        return true;
+    }
+    const hasReachedExpectedState = revisionWaitState.waitForStates.includes(revisionState.status);
+    return hasReachedExpectedState;
 }
 
 function onHide() {
@@ -125,7 +166,10 @@ function setupRepository(details) {
 
 async function onInstallRepository(details) {
     try {
-        startWatchingResource();
+        startWatchingRepository({
+            changesetRevision: details.changeset_revision,
+            waitForStates: [statusInstalled, statusError],
+        });
         await services.installRepository(details);
         showSettings.value = false;
     } catch (e) {
@@ -135,7 +179,10 @@ async function onInstallRepository(details) {
 
 async function uninstallRepository(details) {
     try {
-        startWatchingResource();
+        startWatchingRepository({
+            changesetRevision: details.changeset_revision,
+            waitForStates: [statusUninstalled, statusError],
+        });
         await services.uninstallRepository({
             tool_shed_url: props.toolshedUrl,
             name: props.repo.name,
@@ -147,13 +194,32 @@ async function uninstallRepository(details) {
     }
 }
 
-function startWatchingResource() {
-    remainingRetries = maxRetries;
+async function resetRepository(details) {
+    try {
+        startWatchingRepository({
+            changesetRevision: details.changeset_revision,
+            waitForStates: [statusUninstalled],
+        });
+        await services.uninstallRepository({
+            tool_shed_url: props.toolshedUrl,
+            name: props.repo.name,
+            owner: props.repo.owner,
+            changeset_revision: details.changeset_revision,
+        });
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    }
+}
+
+function startWatchingRepository({ changesetRevision, waitForStates }) {
+    revisionWaitStateMap.set(changesetRevision, { waitForStates });
     repositoryWatcher.startWatchingResource();
 }
 
-function stopWatchingResource() {
+function stopWatchingRepository() {
     repositoryWatcher.stopWatchingResource();
+    revisionStateMap.clear();
+    revisionWaitStateMap.clear();
 }
 </script>
 
@@ -198,7 +264,8 @@ function stopWatchingResource() {
                             <InstallationActions
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
-                                @onUninstall="uninstallRepository(row.item)" />
+                                @onUninstall="uninstallRepository(row.item)"
+                                @onReset="resetRepository(row.item)" />
                         </template>
                     </b-table>
                     <InstallationSettings

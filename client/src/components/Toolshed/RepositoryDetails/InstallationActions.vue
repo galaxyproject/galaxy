@@ -8,11 +8,11 @@ const props = defineProps({
 const installState = computed(() => !props.status || props.status === "Uninstalled");
 const uninstallState = computed(() => props.status === "Installed");
 
-const emit = defineEmits(["onInstall", "onUninstall"]);
+const emit = defineEmits(["onInstall", "onUninstall", "onReset"]);
 
-function onCancel() {
+function onReset() {
     if (window.confirm(`Do you want to reset this repository?`)) {
-        emit("onUninstall");
+        emit("onReset");
     }
 }
 </script>
@@ -30,7 +30,7 @@ function onCancel() {
             variant="warning"
             class="btn-sm"
             :title="l('Reset Broken or Stuck Installation')"
-            @click="onCancel">
+            @click="onReset">
             Reset
         </b-button>
     </div>
