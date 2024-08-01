@@ -7,6 +7,7 @@ import logging
 import sys
 import threading
 import traceback
+from typing import Optional
 from urllib.parse import urljoin
 
 from paste import httpexceptions
@@ -20,6 +21,7 @@ import galaxy.web.framework
 import galaxy.webapps.base.webapp
 from galaxy import util
 from galaxy.security.validate_user_input import VALID_PUBLICNAME_RE
+from galaxy.structured_app import MinimalApp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 from galaxy.web.framework.middleware.error import ErrorMiddleware
@@ -33,6 +35,13 @@ log = logging.getLogger(__name__)
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware = True
+
+    def __init__(
+        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
+    ) -> None:
+        super().__init__(galaxy_app, session_cookie, name)
+        self.session_factories.append(galaxy_app.install_model)
+
 
 def app_factory(*args, **kwargs):
     """
