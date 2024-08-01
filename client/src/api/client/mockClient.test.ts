@@ -1,5 +1,9 @@
-import { client, type HistoryDetailed, type HistorySummary, type MessageException } from "@/api";
-import { clientMock } from "@/api/__mocks__";
+import { type HistoryDetailed, type HistorySummary, type MessageException } from "@/api";
+import { useClientApi } from "@/api/client";
+import { useClientApiMock } from "@/api/client/__mocks__";
+
+const { clientMock } = useClientApiMock();
+const { client } = useClientApi();
 
 const TEST_HISTORY_SUMMARY: HistorySummary = {
     model_class: "History",
