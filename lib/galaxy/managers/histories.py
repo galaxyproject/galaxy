@@ -237,12 +237,6 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             stmt = stmt.offset(payload.offset)
         return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
-    def copy(self, history, user, **kwargs):
-        """
-        Copy and return the given `history`.
-        """
-        return history.copy(target_user=user, **kwargs)
-
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
     def by_user(
