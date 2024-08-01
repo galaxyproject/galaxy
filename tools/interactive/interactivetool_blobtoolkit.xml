@@ -2,10 +2,10 @@
     <description>genome assembly QC viewer</description>
     <macros>
         <token name="@TOOL_VERSION@">4.1.0</token>
-        <token name="@VERSION_SUFFIX@">1</token>
+        <token name="@VERSION_SUFFIX@">0</token>
     </macros>
     <requirements>
-        <container type="docker">quay.io/galaxy/blobtoolkit-server:4.1.0</container>
+        <container type="docker">quay.io/galaxy/blobtoolkit-server:@TOOL_VERSION@</container>
     </requirements>
     <entry_points>
         <entry_point name="Blobtoolkit View" requires_domain="True">
