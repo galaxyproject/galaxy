@@ -131,14 +131,9 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
             optional = input_source.parse_optional()
-            dynamic_options = input_source.get("dynamic_options", None)
             dynamic_options_config = input_source.parse_dynamic_options()
-            if dynamic_options_config:
-                dynamic_options_elem = dynamic_options.elem()
-            else:
-                dynamic_options_elem = None
+            is_static = dynamic_options_config is None
             multiple = input_source.get_bool("multiple", False)
-            is_static = dynamic_options is None and dynamic_options_elem is None
             options: Optional[List[LabelValue]] = None
             if is_static:
                 options = []
