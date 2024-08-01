@@ -40,3 +40,4 @@
     login: '{{ variables.login }}'
     writable: '{{ variables.writable }}'
     password: '{{ secrets.password }}'
+    temp_path: null # Uses /tmp as default, configure it if needed

@@ -128,7 +128,6 @@ class WebdavFileSourceTemplateConfiguration(StrictModel):
     login: Union[str, TemplateExpansion]
     password: Union[str, TemplateExpansion]
     writable: Union[bool, TemplateExpansion] = False
-    use_temp_files: Optional[Union[bool, TemplateExpansion]] = None
     temp_path: Optional[Union[str, TemplateExpansion]] = None
     template_start: Optional[str] = None
     template_end: Optional[str] = None
@@ -141,7 +140,6 @@ class WebdavFileSourceConfiguration(StrictModel):
     login: str
     password: str
     writable: bool = False
-    use_temp_files: Optional[bool] = None
     temp_path: Optional[str] = None
 
 
