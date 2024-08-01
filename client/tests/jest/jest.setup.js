@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/jest-globals";
 
 import Vue from "vue";
 
-import { server } from "@/api/__mocks__/node";
+import { server } from "@/api/client/__mocks__/node";
 
 // Set Vue to suppress production / devtools / etc. warnings
 Vue.config.productionTip = false;
