@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
@@ -58,6 +58,10 @@ const showSettings = ref(false);
 const error = ref();
 const loading = ref(true);
 
+const isActionBusy = computed(() => (item) => {
+    return revisionWaitStateMap.has(item.changeset_revision);
+});
+
 onMounted(() => {
     load();
     if (!panel["default"]) {
@@ -113,23 +117,27 @@ function refreshRepositoryStatus(updatedRevisions) {
 }
 
 function isAnyChangeExpected() {
-    for (const changesetRevision of revisionWaitStateMap.keys()) {
-        if (!revisionStateMap.has(changesetRevision)) {
+    for (const changesetRevisionInWaitList of revisionWaitStateMap.keys()) {
+        if (!revisionStateMap.has(changesetRevisionInWaitList)) {
+            // This is a new revision that was never installed, wait for it
             return true;
         }
     }
 
     for (const [changesetRevision, revisionState] of revisionStateMap) {
         if (!isFinalState(revisionState.status)) {
+            removeRevisionFromWatchList(changesetRevision);
+            // Install/Uninstall is still in progress
             return true;
         }
 
         if (!hasReachedExpectedState(changesetRevision)) {
+            // Revision is in final state but not in expected state
+            // This can happen, for example, if we reinstall a revision. The revision will be in uninstalled state
+            // but we are waiting for it to be installed again.
             return true;
         } else {
-            if (revisionWaitStateMap.has(changesetRevision)) {
-                revisionWaitStateMap.delete(changesetRevision);
-            }
+            removeRevisionFromWatchList(changesetRevision);
         }
     }
     return false;
@@ -137,6 +145,12 @@ function isAnyChangeExpected() {
 
 function isFinalState(status) {
     return [statusError, statusInstalled, statusUninstalled].includes(status);
+}
+
+function removeRevisionFromWatchList(changesetRevision) {
+    if (revisionWaitStateMap.has(changesetRevision)) {
+        revisionWaitStateMap.delete(changesetRevision);
+    }
 }
 
 function hasReachedExpectedState(changesetRevision) {
@@ -263,6 +277,7 @@ function stopWatchingRepository() {
                         <template v-slot:cell(actions)="row">
                             <InstallationActions
                                 :status="row.item.status"
+                                :is-busy="isActionBusy(row.item)"
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)"
                                 @onReset="resetRepository(row.item)" />
