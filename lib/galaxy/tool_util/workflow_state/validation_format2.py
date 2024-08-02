@@ -25,9 +25,9 @@ from galaxy.tool_util.parameters import (
     WorkflowStepToolState,
 )
 from ._types import (
-    GetToolInfo,
-    Format2WorkflowDict,
     Format2StepDict,
+    Format2WorkflowDict,
+    GetToolInfo,
 )
 from ._validation_util import validate_explicit_conditional_test_value
 

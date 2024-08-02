@@ -11,16 +11,16 @@ from pydantic import (
 
 from galaxy.tool_util.models import ParsedTool
 from galaxy.tool_util.parameters import ToolParameterT
+from ._types import (
+    Format2StateDict,
+    GetToolInfo,
+    NativeStepDict,
+)
+from .validation_format2 import validate_step_against
 from .validation_native import (
     get_parsed_tool_for_native_step,
     native_tool_state,
     validate_native_step_against,
-)
-from .validation_format2 import validate_step_against
-from ._types import (
-    GetToolInfo,
-    NativeStepDict,
-    Format2StateDict,
 )
 
 Format2InputsDictT = Dict[str, str]
@@ -82,10 +82,12 @@ def _convert_valid_state_to_format2(native_step_dict: NativeStepDict, parsed_too
     root_tool_state = native_tool_state(native_step_dict)
     tool_inputs = parsed_tool.inputs
     _convert_state_level(native_step_dict, tool_inputs, root_tool_state, format2_state, format2_in)
-    return Format2State(**{
-        "state": format2_state,
-        "in": format2_in,
-    })
+    return Format2State(
+        **{
+            "state": format2_state,
+            "in": format2_in,
+        }
+    )
 
 
 def _convert_state_level(
@@ -106,7 +108,7 @@ def _convert_state_at_level(
     native_state_at_level: dict,
     format2_state_at_level: dict,
     format2_in: Format2InputsDictT,
-    prefix: str
+    prefix: str,
 ) -> None:
     parameter_type = tool_input.parameter_type
     parameter_name = tool_input.name

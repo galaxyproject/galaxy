@@ -16,9 +16,9 @@ from galaxy.tool_util.parameters import (
 )
 from ._types import (
     GetToolInfo,
-    NativeWorkflowDict,
     NativeStepDict,
     NativeToolStateDict,
+    NativeWorkflowDict,
 )
 from ._validation_util import validate_explicit_conditional_test_value
 from .validation_format2 import repeat_inputs_to_array
@@ -54,7 +54,9 @@ def _validate_native_state_level(
             raise Exception(f"Unknown key found {key}, failing state validation")
 
 
-def _validate_native_state_at_level(step: NativeStepDict, tool_input: ToolParameterT, state_at_level: dict, prefix: Optional[str] = None):
+def _validate_native_state_at_level(
+    step: NativeStepDict, tool_input: ToolParameterT, state_at_level: dict, prefix: Optional[str] = None
+):
     parameter_type = tool_input.parameter_type
     parameter_name = tool_input.name
     value = state_at_level.get(parameter_name, None)
@@ -73,7 +75,9 @@ def _validate_native_state_at_level(step: NativeStepDict, tool_input: ToolParame
             connections = native_connections_for(step, tool_input, prefix)
             optional = tool_input.optional
             if not optional and not connections:
-                raise Exception("Disconnected non-optional input found, not attempting to validate non-practice workflow")
+                raise Exception(
+                    "Disconnected non-optional input found, not attempting to validate non-practice workflow"
+                )
 
     elif parameter_type == "gx_select":
         select = cast(SelectParameterModel, tool_input)

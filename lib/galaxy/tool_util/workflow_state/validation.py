@@ -3,7 +3,6 @@ from ._types import (
     GetToolInfo,
     WorkflowFormat,
 )
-
 from .validation_format2 import validate_workflow_format2
 from .validation_native import validate_workflow_native
 

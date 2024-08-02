@@ -659,7 +659,7 @@ class XmlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
-    def parse_tests_to_dict(self) -> ToolSourceTests:
+    def parse_tests_to_dict(self, for_json: bool = False) -> ToolSourceTests:
         tests_elem = self.root.find("tests")
         tests: List[ToolSourceTest] = []
         rval: ToolSourceTests = dict(tests=tests)
@@ -667,7 +667,7 @@ class XmlToolSource(ToolSource):
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
                 profile = self.parse_profile()
-                tests.append(_test_elem_to_dict(test_elem, i, profile))
+                tests.append(_test_elem_to_dict(test_elem, i, profile, for_json=for_json))
 
         return rval
 
@@ -724,11 +724,11 @@ class XmlToolSource(ToolSource):
         return creators
 
 
-def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
+def _test_elem_to_dict(test_elem, i, profile=None, for_json=False) -> ToolSourceTest:
     rval: ToolSourceTest = dict(
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem, profile=profile),
-        inputs=__parse_input_elems(test_elem, i),
+        inputs=__parse_input_elems(test_elem, i, for_json=for_json),
         expect_num_outputs=test_elem.get("expect_num_outputs"),
         command=__parse_assert_list_from_elem(test_elem.find("assert_command")),
         command_version=__parse_assert_list_from_elem(test_elem.find("assert_command_version")),
@@ -743,9 +743,9 @@ def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
     return rval
 
 
-def __parse_input_elems(test_elem, i) -> ToolSourceTestInputs:
+def __parse_input_elems(test_elem, i, for_json=False) -> ToolSourceTestInputs:
     __expand_input_elems(test_elem)
-    return __parse_inputs_elems(test_elem, i)
+    return __parse_inputs_elems(test_elem, i, for_json=for_json)
 
 
 def __parse_output_elems(test_elem) -> ToolSourceTestOutputs:
@@ -991,15 +991,15 @@ def _copy_to_dict_if_present(elem, rval, attributes):
     return rval
 
 
-def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
+def __parse_inputs_elems(test_elem, i, for_json=False) -> ToolSourceTestInputs:
     raw_inputs: ToolSourceTestInputs = []
     for param_elem in test_elem.findall("param"):
-        raw_inputs.append(__parse_param_elem(param_elem, i))
+        raw_inputs.append(__parse_param_elem(param_elem, i, for_json=for_json))
 
     return raw_inputs
 
 
-def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
+def __parse_param_elem(param_elem, i=0, for_json=False) -> ToolSourceTestInput:
     attrib: ToolSourceTestInputAttributes = dict(param_elem.attrib)
     if "values" in attrib:
         value = attrib["values"].split(",")
@@ -1037,7 +1037,8 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
             elif child.tag == "edit_attributes":
                 attrib["edit_attributes"].append(child)
             elif child.tag == "collection":
-                attrib["collection"] = TestCollectionDef.from_xml(child, __parse_param_elem)
+                collection = TestCollectionDef.from_xml(child, lambda elem: __parse_param_elem(elem, for_json=for_json))
+                attrib["collection"] = collection if not for_json else collection.to_dict()
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
