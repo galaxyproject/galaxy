@@ -72,7 +72,8 @@ const { datatypes } = useDetailedDatatypes();
 
 const dbKeyStore = useDbKeyStore();
 
-const modalShow = ref("");
+type ImportSource = "history" | "userdir" | "importdir" | "path" | "";
+const modalShow = ref<ImportSource>();
 const genomesList = ref<GenomesList>([]);
 const extensionsList = ref<DetailedDatatypes[]>([]);
 const progress = ref(false);
@@ -222,7 +223,7 @@ async function importToHistoryModal(isCollection: boolean) {
     }
 }
 
-function onAddDatasets(source: string = "") {
+function onAddDatasets(source: ImportSource = "") {
     modalShow.value = source;
 }
 
