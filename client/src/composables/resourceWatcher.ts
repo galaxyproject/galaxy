@@ -37,13 +37,11 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
     let currentPollingInterval = shortPollingInterval;
     let watchTimeout: NodeJS.Timeout | null = null;
     let isEventSetup = false;
-    let cancelled = false;
 
     /**
      * Starts watching the resource by polling the server continuously.
      */
     function startWatchingResource() {
-        cancelled = false;
         stopWatcher();
         tryWatchResource();
     }
@@ -53,7 +51,6 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
      */
     function stopWatchingResource() {
         stopWatcher();
-        cancelled = true;
     }
 
     function stopWatcher() {
@@ -69,7 +66,7 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
         } catch (error) {
             console.warn(error);
         } finally {
-            if (currentPollingInterval && !cancelled) {
+            if (currentPollingInterval) {
                 watchTimeout = setTimeout(() => {
                     tryWatchResource();
                 }, currentPollingInterval);
@@ -87,9 +84,7 @@ export function useResourceWatcher(watchHandler: WatchResourceHandler, options: 
     function updateThrottle() {
         if (document.visibilityState === "visible") {
             currentPollingInterval = shortPollingInterval;
-            if (!cancelled) {
-                startWatchingResource();
-            }
+            startWatchingResource();
         } else {
             currentPollingInterval = enableBackgroundPolling ? longPollingInterval : undefined;
         }
