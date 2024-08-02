@@ -64,23 +64,6 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.quota_agent = app.quota_agent
         self.security_agent = app.model.security_agent
 
-    def create(self, manage_roles=None, access_roles=None, flush=True, **kwargs):
-        """
-        Create and return a new Dataset object.
-        """
-        # default to NEW state on new datasets
-        kwargs.update(dict(state=(kwargs.get("state", model.Dataset.states.NEW))))
-        dataset = model.Dataset(**kwargs)
-        self.session().add(dataset)
-
-        self.permissions.set(dataset, manage_roles, access_roles, flush=False)
-
-        if flush:
-            session = self.session()
-            with transaction(session):
-                session.commit()
-        return dataset
-
     def copy(self, item, **kwargs):
         raise exceptions.NotImplemented("Datasets cannot be copied")
 
