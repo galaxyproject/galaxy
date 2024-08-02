@@ -1,13 +1,15 @@
-import { useClientApiMock } from "@/api/client/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { getDatatypesMapper } from "./index";
 import { typesAndMappingResponse } from "./test_fixtures";
 
-const { clientMock } = useClientApiMock();
+const { server, http } = useServerMock();
 
-clientMock.get("/api/datatypes/types_and_mapping", ({ response }) => {
-    return response(200).json(typesAndMappingResponse);
-});
+server.use(
+    http.get("/api/datatypes/types_and_mapping", ({ response }) => {
+        return response(200).json(typesAndMappingResponse);
+    })
+);
 
 describe("Datatypes/index.js", () => {
     describe("getDatatypesMapper", () => {

@@ -1,9 +1,6 @@
 import { type HistoryDetailed, type HistorySummary, type MessageException } from "@/api";
-import { useClientApi } from "@/api/client";
-import { useClientApiMock } from "@/api/client/__mocks__";
-
-const { clientMock } = useClientApiMock();
-const { client } = useClientApi();
+import { GalaxyApi, type GalaxyApiClient } from "@/api/client";
+import { useServerMock } from "@/api/client/__mocks__";
 
 const TEST_HISTORY_SUMMARY: HistorySummary = {
     model_class: "History",
@@ -39,21 +36,28 @@ const TEST_HISTORY_DETAILED: HistoryDetailed = {
 
 const EXPECTED_500_ERROR: MessageException = { err_code: 500, err_msg: "Internal Server Error" };
 
-// Mock the API client
-// You can do whatever you want with the parameters and return values
-// All API schema types must be strictly respected and will be up to date with the OpenAPI schema
-clientMock.get("/api/histories/{history_id}", ({ params, query, response }) => {
-    if (query.get("view") === "detailed") {
-        return response(200).json(TEST_HISTORY_DETAILED);
-    }
-    if (params.history_id === "must-fail") {
-        return response("5XX").json(EXPECTED_500_ERROR, { status: 500 });
-    }
-    return response(200).json(TEST_HISTORY_SUMMARY);
-});
+// Mock the server responses
+const { server, http } = useServerMock();
+server.use(
+    http.get("/api/histories/{history_id}", ({ params, query, response }) => {
+        if (query.get("view") === "detailed") {
+            return response(200).json(TEST_HISTORY_DETAILED);
+        }
+        if (params.history_id === "must-fail") {
+            return response("5XX").json(EXPECTED_500_ERROR, { status: 500 });
+        }
+        return response(200).json(TEST_HISTORY_SUMMARY);
+    })
+);
 
-describe("clientMock", () => {
-    it("mocks the API client", async () => {
+describe("useServerMock", () => {
+    let client: GalaxyApiClient;
+
+    beforeAll(() => {
+        client = GalaxyApi();
+    });
+
+    it("mocks the Galaxy Server", async () => {
         {
             const { data, error } = await client.GET("/api/histories/{history_id}", {
                 params: {
@@ -93,6 +97,17 @@ describe("clientMock", () => {
             expect(error).toEqual(EXPECTED_500_ERROR);
 
             expect(data).toBeUndefined();
+        }
+
+        {
+            const { data, error } = await client.GET("/api/configuration");
+
+            expect(data).toBeUndefined();
+
+            expect(error).toBeDefined();
+            expect(`${JSON.stringify(error)}`).toContain(
+                "Make sure you have added a request handler for this request in your tests."
+            );
         }
     });
 });
