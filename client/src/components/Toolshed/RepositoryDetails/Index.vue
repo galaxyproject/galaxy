@@ -67,6 +67,7 @@ onMounted(() => {
     if (!panel["default"]) {
         fetchPanel("default");
     }
+    startWatchingRepository();
 });
 
 onUnmounted(() => {
@@ -89,10 +90,6 @@ async function loadInstalledRepositories() {
         const revisions = await services.getInstalledRepositoriesByName(props.repo.name, props.repo.owner);
 
         refreshRepositoryStatus(revisions);
-
-        if (!isAnyChangeExpected()) {
-            stopWatchingRepository();
-        }
     } catch (e) {
         error.value = errorMessageAsString(e);
     } finally {
@@ -111,36 +108,14 @@ function refreshRepositoryStatus(updatedRevisions) {
             x.status = repoRevision.status;
             x.installed = repoRevision.installed;
         }
+
+        if (hasReachedExpectedState(x.changeset_revision) || !isFinalState(repoRevision.status)) {
+            // We don't need to particularly watch this revision anymore
+            removeRevisionFromWatchList(x.changeset_revision);
+        }
     });
 
     repoTable.value = [...repoTable.value];
-}
-
-function isAnyChangeExpected() {
-    for (const changesetRevisionInWaitList of revisionWaitStateMap.keys()) {
-        if (!revisionStateMap.has(changesetRevisionInWaitList)) {
-            // This is a new revision that was never installed, wait for it
-            return true;
-        }
-    }
-
-    for (const [changesetRevision, revisionState] of revisionStateMap) {
-        if (!isFinalState(revisionState.status)) {
-            removeRevisionFromWatchList(changesetRevision);
-            // Install/Uninstall is still in progress
-            return true;
-        }
-
-        if (!hasReachedExpectedState(changesetRevision)) {
-            // Revision is in final state but not in expected state
-            // This can happen, for example, if we reinstall a revision. The revision will be in uninstalled state
-            // but we are waiting for it to be installed again.
-            return true;
-        } else {
-            removeRevisionFromWatchList(changesetRevision);
-        }
-    }
-    return false;
 }
 
 function isFinalState(status) {
@@ -180,7 +155,7 @@ function setupRepository(details) {
 
 async function onInstallRepository(details) {
     try {
-        startWatchingRepository({
+        waitForRevisionStatus({
             changesetRevision: details.changeset_revision,
             waitForStates: [statusInstalled, statusError],
         });
@@ -193,7 +168,7 @@ async function onInstallRepository(details) {
 
 async function uninstallRepository(details) {
     try {
-        startWatchingRepository({
+        waitForRevisionStatus({
             changesetRevision: details.changeset_revision,
             waitForStates: [statusUninstalled, statusError],
         });
@@ -210,7 +185,7 @@ async function uninstallRepository(details) {
 
 async function resetRepository(details) {
     try {
-        startWatchingRepository({
+        waitForRevisionStatus({
             changesetRevision: details.changeset_revision,
             waitForStates: [statusUninstalled],
         });
@@ -225,8 +200,12 @@ async function resetRepository(details) {
     }
 }
 
-function startWatchingRepository({ changesetRevision, waitForStates }) {
+function waitForRevisionStatus({ changesetRevision, waitForStates }) {
     revisionWaitStateMap.set(changesetRevision, { waitForStates });
+    repoTable.value = [...repoTable.value];
+}
+
+function startWatchingRepository() {
     repositoryWatcher.startWatchingResource();
 }
 
