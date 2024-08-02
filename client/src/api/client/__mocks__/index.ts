@@ -1,7 +1,10 @@
+import { HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { createOpenApiHttp } from "openapi-msw";
 
 import { type GalaxyApiPaths } from "@/api/schema";
+
+export { HttpResponse };
 
 function createApiClientMock() {
     return createOpenApiHttp<GalaxyApiPaths>({ baseUrl: window.location.origin });
