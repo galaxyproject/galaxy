@@ -7,7 +7,7 @@ import { filter } from "underscore";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { helpHtml, WorkflowFilters } from "@/components/Workflow/List/WorkflowFilters";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
@@ -131,7 +131,7 @@ async function load(overlayLoading = false, silent = false) {
     }
 
     try {
-        const { response, data, error } = await client.GET("/api/workflows", {
+        const { response, data, error } = await GalaxyApi().GET("/api/workflows", {
             params: {
                 query: {
                     sortBy: sortBy.value,

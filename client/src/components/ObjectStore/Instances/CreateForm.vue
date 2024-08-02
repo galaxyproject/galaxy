@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import {
     createFormDataToPayload,
     createTemplateForm,
@@ -31,7 +31,7 @@ const inputs = computed<Array<FormEntry>>(() => {
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
 
-    const { data: pluginStatus, error: testRequestError } = await client.POST("/api/object_store_instances/test", {
+    const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST("/api/object_store_instances/test", {
         body: payload,
     });
 
@@ -46,7 +46,7 @@ async function onSubmit(formData: any) {
         return;
     }
 
-    const { data: objectStore, error: createRequestError } = await client.POST("/api/object_store_instances", {
+    const { data: objectStore, error: createRequestError } = await GalaxyApi().POST("/api/object_store_instances", {
         body: payload,
     });
 

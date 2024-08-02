@@ -1,4 +1,4 @@
-import { client, type components } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 /** The browsing mode:
@@ -34,7 +34,7 @@ export interface FilterFileSourcesOptions {
  * @returns The list of available (browsable) file sources from the server.
  */
 export async function fetchFileSources(options: FilterFileSourcesOptions = {}): Promise<BrowsableFilesSourcePlugin[]> {
-    const { data, error } = await client.GET("/api/remote_files/plugins", {
+    const { data, error } = await GalaxyApi().GET("/api/remote_files/plugins", {
         params: {
             query: {
                 browsable_only: true,
@@ -77,7 +77,7 @@ export async function browseRemoteFiles(
     query?: string,
     sortBy?: string
 ): Promise<BrowseRemoteFilesResult> {
-    const { response, data, error } = await client.GET("/api/remote_files", {
+    const { response, data, error } = await GalaxyApi().GET("/api/remote_files", {
         params: {
             query: {
                 format: "uri",

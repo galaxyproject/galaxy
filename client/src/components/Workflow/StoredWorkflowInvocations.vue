@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -19,7 +19,7 @@ const workflow = ref<StoredWorkflowDetailed>();
 
 onMounted(async () => {
     try {
-        const { data, error } = await client.GET("/api/workflows/{workflow_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
             params: { path: { workflow_id: props.storedWorkflowId } },
         });
 

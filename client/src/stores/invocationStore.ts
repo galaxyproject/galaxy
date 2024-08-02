@@ -1,13 +1,13 @@
 import { defineStore } from "pinia";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocation } from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export const useInvocationStore = defineStore("invocationStore", () => {
     async function fetchInvocationDetails(params: FetchParams): Promise<WorkflowInvocation> {
-        const { data, error } = await client.GET("/api/invocations/{invocation_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
@@ -17,7 +17,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     }
 
     async function fetchInvocationJobsSummary(params: FetchParams): Promise<InvocationJobsSummary> {
-        const { data, error } = await client.GET("/api/invocations/{invocation_id}/jobs_summary", {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}/jobs_summary", {
             params: { path: { invocation_id: params.id } },
         });
         if (error) {
@@ -27,7 +27,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
     }
 
     async function fetchInvocationStep(params: FetchParams): Promise<InvocationStep> {
-        const { data, error } = await client.GET("/api/invocations/steps/{step_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/steps/{step_id}", {
             params: { path: { step_id: params.id } },
         });
         if (error) {

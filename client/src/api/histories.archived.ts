@@ -1,4 +1,4 @@
-import { client, type components, type GalaxyApiPaths } from "@/api";
+import { type components, GalaxyApi, type GalaxyApiPaths } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
@@ -38,7 +38,7 @@ const DEFAULT_PAGE_SIZE = 10;
 export async function fetchArchivedHistories(options: GetArchivedHistoriesOptions): Promise<ArchivedHistoriesResult> {
     const params = optionsToApiParams(options);
 
-    const { response, data, error } = await client.GET("/api/histories/archived", {
+    const { response, data, error } = await GalaxyApi().GET("/api/histories/archived", {
         params: {
             query: params,
         },

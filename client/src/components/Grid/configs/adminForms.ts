@@ -2,7 +2,7 @@ import { faEdit, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -69,7 +69,7 @@ const fields: FieldArray = [
                 condition: (data: FormEntry) => !data.deleted,
                 handler: async (data: FormEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this form?"))) {
-                        const { error } = await client.DELETE("/api/forms/{id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/forms/{id}", {
                             params: { path: { id: String(data.id) } },
                         });
                         if (error) {
@@ -90,7 +90,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: FormEntry) => !!data.deleted,
                 handler: async (data: FormEntry) => {
-                    const { error } = await client.POST("/api/forms/{id}/undelete", {
+                    const { error } = await GalaxyApi().POST("/api/forms/{id}/undelete", {
                         params: { path: { id: String(data.id) } },
                     });
                     if (error) {

@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -77,7 +77,7 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !data.deleted,
                 handler: async (data: RoleEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this role?"))) {
-                        const { error } = await client.DELETE("/api/roles/{id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/roles/{id}", {
                             params: {
                                 path: { id: String(data.id) },
                             },
@@ -103,7 +103,7 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
                     if (confirm(_l("Are you sure that you want to permanently delete this role?"))) {
-                        const { error } = await client.POST("/api/roles/{id}/purge", {
+                        const { error } = await GalaxyApi().POST("/api/roles/{id}/purge", {
                             params: {
                                 path: { id: String(data.id) },
                             },
@@ -128,7 +128,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
-                    const { error } = await client.POST("/api/roles/{id}/undelete", {
+                    const { error } = await GalaxyApi().POST("/api/roles/{id}/undelete", {
                         params: {
                             path: { id: String(data.id) },
                         },

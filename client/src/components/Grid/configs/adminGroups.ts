@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -77,7 +77,7 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: async (data: GroupEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this group?"))) {
-                        const { error } = await client.DELETE("/api/groups/{group_id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/groups/{group_id}", {
                             params: {
                                 path: { group_id: String(data.id) },
                             },
@@ -103,7 +103,7 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
                     if (confirm(_l("Are you sure that you want to purge this group?"))) {
-                        const { error } = await client.POST("/api/groups/{group_id}/purge", {
+                        const { error } = await GalaxyApi().POST("/api/groups/{group_id}/purge", {
                             params: {
                                 path: { group_id: String(data.id) },
                             },
@@ -128,7 +128,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
-                    const { error } = await client.POST("/api/groups/{group_id}/undelete", {
+                    const { error } = await GalaxyApi().POST("/api/groups/{group_id}/undelete", {
                         params: {
                             path: { group_id: String(data.id) },
                         },

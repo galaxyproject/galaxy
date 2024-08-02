@@ -3,7 +3,7 @@ import { computed, del, ref, set } from "vue";
 
 import {
     type AnyHistory,
-    client,
+    GalaxyApi,
     type HistoryContentsStats,
     type HistoryDetailed,
     type HistoryDevDetailed,
@@ -171,7 +171,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function copyHistory(history: HistorySummary, name: string, copyAll: boolean) {
-        const { data, error } = await client.POST("/api/histories", {
+        const { data, error } = await GalaxyApi().POST("/api/histories", {
             params: { query: { view: "detailed" } },
             body: {
                 name,
@@ -214,7 +214,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function deleteHistory(historyId: string, purge = false) {
-        const { data, error } = await client.DELETE("/api/histories/{history_id}", {
+        const { data, error } = await GalaxyApi().DELETE("/api/histories/{history_id}", {
             params: { path: { history_id: historyId }, query: { purge } },
         });
 
@@ -229,7 +229,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function deleteHistories(ids: string[], purge = false) {
-        const { data, error } = await client.PUT("/api/histories/batch/delete", {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/batch/delete", {
             body: { ids, purge },
         });
 
@@ -247,7 +247,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function restoreHistory(historyId: string) {
-        const { data, error } = await client.POST("/api/histories/deleted/{history_id}/undelete", {
+        const { data, error } = await GalaxyApi().POST("/api/histories/deleted/{history_id}/undelete", {
             params: { path: { history_id: historyId } },
         });
 
@@ -261,7 +261,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function restoreHistories(ids: string[]) {
-        const { data, error } = await client.PUT("/api/histories/batch/undelete", {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/batch/undelete", {
             body: { ids },
         });
 
@@ -300,7 +300,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadTotalHistoryCount() {
-        const { data, error } = await client.GET("/api/histories/count");
+        const { data, error } = await GalaxyApi().GET("/api/histories/count");
 
         if (error) {
             rethrowSimple(error);
@@ -365,7 +365,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
-        const { data, error } = await client.POST("/api/histories/{history_id}/archive", {
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/archive", {
             params: {
                 path: { history_id: historyId },
             },
@@ -396,7 +396,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
-        const { data, error } = await client.PUT("/api/histories/{history_id}/archive/restore", {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/archive/restore", {
             params: {
                 path: { history_id: historyId },
                 query: { force },
@@ -418,7 +418,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function updateContentStats(historyId: string) {
-        const { data, error } = await client.GET("/api/histories/{history_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
             params: {
                 path: { history_id: historyId },
                 query: { keys: CONTENT_STATS_KEYS.join(",") },

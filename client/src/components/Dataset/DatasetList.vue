@@ -3,7 +3,7 @@ import { BAlert, BTable } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { client, type HDASummary } from "@/api";
+import { GalaxyApi, type HDASummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -69,7 +69,7 @@ async function load(concat = false) {
     loading.value = true;
 
     try {
-        const { data, error } = await client.GET("/api/datasets", {
+        const { data, error } = await GalaxyApi().GET("/api/datasets", {
             params: {
                 query: {
                     q: ["name-contains"],

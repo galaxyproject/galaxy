@@ -14,7 +14,7 @@ import {
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
@@ -98,7 +98,7 @@ const fields: FieldArray = [
                 icon: faCalculator,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
-                    const { error } = await client.PUT("/api/users/{user_id}/recalculate_disk_usage", {
+                    const { error } = await GalaxyApi().PUT("/api/users/{user_id}/recalculate_disk_usage", {
                         params: { path: { user_id: String(data.id) } },
                     });
 
@@ -124,7 +124,7 @@ const fields: FieldArray = [
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
-                    const { error } = await client.PUT("/api/users/{user_id}", {
+                    const { error } = await GalaxyApi().PUT("/api/users/{user_id}", {
                         params: { path: { user_id: String(data.id) } },
                         body: { active: true },
                     });
@@ -149,7 +149,7 @@ const fields: FieldArray = [
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
-                    const { error } = await client.POST("/api/users/{user_id}/send_activation_email", {
+                    const { error } = await GalaxyApi().POST("/api/users/{user_id}/send_activation_email", {
                         params: { path: { user_id: String(data.id) } },
                     });
 
@@ -173,7 +173,7 @@ const fields: FieldArray = [
                 icon: faKey,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
-                    const { error } = await client.POST("/api/users/{user_id}/api_key", {
+                    const { error } = await GalaxyApi().POST("/api/users/{user_id}/api_key", {
                         params: { path: { user_id: String(data.id) } },
                     });
 
@@ -210,7 +210,7 @@ const fields: FieldArray = [
                 },
                 handler: async (data: UserEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this user?"))) {
-                        const { error } = await client.DELETE("/api/users/{user_id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
                             params: {
                                 path: { user_id: String(data.id) },
                                 query: { purge: false },
@@ -239,7 +239,7 @@ const fields: FieldArray = [
                 },
                 handler: async (data: UserEntry) => {
                     if (confirm(_l("Are you sure that you want to permanently delete this user?"))) {
-                        const { error } = await client.DELETE("/api/users/{user_id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
                             params: {
                                 path: { user_id: String(data.id) },
                                 query: { purge: true },
@@ -269,7 +269,7 @@ const fields: FieldArray = [
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
-                    const { error } = await client.POST("/api/users/deleted/{user_id}/undelete", {
+                    const { error } = await GalaxyApi().POST("/api/users/deleted/{user_id}/undelete", {
                         params: { path: { user_id: String(data.id) } },
                     });
 

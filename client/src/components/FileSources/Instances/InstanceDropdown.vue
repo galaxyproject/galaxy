@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -22,7 +22,7 @@ const isUpgradable = computed(() =>
 );
 
 async function onRemove() {
-    const { error } = await client.PUT("/api/file_source_instances/{user_file_source_id}", {
+    const { error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
         params: { path: { user_file_source_id: props.fileSource.uuid } },
         body: {
             hidden: true,

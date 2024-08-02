@@ -1,5 +1,5 @@
 import { type HistoryDetailed, type HistorySummary, type MessageException } from "@/api";
-import { GalaxyApi, type GalaxyApiClient } from "@/api/client";
+import { GalaxyApi } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 
 const TEST_HISTORY_SUMMARY: HistorySummary = {
@@ -51,15 +51,9 @@ server.use(
 );
 
 describe("useServerMock", () => {
-    let client: GalaxyApiClient;
-
-    beforeAll(() => {
-        client = GalaxyApi();
-    });
-
     it("mocks the Galaxy Server", async () => {
         {
-            const { data, error } = await client.GET("/api/histories/{history_id}", {
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
                 params: {
                     path: { history_id: "test" },
                     query: { view: "summary" },
@@ -73,7 +67,7 @@ describe("useServerMock", () => {
         }
 
         {
-            const { data, error } = await client.GET("/api/histories/{history_id}", {
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
                 params: {
                     path: { history_id: "test" },
                     query: { view: "detailed" },
@@ -87,7 +81,7 @@ describe("useServerMock", () => {
         }
 
         {
-            const { data, error } = await client.GET("/api/histories/{history_id}", {
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
                 params: {
                     path: { history_id: "must-fail" },
                 },
@@ -100,7 +94,7 @@ describe("useServerMock", () => {
         }
 
         {
-            const { data, error } = await client.GET("/api/configuration");
+            const { data, error } = await GalaxyApi().GET("/api/configuration");
 
             expect(data).toBeUndefined();
 

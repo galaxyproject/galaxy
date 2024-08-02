@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { useConfigStore } from "@/stores/configurationStore";
 import { getShortToolId } from "@/utils/tool";
 
@@ -29,7 +29,7 @@ const shortToolId = computed(() => getShortToolId(props.toolId));
 const query = computed(() => `tags:${shortToolId.value}+${toolHelpTag} status:solved`);
 
 onMounted(async () => {
-    const { data, error } = await client.GET("/api/help/forum/search", {
+    const { data, error } = await GalaxyApi().GET("/api/help/forum/search", {
         params: {
             query: { query: query.value },
         },

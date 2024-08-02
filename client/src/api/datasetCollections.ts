@@ -1,4 +1,4 @@
-import { client, type CollectionEntry, type DCESummary, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
+import { type CollectionEntry, type DCESummary, GalaxyApi, type HDCADetailed, type HDCASummary, isHDCA } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const DEFAULT_LIMIT = 50;
@@ -8,7 +8,7 @@ const DEFAULT_LIMIT = 50;
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
 export async function fetchCollectionDetails(params: { id: string }): Promise<HDCADetailed> {
-    const { data, error } = await client.GET("/api/dataset_collections/{id}", {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
         params: { path: params },
     });
 
@@ -23,7 +23,7 @@ export async function fetchCollectionDetails(params: { id: string }): Promise<HD
  * @param params.id The ID of the collection (HDCA) to fetch.
  */
 export async function fetchCollectionSummary(params: { id: string }): Promise<HDCASummary> {
-    const { data, error } = await client.GET("/api/dataset_collections/{id}", {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}", {
         params: {
             path: params,
             query: { view: "collection" },
@@ -46,7 +46,7 @@ export async function fetchCollectionElements(params: {
     /** The maximum number of elements to fetch. */
     limit?: number;
 }): Promise<DCESummary[]> {
-    const { data, error } = await client.GET("/api/dataset_collections/{hdca_id}/contents/{parent_id}", {
+    const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{hdca_id}/contents/{parent_id}", {
         params: {
             path: { hdca_id: params.hdcaId, parent_id: params.collectionId },
             query: { instance_type: "history", offset: params.offset, limit: params.limit },

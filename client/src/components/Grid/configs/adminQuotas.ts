@@ -2,7 +2,7 @@ import { faCog, faDatabase, faEdit, faPlus, faTrash, faTrashRestore, faUsers } f
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -93,7 +93,7 @@ const fields: FieldArray = [
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: async (data: QuotaEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this quota?"))) {
-                        const { error } = await client.DELETE("/api/quotas/{id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/quotas/{id}", {
                             params: {
                                 path: { id: String(data.id) },
                             },
@@ -119,7 +119,7 @@ const fields: FieldArray = [
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
                     if (confirm(_l("Are you sure that you want to purge this quota?"))) {
-                        const { error } = await client.POST("/api/quotas/{id}/purge", {
+                        const { error } = await GalaxyApi().POST("/api/quotas/{id}/purge", {
                             params: {
                                 path: { id: String(data.id) },
                             },
@@ -144,7 +144,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
-                    const { error } = await client.POST("/api/quotas/deleted/{id}/undelete", {
+                    const { error } = await GalaxyApi().POST("/api/quotas/deleted/{id}/undelete", {
                         params: {
                             path: { id: String(data.id) },
                         },

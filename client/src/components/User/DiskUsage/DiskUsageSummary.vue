@@ -2,7 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { type AsyncTaskResultSummary, client } from "@/api";
+import { type AsyncTaskResultSummary, GalaxyApi } from "@/api";
 import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -56,7 +56,7 @@ async function displayRecalculationForSeconds(seconds: number) {
 }
 
 async function onRefresh() {
-    const { response, data, error } = await client.PUT("/api/users/current/recalculate_disk_usage");
+    const { response, data, error } = await GalaxyApi().PUT("/api/users/current/recalculate_disk_usage");
 
     if (error) {
         errorMessage.value = errorMessageAsString(error);

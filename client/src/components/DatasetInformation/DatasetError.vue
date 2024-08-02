@@ -6,7 +6,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { client, type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails, type JobInputSummary } from "@/api/jobs";
 import { useMarkdown } from "@/composables/markdown";
@@ -61,7 +61,7 @@ async function getDatasetDetails() {
 async function getJobDetails(jobId: string) {
     jobLoading.value = true;
     try {
-        const { data, error } = await client.GET("/api/jobs/{job_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: {
                 path: { job_id: jobId },
                 query: { full: true },
@@ -80,7 +80,7 @@ async function getJobDetails(jobId: string) {
 }
 
 async function getJobProblems(jobId: string) {
-    const { data, error } = await client.GET("/api/jobs/{job_id}/common_problems", {
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}/common_problems", {
         params: {
             path: { job_id: jobId },
         },
@@ -98,7 +98,7 @@ async function submit(dataset?: HDADetailed, userEmailJob?: string | null) {
         return;
     }
 
-    const { data, error } = await client.POST("/api/jobs/{job_id}/error", {
+    const { data, error } = await GalaxyApi().POST("/api/jobs/{job_id}/error", {
         params: {
             path: { job_id: dataset.creating_job },
         },

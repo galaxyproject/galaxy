@@ -4,7 +4,7 @@ import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -19,7 +19,7 @@ const props = defineProps<Props>();
 const count = ref<number | undefined>(undefined);
 
 async function initCounts() {
-    const { data, error } = await client.GET("/api/workflows/{workflow_id}/counts", {
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
         params: { path: { workflow_id: props.workflow.id } },
     });
 

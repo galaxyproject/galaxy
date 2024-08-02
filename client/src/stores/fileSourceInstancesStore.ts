@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import { client, type components } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 type UserFileSourceModel = components["schemas"]["UserFileSourceModel"];
@@ -32,7 +32,7 @@ export const useFileSourceInstancesStore = defineStore("fileSourceInstances", {
             this.error = errorMessageAsString(err);
         },
         async fetchInstances() {
-            const { data: instances, error } = await client.GET("/api/file_source_instances");
+            const { data: instances, error } = await GalaxyApi().GET("/api/file_source_instances");
 
             if (error) {
                 this.handleError(error);

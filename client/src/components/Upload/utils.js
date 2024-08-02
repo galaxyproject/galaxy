@@ -3,7 +3,7 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { getDbKeys } from "@/api/dbKeys";
 
 export const AUTO_EXTENSION = {
@@ -66,7 +66,9 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await client.GET("/api/datatypes", { params: { query: { extension_only: false } } });
+    const { data: datatypes } = await GalaxyApi().GET("/api/datatypes", {
+        params: { query: { extension_only: false } },
+    });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
@@ -111,7 +113,7 @@ export async function getUploadDbKeys(defaultDbKey) {
 }
 
 export async function getRemoteEntries(onSuccess, onError) {
-    const { data, error } = await client.GET("/api/remote_files");
+    const { data, error } = await GalaxyApi().GET("/api/remote_files");
 
     if (error) {
         onError(errorMessageAsString(error));
@@ -121,7 +123,7 @@ export async function getRemoteEntries(onSuccess, onError) {
 }
 
 export async function getRemoteEntriesAt(target) {
-    const { data: files, error } = await client.GET("/api/remote_files", {
+    const { data: files, error } = await GalaxyApi().GET("/api/remote_files", {
         params: {
             query: { target },
         },

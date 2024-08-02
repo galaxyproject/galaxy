@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import { client, type components } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { canUpgrade, findTemplate, getLatestVersion, getLatestVersionMap } from "./configTemplatesUtil";
@@ -51,7 +51,7 @@ export const useFileSourceTemplatesStore = defineStore("fileSourceTemplatesStore
             this.error = errorMessageAsString(err);
         },
         async fetchTemplates() {
-            const { data: templates, error } = await client.GET("/api/file_source_templates");
+            const { data: templates, error } = await GalaxyApi().GET("/api/file_source_templates");
 
             if (error) {
                 this.handleError(error);

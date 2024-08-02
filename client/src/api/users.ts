@@ -1,11 +1,11 @@
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { toQuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export { type QuotaUsage } from "@/components/User/DiskUsage/Quota/model";
 
 export async function fetchCurrentUserQuotaUsages() {
-    const { data, error } = await client.GET("/api/users/{user_id}/usage", {
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/usage", {
         params: { path: { user_id: "current" } },
     });
 
@@ -21,7 +21,7 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
         quotaSourceLabel = "__null__";
     }
 
-    const { data, error } = await client.GET("/api/users/{user_id}/usage/{label}", {
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/usage/{label}", {
         params: { path: { user_id: "current", label: quotaSourceLabel } },
     });
 

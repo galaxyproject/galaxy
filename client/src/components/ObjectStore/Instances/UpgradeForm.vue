@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -33,7 +33,7 @@ const loadingMessage = "Loading storage location template and instance informati
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
 
-    const { data: objectStore, error: updateRequestError } = await client.PUT(
+    const { data: objectStore, error: updateRequestError } = await GalaxyApi().PUT(
         "/api/object_store_instances/{user_object_store_id}",
         {
             params: { path: { user_object_store_id: props.instance.uuid } },

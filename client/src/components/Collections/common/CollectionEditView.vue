@@ -7,7 +7,7 @@ import { BAlert, BButton, BSpinner, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { updateContentFields } from "@/components/History/model/queries";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
@@ -96,7 +96,7 @@ async function clickedSave(attribute: string, newValue: any) {
 
     const dbKey = newValue.id as string;
 
-    const { error } = await client.POST("/api/dataset_collections/{id}/copy", {
+    const { error } = await GalaxyApi().POST("/api/dataset_collections/{id}/copy", {
         params: { path: { id: props.collectionId } },
         body: { dbkey: dbKey },
     });
@@ -130,7 +130,7 @@ async function clickedDatatypeChange(selectedDatatype: any) {
         return;
     }
 
-    const { error } = await client.PUT("/api/histories/{history_id}/contents/bulk", {
+    const { error } = await GalaxyApi().PUT("/api/histories/{history_id}/contents/bulk", {
         params: { path: { history_id: currentHistoryId.value } },
         body: {
             items: [

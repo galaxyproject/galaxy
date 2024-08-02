@@ -2,7 +2,7 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -39,7 +39,7 @@ async function onSubmit(formData: any) {
         const payload = editFormDataToPayload(template.value, formData);
         const user_file_source_id = instance?.value?.uuid!;
 
-        const { data: fileSource, error } = await client.PUT("/api/file_source_instances/{user_file_source_id}", {
+        const { data: fileSource, error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
             params: { path: { user_file_source_id } },
             body: payload,
         });
