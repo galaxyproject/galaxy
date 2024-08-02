@@ -3,11 +3,10 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { defineComponent } from "vue";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
+import { type BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 import { useFileSources } from "./fileSources";
-
-jest.mock("@/api/schema");
 
 const REMOTE_FILES_API_ROUTE = "/api/remote_files/plugins";
 
@@ -33,9 +32,33 @@ function setupWrapper(): any {
     return shallowMount(TestComponent, { pinia });
 }
 
+function buildFakeFileSource(id: string, writable: boolean = true): BrowsableFilesSourcePlugin {
+    const type = `${id}Type`;
+    return {
+        id: id,
+        type,
+        uri_root: `${type}://`,
+        label: `${id} Label`,
+        doc: `${id} Doc`,
+        writable,
+        browsable: true,
+        supports: {
+            pagination: false,
+            search: false,
+            sorting: false,
+        },
+    };
+}
+
+const { server, http } = useServerMock();
+
 describe("useFileSources", () => {
     beforeEach(async () => {
-        mockFetcher.path(REMOTE_FILES_API_ROUTE).method("get").mock({ data: [] });
+        server.use(
+            http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
+                return response(200).json([]);
+            })
+        );
     });
 
     it("should be initially loading", async () => {
@@ -44,8 +67,12 @@ describe("useFileSources", () => {
     });
 
     it("should fetch file sources on mount", async () => {
-        const expectedFileSources = [{ id: "foo", writable: true }];
-        mockFetcher.path(REMOTE_FILES_API_ROUTE).method("get").mock({ data: expectedFileSources });
+        const expectedFileSources = [buildFakeFileSource("foo")];
+        server.use(
+            http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
+                return response(200).json(expectedFileSources);
+            })
+        );
 
         const wrapper = setupWrapper();
 
@@ -58,11 +85,12 @@ describe("useFileSources", () => {
     });
 
     it("should set hasWritable to false if no file sources are writable", async () => {
-        const expectedFileSources = [
-            { id: "foo", writable: false },
-            { id: "bar", writable: false },
-        ];
-        mockFetcher.path(REMOTE_FILES_API_ROUTE).method("get").mock({ data: expectedFileSources });
+        const expectedFileSources = [buildFakeFileSource("foo", false), buildFakeFileSource("bar", false)];
+        server.use(
+            http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
+                return response(200).json(expectedFileSources);
+            })
+        );
 
         const wrapper = setupWrapper();
 
@@ -72,11 +100,12 @@ describe("useFileSources", () => {
     });
 
     it("should set hasWritable to true if any file sources are writable", async () => {
-        const expectedFileSources = [
-            { id: "foo", writable: true },
-            { id: "bar", writable: false },
-        ];
-        mockFetcher.path(REMOTE_FILES_API_ROUTE).method("get").mock({ data: expectedFileSources });
+        const expectedFileSources = [buildFakeFileSource("foo", true), buildFakeFileSource("bar", false)];
+        server.use(
+            http.get(REMOTE_FILES_API_ROUTE, ({ response }) => {
+                return response(200).json(expectedFileSources);
+            })
+        );
 
         const wrapper = setupWrapper();
 
