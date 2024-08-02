@@ -30,6 +30,7 @@ from .models import (
     CwlUnionParameterModel,
     DataCollectionParameterModel,
     DataParameterModel,
+    DrillDownParameterModel,
     FloatParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
@@ -144,6 +145,19 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 optional=optional,
                 options=options,
                 multiple=multiple,
+            )
+        elif param_type == "drill_down":
+            multiple = input_source.get_bool("multiple", False)
+            hierarchy = input_source.get("hierarchy", "exact")
+            dynamic_options = input_source.parse_drill_down_dynamic_options()
+            static_options = None
+            if dynamic_options is None:
+                static_options = input_source.parse_drill_down_static_options()
+            return DrillDownParameterModel(
+                name=input_source.parse_name(),
+                multiple=multiple,
+                hierarchy=hierarchy,
+                options=static_options,
             )
         else:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")

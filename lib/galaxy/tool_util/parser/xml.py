@@ -30,12 +30,16 @@ from galaxy.util import (
     Element,
     ElementTree,
     string_as_bool,
+    XML,
     xml_text,
     xml_to_string,
 )
 from .interface import (
     AssertionList,
     Citation,
+    DrillDownDynamicFilters,
+    DrillDownDynamicOptions,
+    DrillDownOptionsDict,
     DynamicOptions,
     InputSource,
     PageSource,
@@ -1321,6 +1325,77 @@ class XmlInputSource(InputSource):
             deduplicated_static_options[value] = (text, value, selected)
         return list(deduplicated_static_options.values())
 
+    def parse_drill_down_dynamic_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[DrillDownDynamicOptions]:
+        from_file = self.input_elem.get("from_file", None)
+        if from_file:
+            if not os.path.isabs(from_file):
+                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
+                from_file = os.path.join(tool_data_path, from_file)
+            elem = XML(f"<root>{open(from_file).read()}</root>")
+        else:
+            elem = self.input_elem
+
+        dynamic_options_raw = elem.get("dynamic_options", None)
+        dynamic_options: Optional[str] = str(dynamic_options_raw) if dynamic_options_raw else None
+        filters: Optional[DrillDownDynamicFilters] = None
+        if elem.find("filter"):
+            _filters: DrillDownDynamicFilters = {}
+            for filter in elem.findall("filter"):
+                # currently only filtering by metadata key matching input file is allowed
+                filter_type = filter.get("type")
+                if filter_type == "data_meta":
+                    data_ref = filter.get("data_ref")
+                    assert data_ref
+                    if data_ref not in _filters:
+                        _filters[data_ref] = {}
+                    meta_key = filter.get("meta_key")
+                    assert meta_key
+                    if meta_key not in _filters[data_ref]:
+                        _filters[data_ref][meta_key] = {}
+                    meta_value = filter.get("value")
+                    if meta_value not in _filters[data_ref][meta_key]:
+                        _filters[data_ref][meta_key][meta_value] = []
+                    assert meta_value
+                    options_elem = filter.find("options")
+                    assert options_elem
+                    _recurse_drill_down_elems(
+                        _filters[data_ref][meta_key][meta_value],
+                        options_elem.findall("option"),
+                    )
+            filters = _filters
+        if filters is None and dynamic_options is None:
+            return None
+        else:
+            return XmlDrillDownDynamicOptions(
+                code_block=dynamic_options,
+                filters=filters,
+            )
+
+    def parse_drill_down_static_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[List[DrillDownOptionsDict]]:
+        from_file = self.input_elem.get("from_file", None)
+        if from_file:
+            if not os.path.isabs(from_file):
+                assert tool_data_path, "This tool cannot be parsed outside of a Galaxy context"
+                from_file = os.path.join(tool_data_path, from_file)
+            elem = XML(f"<root>{open(from_file).read()}</root>")
+        else:
+            elem = self.input_elem
+
+        dynamic_options_elem = elem.get("dynamic_options", None)
+        filter_elem = elem.get("filter", None)
+        if dynamic_options_elem is not None and filter_elem is not None:
+            return None
+
+        root_options: List[DrillDownOptionsDict] = []
+        options_elem = elem.find("options")
+        assert options_elem, "Non-dynamic drilldown parameters must supply an options element"
+        _recurse_drill_down_elems(root_options, options_elem.findall("option"))
+        return root_options
+
     def parse_optional(self, default=None):
         """Return boolean indicating whether parameter is optional."""
         elem = self.input_elem
@@ -1450,3 +1525,35 @@ def parse_citation_elem(citation_elem: Element) -> Optional[Citation]:
         type=citation_type,
         content=content,
     )
+
+
+class XmlDrillDownDynamicOptions(DrillDownDynamicOptions):
+
+    def __init__(self, code_block: Optional[str], filters: Optional[DrillDownDynamicFilters]):
+        self._code_block = code_block
+        self._filters = filters
+
+    def from_code_block(self) -> Optional[str]:
+        """Get a code block to do an eval on."""
+        return self._code_block
+
+    def from_filters(self) -> Optional[DrillDownDynamicFilters]:
+        return self._filters
+
+
+def _recurse_drill_down_elems(options: List[DrillDownOptionsDict], option_elems: List[Element]):
+    for option_elem in option_elems:
+        selected = string_as_bool(option_elem.get("selected", False))
+        nested_options: List[DrillDownOptionsDict] = []
+        value = option_elem.get("value")
+        assert value
+        current_option: DrillDownOptionsDict = DrillDownOptionsDict(
+            {
+                "name": option_elem.get("name"),
+                "value": value,
+                "options": nested_options,
+                "selected": selected,
+            }
+        )
+        _recurse_drill_down_elems(nested_options, option_elem.findall("option"))
+        options.append(current_option)

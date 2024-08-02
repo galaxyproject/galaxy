@@ -37,6 +37,7 @@ from typing_extensions import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tool_util.parser.interface import DrillDownOptionsDict
 from ._types import (
     cast_as_type,
     is_optional,
@@ -498,6 +499,80 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         return self.multiple and not self.optional
 
 
+DrillDownHierarchyT = Literal["recurse", "exact"]
+
+
+def drill_down_possible_values(options: List[DrillDownOptionsDict], multiple: bool) -> List[str]:
+    possible_values = []
+
+    def add_value(option: str, is_leaf: bool):
+        if not multiple and not is_leaf:
+            return
+        possible_values.append(option)
+
+    def walk_selection(option: DrillDownOptionsDict):
+        child_options = option["options"]
+        is_leaf = not child_options
+        add_value(option["value"], is_leaf)
+        if not is_leaf:
+            for child_option in child_options:
+                walk_selection(child_option)
+
+    for option in options:
+        walk_selection(option)
+
+    return possible_values
+
+
+class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_drill_down"] = "gx_drill_down"
+    options: Optional[List[DrillDownOptionsDict]] = None
+    multiple: bool
+    hierarchy: DrillDownHierarchyT
+
+    @property
+    def py_type(self) -> Type:
+        if self.options is not None:
+            literal_options: List[Type] = [
+                cast_as_type(Literal[o]) for o in drill_down_possible_values(self.options, self.multiple)
+            ]
+            py_type = union_type(literal_options)
+        else:
+            py_type = StrictStr
+
+        if self.multiple:
+            py_type = list_type(py_type)
+
+        return py_type
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        # these seem to always require a value - see test_tools.py -> test_drill_down_first_by_default
+        requires_value = True
+        options = self.options
+        if options:
+            return not any_drill_down_options_selected(options)
+        else:
+            # I'm not sure how to handle dynamic options... they might or might not be required?
+            # do we need to default to assuming they're not required?
+            return False
+
+
+def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool:
+    for option in options:
+        selected = option.get("selected")
+        if selected:
+            return True
+        child_options = option.get("options", [])
+        if any_drill_down_options_selected(child_options):
+            return True
+
+    return False
+
+
 DiscriminatorType = Union[bool, str]
 
 
@@ -829,6 +904,7 @@ GalaxyParameterT = Union[
     DataCollectionParameterModel,
     DirectoryUriParameterModel,
     RulesParameterModel,
+    DrillDownParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,

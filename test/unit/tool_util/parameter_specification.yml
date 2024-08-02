@@ -620,6 +620,33 @@ gx_section_data:
   request_internal_invalid:
     - parameter: { data_parameter: { src: hda, id: abcdabcd } }
 
+gx_drill_down_exact:
+  request_valid:
+  - parameter: aa
+  - parameter: bbb
+  - parameter: ba
+  request_invalid:
+  # not multiple so cannot choose a non-leaf
+  - parameter: a
+  - parameter: c
+  - parameter: {}
+  # no implicit default currently - see test_drill_down_first_by_default in API test test_tools.py.
+  - {}
+  - parameter: null
+
+gx_drill_down_exact_with_selection:
+  request_valid:
+  - parameter: aa
+  - parameter: bbb
+  - parameter: ba
+  # - {}
+  request_invalid:
+  # not multiple so cannot choose a non-leaf
+  - parameter: a
+  - parameter: c
+  - parameter: {}
+  - parameter: null
+
 cwl_int:
   request_valid:
     - parameter: 5

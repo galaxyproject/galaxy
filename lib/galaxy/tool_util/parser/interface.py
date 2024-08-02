@@ -424,6 +424,20 @@ class DynamicOptions(metaclass=ABCMeta):
         """If dynamic options are loaded from an index file, return the name."""
 
 
+DrillDownDynamicFilters = Dict[str, Dict[str, dict]]  # {input key: {metadata_key: metadata values}}
+
+
+class DrillDownDynamicOptions(metaclass=ABCMeta):
+
+    @abstractmethod
+    def from_code_block(self) -> Optional[str]:
+        """Get a code block to do an eval on."""
+
+    @abstractmethod
+    def from_filters(self) -> Optional[DrillDownDynamicFilters]:
+        """Get filters to apply to target datasets."""
+
+
 class InputSource(metaclass=ABCMeta):
     default_optional = False
 
@@ -491,11 +505,21 @@ class InputSource(metaclass=ABCMeta):
         """
         return None
 
+    def parse_drill_down_dynamic_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional["DrillDownDynamicOptions"]:
+        return None
+
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         """Return list of static options if this is a select type without
         defining a dynamic options.
         """
         return []
+
+    def parse_drill_down_static_options(
+        self, tool_data_path: Optional[str] = None
+    ) -> Optional[List["DrillDownOptionsDict"]]:
+        return None
 
     def parse_conversion_tuples(self):
         """Return list of (name, extension) to describe explicit conversions."""
@@ -673,3 +697,10 @@ class TestCollectionOutputDef:
 
     def to_dict(self):
         return dict(name=self.name, attributes=self.attrib, element_tests=self.element_tests)
+
+
+class DrillDownOptionsDict(TypedDict):
+    name: Optional[str]
+    value: str
+    options: List["DrillDownOptionsDict"]
+    selected: bool
