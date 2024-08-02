@@ -450,7 +450,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         finally:
             log.debug("irods_pt _push_to_storage: %s", ipt_timer)
 
-    def _delete(self, obj, entire_dir=False, **kwargs):
+    def _delete(self, obj, entire_dir: bool = False, **kwargs) -> bool:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
         extra_dir = kwargs.get("extra_dir", None)

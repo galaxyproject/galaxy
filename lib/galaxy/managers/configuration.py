@@ -104,8 +104,8 @@ class ConfigSerializer(base.ModelSerializer):
         self.default_view = "all"
         self.add_view("all", list(self.serializers.keys()))
 
-    def default_serializer(self, config, key):
-        return getattr(config, key, None)
+    def default_serializer(self, item, key, **context):
+        return getattr(item, key, None)
 
     def add_serializers(self):
         def _defaults_to(default) -> base.Serializer:

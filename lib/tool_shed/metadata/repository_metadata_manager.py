@@ -957,9 +957,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository(self, repository, repository_clone_url=None):
+    def set_repository(
+        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+    ):
         super().set_repository(repository)
-        self.repository_clone_url = repository_clone_url or common_util.generate_clone_url_for(self.trans, repository)
+        self.repository_clone_url = relative_install_dir or common_util.generate_clone_url_for(self.trans, repository)
 
     def set_repository_metadata(self, host, content_alert_str="", **kwd):
         """

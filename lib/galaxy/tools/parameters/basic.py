@@ -55,7 +55,7 @@ from galaxy.util import (
     unicodify,
     XML,
 )
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
@@ -161,7 +161,7 @@ class ParameterValueError(ValueError):
         return as_dict
 
 
-class ToolParameter(Dictifiable):
+class ToolParameter(UsesDictVisibleKeys):
     """
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
@@ -318,7 +318,7 @@ class ToolParameter(Dictifiable):
     def to_dict(self, trans, other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
         other_values = other_values or {}
-        tool_dict = super().to_dict()
+        tool_dict = self._dictify_view_keys()
         tool_dict["model_class"] = self.__class__.__name__
         tool_dict["optional"] = self.optional
         tool_dict["hidden"] = self.hidden
@@ -464,7 +464,7 @@ class IntegerToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         other_values = other_values or {}
         try:
             return int(value)
@@ -536,7 +536,7 @@ class FloatToolParameter(TextToolParameter):
         if self.min is not None or self.max is not None:
             self.validators.append(validation.InRangeValidator(None, self.min, self.max))
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         other_values = other_values or {}
         try:
             return float(value)
@@ -992,7 +992,10 @@ class SelectToolParameter(ToolParameter):
         """
         return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
-    def from_json(self, value, trans, other_values=None, require_legal_value=True):
+    def from_json(self, value, trans=None, other_values=None):
+        return self._select_from_json(value, trans, other_values=other_values, require_legal_value=True)
+
+    def _select_from_json(self, value, trans, other_values=None, require_legal_value=True):
         other_values = other_values or {}
         try:
             legal_values = self.get_legal_values(trans, other_values, value)
@@ -1268,7 +1271,7 @@ class SelectTagParameter(SelectToolParameter):
             self.default_value = input_source.get("value", None)
         self.is_dynamic = True
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         other_values = other_values or {}
         if self.multiple:
             tag_list = []
@@ -1290,7 +1293,7 @@ class SelectTagParameter(SelectToolParameter):
                 value = None
         # We skip requiring legal values -- this is similar to optional, but allows only subset of datasets to be positive
         # TODO: May not actually be required for (nested) collection input ?
-        return super().from_json(value, trans, other_values, require_legal_value=False)
+        return super()._select_from_json(value, trans, other_values, require_legal_value=False)
 
     def get_tag_list(self, other_values):
         """
@@ -1395,7 +1398,7 @@ class ColumnListParameter(SelectToolParameter):
             return value.strip()
         return value
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
         removes the 'c' when entered into a workflow.
@@ -1665,9 +1668,9 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         elif not self.dynamic_options:
             recurse_option_elems(self.options, elem.find("options").findall("option"))
 
-    def _get_options_from_code(self, trans=None, value=None, other_values=None):
+    def _get_options_from_code(self, trans=None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")
-        call_other_values = ExpressionContext({"__trans__": trans, "__value__": value})
+        call_other_values = ExpressionContext({"__trans__": trans, "__value__": None})
         if other_values:
             call_other_values.parent = other_values.parent
             call_other_values.update(other_values.dict)
@@ -1676,11 +1679,11 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         except Exception:
             return []
 
-    def get_options(self, trans=None, value=None, other_values=None):
+    def get_options(self, trans=None, other_values=None):
         other_values = other_values or {}
         if self.is_dynamic:
             if self.dynamic_options:
-                options = self._get_options_from_code(trans=trans, value=value, other_values=other_values)
+                options = self._get_options_from_code(trans=trans, other_values=other_values)
             else:
                 options = []
             for filter_key, filter_value in self.filtered.items():
@@ -1710,7 +1713,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         recurse_options(legal_values, self.get_options(trans=trans, other_values=other_values))
         return legal_values
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         other_values = other_values or {}
         legal_values = self.get_legal_values(trans, other_values, value)
         if not legal_values and trans.workflow_building_mode:
@@ -2111,7 +2114,7 @@ class DataToolParameter(BaseDataToolParameter):
                     )
                 self.conversions.append((name, conv_extension, [conv_type]))
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}
@@ -2468,7 +2471,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if match:
                 yield history_dataset_collection, match.implicit_conversion
 
-    def from_json(self, value, trans, other_values=None):
+    def from_json(self, value, trans=None, other_values=None):
         session = trans.sa_session
 
         other_values = other_values or {}

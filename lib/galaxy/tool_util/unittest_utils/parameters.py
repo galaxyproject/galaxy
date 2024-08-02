@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from galaxy.tool_util.parameters import (
     from_input_source,
@@ -11,7 +10,6 @@ from galaxy.util import galaxy_directory
 
 
 class ParameterBundle(ToolParameterBundle):
-    input_models: List[ToolParameterT]
 
     def __init__(self, parameter: ToolParameterT):
         self.input_models = [parameter]

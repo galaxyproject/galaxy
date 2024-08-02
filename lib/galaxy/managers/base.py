@@ -697,7 +697,7 @@ class ModelSerializer(HasAModelManager[T]):
                 try:
                     returned[key] = self.serializers[key](item, key, **context)
                 except SkipAttribute:
-                    # dont add this key if the deserializer threw this
+                    # don't add this key if the serializer threw this
                     pass
             elif key in self.serializable_keyset:
                 returned[key] = self.default_serializer(item, key, **context)

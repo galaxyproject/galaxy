@@ -33,7 +33,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dictifiable import Dictifiable
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -134,7 +133,7 @@ class NullToolTagManager(AbstractToolTagManager):
         return None
 
 
-class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
+class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
     workflows optionally in labelled sections.
@@ -246,7 +245,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self.__default_panel_view
 
-    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
+    def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool):
@@ -1106,10 +1105,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if not tool or guid and guid != tool.guid:
             try:
                 tool = self.create_tool(
-                    config_file=config_file,
+                    config_file,
+                    tool_cache_data_dir=tool_cache_data_dir,
                     tool_shed_repository=tool_shed_repository,
                     guid=guid,
-                    tool_cache_data_dir=tool_cache_data_dir,
                     **kwds,
                 )
             except Exception:

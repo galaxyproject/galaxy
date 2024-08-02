@@ -432,7 +432,7 @@ class AuthnzManager:
             if success is False:
                 return False, message, None
             elif provider in KEYCLOAK_BACKENDS:
-                return backend.disconnect(provider, trans, email, disconnect_redirect_url)
+                return backend.disconnect(provider, trans, disconnect_redirect_url, email=email)
             return backend.disconnect(provider, trans, disconnect_redirect_url)
         except Exception:
             msg = f"An error occurred when disconnecting authentication with `{provider}` identity provider for user `{trans.user.username}`"

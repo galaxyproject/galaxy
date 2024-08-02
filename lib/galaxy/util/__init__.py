@@ -1134,7 +1134,7 @@ def commaify(amount):
 
 
 @overload
-def unicodify(  # type: ignore[overload-overlap]
+def unicodify(  # type: ignore[overload-overlap]  # ignore can be removed in mypy >=1.11.0
     value: Literal[None],
     encoding: str = DEFAULT_ENCODING,
     error: str = "replace",

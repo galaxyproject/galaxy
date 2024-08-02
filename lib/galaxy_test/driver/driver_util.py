@@ -799,7 +799,7 @@ class TestDriver:
         self.server_wrappers: List[ServerWrapper] = []
         self.temp_directories: List[str] = []
 
-    def setup(self, config_object=None) -> None:
+    def setup(self) -> None:
         """Called before tests are built."""
 
     def tear_down(self) -> None:

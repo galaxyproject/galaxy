@@ -228,14 +228,14 @@ class HDAManager(
         return copy
 
     # .... deletion and purging
-    def purge(self, hda, flush=True, **kwargs):
+    def purge(self, item, flush=True, **kwargs):
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
             user = kwargs.get("user")
-            return purge_hda.delay(hda_id=hda.id, task_user_id=getattr(user, "id", None))
+            return purge_hda.delay(hda_id=item.id, task_user_id=getattr(user, "id", None))
         else:
-            self._purge(hda, flush=flush)
+            self._purge(item, flush=flush)
 
     def _purge(self, hda, flush=True):
         """
