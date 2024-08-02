@@ -3485,6 +3485,158 @@ export interface components {
              */
             username: string;
         };
+        /** CustomArchivedHistoryView */
+        CustomArchivedHistoryView: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived?: boolean | null;
+            /**
+             * Contents Active
+             * @description Contains the number of active, deleted or hidden items in a History.
+             */
+            contents_active?: components["schemas"]["HistoryActiveContentCounts"] | null;
+            /**
+             * Contents States
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            contents_states?: {
+                [key: string]: number;
+            } | null;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url?: string | null;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count?: number | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Export Record Data
+             * @description The export record data associated with this archived history. Used to recover the history.
+             */
+            export_record_data?: components["schemas"]["ExportRecordData"] | null;
+            /**
+             * Genome Build
+             * @description TODO
+             */
+            genome_build?: string | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable?: boolean | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name?: string | null;
+            /**
+             * Nice Size
+             * @description The total size of the contents of this history in a human-readable format.
+             */
+            nice_size?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published?: boolean | null;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged?: boolean | null;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size?: number | null;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string | null;
+            /**
+             * State
+             * @description The current state of the History based on the states of the datasets it contains.
+             */
+            state?: components["schemas"]["DatasetState"] | null;
+            /**
+             * State Counts
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            state_details?: {
+                [key: string]: number;
+            } | null;
+            /**
+             * State IDs
+             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
+             */
+            state_ids?: {
+                [key: string]: string[];
+            } | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             */
+            user_id?: string | null;
+            /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string | null;
+        };
         /** CustomBuildCreationPayload */
         CustomBuildCreationPayload: {
             /**
@@ -17105,7 +17257,11 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": unknown[];
+                    "application/json": (
+                        | components["schemas"]["CustomArchivedHistoryView"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | components["schemas"]["ArchivedHistorySummary"]
+                    )[];
                 };
             };
             /** @description Request Error */
@@ -17720,7 +17876,10 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": unknown;
+                    "application/json":
+                        | components["schemas"]["CustomArchivedHistoryView"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | components["schemas"]["ArchivedHistorySummary"];
                 };
             };
             /** @description Request Error */
