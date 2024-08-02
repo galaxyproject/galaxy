@@ -1,11 +1,9 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { useClientApi } from "@/api/client";
+import { GalaxyApi } from "@/api/client";
 import { type components, type GalaxyApiPaths } from "@/api/schema";
 
-export { type components, type GalaxyApiPaths };
-
-export const { client } = useClientApi();
+export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
