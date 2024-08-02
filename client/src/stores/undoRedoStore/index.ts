@@ -36,6 +36,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         undoActionStack.value.forEach((action) => action.destroy());
         undoActionStack.value = [];
         deletedActions.value = [];
+        minUndoActions.value = 10;
+        maxUndoActions.value = 10000;
         clearRedoStack();
     }
 

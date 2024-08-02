@@ -31,7 +31,7 @@ export function useClamp(ref: Ref<number>, min: MaybeRefOrGetter<number>, max: M
  * Wraps a number ref, restricting it's values to align to a given step size
  *
  * @param ref ref containing a number to wrap
- * @param stepSize size of steps to restrict value to
+ * @param [stepSize = 1] size of steps to restrict value to. defaults to 1
  * @returns wrapped red
  */
 export function useStep(ref: Ref<number>, stepSize: MaybeRefOrGetter<number> = 1): Ref<number> {

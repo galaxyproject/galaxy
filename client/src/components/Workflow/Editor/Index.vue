@@ -798,6 +798,7 @@ export default {
             this.ensureParametersSet();
             this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
+            this.showChanges = false;
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
