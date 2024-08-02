@@ -1,11 +1,11 @@
 import axios from "axios";
 
-import { client, type components, type GalaxyApiPaths, type HDADetailed } from "@/api";
+import { type components, GalaxyApi, type GalaxyApiPaths, type HDADetailed } from "@/api";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export async function fetchDatasetDetails(params: { id: string }): Promise<HDADetailed> {
-    const { data, error } = await client.GET("/api/datasets/{dataset_id}", {
+    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
         params: {
             path: {
                 dataset_id: params.id,
@@ -21,7 +21,7 @@ export async function fetchDatasetDetails(params: { id: string }): Promise<HDADe
 }
 
 export async function undeleteDataset(datasetId: string) {
-    const { data, error } = await client.PUT("/api/datasets/{dataset_id}", {
+    const { data, error } = await GalaxyApi().PUT("/api/datasets/{dataset_id}", {
         params: {
             path: { dataset_id: datasetId },
         },
@@ -36,7 +36,7 @@ export async function undeleteDataset(datasetId: string) {
 }
 
 export async function purgeDataset(datasetId: string) {
-    const { data, error } = await client.DELETE("/api/datasets/{dataset_id}", {
+    const { data, error } = await GalaxyApi().DELETE("/api/datasets/{dataset_id}", {
         params: {
             path: { dataset_id: datasetId },
             query: { purge: true },
@@ -57,7 +57,7 @@ export async function copyDataset(
     type: CopyDatasetParamsType["path"]["type"] = "dataset",
     source: CopyDatasetBodyType["source"] = "hda"
 ) {
-    const { data, error } = await client.POST("/api/histories/{history_id}/contents/{type}s", {
+    const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
             path: { history_id: historyId, type },
         },

@@ -1,7 +1,7 @@
 import axios, { type AxiosResponse } from "axios";
 
 import type { AnyHistory, HistorySummaryExtended } from "@/api";
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { prependPath } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -98,7 +98,7 @@ export async function getHistoryList(offset = 0, limit: number | null = null, qu
 
 /** Load one history by id */
 export async function getHistoryByIdFromServer(id: string) {
-    const { data, error } = await client.GET("/api/histories/{history_id}", {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
         params: {
             path: { history_id: id },
             query: extendedHistoryParams,
@@ -137,7 +137,7 @@ export async function secureHistoryOnServer(history: AnyHistory) {
  * @return the updated history
  */
 export async function updateHistoryFields(historyId: string, payload: Record<string, any>) {
-    const { data, error } = await client.PUT("/api/histories/{history_id}", {
+    const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}", {
         params: {
             path: { history_id: historyId },
             query: extendedHistoryParams,

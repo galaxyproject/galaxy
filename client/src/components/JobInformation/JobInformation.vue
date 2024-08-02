@@ -7,7 +7,7 @@ import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -59,7 +59,7 @@ function filterMetadata(jobMessages) {
 
 async function fetchInvocation(jobId) {
     if (jobId) {
-        const { data: invocation } = await client.GET("/api/invocations", {
+        const { data: invocation } = await GalaxyApi().GET("/api/invocations", {
             params: {
                 query: { job_id: jobId },
             },

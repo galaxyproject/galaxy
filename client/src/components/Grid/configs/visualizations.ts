@@ -2,7 +2,7 @@ import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } fr
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { updateTags } from "@/api/tags";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -22,7 +22,7 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await client.GET("/api/visualizations", {
+    const { response, data, error } = await GalaxyApi().GET("/api/visualizations", {
         params: {
             query: {
                 limit,

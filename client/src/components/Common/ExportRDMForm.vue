@@ -2,7 +2,7 @@
 import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type BrowsableFilesSourcePlugin, type CreatedEntry, type FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
@@ -74,7 +74,7 @@ function doExport() {
 }
 
 async function doCreateRecord() {
-    const { data, error } = await client.POST("/api/remote_files", {
+    const { data, error } = await GalaxyApi().POST("/api/remote_files", {
         body: {
             target: sourceUri.value,
             name: recordName.value,

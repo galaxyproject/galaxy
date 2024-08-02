@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -32,7 +32,7 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await client.GET("/api/histories", {
+    const { response, data, error } = await GalaxyApi().GET("/api/histories", {
         params: {
             query: {
                 view: "summary",

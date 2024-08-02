@@ -1,4 +1,4 @@
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { purgeDataset, undeleteDataset } from "@/api/datasets";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -17,7 +17,7 @@ interface PurgeableItemSizeSummary extends ItemSizeSummary {
 const itemSizeSummaryFields = "id,name,size,deleted,archived";
 
 export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]> {
-    const { data: nonPurgedHistories, error: nonPurgedHistoriesError } = await client.GET("/api/histories", {
+    const { data: nonPurgedHistories, error: nonPurgedHistoriesError } = await GalaxyApi().GET("/api/histories", {
         params: {
             query: {
                 keys: itemSizeSummaryFields,
@@ -31,7 +31,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
         rethrowSimple(nonPurgedHistoriesError);
     }
 
-    const { data: nonPurgedArchivedHistories, error: nonPurgedArchivedHistoriesError } = await client.GET(
+    const { data: nonPurgedArchivedHistories, error: nonPurgedArchivedHistoriesError } = await GalaxyApi().GET(
         "/api/histories/archived",
         {
             params: {
@@ -68,7 +68,7 @@ export async function fetchHistoryContentsSizeSummary(
         qv.push(objectStoreId);
     }
 
-    const { data, error } = await client.GET("/api/datasets", {
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
             query: {
                 history_id: historyId,
@@ -88,7 +88,7 @@ export async function fetchHistoryContentsSizeSummary(
 }
 
 export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string, limit = 5000) {
-    const { data, error } = await client.GET("/api/datasets", {
+    const { data, error } = await GalaxyApi().GET("/api/datasets", {
         params: {
             query: {
                 keys: itemSizeSummaryFields,
@@ -107,7 +107,7 @@ export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string,
 }
 
 export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSummary> {
-    const { data, error } = await client.POST("/api/histories/deleted/{history_id}/undelete", {
+    const { data, error } = await GalaxyApi().POST("/api/histories/deleted/{history_id}/undelete", {
         params: {
             path: { history_id: historyId },
         },
@@ -121,7 +121,7 @@ export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSu
 }
 
 export async function purgeHistoryById(historyId: string): Promise<PurgeableItemSizeSummary> {
-    const { data, error } = await client.DELETE("/api/histories/{history_id}", {
+    const { data, error } = await GalaxyApi().DELETE("/api/histories/{history_id}", {
         params: {
             path: { history_id: historyId },
             query: { purge: true },

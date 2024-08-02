@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 
-import { client, type components } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 type UserConcreteObjectStoreModel = components["schemas"]["UserConcreteObjectStoreModel"];
@@ -32,7 +32,7 @@ export const useObjectStoreInstancesStore = defineStore("objectStoreInstances", 
             this.error = errorMessageAsString(err);
         },
         async fetchInstances() {
-            const { data: instances, error } = await client.GET("/api/object_store_instances");
+            const { data: instances, error } = await GalaxyApi().GET("/api/object_store_instances");
 
             if (error) {
                 this.handleError(error);

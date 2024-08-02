@@ -1,7 +1,7 @@
 import { readonly, ref, watch } from "vue";
 
 import { type StoreExportPayload } from "@/api";
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type ExportParams } from "@/components/Common/models/exportRecordModel";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -44,7 +44,7 @@ export function useShortTermStorage() {
     });
 
     const forHistory: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data, error } = await client.POST("/api/histories/{history_id}/prepare_store_download", {
+        const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/prepare_store_download", {
             params: { path: { history_id: id } },
             body: params,
         });
@@ -56,7 +56,7 @@ export function useShortTermStorage() {
     };
 
     const forInvocation: StartPreparingDownloadCallback = async (id: string, params: StoreExportPayload) => {
-        const { data, error } = await client.POST("/api/invocations/{invocation_id}/prepare_store_download", {
+        const { data, error } = await GalaxyApi().POST("/api/invocations/{invocation_id}/prepare_store_download", {
             params: { path: { invocation_id: id } },
             body: {
                 ...params,

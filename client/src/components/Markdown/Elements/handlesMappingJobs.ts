@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { computed, type Ref, ref, watch } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export interface SelectOption {
@@ -31,7 +31,7 @@ export function useMappingJobs(
         implicitCollectionJobsId,
         async () => {
             if (implicitCollectionJobsId.value) {
-                const { data: jobs, error } = await client.GET("/api/jobs", {
+                const { data: jobs, error } = await GalaxyApi().GET("/api/jobs", {
                     params: {
                         query: {
                             implicit_collection_jobs_id: implicitCollectionJobsId.value,

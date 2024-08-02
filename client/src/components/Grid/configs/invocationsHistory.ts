@@ -1,7 +1,7 @@
 import { faArrowLeft, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type WorkflowInvocation } from "@/api/invocations";
 import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
@@ -36,7 +36,7 @@ async function getData(
     }
     const historyId = extraProps["history_id"] as string;
 
-    const { response, data, error } = await client.GET("/api/invocations", {
+    const { response, data, error } = await GalaxyApi().GET("/api/invocations", {
         params: {
             query: {
                 limit,

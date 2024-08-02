@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref, set } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
@@ -109,7 +109,7 @@ export function useInvocationGraph(
             }
 
             // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary, error } = await client.GET(
+            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
                 "/api/invocations/{invocation_id}/step_jobs_summary",
                 {
                     params: { path: { invocation_id: invocation.value.id } },

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import {
     type NotificationChanges,
     type UserNotification,
@@ -32,7 +32,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     async function loadNotifications() {
-        const { data, error } = await client.GET("/api/notifications");
+        const { data, error } = await GalaxyApi().GET("/api/notifications");
 
         if (error) {
             rethrowSimple(error);
@@ -50,7 +50,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                 await loadNotifications();
                 updateUnreadCount();
             } else {
-                const { data, error } = await client.GET("/api/notifications/status", {
+                const { data, error } = await GalaxyApi().GET("/api/notifications/status", {
                     params: {
                         query: {
                             since: lastNotificationUpdate.value.toISOString().replace("Z", ""),
@@ -80,7 +80,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
-        const { error } = await client.PUT("/api/notifications", {
+        const { error } = await GalaxyApi().PUT("/api/notifications", {
             body: request,
         });
 

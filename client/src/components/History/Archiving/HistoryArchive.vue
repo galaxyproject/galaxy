@@ -3,7 +3,7 @@ import { BAlert, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type ArchivedHistorySummary, fetchArchivedHistories } from "@/api/histories.archived";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
@@ -124,7 +124,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
         return;
     }
 
-    const { error } = await client.POST("/api/histories/from_store_async", {
+    const { error } = await GalaxyApi().POST("/api/histories/from_store_async", {
         body: {
             model_store_format: history.export_record_data?.model_store_format,
             store_content_uri: history.export_record_data?.target_uri,

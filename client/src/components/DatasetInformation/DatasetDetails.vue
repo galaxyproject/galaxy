@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-import { client, type HDADetailed } from "@/api";
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 import { type JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
@@ -52,7 +52,7 @@ async function getDatasetDetails() {
 }
 
 async function loadJobDetails() {
-    const { data, error } = await client.GET("/api/jobs/{job_id}", {
+    const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
         params: {
             path: { job_id: dataset.value?.creating_job! },
             query: { full: true },

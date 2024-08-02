@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import {
     type NotificationCategory,
     type NotificationChannel,
@@ -55,7 +55,7 @@ const showPreferences = computed(() => {
 async function getNotificationsPreferences() {
     loading.value = true;
     try {
-        const { response, data, error } = await client.GET("/api/notifications/preferences");
+        const { response, data, error } = await GalaxyApi().GET("/api/notifications/preferences");
 
         if (error) {
             errorMessage.value = errorMessageAsString(error);
@@ -71,7 +71,7 @@ async function getNotificationsPreferences() {
 }
 
 async function updateNotificationsPreferences() {
-    const { data, error } = await client.PUT("/api/notifications/preferences", {
+    const { data, error } = await GalaxyApi().PUT("/api/notifications/preferences", {
         body: {
             preferences: notificationsPreferences.value,
         },

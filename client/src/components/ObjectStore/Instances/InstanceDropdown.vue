@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -23,7 +23,7 @@ const isUpgradable = computed(() =>
 );
 
 async function onRemove() {
-    const { error } = await client.PUT("/api/object_store_instances/{user_object_store_id}", {
+    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{user_object_store_id}", {
         params: { path: { user_object_store_id: props.objectStore.uuid } },
         body: { hidden: true },
     });

@@ -1,6 +1,6 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -17,7 +17,7 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await client.GET("/api/visualizations", {
+    const { response, data, error } = await GalaxyApi().GET("/api/visualizations", {
         params: {
             query: {
                 limit,

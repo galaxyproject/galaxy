@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const jobLock = ref(false);
@@ -9,7 +9,7 @@ const jobLockUpdating = ref(true);
 
 watch(jobLock, async (_newVal) => {
     jobLockUpdating.value = true;
-    const { data, error } = await client.PUT("/api/job_lock", { body: { active: jobLock.value } });
+    const { data, error } = await GalaxyApi().PUT("/api/job_lock", { body: { active: jobLock.value } });
     if (error) {
         rethrowSimple(error);
     }
@@ -18,7 +18,7 @@ watch(jobLock, async (_newVal) => {
 });
 
 onMounted(async () => {
-    const { data, error } = await client.GET("/api/job_lock");
+    const { data, error } = await GalaxyApi().GET("/api/job_lock");
     if (error) {
         rethrowSimple(error);
     }

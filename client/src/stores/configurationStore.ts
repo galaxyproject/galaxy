@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 
 // Temporary set to any until schema model is defined
 export type GalaxyConfiguration = any;
@@ -15,7 +15,7 @@ export const useConfigStore = defineStore("configurationStore", () => {
         if (!isLoaded.value && !isLoading.value) {
             isLoading.value = true;
             try {
-                const { data, error } = await client.GET("/api/configuration");
+                const { data, error } = await GalaxyApi().GET("/api/configuration");
 
                 if (error) {
                     console.error("Error loading Galaxy configuration", error);

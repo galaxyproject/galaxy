@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -32,7 +32,7 @@ const loadingMessage = "Loading file source template and instance information";
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
 
-    const { data: fileSource, error: requestError } = await client.PUT(
+    const { data: fileSource, error: requestError } = await GalaxyApi().PUT(
         "/api/file_source_instances/{user_file_source_id}",
         {
             params: { path: { user_file_source_id: props.instance.uuid } },

@@ -2,7 +2,7 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -40,10 +40,13 @@ async function onSubmit(formData: any) {
 
         const user_object_store_id = instance?.value?.uuid!;
 
-        const { data: objectStore, error } = await client.PUT("/api/object_store_instances/{user_object_store_id}", {
-            params: { path: { user_object_store_id } },
-            body: payload,
-        });
+        const { data: objectStore, error } = await GalaxyApi().PUT(
+            "/api/object_store_instances/{user_object_store_id}",
+            {
+                params: { path: { user_object_store_id } },
+                body: payload,
+            }
+        );
 
         if (error) {
             rethrowSimple(error);

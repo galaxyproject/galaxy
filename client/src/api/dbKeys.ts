@@ -3,11 +3,11 @@
  * but now it is used to get the list of more generic "dbkeys".
  */
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export async function getDbKeys() {
-    const { data, error } = await client.GET("/api/genomes");
+    const { data, error } = await GalaxyApi().GET("/api/genomes");
     if (error) {
         rethrowSimple(error);
     }

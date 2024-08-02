@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import {
     createFormDataToPayload,
@@ -28,7 +28,7 @@ const inputs = computed(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
-    const { data: pluginStatus, error: testRequestError } = await client.POST("/api/file_source_instances/test", {
+    const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST("/api/file_source_instances/test", {
         body: payload,
     });
 
@@ -42,7 +42,7 @@ async function onSubmit(formData: any) {
         return;
     }
 
-    const { data: fileSource, error: requestError } = await client.POST("/api/file_source_instances", {
+    const { data: fileSource, error: requestError } = await GalaxyApi().POST("/api/file_source_instances", {
         body: payload,
     });
 

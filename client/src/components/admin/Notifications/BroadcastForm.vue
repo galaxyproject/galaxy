@@ -4,7 +4,7 @@ import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-v
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { client, type components } from "@/api";
+import { type components, GalaxyApi } from "@/api";
 import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -108,11 +108,14 @@ async function createOrUpdateBroadcast() {
 async function loadBroadcastData() {
     loading.value = true;
     try {
-        const { data: loadedBroadcast, error } = await client.GET("/api/notifications/broadcast/{notification_id}", {
-            params: {
-                path: { notification_id: props.id },
-            },
-        });
+        const { data: loadedBroadcast, error } = await GalaxyApi().GET(
+            "/api/notifications/broadcast/{notification_id}",
+            {
+                params: {
+                    path: { notification_id: props.id },
+                },
+            }
+        );
 
         if (error) {
             Toast.error(errorMessageAsString(error));

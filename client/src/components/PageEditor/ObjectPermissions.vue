@@ -2,7 +2,7 @@
 import axios from "axios";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
-import { client, type MessageException } from "@/api";
+import { GalaxyApi, type MessageException } from "@/api";
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { useToast } from "@/composables/toast";
 import { useDatasetStore } from "@/stores/datasetStore";
@@ -72,7 +72,7 @@ watch(referencedJobIds, async () => {
             "Failed to job information",
             "Some referenced objects may not be listed."
         );
-        const { data, error } = await client.GET("/api/jobs/{job_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
             params: { path: { job_id: jobId } },
         });
 
@@ -99,7 +99,7 @@ watch(referencedInvocationIds, async () => {
             "Some referenced objects may not be listed."
         );
 
-        const { data, error } = await client.GET("/api/invocations/{invocation_id}", {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
             params: { path: { invocation_id: invocationId } },
         });
 
@@ -197,7 +197,7 @@ watch(historyIds, async () => {
         if (historyId && !(historyId in historyAccessible.value)) {
             Vue.set(historyAccessible.value, historyId, null);
 
-            const { data, error } = await client.GET("/api/histories/{history_id}/sharing", {
+            const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/sharing", {
                 params: { path: { history_id: historyId } },
             });
 
@@ -221,7 +221,7 @@ async function initWorkflowData() {
         if (workflowId && !(workflowId in workflowAccessible.value)) {
             Vue.set(workflowAccessible.value, workflowId, null);
 
-            const { data, error } = await client.GET("/api/workflows/{workflow_id}/sharing", {
+            const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/sharing", {
                 params: { path: { workflow_id: workflowId } },
             });
 
@@ -279,7 +279,7 @@ async function makeAccessible(item: ItemInterface) {
     let errorResult: MessageException | undefined = undefined;
     let accessibleMap: AccessibleMapRef;
     if (item.type == "history") {
-        const { data, error } = await client.PUT("/api/histories/{history_id}/enable_link_access", {
+        const { data, error } = await GalaxyApi().PUT("/api/histories/{history_id}/enable_link_access", {
             params: { path: { history_id: item.id } },
         });
 
@@ -287,7 +287,7 @@ async function makeAccessible(item: ItemInterface) {
         accessibleResult = data?.importable;
         accessibleMap = historyAccessible;
     } else if (item.type == "workflow") {
-        const { data, error } = await client.PUT("/api/workflows/{workflow_id}/enable_link_access", {
+        const { data, error } = await GalaxyApi().PUT("/api/workflows/{workflow_id}/enable_link_access", {
             params: { path: { workflow_id: item.id } },
         });
 
@@ -295,7 +295,7 @@ async function makeAccessible(item: ItemInterface) {
         accessibleResult = data?.importable;
         accessibleMap = workflowAccessible;
     } else if (item.type == "historyDataset") {
-        const { data, error } = await client.PUT("/api/datasets/{dataset_id}/permissions", {
+        const { data, error } = await GalaxyApi().PUT("/api/datasets/{dataset_id}/permissions", {
             params: { path: { dataset_id: item.id } },
             body: {
                 action: "remove_restrictions",

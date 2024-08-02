@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -17,7 +17,7 @@ const props = defineProps<Props>();
 const title = computed(() => `Update Storage Location ${props.objectStore?.name} Secrets`);
 
 async function onUpdate(secretName: string, secretValue: string) {
-    const { error } = await client.PUT("/api/object_store_instances/{user_object_store_id}", {
+    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{user_object_store_id}", {
         params: { path: { user_object_store_id: props.objectStore.uuid } },
         body: {
             secret_name: secretName,

@@ -1,6 +1,6 @@
 import { type Ref, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export interface DetailedDatatypes {
@@ -25,9 +25,11 @@ export function useDetailedDatatypes() {
 
     async function getDatatypes() {
         try {
-            const datatypesPromise = client.GET("/api/datatypes", { params: { query: { extension_only: false } } });
-            const datatypeEDAMFormatsPromise = client.GET("/api/datatypes/edam_formats/detailed");
-            const datatypeEDAMDataPromise = client.GET("/api/datatypes/edam_data/detailed");
+            const datatypesPromise = GalaxyApi().GET("/api/datatypes", {
+                params: { query: { extension_only: false } },
+            });
+            const datatypeEDAMFormatsPromise = GalaxyApi().GET("/api/datatypes/edam_formats/detailed");
+            const datatypeEDAMDataPromise = GalaxyApi().GET("/api/datatypes/edam_data/detailed");
 
             const [
                 { data: baseData, error: baseError },

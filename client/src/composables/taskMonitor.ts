@@ -1,4 +1,4 @@
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { useGenericMonitor } from "./genericTaskMonitor";
@@ -13,7 +13,7 @@ const DEFAULT_EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24 hours
  */
 export function useTaskMonitor() {
     const fetchStatus = async (taskId: string) => {
-        const { data, error } = await client.GET("/api/tasks/{task_id}/state", {
+        const { data, error } = await GalaxyApi().GET("/api/tasks/{task_id}/state", {
             params: { path: { task_id: taskId } },
         });
 

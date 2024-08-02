@@ -6,7 +6,7 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { type MessageNotificationCreateRequest } from "@/api/notifications";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -92,7 +92,7 @@ async function loadData<T>(
 }
 
 async function getAllGroups() {
-    const { data, error } = await client.GET("/api/groups");
+    const { data, error } = await GalaxyApi().GET("/api/groups");
     if (error) {
         Toast.error(errorMessageAsString(error));
         return [];
@@ -101,7 +101,7 @@ async function getAllGroups() {
 }
 
 async function getAllRoles() {
-    const { data, error } = await client.GET("/api/roles");
+    const { data, error } = await GalaxyApi().GET("/api/roles");
     if (error) {
         Toast.error(errorMessageAsString(error));
         return [];
@@ -111,7 +111,7 @@ async function getAllRoles() {
 
 // TODO: this can potentially be a very large list, consider adding filters
 async function getAllUsers() {
-    const { data, error } = await client.GET("/api/users");
+    const { data, error } = await GalaxyApi().GET("/api/users");
     if (error) {
         Toast.error(errorMessageAsString(error));
         return [];
@@ -132,7 +132,7 @@ loadData(getAllGroups, groups, (group) => {
 });
 
 async function sendNewNotification() {
-    const { error } = await client.POST("/api/notifications", {
+    const { error } = await GalaxyApi().POST("/api/notifications", {
         body: notificationData.value,
     });
 

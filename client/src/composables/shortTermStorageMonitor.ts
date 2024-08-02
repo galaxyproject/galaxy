@@ -1,4 +1,4 @@
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { useGenericMonitor } from "./genericTaskMonitor";
@@ -15,7 +15,7 @@ const VALID_STATES = [READY_STATE, PENDING_STATE];
  */
 export function useShortTermStorageMonitor() {
     const fetchStatus = async (taskId: string) => {
-        const { data, error } = await client.GET("/api/short_term_storage/{storage_request_id}/ready", {
+        const { data, error } = await GalaxyApi().GET("/api/short_term_storage/{storage_request_id}/ready", {
             params: { path: { storage_request_id: taskId } },
         });
 

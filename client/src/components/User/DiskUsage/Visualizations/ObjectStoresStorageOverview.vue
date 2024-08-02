@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -26,7 +26,7 @@ const { getObjectStoreNameById } = useObjectStoreStore();
 const { isLoading, loadDataOnMount } = useDataLoading();
 
 loadDataOnMount(async () => {
-    const { data, error } = await client.GET("/api/users/{user_id}/objectstore_usage", {
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/objectstore_usage", {
         params: { path: { user_id: "current" } },
     });
 

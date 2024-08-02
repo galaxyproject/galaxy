@@ -1,10 +1,10 @@
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import { type CleanableItem, CleanableSummary, CleanupResult, PaginationOptions } from "./Cleanup/model";
 
 export async function fetchDiscardedDatasetsSummary(): Promise<CleanableSummary> {
-    const { data, error } = await client.GET("/api/storage/datasets/discarded/summary");
+    const { data, error } = await GalaxyApi().GET("/api/storage/datasets/discarded/summary");
 
     if (error) {
         rethrowSimple(error);
@@ -15,7 +15,7 @@ export async function fetchDiscardedDatasetsSummary(): Promise<CleanableSummary>
 
 export async function fetchDiscardedDatasets(options?: PaginationOptions): Promise<CleanableItem[]> {
     options = options ?? new PaginationOptions();
-    const { data, error } = await client.GET("/api/storage/datasets/discarded", {
+    const { data, error } = await GalaxyApi().GET("/api/storage/datasets/discarded", {
         params: { query: options },
     });
 
@@ -28,7 +28,7 @@ export async function fetchDiscardedDatasets(options?: PaginationOptions): Promi
 
 export async function cleanupDatasets(items: CleanableItem[]): Promise<CleanupResult> {
     const itemIds = items.map((item) => item.id);
-    const { data, error } = await client.DELETE("/api/storage/datasets", {
+    const { data, error } = await GalaxyApi().DELETE("/api/storage/datasets", {
         body: { item_ids: itemIds },
     });
 
@@ -40,7 +40,7 @@ export async function cleanupDatasets(items: CleanableItem[]): Promise<CleanupRe
 }
 
 export async function fetchDiscardedHistoriesSummary(): Promise<CleanableSummary> {
-    const { data, error } = await client.GET("/api/storage/histories/discarded/summary");
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/discarded/summary");
 
     if (error) {
         rethrowSimple(error);
@@ -52,7 +52,7 @@ export async function fetchDiscardedHistoriesSummary(): Promise<CleanableSummary
 export async function fetchDiscardedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
     options = options ?? new PaginationOptions();
 
-    const { data, error } = await client.GET("/api/storage/histories/discarded", {
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/discarded", {
         params: { query: options },
     });
 
@@ -65,7 +65,7 @@ export async function fetchDiscardedHistories(options?: PaginationOptions): Prom
 
 export async function cleanupHistories(items: CleanableItem[]) {
     const itemIds = items.map((item) => item.id);
-    const { data, error } = await client.DELETE("/api/storage/histories", {
+    const { data, error } = await GalaxyApi().DELETE("/api/storage/histories", {
         body: { item_ids: itemIds },
     });
 
@@ -77,7 +77,7 @@ export async function cleanupHistories(items: CleanableItem[]) {
 }
 
 export async function fetchArchivedHistoriesSummary(): Promise<CleanableSummary> {
-    const { data, error } = await client.GET("/api/storage/histories/archived/summary");
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/archived/summary");
 
     if (error) {
         rethrowSimple(error);
@@ -88,7 +88,7 @@ export async function fetchArchivedHistoriesSummary(): Promise<CleanableSummary>
 
 export async function fetchArchivedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
     options = options ?? new PaginationOptions();
-    const { data, error } = await client.GET("/api/storage/histories/archived", {
+    const { data, error } = await GalaxyApi().GET("/api/storage/histories/archived", {
         params: { query: options },
     });
 

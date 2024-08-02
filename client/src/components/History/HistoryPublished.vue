@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-import { client, type HistoryDetailed } from "@/api";
+import { GalaxyApi, type HistoryDetailed } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import PublishedItem from "@/components/Common/PublishedItem.vue";
@@ -15,7 +15,7 @@ const props = defineProps<Props>();
 const history = ref<HistoryDetailed>();
 
 onMounted(async () => {
-    const { data, error } = await client.GET("/api/histories/{history_id}", {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
         params: {
             path: { history_id: props.id },
         },

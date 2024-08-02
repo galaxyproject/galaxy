@@ -3,7 +3,7 @@ import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -89,7 +89,7 @@ const selectedLabelTitle = computed(() => {
 });
 
 async function getInvocations() {
-    const { data, error } = await client.GET("/api/invocations");
+    const { data, error } = await GalaxyApi().GET("/api/invocations");
     if (error) {
         rethrowSimple(error);
     }
@@ -97,7 +97,7 @@ async function getInvocations() {
 }
 
 async function getJobs() {
-    const { data, error } = await client.GET("/api/jobs");
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
     if (error) {
         rethrowSimple(error);
     }
@@ -105,7 +105,7 @@ async function getJobs() {
 }
 
 async function getWorkflows() {
-    const { data, error } = await client.GET("/api/workflows");
+    const { data, error } = await GalaxyApi().GET("/api/workflows");
     if (error) {
         rethrowSimple(error);
     }
@@ -113,7 +113,7 @@ async function getWorkflows() {
 }
 
 async function getHistories() {
-    const { data, error } = await client.GET("/api/histories/published");
+    const { data, error } = await GalaxyApi().GET("/api/histories/published");
     if (error) {
         rethrowSimple(error);
     }

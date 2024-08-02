@@ -1,7 +1,7 @@
 import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { client } from "@/api";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -20,7 +20,7 @@ type PageEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { response, data, error } = await client.GET("/api/pages", {
+    const { response, data, error } = await GalaxyApi().GET("/api/pages", {
         params: {
             query: {
                 limit,
@@ -103,7 +103,7 @@ const fields: FieldArray = [
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
                     if (confirm(_l(`Are you sure that you want to delete the selected page?`))) {
-                        const { error } = await client.DELETE("/api/pages/{id}", {
+                        const { error } = await GalaxyApi().DELETE("/api/pages/{id}", {
                             params: {
                                 path: { id: String(data.id) },
                             },
@@ -129,7 +129,7 @@ const fields: FieldArray = [
                 condition: (data: PageEntry) => !!data.deleted,
                 handler: async (data: PageEntry) => {
                     if (confirm(_l(`Are you sure that you want to restore the selected page?`))) {
-                        const { error } = await client.PUT("/api/pages/{id}/undelete", {
+                        const { error } = await GalaxyApi().PUT("/api/pages/{id}/undelete", {
                             params: {
                                 path: { id: String(data.id) },
                             },
