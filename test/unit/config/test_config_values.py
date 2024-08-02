@@ -67,6 +67,44 @@ def test_error_if_database_connection_contains_brackets(bracket):
         config.GalaxyAppConfiguration(override_tempdir=False, amqp_internal_connection=uri)
 
 
+def test_error_if_interactivetools_map_sqlalchemy_matches_other_database_connections():
+    """
+    The setting `interactivetools_map_sqlalchemy` allows storing the session map in a
+    database supported by SQLAlchemy. This database must be different from the Galaxy database
+    and the tool shed database.
+
+    Motivation for this constraint:
+    https://github.com/galaxyproject/galaxy/pull/18481#issuecomment-2218493956
+    """
+    database_connection = "dbscheme://user:password@host/db"
+    install_database_connection = "dbscheme://user:password@host/install_db"
+    settings = dict(
+        override_tempdir=False,
+        database_connection=database_connection,
+        install_database_connection=install_database_connection,
+    )
+
+    with pytest.raises(ConfigurationError):
+        # interactivetools_map_sqlalchemy matches database_connection
+        config.GalaxyAppConfiguration(
+            **settings,
+            interactivetools_map_sqlalchemy=database_connection,
+        )
+
+    with pytest.raises(ConfigurationError):
+        # interactivetools_map_sqlalchemy matches install_database_connection
+        config.GalaxyAppConfiguration(
+            **settings,
+            interactivetools_map_sqlalchemy=install_database_connection,
+        )
+
+    # interactivetools_map_sqlalchemy differs from database_connection, install_database_connection
+    config.GalaxyAppConfiguration(
+        **settings,
+        interactivetools_map_sqlalchemy="dbscheme://user:password@host/gxitproxy",
+    )
+
+
 class TestIsFetchWithCeleryEnabled:
     def test_disabled_if_celery_disabled(self, appconfig):
         appconfig.enable_celery_tasks = False
