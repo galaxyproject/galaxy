@@ -72,6 +72,8 @@ function updateSavedUndoActions() {
             <span class="state-indicator"> start of session </span>
         </div>
 
+        <span class="info"> click an action to undo/redo multiple changes </span>
+
         <label>
             Max saved changes
             <input
@@ -90,6 +92,14 @@ function updateSavedUndoActions() {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+
+.info {
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    margin-top: 0.25rem;
+    color: $text-muted;
+    font-style: italic;
+}
 
 .undo-redo-stack {
     width: 100%;
