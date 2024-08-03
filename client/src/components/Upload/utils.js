@@ -50,7 +50,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getDbKeys();
+    const dbKeys = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
