@@ -11,10 +11,12 @@
 // https://mswjs.io/docs/migrations/1.x-to-2.x#frequent-issues
 
 const { TextDecoder, TextEncoder } = require("node:util");
+const { clearImmediate } = require("node:timers");
 
 Object.defineProperties(globalThis, {
     TextDecoder: { value: TextDecoder },
     TextEncoder: { value: TextEncoder },
+    clearImmediate: { value: clearImmediate },
 });
 
 const { Blob, File } = require("node:buffer");
