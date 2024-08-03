@@ -453,8 +453,10 @@ export interface components {
                 | components["schemas"]["SelectParameterModel"]
                 | components["schemas"]["DataParameterModel"]
                 | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -689,6 +691,39 @@ export interface components {
              */
             parameter_type?: "gx_data_collection"
         }
+        /** DataColumnParameterModel */
+        DataColumnParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_data_column
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_data_column"
+        }
         /** DataParameterModel */
         DataParameterModel: {
             /** Argument */
@@ -814,6 +849,59 @@ export interface components {
             parameter_type: "gx_directory_uri"
             /** Value */
             value: string | null
+        }
+        /** DrillDownOptionsDict */
+        DrillDownOptionsDict: {
+            /** Name */
+            name: string | null
+            /** Options */
+            options: components["schemas"]["DrillDownOptionsDict"][]
+            /** Selected */
+            selected: boolean
+            /** Value */
+            value: string
+        }
+        /** DrillDownParameterModel */
+        DrillDownParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Hierarchy
+             * @enum {string}
+             */
+            hierarchy: "recurse" | "exact"
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /** Options */
+            options?: components["schemas"]["DrillDownOptionsDict"][] | null
+            /**
+             * Parameter Type
+             * @default gx_drill_down
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_drill_down"
         }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
@@ -1062,8 +1150,10 @@ export interface components {
                 | components["schemas"]["SelectParameterModel"]
                 | components["schemas"]["DataParameterModel"]
                 | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -1143,8 +1233,10 @@ export interface components {
                 | components["schemas"]["SelectParameterModel"]
                 | components["schemas"]["DataParameterModel"]
                 | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -1489,8 +1581,10 @@ export interface components {
                 | components["schemas"]["SelectParameterModel"]
                 | components["schemas"]["DataParameterModel"]
                 | components["schemas"]["DataCollectionParameterModel"]
+                | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
