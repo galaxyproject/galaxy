@@ -423,7 +423,7 @@ class XmlToolSource(ToolSource):
 
         return provided_metadata_file
 
-    def parse_outputs(self, tool):
+    def parse_outputs(self, tool=None):
         out_elem = self.root.find("outputs")
         outputs = {}
         output_collections = {}
@@ -558,7 +558,12 @@ class XmlToolSource(ToolSource):
             # This ensures that old tools continue to work.
             output.from_work_dir = output.from_work_dir.strip()
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
-        output.actions = ToolOutputActionGroup(output, data_elem.find("actions"))
+        if tool is not None:
+            # poor design here driven entirely by pragmatism in refactoring, ToolOutputActionGroup
+            # belongs in galaxy-tool because it uses app heavily. Breaking the output objects
+            # into app-aware things and dumb models would be a large project but superior design
+            # and decomposition.
+            output.actions = ToolOutputActionGroup(output, data_elem.find("actions"))
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(
             data_elem, legacy=self.legacy_defaults
         )
