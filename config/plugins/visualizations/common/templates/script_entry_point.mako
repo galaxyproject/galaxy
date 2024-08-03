@@ -13,6 +13,7 @@
 <%def name="get_body()">
     ## Collect incoming data
     <% data_incoming = {
+        "root": h.url_for("/"),
         "visualization_id": visualization_id,
         "visualization_name": visualization_name,
         "visualization_plugin": visualization_plugin,
@@ -24,6 +25,7 @@
     <div id="${container}" data-incoming='${h.dumps(data_incoming)}'></div>
 
     ## Add script tag
-    <% src = script_attributes.get("src") %>
-    <script type="text/javascript" src=${src}></script>
+    <% script_src = script_attributes.get("src") %>
+    <% script_type = script_attributes.get("type") or "module" %>
+    <script type="${script_type}" src=${script_src}></script>
 </%def>
