@@ -1,49 +1,55 @@
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
-import Vue from "vue";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import ToolForm from "./ToolForm";
 
-jest.mock("@/api/schema");
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
     let historyStore;
 
     beforeEach(() => {
-        mockFetcher
-            .path("/api/configuration")
-            .method("get")
-            .mock({ data: { enable_tool_source_display: false, object_store_allows_id_selection: false } });
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({
+                    enable_tool_source_display: false,
+                    object_store_allows_id_selection: false,
+                });
+            }),
 
-        axiosMock = new MockAdapter(axios);
+            http.get("/api/tools/{tool_id}/build", ({ response }) => {
+                return response(200).json({
+                    id: "tool_id",
+                    name: "tool_name",
+                    version: "version",
+                    inputs: [],
+                    help: "help_text",
+                    creator: [
+                        { class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" },
+                    ],
+                });
+            }),
 
-        const toolData = {
-            id: "tool_id",
-            name: "tool_name",
-            version: "version",
-            inputs: [],
-            help: "help_text",
-            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
-        };
-        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+            http.get("/api/tools/{tool_id}/citations", ({ response }) => {
+                return response(200).json([]);
+            }),
 
-        const citations = [];
-        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
+            http.get("/api/webhooks", ({ response }) => {
+                return response(200).json([]);
+            })
+        );
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -64,13 +70,8 @@ describe("ToolForm", () => {
         historyStore.setCurrentHistoryId("fakeHistory");
     });
 
-    afterEach(() => {
-        axiosMock.restore();
-        axiosMock.reset();
-    });
-
     it("shows props", async () => {
-        await Vue.nextTick();
+        await flushPromises();
         const button = wrapper.find(".btn-primary");
         expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
