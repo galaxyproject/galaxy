@@ -1,11 +1,10 @@
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
 import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { Services } from "../services";
 import Index from "./Index";
@@ -14,7 +13,6 @@ jest.mock("app");
 jest.mock("onload/loadConfig");
 getAppRoot.mockImplementation(() => "/");
 jest.mock("../services");
-jest.mock("@/api/schema");
 
 Services.mockImplementation(() => {
     return {
@@ -31,11 +29,19 @@ Services.mockImplementation(() => {
     };
 });
 
+const { server, http } = useServerMock();
+
 describe("RepositoryDetails", () => {
     it("test repository details index", async () => {
-        const axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("api/tool_panels/default").reply(200, {});
-        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+        server.use(
+            http.get("/api/tool_panels/default", ({ response }) => {
+                return response(200).json({});
+            }),
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            })
+        );
+
         const localVue = getLocalVue();
         const pinia = createPinia();
         const wrapper = shallowMount(Index, {
@@ -52,9 +58,7 @@ describe("RepositoryDetails", () => {
             pinia,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading repository details...");
-        await localVue.nextTick();
-        expect(wrapper.findAll(".alert").length).toBe(0);
-        await localVue.nextTick();
+        await flushPromises();
         expect(wrapper.findAll(".alert").length).toBe(0);
     });
 });
