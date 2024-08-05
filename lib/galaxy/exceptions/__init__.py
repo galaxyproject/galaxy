@@ -250,6 +250,11 @@ class InconsistentDatabase(MessageException):
     err_code = error_codes_by_name["INCONSISTENT_DATABASE"]
 
 
+class InconsistentApplicationState(MessageException):
+    status_code = 500
+    err_code = error_codes_by_name["INCONSISTENT_APPLICATION_STATE"]
+
+
 class InternalServerError(MessageException):
     status_code = 500
     err_code = error_codes_by_name["INTERNAL_SERVER_ERROR"]
