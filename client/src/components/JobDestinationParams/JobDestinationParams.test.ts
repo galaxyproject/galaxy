@@ -1,3 +1,4 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -31,14 +32,7 @@ async function mountJobDestinationParams() {
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = {
-        email: "admin@email",
-        id: "1",
-        tags_used: [],
-        isAnonymous: false,
-        total_disk_usage: 1048576,
-        is_admin: true,
-    };
+    userStore.currentUser = getFakeRegisteredUser({ is_admin: true });
 
     await flushPromises();
 
