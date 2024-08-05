@@ -524,6 +524,19 @@ class Repository(Base, Dictifiable):
             os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
         )
 
+    def hg_repository_path(self, repositories_directory: str) -> str:
+        if self.id is None:
+            raise Exception("Attempting to call hg_repository_path before id has been set on repository object")
+        dir = os.path.join(repositories_directory, *util.directory_hash_id(self.id))
+        final_repository_path = os.path.join(dir, "repo_%d" % self.id)
+        return final_repository_path
+
+    def ensure_hg_repository_path(self, repositories_directory: str) -> str:
+        final_repository_path = self.hg_repository_path(repositories_directory)
+        if not os.path.exists(final_repository_path):
+            os.makedirs(final_repository_path)
+        return final_repository_path
+
     def revision(self):
         repo = self.hg_repo
         tip_ctx = repo[repo.changelog.tip()]

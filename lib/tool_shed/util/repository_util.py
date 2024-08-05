@@ -231,12 +231,7 @@ def create_repository(
     session = sa_session()
     with transaction(session):
         session.commit()
-    dir = os.path.join(app.config.file_path, *util.directory_hash_id(repository.id))
-    # Define repo name inside hashed directory.
-    final_repository_path = os.path.join(dir, "repo_%d" % repository.id)
-    # Create final repository directory.
-    if not os.path.exists(final_repository_path):
-        os.makedirs(final_repository_path)
+    final_repository_path = repository.ensure_hg_repository_path(app.config.file_path)
     os.rename(repository_path, final_repository_path)
     app.hgweb_config_manager.add_entry(lhs, final_repository_path)
     # Update the repository registry.

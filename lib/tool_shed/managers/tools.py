@@ -149,7 +149,7 @@ def _shed_tool_source_for(
         cloned_ok, error_message = clone_repository(repository_clone_url, work_dir, str(ctx.rev()))
         if error_message:
             raise InternalServerError("Failed to materialize target repository revision")
-        repo_files_dir = repository_metadata.repository.repo_path(trans.app)
+        repo_files_dir = repository_metadata.repository.hg_repository_path(trans.app.config.file_path)
         if not repo_files_dir:
             raise InconsistentApplicationState(
                 f"Failed to resolve repository path from hgweb_config_manager for [{trs_tool_id}], inconsistent repository state or application configuration"
