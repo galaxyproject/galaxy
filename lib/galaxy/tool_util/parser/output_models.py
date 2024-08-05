@@ -106,7 +106,7 @@ ToolOutput = Annotated[ToolOutputT, Field(discriminator="type")]
 
 
 def from_tool_source(tool_source: ToolSource) -> List[ToolOutput]:
-    tool_outputs, tool_output_collections = tool_source.parse_outputs(object())
+    tool_outputs, tool_output_collections = tool_source.parse_outputs(None)
     outputs = []
     for tool_output in tool_outputs.values():
         outputs.append(tool_output.to_model())
