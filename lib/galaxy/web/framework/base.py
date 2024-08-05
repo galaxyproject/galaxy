@@ -104,6 +104,7 @@ class WebApplication:
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
+        self.session_factories = []
 
     def add_ui_controller(self, controller_name, controller):
         """
@@ -170,10 +171,12 @@ class WebApplication:
         path_info = environ.get("PATH_INFO", "")
 
         try:
-            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.set_request_id(request_id)  # Start SQLAlchemy session scope
             return self.handle_request(request_id, path_info, environ, start_response)
         finally:
-            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
+            for session_factory in self.session_factories:
+                session_factory.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
