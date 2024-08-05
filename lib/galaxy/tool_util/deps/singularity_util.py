@@ -83,7 +83,6 @@ def build_singularity_run_command(
     cleanenv: bool = DEFAULT_CLEANENV,
     ipc: bool = DEFAULT_IPC,
     pid: bool = DEFAULT_PID,
-    mount_home: bool = DEFAULT_MOUNT_HOME,
     no_mount: Optional[List[str]] = DEFAULT_NO_MOUNT,
 ) -> str:
     volumes = volumes or []
@@ -104,8 +103,8 @@ def build_singularity_run_command(
     command_parts.append("exec")
     # Singularity mounts some directories, such as $HOME and $PWD by default.
     # using --contain disables this behaviour and only allows explicitly
-    # requested volumes to be mounted. Since galaxy already mounts $PWD and
-    # mount_home can be activated, a switch for --contain is redundant.
+    # requested volumes to be mounted. This gives fully full-control over
+    # the mounting behavior.
     command_parts.append("--contain")
     if working_directory:
         command_parts.extend(["--pwd", working_directory])
@@ -119,7 +118,7 @@ def build_singularity_run_command(
         command_parts.extend(["--no-mount", ",".join(no_mount)])
     for volume in volumes:
         command_parts.extend(["-B", str(volume)])
-    if mount_home and home is not None:
+    if home is not None:
         command_parts.extend(["--home", f"{home}:{home}"])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)

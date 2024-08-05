@@ -590,7 +590,6 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
             ipc=asbool(self.prop("ipc", singularity_util.DEFAULT_IPC)),
             pid=asbool(self.prop("pid", singularity_util.DEFAULT_PID)),
-            mount_home=asbool(self.prop("mount_home", singularity_util.DEFAULT_MOUNT_HOME)),
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
