@@ -28,6 +28,7 @@ from sqlalchemy import (
     not_,
     String,
     Table,
+    text,
     TEXT,
     true,
     UniqueConstraint,
@@ -35,6 +36,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
+    object_session,
     registry,
     relationship,
 )
@@ -617,6 +619,22 @@ class Category(Base, Dictifiable):
 
     dict_collection_visible_keys = ["id", "name", "description", "deleted"]
     dict_element_visible_keys = ["id", "name", "description", "deleted"]
+
+    def active_repository_count(self, session=None) -> int:
+        statement = """
+SELECT count(*) as count
+FROM repository r
+INNER JOIN repository_category_association rca on rca.repository_id = r.id
+WHERE
+    rca.category_id = :category_id
+    AND r.private = false
+    AND r.deleted = false
+    and r.deprecated = false
+"""
+        if session is None:
+            session = object_session(self)
+        params = {"category_id": self.id}
+        return session.execute(text(statement), params).scalar()
 
     def __init__(self, deleted=False, **kwd):
         super().__init__(**kwd)
