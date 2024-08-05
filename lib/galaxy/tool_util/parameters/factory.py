@@ -29,6 +29,7 @@ from .models import (
     CwlStringParameterModel,
     CwlUnionParameterModel,
     DataCollectionParameterModel,
+    DataColumnParameterModel,
     DataParameterModel,
     DrillDownParameterModel,
     FloatParameterModel,
@@ -158,6 +159,10 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 multiple=multiple,
                 hierarchy=hierarchy,
                 options=static_options,
+            )
+        elif param_type == "data_column":
+            return DataColumnParameterModel(
+                name=input_source.parse_name(),
             )
         else:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")

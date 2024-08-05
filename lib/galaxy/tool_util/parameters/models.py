@@ -573,6 +573,21 @@ def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool
     return False
 
 
+class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_data_column"] = "gx_data_column"
+
+    @property
+    def py_type(self) -> Type:
+        return StrictInt
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return False
+
+
 DiscriminatorType = Union[bool, str]
 
 
@@ -902,6 +917,7 @@ GalaxyParameterT = Union[
     SelectParameterModel,
     DataParameterModel,
     DataCollectionParameterModel,
+    DataColumnParameterModel,
     DirectoryUriParameterModel,
     RulesParameterModel,
     DrillDownParameterModel,

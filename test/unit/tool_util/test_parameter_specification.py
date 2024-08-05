@@ -21,7 +21,6 @@ from galaxy.tool_util.parameters import (
     validate_test_case,
 )
 from galaxy.tool_util.parameters.json import to_json_schema_string
-from galaxy.tool_util.parameters.models import ToolParameterT
 from galaxy.tool_util.unittest_utils.parameters import parameter_bundle_for_file
 from galaxy.util.resources import resource_string
 
