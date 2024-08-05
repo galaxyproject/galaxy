@@ -5,14 +5,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { type GenericUser, type HistorySummary, userOwnsHistory } from "@/api";
+import { type AnyUser, type HistorySummary, userOwnsHistory } from "@/api";
 import localize from "@/utils/localization";
 
 library.add(faArchive, faBurn, faTrash);
 
 interface Props {
     history: HistorySummary;
-    currentUser: GenericUser | null;
+    currentUser: AnyUser;
 }
 
 const props = defineProps<Props>();

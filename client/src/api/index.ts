@@ -217,6 +217,7 @@ export function isHistoryItem(item: object): item is HistoryItemSummary {
 
 type RegisteredUserModel = components["schemas"]["DetailedUserModel"];
 type AnonymousUserModel = components["schemas"]["AnonUserModel"];
+type UserModel = RegisteredUserModel | AnonymousUserModel;
 
 export interface RegisteredUser extends RegisteredUserModel {
     isAnonymous: false;
@@ -226,20 +227,18 @@ export interface AnonymousUser extends AnonymousUserModel {
     isAnonymous: true;
 }
 
-export type GenericUser = RegisteredUser | AnonymousUser;
-
 /** Represents any user, including anonymous users or session-less (null) users.**/
-export type AnyUser = GenericUser | null;
+export type AnyUser = RegisteredUser | AnonymousUser | null;
 
-export function isRegisteredUser(user: AnyUser): user is RegisteredUser {
+export function isRegisteredUser(user: AnyUser | UserModel): user is RegisteredUser {
     return user !== null && "email" in user;
 }
 
-export function isAnonymousUser(user: AnyUser): user is AnonymousUser {
+export function isAnonymousUser(user: AnyUser | UserModel): user is AnonymousUser {
     return user !== null && !isRegisteredUser(user);
 }
 
-export function isAdminUser(user: AnyUser): user is RegisteredUser {
+export function isAdminUser(user: AnyUser | UserModel): user is RegisteredUser {
     return isRegisteredUser(user) && user.is_admin;
 }
 
