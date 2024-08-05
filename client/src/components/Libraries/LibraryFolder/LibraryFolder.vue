@@ -1,10 +1,11 @@
 <template>
     <div>
         <FolderTopBar
+            :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
             :include-deleted.sync="includeDeleted"
-            :folder_id="currentFolderId"
+            :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"
             :unselected="unselected"

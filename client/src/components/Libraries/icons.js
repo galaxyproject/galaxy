@@ -3,14 +3,11 @@ import { faCheckSquare, faFile, faFolder, faSave, faSquare } from "@fortawesome/
 import {
     faAngleDoubleLeft,
     faBan,
-    faBook,
-    faDownload,
     faGlobe,
     faHome,
     faKey,
     faMinusSquare,
     faPencilAlt,
-    faPlus,
     faShieldAlt,
     faSpinner,
     faTimes,
@@ -38,7 +35,6 @@ const tableIcons = [
 ];
 
 const manageIcons = [faAngleDoubleLeft, faSave, faFile];
-const topBarIcons = [faHome, faPlus, faTrash, faDownload, faBook];
 const librariesIcons = [faGlobe, faPencilAlt, faSave, faTimes, faTrash, faUsers, faHome, faUnlock];
 
 export function initFolderTableIcons() {
@@ -50,7 +46,4 @@ export function initPermissionsIcons() {
 }
 export function initLibrariesIcons() {
     librariesIcons.forEach((icon) => library.add(icon));
-}
-export function initTopBarIcons() {
-    topBarIcons.forEach((icon) => library.add(icon));
 }
