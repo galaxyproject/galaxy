@@ -13,17 +13,12 @@ if TYPE_CHECKING:
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
-# --cleanenv --pid --ipc --contain is equivalent to the --containall flag.
-# This isolates a singularity container in the same way as a Docker container
-# would be isolated. --contain ensures no "default mounts" are mounted, the
-# default mounts include $HOME and that might affect reproducibility due to
-# settings files in $HOME. --pid isolates the pid namespace. --ipc isolates
+# --pid isolates the pid namespace. --ipc isolates
 # the ipc namespace, this fixes some issues with python multiprocessing.
 # --cleanenv makes sure the current environment is not inherited.
 DEFAULT_CLEANENV = True
 DEFAULT_IPC = True
 DEFAULT_PID = True
-DEFAULT_MOUNT_HOME = False
 DEFAULT_NO_MOUNT = ["tmp"]
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
