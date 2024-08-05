@@ -3,6 +3,7 @@ import { BLink, BProgress, BProgressBar } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
+import { isRegisteredUser } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { bytesToString } from "@/utils/utils";
@@ -10,13 +11,13 @@ import { bytesToString } from "@/utils/utils";
 const { config } = useConfig();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 
-const hasQuota = computed(() => {
+const hasQuota = computed<boolean>(() => {
     const quotasEnabled = config.value.enable_quotas ?? false;
-    const quotaLimited = currentUser.value?.quota !== "unlimited" ?? false;
+    const quotaLimited = (isRegisteredUser(currentUser.value) && currentUser.value.quota !== "unlimited") ?? false;
     return quotasEnabled && quotaLimited;
 });
 
-const quotaLimit = computed(() => currentUser.value?.quota ?? 0);
+const quotaLimit = computed(() => (isRegisteredUser(currentUser.value) && currentUser.value.quota) ?? null);
 
 const totalUsageString = computed(() => {
     const total = currentUser.value?.total_disk_usage ?? 0;
@@ -56,7 +57,7 @@ const variant = computed(() => {
                 <span v-localize>Using</span>
                 <span v-if="hasQuota">
                     <span>{{ usage.toFixed(0) }}%</span>
-                    <span v-if="quotaLimit !== 0">of {{ quotaLimit }}</span>
+                    <span v-if="quotaLimit !== null">of {{ quotaLimit }}</span>
                 </span>
                 <span v-else>{{ totalUsageString }}</span>
             </span>

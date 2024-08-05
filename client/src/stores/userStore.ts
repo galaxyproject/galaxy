@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { type AnonymousUser, type User } from "@/api";
+import { type AnyUser, isAdminUser, isAnonymousUser, isRegisteredUser, type RegisteredUser } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -19,7 +19,7 @@ interface Preferences {
 type ListViewMode = "grid" | "list";
 
 export const useUserStore = defineStore("userStore", () => {
-    const currentUser = ref<User | AnonymousUser | null>(null);
+    const currentUser = ref<AnyUser>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
     // explicitly pass current User, because userStore might not exist yet
@@ -35,11 +35,11 @@ export const useUserStore = defineStore("userStore", () => {
     }
 
     const isAdmin = computed(() => {
-        return currentUser.value?.is_admin ?? false;
+        return isAdminUser(currentUser.value);
     });
 
     const isAnonymous = computed(() => {
-        return !("email" in (currentUser.value || []));
+        return isAnonymousUser(currentUser.value);
     });
 
     const currentTheme = computed(() => {
@@ -54,7 +54,13 @@ export const useUserStore = defineStore("userStore", () => {
         }
     });
 
-    function setCurrentUser(user: User) {
+    const matchesCurrentUsername = computed(() => {
+        return (username?: string) => {
+            return isRegisteredUser(currentUser.value) && currentUser.value.username === username;
+        };
+    });
+
+    function setCurrentUser(user: RegisteredUser) {
         currentUser.value = user;
     }
 
@@ -132,6 +138,7 @@ export const useUserStore = defineStore("userStore", () => {
         toggledSideBar,
         preferredListViewMode,
         loadUser,
+        matchesCurrentUsername,
         setCurrentUser,
         setCurrentTheme,
         setPreferredListViewMode,

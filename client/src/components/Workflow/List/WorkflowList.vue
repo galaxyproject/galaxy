@@ -145,7 +145,7 @@ async function load(overlayLoading = false, silent = false) {
             : data;
 
         if (props.activeList === "my") {
-            filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
+            filteredWorkflows = filter(filteredWorkflows, (w: any) => userStore.matchesCurrentUsername(w.owner));
         }
 
         workflowsLoaded.value = filteredWorkflows;

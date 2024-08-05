@@ -215,36 +215,32 @@ export function isHistoryItem(item: object): item is HistoryItemSummary {
     return item && "history_content_type" in item;
 }
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+type RegisteredUserModel = components["schemas"]["DetailedUserModel"];
+type AnonymousUserModel = components["schemas"]["AnonUserModel"];
 
-/** Represents a registered user.**/
-export interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
+export interface RegisteredUser extends RegisteredUserModel {
     isAnonymous: false;
-    is_admin?: boolean;
-    username?: string;
 }
 
-export interface AnonymousUser extends QuotaUsageResponse {
-    id?: string;
+export interface AnonymousUser extends AnonymousUserModel {
     isAnonymous: true;
-    is_admin?: false;
-    username?: string;
 }
 
-export type GenericUser = User | AnonymousUser;
+export type GenericUser = RegisteredUser | AnonymousUser;
 
 /** Represents any user, including anonymous users or session-less (null) users.**/
 export type AnyUser = GenericUser | null;
 
-export function isRegisteredUser(user: AnyUser): user is User {
-    return user !== null && !user?.isAnonymous;
+export function isRegisteredUser(user: AnyUser): user is RegisteredUser {
+    return user !== null && "email" in user;
 }
 
 export function isAnonymousUser(user: AnyUser): user is AnonymousUser {
-    return user !== null && user.isAnonymous;
+    return user !== null && !isRegisteredUser(user);
+}
+
+export function isAdminUser(user: AnyUser): user is RegisteredUser {
+    return isRegisteredUser(user) && user.is_admin;
 }
 
 export function userOwnsHistory(user: AnyUser, history: AnyHistory) {

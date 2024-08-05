@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BAlert, BLink } from "bootstrap-vue";
-import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
@@ -22,7 +21,7 @@ import WorkflowRunSuccess from "@/components/Workflow/Run/WorkflowRunSuccess.vue
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
-const { currentUser } = storeToRefs(useUserStore());
+const userStore = useUserStore();
 const router = useRouter();
 
 interface Props {
@@ -55,7 +54,7 @@ const editorLink = computed(
     () => `/workflows/edit?id=${props.workflowId}${props.version ? `&version=${props.version}` : ""}`
 );
 const historyStatusKey = computed(() => `${currentHistoryId.value}_${lastUpdateTime.value}`);
-const isOwner = computed(() => currentUser.value?.username === workflowModel.value.runData.owner);
+const isOwner = computed(() => userStore.matchesCurrentUsername(workflowModel.value.runData.owner));
 const lastUpdateTime = computed(() => historyItemsStore.lastUpdateTime);
 const canRunOnHistory = computed(() => {
     if (!currentHistoryId.value) {

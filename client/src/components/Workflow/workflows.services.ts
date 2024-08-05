@@ -53,9 +53,9 @@ export async function copyWorkflow(id: string, currentOwner: string, version?: s
     const { data: workflowData } = await axios.get(withPrefix(path));
 
     workflowData.name = `Copy of ${workflowData.name}`;
-    const currentUsername = useUserStore().currentUser?.username;
+    const userStore = useUserStore();
 
-    if (currentUsername !== currentOwner) {
+    if (!userStore.matchesCurrentUsername(currentOwner)) {
         workflowData.name += ` shared by user ${currentOwner}`;
     }
 

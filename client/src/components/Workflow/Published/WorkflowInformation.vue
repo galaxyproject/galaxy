@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { RouterLink } from "vue-router";
 
+import { type WorkflowSummary } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { getFullAppUrl } from "@/utils/utils";
 
@@ -16,19 +17,8 @@ import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faBuilding, faUser);
 
-interface WorkflowInformation {
-    name: string;
-    [key: string]: unknown;
-    update_time: string;
-    license?: string;
-    tags?: string[];
-    creator?: {
-        [key: string]: unknown;
-    }[];
-}
-
 interface Props {
-    workflowInfo: WorkflowInformation;
+    workflowInfo: WorkflowSummary;
     embedded?: boolean;
 }
 
@@ -51,11 +41,7 @@ const fullLink = computed(() => {
 });
 
 const userOwned = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username === props.workflowInfo.owner;
-    } else {
-        return false;
-    }
+    return userStore.matchesCurrentUsername(props.workflowInfo.owner);
 });
 </script>
 
