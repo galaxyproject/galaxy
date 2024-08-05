@@ -14,6 +14,7 @@ from galaxy.tool_util.parameters import (
     encode,
     RequestInternalToolState,
     RequestToolState,
+    ToolParameterBundleModel,
     validate_internal_job,
     validate_internal_request,
     validate_request,
@@ -21,12 +22,10 @@ from galaxy.tool_util.parameters import (
 )
 from galaxy.tool_util.parameters.json import to_json_schema_string
 from galaxy.tool_util.parameters.models import ToolParameterT
-from galaxy.tool_util.unittest_utils.parameters import (
-    parameter_bundle,
-    parameter_bundle_for_file,
-    tool_parameter,
-)
+from galaxy.tool_util.unittest_utils.parameters import parameter_bundle_for_file
 from galaxy.util.resources import resource_string
+
+RawStateDict = Dict[str, Any]
 
 
 def specification_object():
@@ -59,7 +58,7 @@ def test_single():
 def _test_file(file: str, specification=None):
     spec = specification or specification_object()
     combos = spec[file]
-    tool_parameter_model = tool_parameter(file)
+    parameter_bundle: ToolParameterBundleModel = parameter_bundle_for_file(file)
 
     assertion_functions = {
         "request_valid": _assert_requests_validate,
@@ -74,88 +73,90 @@ def _test_file(file: str, specification=None):
 
     for valid_or_invalid, tests in combos.items():
         assertion_function = assertion_functions[valid_or_invalid]
-        assertion_function(tool_parameter_model, tests)
+        assertion_function(parameter_bundle, tests)
 
     # Assume request validation will work here.
     if "request_internal_valid" not in combos and "request_valid" in combos:
-        _assert_internal_requests_validate(tool_parameter_model, combos["request_valid"])
+        _assert_internal_requests_validate(parameter_bundle, combos["request_valid"])
     if "request_internal_invalid" not in combos and "request_invalid" in combos:
-        _assert_internal_requests_invalid(tool_parameter_model, combos["request_invalid"])
+        _assert_internal_requests_invalid(parameter_bundle, combos["request_invalid"])
 
 
-def _for_each(test: Callable, parameter: ToolParameterT, requests: List[Dict[str, Any]]) -> None:
+def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: List[RawStateDict]) -> None:
     for request in requests:
-        test(parameter, request)
+        test(parameters, request)
 
 
-def _assert_request_validates(parameter: ToolParameterT, request: Dict[str, Any]) -> None:
+def _assert_request_validates(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     try:
-        validate_request(parameter_bundle(parameter), request)
+        validate_request(parameters, request)
     except RequestParameterInvalidException as e:
-        raise AssertionError(f"Parameter {parameter} failed to validate request {request}. {e}")
+        raise AssertionError(f"Parameters {parameters} failed to validate request {request}. {e}")
 
 
-def _assert_request_invalid(parameter, request) -> None:
+def _assert_request_invalid(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     exc = None
     try:
-        validate_request(parameter_bundle(parameter), request)
-    except RequestParameterInvalidException as e:
-        exc = e
-    assert exc is not None, f"Parameter {parameter} didn't result in validation error on request {request} as expected."
-
-
-def _assert_internal_request_validates(parameter, request) -> None:
-    try:
-        validate_internal_request(parameter_bundle(parameter), request)
-    except RequestParameterInvalidException as e:
-        raise AssertionError(f"Parameter {parameter} failed to validate internal request {request}. {e}")
-
-
-def _assert_internal_request_invalid(parameter, request) -> None:
-    exc = None
-    try:
-        validate_internal_request(parameter_bundle(parameter), request)
+        validate_request(parameters, request)
     except RequestParameterInvalidException as e:
         exc = e
     assert (
         exc is not None
-    ), f"Parameter {parameter} didn't result in validation error on internal request {request} as expected."
+    ), f"Parameters {parameters} didn't result in validation error on request {request} as expected."
 
 
-def _assert_internal_job_validates(parameter, request) -> None:
+def _assert_internal_request_validates(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     try:
-        validate_internal_job(parameter_bundle(parameter), request)
+        validate_internal_request(parameters, request)
     except RequestParameterInvalidException as e:
-        raise AssertionError(f"Parameter {parameter} failed to validate internal job description {request}. {e}")
+        raise AssertionError(f"Parameters {parameters} failed to validate internal request {request}. {e}")
 
 
-def _assert_internal_job_invalid(parameter, request) -> None:
+def _assert_internal_request_invalid(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     exc = None
     try:
-        validate_internal_job(parameter_bundle(parameter), request)
+        validate_internal_request(parameters, request)
     except RequestParameterInvalidException as e:
         exc = e
     assert (
         exc is not None
-    ), f"Parameter {parameter} didn't result in validation error on internal job description {request} as expected."
+    ), f"Parameters {parameters} didn't result in validation error on internal request {request} as expected."
 
 
-def _assert_test_case_validates(parameter, test_case) -> None:
+def _assert_internal_job_validates(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     try:
-        validate_test_case(parameter_bundle(parameter), test_case)
+        validate_internal_job(parameters, request)
     except RequestParameterInvalidException as e:
-        raise AssertionError(f"Parameter {parameter} failed to validate test_case {test_case}. {e}")
+        raise AssertionError(f"Parameters {parameters} failed to validate internal job description {request}. {e}")
 
 
-def _assert_test_case_invalid(parameter, test_case) -> None:
+def _assert_internal_job_invalid(parameters: ToolParameterBundleModel, request: RawStateDict) -> None:
     exc = None
     try:
-        validate_test_case(parameter_bundle(parameter), test_case)
+        validate_internal_job(parameters, request)
     except RequestParameterInvalidException as e:
         exc = e
     assert (
         exc is not None
-    ), f"Parameter {parameter} didn't result in validation error on test_case {test_case} as expected."
+    ), f"Parameters {parameters} didn't result in validation error on internal job description {request} as expected."
+
+
+def _assert_test_case_validates(parameters: ToolParameterBundleModel, test_case: RawStateDict) -> None:
+    try:
+        validate_test_case(parameters, test_case)
+    except RequestParameterInvalidException as e:
+        raise AssertionError(f"Parameters {parameters} failed to validate test_case {test_case}. {e}")
+
+
+def _assert_test_case_invalid(parameters: ToolParameterBundleModel, test_case: RawStateDict) -> None:
+    exc = None
+    try:
+        validate_test_case(parameters, test_case)
+    except RequestParameterInvalidException as e:
+        exc = e
+    assert (
+        exc is not None
+    ), f"Parameters {parameters} didn't result in validation error on test_case {test_case} as expected."
 
 
 _assert_requests_validate = partial(_for_each, _assert_request_validates)
@@ -213,7 +214,7 @@ if __name__ == "__main__":
     parameter_spec = specification_object()
     parameter_models_json = {}
     for file in parameter_spec.keys():
-        tool_parameter_model = tool_parameter(file)
+        tool_parameter_model = parameter_bundle_for_file(file)
         parameter_models_json[file] = tool_parameter_model.dict()
     yaml_str = yaml.safe_dump(parameter_models_json)
     with open("client/src/components/Tool/parameter_models.yml", "w") as f:
