@@ -1,12 +1,10 @@
 import { defineStore } from "pinia";
 
-import { type components, GalaxyApi } from "@/api";
+import { GalaxyApi } from "@/api";
+import { type ObjectStoreTemplateSummaries, type ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { canUpgrade, findTemplate, getLatestVersion, getLatestVersionMap } from "./configTemplatesUtil";
-
-type ObjectStoreTemplateSummary = components["schemas"]["ObjectStoreTemplateSummary"];
-type ObjectStoreTemplateSummaries = ObjectStoreTemplateSummary[];
 
 export const useObjectStoreTemplatesStore = defineStore("objectStoreTemplatesStore", {
     state: () => ({
