@@ -1,10 +1,12 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import { WindowManager } from "layout/window-manager";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
+import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
 
@@ -17,6 +19,8 @@ jest.mock("vue-router/composables", () => ({
     useRouter: jest.fn(),
 }));
 jest.mock("@/api/schema");
+
+const currentUser = getFakeRegisteredUser();
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -42,6 +46,10 @@ describe("Masthead.vue", () => {
 
         windowManager = new WindowManager({});
         const windowTab = windowManager.getTab();
+
+        const userStore = useUserStore();
+        userStore.currentUser = currentUser;
+
         wrapper = mount(Masthead, {
             propsData: {
                 windowTab,

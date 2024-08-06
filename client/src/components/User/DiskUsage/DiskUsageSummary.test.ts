@@ -1,3 +1,4 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -19,16 +20,11 @@ const localVue = getLocalVue();
 const quotaUsageClassSelector = ".quota-usage";
 const basicDiskUsageSummaryId = "#basic-disk-usage-summary";
 
-const fakeUserWithQuota = {
-    id: "fakeUser",
-    email: "fakeUserEmail",
-    tags_used: [],
-    isAnonymous: false,
+const fakeUserWithQuota = getFakeRegisteredUser({
     total_disk_usage: 1048576,
     quota_bytes: 104857600,
     quota_percent: 1,
-    quota_source_label: "Default",
-};
+});
 
 // TODO: Replace this with a mockFetcher when #16608 is merged
 const mockGetCurrentUser = getCurrentUser as jest.Mock;

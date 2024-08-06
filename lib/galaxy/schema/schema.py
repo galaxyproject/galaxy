@@ -362,7 +362,7 @@ class CreatedUserModel(UserModel, DiskUsageUserModel):
 
 
 class AnonUserModel(DiskUsageUserModel):
-    quota_percent: Any = QuotaPercentField
+    quota_percent: Optional[float] = QuotaPercentField
 
 
 class DetailedUserModel(BaseUserModel, AnonUserModel):
@@ -371,7 +371,9 @@ class DetailedUserModel(BaseUserModel, AnonUserModel):
     preferences: Dict[Any, Any] = Field(default=..., title="Preferences", description="Preferences of the user")
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     quota: str = Field(default=..., title="Quota", description="Quota applicable to the user")
-    quota_bytes: Any = Field(default=..., title="Quota in bytes", description="Quota applicable to the user in bytes.")
+    quota_bytes: Optional[int] = Field(
+        default=None, title="Quota in bytes", description="Quota applicable to the user in bytes."
+    )
     tags_used: List[str] = Field(default=..., title="Tags used", description="Tags used by the user")
 
 

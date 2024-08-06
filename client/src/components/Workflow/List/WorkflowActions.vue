@@ -44,12 +44,9 @@ const { confirm } = useConfirmDialog();
 const bookmarkLoading = ref(false);
 
 const shared = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username !== props.workflow.owner;
-    } else {
-        return false;
-    }
+    return !userStore.matchesCurrentUsername(props.workflow.owner);
 });
+
 const sourceType = computed(() => {
     if (props.workflow.source_metadata?.url) {
         return "url";

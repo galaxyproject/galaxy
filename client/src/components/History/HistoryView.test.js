@@ -1,3 +1,4 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -76,10 +77,7 @@ async function createWrapper(localVue, currentUserId, history) {
         pinia,
     });
     const userStore = useUserStore();
-    const userData = {
-        id: currentUserId,
-    };
-    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    userStore.currentUser = getFakeRegisteredUser({ id: currentUserId });
     await flushPromises();
     return wrapper;
 }

@@ -1,3 +1,4 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -20,7 +21,8 @@ const getFakeHistorySummaries = (num, selectedIndex) => {
         update_time: new Date().toISOString(),
     }));
 };
-const currentUser = { id: USER_ID };
+
+const currentUser = getFakeRegisteredUser({ id: USER_ID });
 
 describe("MultipleView", () => {
     let axiosMock;

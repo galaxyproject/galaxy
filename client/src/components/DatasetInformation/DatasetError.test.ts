@@ -1,3 +1,4 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
@@ -57,13 +58,7 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     });
 
     const userStore = useUserStore();
-    userStore.currentUser = {
-        email: user_email || "email",
-        id: "user_id",
-        tags_used: [],
-        isAnonymous: false,
-        total_disk_usage: 0,
-    };
+    userStore.currentUser = getFakeRegisteredUser({ email: user_email });
 
     await flushPromises();
 

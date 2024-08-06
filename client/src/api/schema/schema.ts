@@ -2187,7 +2187,7 @@ export interface components {
              * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent?: unknown;
+            quota_percent?: number | null;
             /**
              * Total disk usage
              * @description Size of all non-purged, unique datasets of the user in bytes.
@@ -4613,12 +4613,12 @@ export interface components {
              * Quota in bytes
              * @description Quota applicable to the user in bytes.
              */
-            quota_bytes: unknown;
+            quota_bytes?: number | null;
             /**
              * Quota percent
              * @description Percentage of the storage quota applicable to the user.
              */
-            quota_percent?: unknown;
+            quota_percent?: number | null;
             /**
              * Tags used
              * @description Tags used by the user

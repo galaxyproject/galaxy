@@ -6,6 +6,7 @@ import { type AxiosError } from "axios";
 import { BAlert, BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
+import { type WorkflowSummary } from "@/api/workflows";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull, getWorkflowInfo } from "@/components/Workflow/workflows.services";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -21,14 +22,6 @@ import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 
 library.add(faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser);
-
-type WorkflowInfo = {
-    name: string;
-    [key: string]: unknown;
-    license?: string;
-    tags?: string[];
-    update_time: string;
-};
 
 interface Props {
     id: string;
@@ -65,7 +58,7 @@ const { stateStore } = provideScopedWorkflowStores(props.id);
 
 const loading = ref(true);
 const errorMessage = ref("");
-const workflowInfo = ref<WorkflowInfo>();
+const workflowInfo = ref<WorkflowSummary>();
 const workflow = ref<Workflow | null>(null);
 
 const hasError = computed(() => !!errorMessage.value);
@@ -80,13 +73,11 @@ const initialPosition = computed(() => ({
 }));
 
 const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
+
 const sharedWorkflow = computed(() => {
-    if (userStore.currentUser) {
-        return userStore.currentUser.username !== workflowInfo.value?.owner;
-    } else {
-        return false;
-    }
+    return !userStore.matchesCurrentUsername(workflowInfo.value?.owner);
 });
+
 const editButtonTitle = computed(() => {
     if (userStore.isAnonymous) {
         return "Log in to edit Workflow";

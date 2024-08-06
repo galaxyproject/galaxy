@@ -1,5 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
@@ -18,14 +19,11 @@ const localVue = getLocalVue();
 const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
 const FAKE_USER_EMAIL = "fake_user_email";
-const FAKE_USER = {
+const FAKE_USER = getFakeRegisteredUser({
     id: FAKE_USER_ID,
     email: FAKE_USER_EMAIL,
-    tags_used: [],
-    isAnonymous: false,
     username: FAKE_USERNAME,
-    total_disk_usage: 0,
-};
+});
 
 async function mountWorkflowList() {
     const pinia = createTestingPinia();
