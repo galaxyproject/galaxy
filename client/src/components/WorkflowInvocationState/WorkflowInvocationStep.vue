@@ -1,30 +1,20 @@
 <template>
     <div class="d-flex" :data-step="workflowStep.id">
-        <div class="ui-portlet-section" style="width: 100%">
+        <div :class="{ 'ui-portlet-section': !inGraphView }" style="width: 100%">
             <div
+                v-if="!inGraphView"
                 class="portlet-header portlet-operations cursor-pointer"
                 :class="graphStep?.headerClass"
                 role="button"
                 tabindex="0"
                 @keyup.enter="toggleStep"
                 @click="toggleStep">
-                <span :id="`step-icon-${workflowStep.id}`">
-                    <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStepType" />
-                </span>
-                <ToolLinkPopover :target="`step-icon-${workflowStep.id}`" v-bind="toolProps(workflowStep.id)" />
-                <span class="portlet-title-text">
-                    <u class="step-title">
-                        <WorkflowStepTitle v-bind="titleProps(workflowStep.id)" />
-                    </u>
-                </span>
-                <span class="float-right">
-                    <FontAwesomeIcon
-                        v-if="graphStep?.headerIcon"
-                        class="mr-1"
-                        :icon="graphStep.headerIcon"
-                        :spin="graphStep.headerIconSpin" />
-                    <FontAwesomeIcon :icon="computedExpanded ? 'fa-chevron-up' : 'fa-chevron-down'" />
-                </span>
+                <WorkflowInvocationStepHeader
+                    :workflow-step="workflowStep"
+                    :graph-step="graphStep"
+                    :invocation-step="step"
+                    can-expand
+                    :expanded="computedExpanded" />
             </div>
             <div v-if="computedExpanded" class="portlet-content">
                 <InvocationStepProvider
@@ -61,15 +51,18 @@
                                     class="invocation-step-job-details"
                                     :open="inGraphView">
                                     <summary>
-                                        <b>Jobs <i>(Click on any job to view its details)</i></b>
+                                        <b>{{ jobStepHeading(stepDetails) }}</b>
                                     </summary>
-                                    <JobStep
-                                        v-if="stepDetails.jobs?.length"
-                                        :key="inGraphView"
-                                        :jobs="stepDetails.jobs"
-                                        :invocation-graph="inGraphView"
-                                        :showing-job-id="showingJobId"
-                                        @row-clicked="showJob" />
+                                    <span v-if="stepDetails.jobs?.length">
+                                        <JobStep
+                                            v-if="!inGraphView"
+                                            :key="inGraphView"
+                                            :jobs="stepDetails.jobs"
+                                            :invocation-graph="inGraphView"
+                                            :showing-job-id="showingJobId"
+                                            @row-clicked="showJob" />
+                                        <JobStepTabs v-else class="mt-1" :jobs="stepDetails.jobs" />
+                                    </span>
                                     <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
                                 </details>
                                 <ParameterStep
@@ -118,34 +111,29 @@
     </div>
 </template>
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import LoadingSpan from "components/LoadingSpan";
 import { InvocationStepProvider } from "components/providers";
-import ToolLinkPopover from "components/Tool/ToolLinkPopover";
 import { mapActions, mapState } from "pinia";
 import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
 
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import WorkflowStepIcon from "./WorkflowStepIcon";
 import WorkflowStepTitle from "./WorkflowStepTitle";
 
-library.add(faChevronUp, faChevronDown);
+import JobStepTabs from "./JobStepTabs.vue";
+import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 
 export default {
     components: {
         LoadingSpan,
-        FontAwesomeIcon,
         JobStep,
+        JobStepTabs,
         ParameterStep,
         InvocationStepProvider,
         GenericHistoryItem,
-        ToolLinkPopover,
-        WorkflowStepIcon,
+        WorkflowInvocationStepHeader,
         WorkflowStepTitle,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
@@ -214,18 +202,24 @@ export default {
                 (param) => param.workflow_step_id === stepDetails.workflow_step_id
             );
         },
+        jobStepHeading(stepDetails) {
+            if (stepDetails.jobs?.length > 1) {
+                return "Jobs (Click on any job to view its details)";
+            } else if (stepDetails.jobs?.length === 1) {
+                if (this.inGraphView) {
+                    return "Job";
+                } else {
+                    return "Job (Click on the job to view its details)";
+                }
+            } else {
+                return "No jobs";
+            }
+        },
         showJob(id) {
             this.$emit("show-job", id);
         },
         toggleStep() {
             this.computedExpanded = !this.computedExpanded;
-        },
-        toolProps(stepIndex) {
-            const workflowStep = this.workflow.steps[stepIndex];
-            return {
-                toolId: workflowStep.tool_id,
-                toolVersion: workflowStep.tool_version,
-            };
         },
         titleProps(stepIndex) {
             const invocationStep = this.invocation.steps[stepIndex];

@@ -2,11 +2,12 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
-import type { GraphStep } from "@/composables/useInvocationGraph";
+import { useInvocationStore } from "@/stores/invocationStore";
 import type { Workflow } from "@/stores/workflowStore";
 
 import WorkflowInvocationStep from "@/components/WorkflowInvocationState/WorkflowInvocationStep.vue";
@@ -14,8 +15,6 @@ import WorkflowInvocationStep from "@/components/WorkflowInvocationState/Workflo
 library.add(faChevronDown, faChevronUp, faSignInAlt);
 
 interface Props {
-    /** The steps for the invocation graph */
-    steps: { [index: string]: GraphStep };
     /** The store id for the invocation graph */
     storeId: string;
     /** The invocation to display */
@@ -41,6 +40,10 @@ const props = withDefaults(defineProps<Props>(), {
     hideGraph: true,
     activeNodeId: undefined,
 });
+
+const invocationStore = useInvocationStore();
+const { graphStepsByStoreId } = storeToRefs(invocationStore);
+const graphSteps = computed(() => graphStepsByStoreId.value[props.storeId]);
 
 const stepsDiv = ref<HTMLDivElement>();
 const expandInvocationInputs = ref(false);
@@ -79,7 +82,7 @@ function showJob(jobId: string | undefined) {
 </script>
 
 <template>
-    <div ref="stepsDiv" class="d-flex flex-column w-100">
+    <div v-if="graphSteps" ref="stepsDiv" class="d-flex flex-column w-100">
         <!-- Input Steps grouped in a separate portlet -->
         <div v-if="workflowInputSteps.length > 1" class="ui-portlet-section w-100">
             <div
@@ -106,7 +109,7 @@ function showJob(jobId: string | undefined) {
                     :workflow="props.workflow"
                     :workflow-step="step"
                     :in-graph-view="!props.hideGraph"
-                    :graph-step="steps[step.id]"
+                    :graph-step="graphSteps[step.id]"
                     :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
                     :showing-job-id="props.showingJobId"
                     @show-job="showJob"
@@ -122,7 +125,7 @@ function showJob(jobId: string | undefined) {
             :workflow="props.workflow"
             :workflow-step="step"
             :in-graph-view="!props.hideGraph"
-            :graph-step="steps[step.id]"
+            :graph-step="graphSteps[step.id]"
             :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
             :showing-job-id="props.showingJobId"
             @show-job="showJob"
