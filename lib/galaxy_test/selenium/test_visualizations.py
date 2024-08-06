@@ -47,3 +47,22 @@ class TestVisualizations(SeleniumTestCase):
         with self.visualization_panel():
             self.wait_for_selector("g.nvd3")
             self.screenshot("visualization_plugin_charts_nvd3_bar_landing")
+
+    @managed_history
+    @selenium_test
+    @skip_without_visualization_plugin("h5web")
+    def test_charts_h5web(self):
+        hid = 1
+        self.perform_upload(self.get_filename("chopper.h5"))
+        self.history_panel_wait_for_hid_ok(hid)
+        dataset_component = self.history_panel_click_item_title(hid, wait=True)
+        dataset_component.visualize_button.wait_for_and_click()
+
+        self.components.visualization.plugin_item(id="h5web").wait_for_visible()
+        self.screenshot("visualization_plugins_h5")
+        self.components.visualization.plugin_item(id="h5web").wait_for_and_click()
+
+        with self.visualization_panel():
+            # Look for the h5web-explorer-tree identifier to verify it loads.
+            self.wait_for_selector("#h5web-explorer-tree")
+            self.screenshot("visualization_plugin_charts_h5web_landing")
