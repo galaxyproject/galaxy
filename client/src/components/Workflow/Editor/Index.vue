@@ -59,6 +59,12 @@
                         @click="undoRedoStore.redo()">
                         <FontAwesomeIcon icon="fa-arrow-right" />
                     </b-button>
+                    <b-button
+                        title="View Last Changes"
+                        :variant="showChanges ? 'primary' : 'link'"
+                        @click="toggleShowChanges">
+                        <FontAwesomeIcon icon="fa-history" />
+                    </b-button>
                 </b-button-group>
             </div>
             <WorkflowGraph
@@ -85,6 +91,7 @@
                             :is-new-temp-workflow="isNewTempWorkflow"
                             :has-changes="hasChanges"
                             :has-invalid-connections="hasInvalidConnections"
+                            :current-active-panel="showInPanel"
                             @onSave="onSave"
                             @onCreate="onCreate"
                             @onSaveAs="onSaveAs"
@@ -93,15 +100,16 @@
                             @onReport="onReport"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onLint="onLint"
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
-                    <div v-if="!initialLoading">
+                    <div v-if="!initialLoading" class="position-relative h-100">
+                        <UndoRedoStack v-if="showChanges" :store-id="id" />
                         <FormTool
-                            v-if="hasActiveNodeTool"
+                            v-else-if="hasActiveNodeTool"
                             :key="activeStep.id"
                             :step="activeStep"
                             :datatypes="datatypes"
@@ -121,7 +129,7 @@
                             @onSetData="onSetData"
                             @onUpdateStep="updateStep" />
                         <WorkflowAttributes
-                            v-else-if="attributesVisible"
+                            v-else-if="showInPanel === 'attributes'"
                             :id="id"
                             :tags="tags"
                             :parameters="parameters"
@@ -138,14 +146,14 @@
                             @update:nameCurrent="setName"
                             @update:annotationCurrent="setAnnotation" />
                         <WorkflowLint
-                            v-else-if="showLint"
+                            v-else-if="showInPanel === 'lint'"
                             :untyped-parameters="parameters"
                             :annotation="annotation"
                             :creator="creator"
                             :license="license"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"
-                            @onAttributes="showAttributes"
+                            @onAttributes="() => showAttributes(true)"
                             @onHighlight="onHighlight"
                             @onUnhighlight="onUnhighlight"
                             @onRefactor="onAttemptRefactor"
@@ -178,7 +186,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faArrowRight, faHistory } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -217,10 +225,11 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UndoRedoStack from "@/components/UndoRedo/UndoRedoStack.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
-library.add(faArrowLeft, faArrowRight);
+library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
@@ -238,6 +247,7 @@ export default {
         MessagesModal,
         WorkflowGraph,
         FontAwesomeIcon,
+        UndoRedoStack,
     },
     props: {
         workflowId: {
@@ -291,8 +301,18 @@ export default {
         }
 
         const showInPanel = ref("attributes");
+        const showChanges = ref(false);
 
-        function showAttributes() {
+        function toggleShowChanges() {
+            ensureParametersSet();
+            showChanges.value = !showChanges.value;
+        }
+
+        function showAttributes(closeChanges = false) {
+            if (closeChanges) {
+                showChanges.value = false;
+            }
+
             ensureParametersSet();
             stateStore.activeNodeId = null;
             showInPanel.value = "attributes";
@@ -441,6 +461,8 @@ export default {
             parameters,
             ensureParametersSet,
             showInPanel,
+            showChanges,
+            toggleShowChanges,
             showAttributes,
             setName,
             report,
@@ -498,12 +520,6 @@ export default {
         };
     },
     computed: {
-        attributesVisible() {
-            return this.showInPanel == "attributes";
-        },
-        showLint() {
-            return this.showInPanel == "lint";
-        },
         activeNodeType() {
             return this.activeStep?.type;
         },
@@ -706,10 +722,6 @@ export default {
                 });
             });
         },
-        onWorkflowTextEditor() {
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "attributes";
-        },
         onAnnotation(nodeId, newAnnotation) {
             this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
         },
@@ -786,6 +798,7 @@ export default {
             this.ensureParametersSet();
             this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
+            this.showChanges = false;
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
