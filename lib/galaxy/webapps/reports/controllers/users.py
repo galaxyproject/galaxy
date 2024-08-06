@@ -5,6 +5,7 @@ from datetime import (
     date,
     datetime,
     timedelta,
+    timezone,
 )
 
 import sqlalchemy as sa
@@ -67,7 +68,7 @@ class Users(BaseUIController, ReportQueryBuilder):
     def specified_month(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get("message", "")))
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get("specified_date", datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get("specified_date", datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"))
         specified_month = specified_date[:7]
         year, month = map(int, specified_month.split("-"))
         start_date = date(year, month, 1)
@@ -107,7 +108,7 @@ class Users(BaseUIController, ReportQueryBuilder):
     def specified_date(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get("message", "")))
         # If specified_date is not received, we'll default to the current month
-        specified_date = kwd.get("specified_date", datetime.utcnow().strftime("%Y-%m-%d"))
+        specified_date = kwd.get("specified_date", datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"))
         year, month, day = map(int, specified_date.split("-"))
         start_date = date(year, month, day)
         end_date = start_date + timedelta(days=1)
@@ -168,7 +169,7 @@ class Users(BaseUIController, ReportQueryBuilder):
         days_not_logged_in = kwd.get("days_not_logged_in", 90)
         if not days_not_logged_in:
             days_not_logged_in = 0
-        cutoff_time = datetime.utcnow() - timedelta(days=int(days_not_logged_in))
+        cutoff_time = datetime.now(tz=timezone.utc) - timedelta(days=int(days_not_logged_in))
         users = []
 
         stmt = select(galaxy.model.User).filter(galaxy.model.User.deleted == false()).order_by(galaxy.model.User.email)

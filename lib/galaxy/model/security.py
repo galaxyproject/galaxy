@@ -3,6 +3,7 @@ import socket
 from datetime import (
     datetime,
     timedelta,
+    timezone,
 )
 from typing import List
 
@@ -1643,7 +1644,7 @@ class HostAgent(RBACAgent):
                     % (hda.id, hdadaa.site)
                 )
                 return False  # remote addr is not in the server list
-            if (datetime.utcnow() - hdadaa.update_time) > timedelta(seconds=60):
+            if (datetime.now(tz=timezone.utc) - hdadaa.update_time) > timedelta(seconds=60):
                 log.debug(
                     "Denying access to private dataset with hda: %i.  Authorization was granted, but has expired."
                     % hda.id
@@ -1662,7 +1663,7 @@ class HostAgent(RBACAgent):
         )
         hdadaa = self.sa_session.scalars(stmt).first()
         if hdadaa:
-            hdadaa.update_time = datetime.utcnow()
+            hdadaa.update_time = datetime.now(tz=timezone.utc)
         else:
             hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)
