@@ -116,7 +116,8 @@
         <UserPreferencesElement
             icon="fa-laptop"
             title="Local Preferences"
-            description="All settings specific to this client device.">
+            description="All settings specific to this client device."
+            to="/user/local_preferences">
         </UserPreferencesElement>
         <UserPreferencesElement
             v-if="hasLogout"
