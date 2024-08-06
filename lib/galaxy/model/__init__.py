@@ -4211,8 +4211,6 @@ class Dataset(Base, StorableObject, Serializable):
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
-        self.file_size = 0
-        self.total_size = 0
 
     def get_access_roles(self, security_agent):
         roles = []
