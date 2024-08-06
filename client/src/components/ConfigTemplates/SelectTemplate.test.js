@@ -19,7 +19,6 @@ describe("SelectTemplate", () => {
             },
             localVue,
         });
-        console.log(wrapper.html());
         const helpText = wrapper.find(".file-source-template-select-help");
         expect(helpText.exists()).toBeTruthy();
         expect(helpText.text()).toBeLocalizationOf(help);
