@@ -3,7 +3,7 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 export type UserConcreteObjectStore = components["schemas"]["UserConcreteObjectStoreModel"];
 
-export type ObjectStoreTemplateType = "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
+export type ObjectStoreTemplateType = components["schemas"]["UserConcreteObjectStoreModel"]["type"];
 
 export async function getSelectableObjectStores() {
     const { data, error } = await GalaxyApi().GET("/api/object_stores", {
