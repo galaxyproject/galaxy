@@ -12,12 +12,9 @@ from tool_shed.context import (
     ProvidesUserContext,
 )
 from tool_shed.webapp.graphql.schema import schema
-from tool_shed.webapp.model import (
-    Category,
-    Repository,
-    RepositoryCategoryAssociation,
-)
+from tool_shed.webapp.model import Repository
 from ._util import (
+    attach_category,
     create_category,
     repository_fixture,
     upload_directories_to_repository,
@@ -108,15 +105,6 @@ def test_simple_repositories(provides_repositories: ProvidesRepositoriesContext,
     repos = _assert_result_data_has_key(result, "repositories")
     repository_names = [r["name"] for r in repos]
     assert new_repository.name in repository_names
-
-
-def attach_category(provides_repositories: ProvidesRepositoriesContext, repository: Repository, category: Category):
-    assoc = RepositoryCategoryAssociation(
-        repository=repository,
-        category=category,
-    )
-    provides_repositories.sa_session.add(assoc)
-    provides_repositories.sa_session.flush()
 
 
 def test_relay_repos_by_category(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):

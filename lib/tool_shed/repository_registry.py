@@ -6,6 +6,7 @@ from sqlalchemy import (
     or_,
     select,
 )
+from typing_extensions import Protocol
 
 import tool_shed.repository_types.util as rt_util
 from tool_shed.util import (
@@ -18,11 +19,77 @@ from tool_shed.webapp.model import (
     Repository,
     RepositoryMetadata,
 )
+from .structured_app import ToolShedApp
 
 log = logging.getLogger(__name__)
 
 
-class Registry:
+class RegistryInterface(Protocol):
+
+    # only used in legacy controllers - can drop when drop old tool shed webapp
+    def add_category_entry(self, category): ...
+
+    def add_entry(self, repository):
+        # used when creating a repository
+        # Used in legacy add_repository_registry_entry API endpoint - already deemed not worth pulling over to 2.0
+        # used in legacy undelete_repository admin controller
+        # used in legacy deprecate controller
+        ...
+
+    def edit_category_entry(self, old_name, new_name):
+        # used in legacy admin controller
+        ...
+
+    def is_valid(self, repository) -> bool:
+        # probably not used outside this class but also not hurting anything
+        ...
+
+    def remove_category_entry(self, category): ...
+
+    def remove_entry(self, repository): ...
+
+
+# stop gap to implement the same general interface as repository_registry but do nothing,
+# I don't think this stuff is needed - outside potentially old test cases?
+class NullRepositoryRegistry(RegistryInterface):
+
+    def __init__(self, app: ToolShedApp):
+        self.app = app
+
+        # all of these are only used by repository_grids - which I think the tool shed 2.0
+        # does not use at all - but they are part of the "public interface" consumed by
+        # the full registry.
+        self.certified_level_one_viewable_repositories_and_suites_by_category: dict = {}
+        self.certified_level_one_viewable_suites_by_category: dict = {}
+        self.viewable_repositories_and_suites_by_category: dict = {}
+        self.viewable_suites_by_category: dict = {}
+        self.viewable_valid_repositories_and_suites_by_category: dict = {}
+        self.viewable_valid_suites_by_category: dict = {}
+
+    def add_category_entry(self, category):
+        # only used in legacy controllers - can drop when drop old tool shed webapp
+        pass
+
+    def add_entry(self, repository):
+        # used when creating a repository, and maybe more?
+        pass
+
+    def edit_category_entry(self, old_name, new_name):
+        pass
+
+    def is_valid(self, repository) -> bool:
+        if repository and not repository.deleted and not repository.deprecated and repository.downloadable_revisions:
+            return True
+        return False
+
+    def remove_category_entry(self, category):
+        pass
+
+    def remove_entry(self, repository):
+        pass
+
+
+class Registry(RegistryInterface):
     def __init__(self, app):
         log.debug("Loading the repository registry...")
         self.app = app
@@ -32,17 +99,30 @@ class Registry:
         self.certified_level_one_suite_tuples = []
         # These category dictionaries contain entries where the key is the category and the value is the integer count
         # of viewable repositories within that category.
+
+        # only used internally to class and by repository_grids
         self.certified_level_one_viewable_repositories_and_suites_by_category = {}
+        # only used internally to class and by repository_grids
         self.certified_level_one_viewable_suites_by_category = {}
-        self.certified_level_two_repository_and_suite_tuples = []
-        self.certified_level_two_suite_tuples = []
-        self.certified_level_two_viewable_repositories_and_suites_by_category = {}
-        self.certified_level_two_viewable_suites_by_category = {}
+
+        # not even used in legacy shed code...
+        # self.certified_level_two_repository_and_suite_tuples = []
+        # self.certified_level_two_suite_tuples = []
+        # self.certified_level_two_viewable_repositories_and_suites_by_category = {}
+        # self.certified_level_two_viewable_suites_by_category = {}
+
+        # only used internally to class
         self.repository_and_suite_tuples = []
+        # only used internally to class
         self.suite_tuples = []
+
+        # only used internally to class and by repository_grids
         self.viewable_repositories_and_suites_by_category = {}
+        # only used internally to class and by repository_grids
         self.viewable_suites_by_category = {}
+        # only used internally to class and by repository_grids
         self.viewable_valid_repositories_and_suites_by_category = {}
+        # only used internally to class and by repository_grids
         self.viewable_valid_suites_by_category = {}
         self.load()
 
@@ -152,6 +232,7 @@ class Registry:
             self.certified_level_one_viewable_suites_by_category[new_name] = 0
 
     def get_certified_level_one_clause_list(self):
+        # only used internally to class
         clause_list = []
         for repository in get_repositories(self.sa_session):
             certified_level_one_tuple = self.get_certified_level_one_tuple(repository)
@@ -169,6 +250,7 @@ class Registry:
         """
         Return True if the latest installable changeset_revision of the received repository is level one certified.
         """
+        # only used internally to class
         if repository is None:
             return (None, False)
         if repository.deleted or repository.deprecated:
@@ -190,6 +272,7 @@ class Registry:
             return (None, False)
 
     def is_level_one_certified(self, repository_metadata):
+        # only used internally to class
         if repository_metadata:
             repository = repository_metadata.repository
             if repository:
@@ -206,12 +289,13 @@ class Registry:
                     return tuple in self.certified_level_one_repository_and_suite_tuples
         return False
 
-    def is_valid(self, repository):
+    def is_valid(self, repository) -> bool:
         if repository and not repository.deleted and not repository.deprecated and repository.downloadable_revisions:
             return True
         return False
 
     def load_certified_level_one_repository_and_suite_tuple(self, repository):
+        # only used internally to class
         # The received repository has been determined to be level one certified.
         name = str(repository.name)
         owner = str(repository.user.username)
@@ -226,6 +310,7 @@ class Registry:
                     self.certified_level_one_repository_and_suite_tuples.append(certified_level_one_tuple)
 
     def load_repository_and_suite_tuple(self, repository):
+        # only used internally to class
         name = str(repository.name)
         owner = str(repository.user.username)
         for repository_metadata in repository.metadata_revisions:
@@ -238,6 +323,7 @@ class Registry:
                     self.suite_tuples.append(tuple)
 
     def load_repository_and_suite_tuples(self):
+        # only used internally to class
         # Load self.certified_level_one_repository_and_suite_tuples and self.certified_level_one_suite_tuples.
         clauses = self.get_certified_level_one_clause_list()
         for repository in get_certified_repositories_with_user(self.sa_session, clauses, model.User):
@@ -247,11 +333,12 @@ class Registry:
             self.load_repository_and_suite_tuple(repository)
 
     def load_viewable_repositories_and_suites_by_category(self):
+        # only used internally to class
         # Clear all dictionaries just in case they were previously loaded.
         self.certified_level_one_viewable_repositories_and_suites_by_category = {}
         self.certified_level_one_viewable_suites_by_category = {}
-        self.certified_level_two_viewable_repositories_and_suites_by_category = {}
-        self.certified_level_two_viewable_suites_by_category = {}
+        # self.certified_level_two_viewable_repositories_and_suites_by_category = {}
+        # self.certified_level_two_viewable_suites_by_category = {}
         self.viewable_repositories_and_suites_by_category = {}
         self.viewable_suites_by_category = {}
         self.viewable_valid_repositories_and_suites_by_category = {}
@@ -363,6 +450,7 @@ class Registry:
 
     @property
     def sa_session(self):
+        # only used internally to class
         return self.app.model.session
 
     def unload_certified_level_one_repository_and_suite_tuple(self, repository):

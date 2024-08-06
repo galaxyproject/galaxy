@@ -190,6 +190,11 @@
         "message": "Reference data required for program execution failed to load."
     },
     {
+        "name": "INCONSISTENT_APPLICATION_STATE",
+        "code": 500007,
+        "message": "Inconsistent application state (likely not dbms related) prevented fulfilling the request."
+    },
+    {
         "name": "NOT_IMPLEMENTED",
         "code": 501001,
         "message": "Method is not implemented."

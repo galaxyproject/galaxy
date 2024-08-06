@@ -10,6 +10,7 @@ from typing import (
 
 from galaxy import exceptions
 from galaxy.exceptions import (
+    InconsistentApplicationState,
     InternalServerError,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -148,9 +149,17 @@ def _shed_tool_source_for(
         cloned_ok, error_message = clone_repository(repository_clone_url, work_dir, str(ctx.rev()))
         if error_message:
             raise InternalServerError("Failed to materialize target repository revision")
-        repo_files_dir = repository_metadata.repository.repo_path(trans.app)
+        repo_files_dir = repository_metadata.repository.hg_repository_path(trans.app.config.file_path)
+        if not repo_files_dir:
+            raise InconsistentApplicationState(
+                f"Failed to resolve repository path from hgweb_config_manager for [{trs_tool_id}], inconsistent repository state or application configuration"
+            )
         repo_rel_tool_path = relpath(tool_config, repo_files_dir)
         path_to_tool = os.path.join(work_dir, repo_rel_tool_path)
+        if not os.path.exists(path_to_tool):
+            raise InconsistentApplicationState(
+                f"Target tool expected at [{path_to_tool}] and not found, inconsistent repository state or application configuration"
+            )
         tool_source = get_tool_source(path_to_tool)
         return tool_source
     finally:

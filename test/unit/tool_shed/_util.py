@@ -33,6 +33,7 @@ from tool_shed.webapp.model import (
     Category,
     mapping,
     Repository,
+    RepositoryCategoryAssociation,
     User,
 )
 from tool_shed_client.schema import CreateCategoryRequest
@@ -195,3 +196,12 @@ def create_category(provides_repositories: ProvidesRepositoriesContext, create: 
 
     request = CreateCategoryRequest(**create)
     return CategoryManager(provides_repositories.app).create(provides_repositories, request)
+
+
+def attach_category(provides_repositories: ProvidesRepositoriesContext, repository: Repository, category: Category):
+    assoc = RepositoryCategoryAssociation(
+        repository=repository,
+        category=category,
+    )
+    provides_repositories.sa_session.add(assoc)
+    provides_repositories.sa_session.flush()
