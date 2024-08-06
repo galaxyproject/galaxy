@@ -12,12 +12,15 @@
 ## Create a container, attach data and import script file
 <%def name="get_body()">
     ## Collect incoming data
-    <% data_incoming = {
-        "root": h.url_for("/"),
-        "visualization_id": visualization_id,
-        "visualization_name": visualization_name,
-        "visualization_plugin": visualization_plugin,
-        "visualization_config": config }
+    <%
+        from markupsafe import escape
+        data_incoming = {
+            "root": h.url_for("/"),
+            "visualization_id": visualization_id,
+            "visualization_name": visualization_name,
+            "visualization_plugin": visualization_plugin,
+            "visualization_title": escape(title),
+            "visualization_config": config }
     %>
 
     ## Create a container with default identifier `app`
