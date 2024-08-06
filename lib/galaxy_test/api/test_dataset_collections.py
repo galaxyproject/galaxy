@@ -26,7 +26,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
                 history_id,
                 instance_type="history",
             )
-            create_response = self.dataset_populator.fetch(payload, wait=True)
+            create_response = self.dataset_populator.fetch(payload)
             dataset_collection = self._check_create_response(create_response)
             returned_datasets = dataset_collection["elements"]
             assert len(returned_datasets) == 2, dataset_collection
@@ -156,9 +156,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
     def test_list_list_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
-                history_id, wait=True
-            ).json()
+            dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
             returned_dce = dataset_collection["elements"]
             assert len(returned_dce) == 1, dataset_collection
             create_response = self._download_dataset_collection(history_id=history_id, hdca_id=dataset_collection["id"])
@@ -172,7 +170,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
             dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
                 history_id,
                 collection_type="list:list:list",
-                wait=True,
             ).json()
             returned_dce = dataset_collection["elements"]
             assert len(returned_dce) == 1, dataset_collection
@@ -193,7 +190,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
     @requires_new_user
     def test_hda_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            element_identifiers = self.dataset_collection_populator.pair_identifiers(history_id, wait=True)
+            element_identifiers = self.dataset_collection_populator.pair_identifiers(history_id)
             self.dataset_populator.make_private(history_id, element_identifiers[0]["id"])
             with self._different_user():
                 history_id = self.dataset_populator.new_history()
@@ -211,7 +208,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
             dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
                 history_id,
                 collection_type="list:list:list",
-                wait=True,
             ).json()
             first_element = dataset_collection["elements"][0]
             assert first_element["model_class"] == "DatasetCollectionElement"
@@ -416,6 +412,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         return dataset_collection
 
     def _download_dataset_collection(self, history_id: str, hdca_id: str):
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
         return self._get(f"histories/{history_id}/contents/dataset_collections/{hdca_id}/download")
 
     @requires_new_user
@@ -463,7 +460,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
         # Get contents_url from history contents, use it to show the first level
         # of collection contents in the created HDCA, then use it again to drill
         # down into the nested collection contents
-        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json()
+        hdca = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
         root_contents_url = self._get_contents_url_for_hdca(history_id, hdca)
 
         # check root contents for this collection
@@ -497,7 +494,8 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
     def test_collection_contents_empty_root(self, history_id):
         create_response = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=[], wait=True
+            history_id,
+            contents=[],
         ).json()
         hdca = create_response["output_collections"][0]
         assert hdca["elements"] == []
@@ -526,7 +524,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
                     ],
                 },
             ],
-            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -570,7 +567,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
                     ],
                 },
             ],
-            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -601,7 +597,6 @@ class TestDatasetCollectionsApi(ApiTestCase):
                     ],
                 },
             ],
-            wait=True,
         )
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
@@ -627,7 +622,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             "targets": targets,
             "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
-        hdca_id = self.dataset_populator.fetch(payload).json()["output_collections"][0]["id"]
+        hdca_id = self.dataset_populator.fetch(payload, wait=True).json()["output_collections"][0]["id"]
         inputs = {
             "input": {"batch": False, "src": "hdca", "id": hdca_id},
         }
@@ -637,9 +632,10 @@ class TestDatasetCollectionsApi(ApiTestCase):
             history_id=history_id,
             input_format="legacy",
         )
-        response = self._post("tools", payload).json()
+        response = self._post("tools", payload)
+        self._assert_status_code_is(response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
-        output_collection = response["output_collections"][0]
+        output_collection = response.json()["output_collections"][0]
         # collection should not inherit tags from input collection elements, only parent collection
         assert output_collection["tags"] == ["name:collection_tag"]
         element = output_collection["elements"][0]
@@ -656,7 +652,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
     def _create_collection_contents_pair(self, history_id: str):
         # Create a simple collection, return hdca and contents_url
         payload = self.dataset_collection_populator.create_pair_payload(history_id, instance_type="history")
-        create_response = self.dataset_populator.fetch(payload=payload, wait=True)
+        create_response = self.dataset_populator.fetch(payload=payload)
         hdca = self._check_create_response(create_response)
         root_contents_url = self._get_contents_url_for_hdca(history_id, hdca)
         return hdca, root_contents_url

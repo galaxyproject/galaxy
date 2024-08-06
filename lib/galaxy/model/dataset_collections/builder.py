@@ -1,10 +1,26 @@
+from typing import (
+    Dict,
+    Iterable,
+    Optional,
+)
+
+from typing_extensions import TypeAlias
+
 from galaxy import model
+from galaxy.model.dataset_collections.types import BaseDatasetCollectionType
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
+Elements: TypeAlias = Dict[str, model.DatasetInstance]
 
-def build_collection(type, dataset_instances, collection=None, associated_identifiers=None):
+
+def build_collection(
+    type: BaseDatasetCollectionType,
+    dataset_instances: Elements,
+    collection: Optional[model.DatasetCollection] = None,
+    associated_identifiers: Optional[set[str]] = None,
+):
     """
     Build DatasetCollection with populated DatasetcollectionElement objects
     corresponding to the supplied dataset instances or throw exception if
@@ -16,8 +32,13 @@ def build_collection(type, dataset_instances, collection=None, associated_identi
     return dataset_collection
 
 
-def set_collection_elements(dataset_collection, type, dataset_instances, associated_identifiers):
-    new_element_keys = OrderedSet(dataset_instances.keys()) - associated_identifiers
+def set_collection_elements(
+    dataset_collection: model.DatasetCollection,
+    type: BaseDatasetCollectionType,
+    dataset_instances: Elements,
+    associated_identifiers: set[str],
+):
+    new_element_keys: Iterable[str] = OrderedSet(dataset_instances.keys()) - associated_identifiers
     new_dataset_instances = {k: dataset_instances[k] for k in new_element_keys}
     dataset_collection.element_count = dataset_collection.element_count or 0
     element_index = dataset_collection.element_count
@@ -113,7 +134,7 @@ class CollectionBuilder:
 class BoundCollectionBuilder(CollectionBuilder):
     """More stateful builder that is bound to a particular model object."""
 
-    def __init__(self, dataset_collection):
+    def __init__(self, dataset_collection: model.DatasetCollection):
         self.dataset_collection = dataset_collection
         if dataset_collection.populated:
             raise Exception("Cannot reset elements of an already populated dataset collection.")

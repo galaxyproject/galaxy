@@ -23,10 +23,17 @@ from galaxy.files.uris import (
     stream_to_file,
     validate_non_local,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.model import (
     FormDefinition,
+    FormValues,
+    HistoryDatasetAssociation,
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
+    LibraryDatasetDatasetInfoAssociation,
     LibraryFolder,
     Role,
 )
@@ -124,10 +131,10 @@ def handle_library_params(
     )
 
 
-def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
+def __new_history_upload(trans: ProvidesHistoryContext, uploaded_dataset, history=None, state=None):
     if not history:
         history = trans.history
-    hda = trans.app.model.HistoryDatasetAssociation(
+    hda = HistoryDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -148,7 +155,9 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     return hda
 
 
-def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None):
+def __new_library_upload(
+    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch, tag_handler, state=None
+):
     current_user_roles = trans.get_current_user_roles()
     if not (
         (trans.user_is_admin and cntrller in ["library_admin", "api"])
@@ -176,12 +185,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     if library_bunch.replace_dataset:
         ld = library_bunch.replace_dataset
     else:
-        ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
+        ld = LibraryDataset(folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
-    ldda = trans.app.model.LibraryDatasetDatasetAssociation(
+    ldda = LibraryDatasetDatasetAssociation(
         name=uploaded_dataset.name,
         extension=uploaded_dataset.file_type,
         dbkey=uploaded_dataset.dbkey,
@@ -203,7 +212,6 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         ldda.state = state
     else:
         ldda.state = ldda.states.QUEUED
-    ldda.message = library_bunch.message
     with transaction(trans.sa_session):
         trans.sa_session.commit()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
@@ -235,16 +243,14 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         # If the user has added field contents, we'll need to create a new form_values and info_association
         # for the new library_dataset_dataset_association object.
         # Create a new FormValues object, using the template we previously retrieved
-        form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
+        form_values = FormValues(library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
-        info_association = trans.app.model.LibraryDatasetDatasetInfoAssociation(
-            ldda, library_bunch.template, form_values
-        )
+        info_association = LibraryDatasetDatasetInfoAssociation(ldda, library_bunch.template, form_values)
         trans.sa_session.add(info_association)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
@@ -261,7 +267,13 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
 
 
 def new_upload(
-    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None
+    trans: ProvidesHistoryContext,
+    cntrller,
+    uploaded_dataset,
+    library_bunch=None,
+    history=None,
+    state=None,
+    tag_list=None,
 ):
     tag_handler = trans.tag_handler
     if library_bunch:
