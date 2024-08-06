@@ -418,7 +418,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
+        job, *_ = history_exp_tool.execute(trans, incoming=params, history=history)
         trans.app.job_manager.enqueue(job, tool=history_exp_tool)
         return job
 

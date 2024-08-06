@@ -29,7 +29,7 @@ from galaxy.model.dataset_collections.structure import (
     tool_output_to_structure,
 )
 from galaxy.tool_util.parser import ToolOutputCollectionPart
-from galaxy.tools.actions import (
+from galaxy.tools.execution_helpers import (
     filter_output,
     on_text_for_names,
     ToolExecutionCache,
@@ -45,14 +45,30 @@ SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
 BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} request"
 
 
+CompletedJobsT = Dict[int, Optional[model.Job]]
+JobCallbackT = Callable
+WorkflowResourceParametersT = Dict[str, Any]
+# Input dictionary from the API, may include map/reduce instructions
+ToolParameterRequestT = Dict[str, Any]
+# Input dictionary extracted from a tool request for running a tool individually
+ToolParameterRequestInstanceT = Dict[str, Any]
+DatasetCollectionElementsSliceT = Dict[str, model.DatasetCollectionElement]
+DEFAULT_USE_CACHED_JOB = False
+DEFAULT_PREFERRED_OBJECT_STORE_ID: Optional[str] = None
+DEFAULT_RERUN_REMAP_JOB_ID: Optional[int] = None
+DEFAULT_JOB_CALLBACK: Optional[JobCallbackT] = None
+DEFAULT_DATASET_COLLECTION_ELEMENTS: Optional[DatasetCollectionElementsSliceT] = None
+DEFAULT_SET_OUTPUT_HID: bool = True
+
+
 class PartialJobExecution(Exception):
-    def __init__(self, execution_tracker):
+    def __init__(self, execution_tracker: "ExecutionTracker"):
         self.execution_tracker = execution_tracker
 
 
 class MappingParameters(NamedTuple):
-    param_template: Dict[str, Any]
-    param_combinations: List[Dict[str, Any]]
+    param_template: ToolParameterRequestT
+    param_combinations: List[ToolParameterRequestInstanceT]
 
 
 def execute(
@@ -60,15 +76,15 @@ def execute(
     tool: "Tool",
     mapping_params: MappingParameters,
     history: model.History,
-    rerun_remap_job_id: Optional[int] = None,
-    preferred_object_store_id: Optional[str] = None,
+    rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+    preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
     max_num_jobs: Optional[int] = None,
-    job_callback: Optional[Callable] = None,
-    completed_jobs: Optional[Dict[int, Optional[model.Job]]] = None,
-    workflow_resource_parameters: Optional[Dict[str, Any]] = None,
+    job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+    completed_jobs: Optional[CompletedJobsT] = None,
+    workflow_resource_parameters: Optional[WorkflowResourceParametersT] = None,
     validate_outputs: bool = False,
 ):
     """
@@ -95,7 +111,7 @@ def execute(
         )
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice, completed_job, skip=False):
+    def execute_single_job(execution_slice: "ExecutionSlice", completed_job: Optional[model.Job], skip: bool = False):
         job_timer = tool.app.execution_timer_factory.get_timer(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
@@ -124,8 +140,8 @@ def execute(
             execution_cache,
             completed_job,
             collection_info,
-            job_callback=job_callback,
-            preferred_object_store_id=preferred_object_store_id,
+            job_callback,
+            preferred_object_store_id,
             flush_job=False,
             skip=skip,
         )
@@ -225,7 +241,17 @@ def execute(
 
 
 class ExecutionSlice:
-    def __init__(self, job_index, param_combination, dataset_collection_elements=None):
+    job_index: int
+    param_combination: ToolParameterRequestInstanceT
+    dataset_collection_elements: Optional[DatasetCollectionElementsSliceT]
+    history: Optional[model.History]
+
+    def __init__(
+        self,
+        job_index: int,
+        param_combination: ToolParameterRequestInstanceT,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    ):
         self.job_index = job_index
         self.param_combination = param_combination
         self.dataset_collection_elements = dataset_collection_elements

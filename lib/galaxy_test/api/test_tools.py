@@ -2512,6 +2512,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 ],
                 wait=True,
             )
+            details = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert details["extension"] == "fasta"
             self._assert_status_code_is(response, 200)
             hdca_id = response.json()["outputs"][0]["id"]
             inputs = {

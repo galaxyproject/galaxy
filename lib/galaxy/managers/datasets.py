@@ -530,7 +530,7 @@ class DatasetAssociationManager(
         if overwrite:
             self.overwrite_metadata(data)
 
-        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_trans(
             self.app.datatypes_registry.set_external_metadata_tool,
             trans,
             incoming={"input1": data, "validate": validate},
@@ -866,7 +866,7 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
         assert (
             trans
         ), "Logic error in Galaxy, deserialize_datatype not send a transation object"  # TODO: restructure this for stronger typing
-        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+        job, *_ = self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_trans(
             self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={"input1": item}, overwrite=False
         )  # overwrite is False as per existing behavior
         trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
