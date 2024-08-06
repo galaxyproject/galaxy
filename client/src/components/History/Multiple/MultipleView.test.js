@@ -68,8 +68,6 @@ describe("MultipleView", () => {
         // Set up UserHistories and wrapper
         const wrapper = await setUpWrapper(count, currentHistoryId);
 
-        console.log(wrapper.html());
-
         // Test: current (first) history should not be shown because only 4 latest are shown by default
         expect(wrapper.find("button[title='Current History']").exists()).toBeFalsy();
 
