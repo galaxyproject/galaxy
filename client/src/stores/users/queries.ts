@@ -1,43 +1,56 @@
-import axios from "axios";
-
-import { prependPath } from "@/utils/redirect";
+import { GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
 export async function getCurrentUser() {
-    const url = prependPath("/api/users/current");
-    const response = await axios.get(url);
-    if (response.status != 200) {
-        throw new Error("Failed to get current user");
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}", {
+        params: { path: { user_id: "current" } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
-    return response.data;
+    return data;
 }
 
 export async function addFavoriteToolQuery(userId: string, toolId: string) {
-    const url = prependPath(`/api/users/${userId}/favorites/tools`);
-    try {
-        const { data } = await axios.put(url, { object_id: toolId });
-        return data["tools"];
-    } catch (e) {
-        rethrowSimple(e);
+    const { data, error } = await GalaxyApi().PUT("/api/users/{user_id}/favorites/{object_type}", {
+        params: { path: { user_id: userId, object_type: "tools" } },
+        body: { object_id: toolId },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return data.tools;
 }
 
 export async function removeFavoriteToolQuery(userId: string, toolId: string) {
-    const url = prependPath(`/api/users/${userId}/favorites/tools/${encodeURIComponent(toolId)}`);
-    try {
-        const { data } = await axios.delete(url);
-        return data["tools"];
-    } catch (e) {
-        rethrowSimple(e);
+    const { data, error } = await GalaxyApi().DELETE("/api/users/{user_id}/favorites/{object_type}/{object_id}", {
+        params: {
+            path: {
+                user_id: userId,
+                object_type: "tools",
+                object_id: toolId,
+            },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return data.tools;
 }
 
 export async function setCurrentThemeQuery(userId: string, theme: string) {
-    const url = prependPath(`/api/users/${userId}/theme/${theme}`);
-    try {
-        const { data } = await axios.put(url, { theme: theme });
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
+    const { data, error } = await GalaxyApi().PUT("/api/users/{user_id}/theme/{theme}", {
+        params: { path: { user_id: userId, theme } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
     }
+
+    return data;
 }
