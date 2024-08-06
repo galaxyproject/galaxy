@@ -81,7 +81,7 @@ async function onSave() {
             <BButton
                 id="workflow-save-button"
                 role="button"
-                variant="link"
+                :variant="isNewTempWorkflow ? 'primary' : 'link'"
                 aria-label="Save Workflow"
                 class="editor-button-save"
                 :disabled="!isNewTempWorkflow && !hasChanges"
