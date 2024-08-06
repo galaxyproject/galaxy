@@ -15,6 +15,26 @@ const modulesToTransform = [
     "openapi-typescript-fetch",
 ].join("|");
 
+// Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
+// This is necessary to allow jest to transform the module syntax to commonjs, which is necessary for
+// jest to work properly.  I think.
+
+const configOverride = {
+    "^.+.tsx?$": [
+        "ts-jest",
+        {
+            tsconfig: {
+                verbatimModuleSyntax: false,
+            },
+        },
+    ],
+};
+
+const mergedTSJTransform = {
+    ...tsjPreset.transform,
+    ...configOverride,
+};
+
 module.exports = {
     preset: "ts-jest",
     clearMocks: true,
@@ -48,7 +68,7 @@ module.exports = {
         "^.*\\.(vue)$": "@vue/vue2-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
         "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
-        ...tsjPreset.transform,
+        ...mergedTSJTransform,
     },
     transformIgnorePatterns: [`/node_modules/(?!${modulesToTransform})`],
 };
