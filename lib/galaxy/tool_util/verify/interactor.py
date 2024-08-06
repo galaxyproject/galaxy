@@ -505,10 +505,14 @@ class GalaxyInteractorApi:
         tool_version: Optional[str] = None,
     ) -> Callable[[], None]:
         fname = test_data["fname"]
+        tags = test_data.get("tags")
         tool_input = {
             "file_type": test_data["ftype"],
             "dbkey": test_data["dbkey"],
         }
+        if tags:
+            tool_input["tags"] = tags
+
         metadata = test_data.get("metadata", {})
         if not hasattr(metadata, "items"):
             raise Exception(f"Invalid metadata description found for input [{fname}] - [{metadata}]")
@@ -1865,6 +1869,7 @@ def test_data_iter(required_files):
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
+            tags=extra.get("tags", []),
         )
         edit_attributes = extra.get("edit_attributes", [])
 
