@@ -21,7 +21,7 @@ const backText = computed(() => props.backLinkText ?? "back to preferences");
 </script>
 
 <template>
-    <section>
+    <section class="preferences-page">
         <BButton :to="backUrl" class="back-button" size="sm" variant="primary">
             <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
             {{ backText }}
@@ -36,7 +36,7 @@ const backText = computed(() => props.backLinkText ?? "back to preferences");
 </template>
 
 <style scoped lang="scss">
-section {
+.preferences-page {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;

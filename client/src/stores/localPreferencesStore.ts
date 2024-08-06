@@ -4,12 +4,15 @@ import { computed, type Ref, ref, set } from "vue";
 import { useClamp, useStep } from "@/composables/math";
 import { useInSet } from "@/composables/string";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import { ensureDefined } from "@/utils/assertions";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 type PreferenceTree = {
     uncategorized: Preference<unknown>[];
     categories: {
         [id: string]: PreferenceCategory;
+    };
+    byId: {
+        [id: string]: Preference<unknown>;
     };
 };
 
@@ -136,6 +139,7 @@ function useLocalPreference<T>(
     const constrainedRef = useTypeConstrainedRef(preferencesRef, options.type);
 
     refsById[options.id] = constrainedRef;
+    set(preferenceTree.value.byId, options.id, preference);
 
     return constrainedRef;
 }
@@ -144,9 +148,27 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
     const allPreferences = ref({
         uncategorized: [],
         categories: {},
+        byId: {},
     }) as Ref<PreferenceTree>;
 
     const preferenceRefsById: Record<string, Ref<unknown>> = {};
+
+    const getValueForId = computed(() => (id: string) => ensureDefined(preferenceRefsById[id]).value);
+
+    function setValueForId(id: string, value: unknown) {
+        ensureDefined(preferenceRefsById[id]).value = value;
+    }
+
+    function resetPreference(id: string) {
+        const preference = allPreferences.value.byId[id];
+        assertDefined(preference, `Unknown preference with id "${id}"`);
+
+        setValueForId(id, preference.default);
+    }
+
+    function resetAllPreferences() {
+        Object.keys(allPreferences.value.byId).forEach((id) => resetPreference(id));
+    }
 
     const preferredFormSelectElement = useLocalPreference<"none" | "multi" | "many">(
         allPreferences,
@@ -167,17 +189,47 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         }
     );
 
-    const getValueForId = computed(() => (id: string) => ensureDefined(preferenceRefsById[id]).value);
+    const hideSelectionQueryBreakWarning = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+        id: "hide-selection-query-break-warning",
+        default: false,
+        name: "Hide history 'select all' warning",
+        description:
+            "Do not show the warning that pops up when manually modifying a 'select all' selection in the history",
+        type: { boolean: true },
+    });
 
-    function setValueForId(id: string, value: unknown) {
-        ensureDefined(preferenceRefsById[id]).value = value;
-    }
+    const workflowEditorCategory = {
+        id: "workflow-editor",
+        name: "Workflow Editor",
+        description: "Local Preferences for the Workflow Editor",
+    } as const satisfies PreferenceCategoryOptions;
+
+    const workflowEditorSnapActive = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+        id: "workflow-editor-snap-active",
+        category: workflowEditorCategory,
+        default: false,
+        name: "Snap Workflow Nodes to the Grid",
+        type: { boolean: true },
+    });
+
+    const workflowEditorToolbarVisible = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+        id: "workflow-editor-toolbar-visible",
+        category: workflowEditorCategory,
+        default: true,
+        name: "Show Editor Toolbar",
+        type: { boolean: true },
+    });
 
     return {
         allPreferences,
-        preferredFormSelectElement,
         getValueForId,
         setValueForId,
+        resetPreference,
+        resetAllPreferences,
+        preferredFormSelectElement,
+        hideSelectionQueryBreakWarning,
+        workflowEditorSnapActive,
+        workflowEditorToolbarVisible,
     };
 });
 
