@@ -54,6 +54,7 @@ Members
 - Nuwan Goonasekera (@nuwang)
 - Björn Grüning (@bgruening)
 - Aysam Guerler (@guerler)
+- Alireza Heidari (@itisAliRH)
 - Jennifer Hillman Jackson (@jennaj)
 - David López (@davelopez)
 - Laila Los (@ElectronicBlueberry)
