@@ -550,10 +550,9 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        # these seem to always require a value - see test_tools.py -> test_drill_down_first_by_default
-        requires_value = True
         options = self.options
         if options:
+            # if any of these are selected, they seem to serve as defaults - check out test_tools -> test_drill_down_first_by_default
             return not any_drill_down_options_selected(options)
         else:
             # I'm not sure how to handle dynamic options... they might or might not be required?
