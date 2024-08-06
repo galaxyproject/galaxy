@@ -61,6 +61,7 @@ import { ref, watch } from "vue";
 
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -171,6 +172,9 @@ export default {
             this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
+            if (this.Galaxy.config.interactivetools_enable) {
+                this.startWatchingEntryPoints();
+            }
             if (this.Galaxy.config.enable_notification_system) {
                 this.startWatchingNotifications();
             }
@@ -188,6 +192,10 @@ export default {
         }
     },
     methods: {
+        startWatchingEntryPoints() {
+            const entryPointStore = useEntryPointStore();
+            entryPointStore.startWatchingEntryPoints();
+        },
         startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
             notificationsStore.startWatchingNotifications();
