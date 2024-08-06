@@ -53,7 +53,6 @@ from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,
     unicodify,
-    XML,
 )
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
@@ -168,6 +167,7 @@ class ToolParameter(UsesDictVisibleKeys):
     of valid choices, validation logic, ...)
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None)
     >>> p = ToolParameter(None, XML('<param argument="--parameter-name" type="text" value="default" />'))
     >>> assert p.name == 'parameter_name'
@@ -272,6 +272,7 @@ class ToolParameter(UsesDictVisibleKeys):
         """
         Convert a value to a text representation suitable for displaying to
         the user
+        >>> from galaxy.util import XML
         >>> p = ToolParameter(None, XML('<param name="_name" />'))
         >>> print(p.to_text(None))
         Not available.
@@ -390,6 +391,7 @@ class TextToolParameter(SimpleTextToolParameter):
     Parameter that can take on any text value.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None)
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
@@ -430,6 +432,7 @@ class IntegerToolParameter(TextToolParameter):
     Parameter that takes an integer value.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=True)
     >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
     >>> print(p.name)
@@ -502,6 +505,7 @@ class FloatToolParameter(TextToolParameter):
     Parameter that takes a real number value.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=True)
     >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
     >>> print(p.name)
@@ -576,6 +580,7 @@ class BooleanToolParameter(ToolParameter):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch())
     >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
     >>> print(p.name)
@@ -648,6 +653,7 @@ class FileToolParameter(ToolParameter):
     Parameter that takes an uploaded file as a value.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch())
     >>> p = FileToolParameter(None, XML('<param name="_name" type="file"/>'))
     >>> print(p.name)
@@ -721,6 +727,7 @@ class FTPFileToolParameter(ToolParameter):
     Parameter that takes a file uploaded via FTP as a value.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), user=None)
     >>> p = FTPFileToolParameter(None, XML('<param name="_name" type="ftpfile"/>'))
     >>> print(p.name)
@@ -794,6 +801,7 @@ class HiddenToolParameter(ToolParameter):
     Parameter that takes one of two values.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch())
     >>> p = HiddenToolParameter(None, XML('<param name="_name" type="hidden" value="_value"/>'))
     >>> print(p.name)
@@ -818,6 +826,7 @@ class ColorToolParameter(ToolParameter):
     Parameter that stores a color.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch())
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
     >>> print(p.name)
@@ -860,6 +869,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     current server base url. Used in all redirects.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch())
     >>> p = BaseURLToolParameter(None, XML('<param name="_name" type="base_url" value="_value"/>'))
     >>> print(p.name)
@@ -901,6 +911,7 @@ class SelectToolParameter(ToolParameter):
     Parameter that takes on one (or many) or a specific set of values.
 
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(), workflow_building_mode=False)
     >>> p = SelectToolParameter(None, XML(
     ... '''
@@ -1187,6 +1198,7 @@ class GenomeBuildParameter(SelectToolParameter):
 
     >>> # Create a mock transaction with 'hg17' as the current build
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
     >>> p = GenomeBuildParameter(None, XML('<param name="_name" type="genomebuild" value="hg17" />'))
     >>> print(p.name)
@@ -1359,6 +1371,7 @@ class ColumnListParameter(SelectToolParameter):
     >>> # Mock up a history (not connected to database)
     >>> from galaxy.model import History, HistoryDatasetAssociation
     >>> from galaxy.util.bunch import Bunch
+    >>> from galaxy.util import XML
     >>> from galaxy.model.mapping import init
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
@@ -1579,9 +1592,12 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     Parameter that takes on one (or many) of a specific set of values.
     Creating a hierarchical select menu, which allows users to 'drill down' a tree-like set of options.
 
+    >>> from galaxy.util import XML
     >>> from galaxy.util.bunch import Bunch
-    >>> trans = Bunch(app=None, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
-    >>> p = DrillDownSelectToolParameter(None, XML(
+    >>> app = Bunch(config=Bunch(tool_data_path=None))
+    >>> tool = Bunch(app=app)
+    >>> trans = Bunch(app=app, history=Bunch(genome_build='hg17'), db_builds=read_dbnames(None))
+    >>> p = DrillDownSelectToolParameter(tool, XML(
     ... '''
     ... <param name="_name" type="drill_down" display="checkbox" hierarchy="recurse" multiple="true">
     ...   <options>
@@ -1619,54 +1635,24 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     """
 
     def __init__(self, tool, input_source, context=None):
-        def recurse_option_elems(cur_options, option_elems):
-            for option_elem in option_elems:
-                selected = string_as_bool(option_elem.get("selected", False))
-                cur_options.append(
-                    {
-                        "name": option_elem.get("name"),
-                        "value": option_elem.get("value"),
-                        "options": [],
-                        "selected": selected,
-                    }
-                )
-                recurse_option_elems(cur_options[-1]["options"], option_elem.findall("option"))
-
         input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
-        # TODO: abstract XML out of here - so non-XML InputSources can
-        # specify DrillDown parameters.
-        elem = input_source.elem()
-        self.multiple = string_as_bool(elem.get("multiple", False))
-        self.display = elem.get("display", None)
-        self.hierarchy = elem.get("hierarchy", "exact")  # exact or recurse
-        self.separator = elem.get("separator", ",")
-        if from_file := elem.get("from_file", None):
-            if not os.path.isabs(from_file):
-                from_file = os.path.join(tool.app.config.tool_data_path, from_file)
-            elem = XML(f"<root>{open(from_file).read()}</root>")
-        self.dynamic_options = elem.get("dynamic_options", None)
-        if self.dynamic_options:
+        self.multiple = input_source.get_bool("multiple", False)
+        self.display = input_source.get("display", None)
+        self.hierarchy = input_source.get("hierarchy", "exact")  # exact or recurse
+        self.separator = input_source.get("separator", ",")
+        tool_data_path = tool.app.config.tool_data_path
+        drill_down_dynamic_options = input_source.parse_drill_down_dynamic_options(tool_data_path)
+        if drill_down_dynamic_options is not None:
             self.is_dynamic = True
-        self.options = []
-        self.filtered: Dict[str, Any] = {}
-        if elem.find("filter"):
-            self.is_dynamic = True
-            for filter in elem.findall("filter"):
-                # currently only filtering by metadata key matching input file is allowed
-                if filter.get("type") == "data_meta":
-                    if filter.get("data_ref") not in self.filtered:
-                        self.filtered[filter.get("data_ref")] = {}
-                    if filter.get("meta_key") not in self.filtered[filter.get("data_ref")]:
-                        self.filtered[filter.get("data_ref")][filter.get("meta_key")] = {}
-                    if filter.get("value") not in self.filtered[filter.get("data_ref")][filter.get("meta_key")]:
-                        self.filtered[filter.get("data_ref")][filter.get("meta_key")][filter.get("value")] = []
-                    recurse_option_elems(
-                        self.filtered[filter.get("data_ref")][filter.get("meta_key")][filter.get("value")],
-                        filter.find("options").findall("option"),
-                    )
-        elif not self.dynamic_options:
-            recurse_option_elems(self.options, elem.find("options").findall("option"))
+            self.dynamic_options = drill_down_dynamic_options.code_block
+            self.filtered = drill_down_dynamic_options.filters
+            self.options = []
+        else:
+            self.is_dynamic = False
+            self.dynamic_options = None
+            self.filtered = {}
+            self.options = input_source.parse_drill_down_static_options(tool_data_path)
 
     def _get_options_from_code(self, trans=None, other_values=None):
         assert self.dynamic_options, Exception("dynamic_options was not specifed")

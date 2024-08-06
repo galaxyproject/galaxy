@@ -879,6 +879,58 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, wait=True)
             assert not output_details["visible"]
 
+    @skip_without_tool("gx_select")
+    def test_select_first_by_default(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_select", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "--ex1"
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_select", history_id, inputs, assert_ok=False)
+            self._assert_status_code_is(response, 400)
+            assert "an invalid option" in response.text
+
+    @skip_without_tool("gx_drill_down_exact")
+    @skip_without_tool("gx_drill_down_exact_multiple")
+    @skip_without_tool("gx_drill_down_recurse")
+    @skip_without_tool("gx_drill_down_recurse_multiple")
+    def test_drill_down_first_by_default(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_drill_down_exact", history_id, inputs, assert_ok=False)
+            self._assert_status_code_is(response, 400)
+            assert "an invalid option" in response.text
+
+            response = self._run("gx_drill_down_exact_multiple", history_id, inputs, assert_ok=False)
+            self._assert_status_code_is(response, 400)
+            assert "an invalid option" in response.text
+
+            response = self._run("gx_drill_down_recurse", history_id, inputs, assert_ok=False)
+            self._assert_status_code_is(response, 400)
+            assert "an invalid option" in response.text
+
+            response = self._run("gx_drill_down_recurse_multiple", history_id, inputs, assert_ok=False)
+            self._assert_status_code_is(response, 400)
+            assert "an invalid option" in response.text
+
+            # having an initially selected value - is useful for the UI but doesn't serve
+            # as a default and doesn't make the drill down optional in a someway.
+            response = self._run("gx_drill_down_exact_with_selection", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "parameter: aba"
+
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
@@ -904,6 +956,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output[1])
             assert output1_content.strip() == "--ex1"
             assert output2_content.strip() == "None", output2_content
+
+    @skip_without_tool("gx_repeat_boolean_min")
+    def test_optional_repeats_with_mins_filled_id(self):
+        # we have a tool test for this but I wanted to verify it wasn't just the
+        # tool test framework filling in a default. Creating a raw request here
+        # verifies that currently select parameters don't require a selection.
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_repeat_boolean_min", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert "false" in output1_content
+            assert "length: 2" in output1_content
 
     @skip_without_tool("library_data")
     def test_library_data_param(self):

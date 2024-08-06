@@ -37,6 +37,7 @@ from typing_extensions import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.tool_util.parser.interface import DrillDownOptionsDict
 from ._types import (
     cast_as_type,
     is_optional,
@@ -479,8 +480,111 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         return self.options is not None and any(o.selected for o in self.options)
 
     @property
+    def default_value(self) -> Optional[str]:
+        if self.options:
+            for option in self.options:
+                if option.selected:
+                    return option.value
+            # single value pick up first value
+            if not self.optional:
+                return self.options[0].value
+
+        return None
+
+    @property
     def request_requires_value(self) -> bool:
-        return not self.optional and not self.has_selected_static_option
+        # API will allow an empty value and just grab the first static option
+        # see API Tests -> test_tools.py -> test_select_first_by_default
+        # so only require a value in the multiple case if optional is False
+        return self.multiple and not self.optional
+
+
+DrillDownHierarchyT = Literal["recurse", "exact"]
+
+
+def drill_down_possible_values(options: List[DrillDownOptionsDict], multiple: bool) -> List[str]:
+    possible_values = []
+
+    def add_value(option: str, is_leaf: bool):
+        if not multiple and not is_leaf:
+            return
+        possible_values.append(option)
+
+    def walk_selection(option: DrillDownOptionsDict):
+        child_options = option["options"]
+        is_leaf = not child_options
+        add_value(option["value"], is_leaf)
+        if not is_leaf:
+            for child_option in child_options:
+                walk_selection(child_option)
+
+    for option in options:
+        walk_selection(option)
+
+    return possible_values
+
+
+class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_drill_down"] = "gx_drill_down"
+    options: Optional[List[DrillDownOptionsDict]] = None
+    multiple: bool
+    hierarchy: DrillDownHierarchyT
+
+    @property
+    def py_type(self) -> Type:
+        if self.options is not None:
+            literal_options: List[Type] = [
+                cast_as_type(Literal[o]) for o in drill_down_possible_values(self.options, self.multiple)
+            ]
+            py_type = union_type(literal_options)
+        else:
+            py_type = StrictStr
+
+        if self.multiple:
+            py_type = list_type(py_type)
+
+        return py_type
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        options = self.options
+        if options:
+            # if any of these are selected, they seem to serve as defaults - check out test_tools -> test_drill_down_first_by_default
+            return not any_drill_down_options_selected(options)
+        else:
+            # I'm not sure how to handle dynamic options... they might or might not be required?
+            # do we need to default to assuming they're not required?
+            return False
+
+
+def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool:
+    for option in options:
+        selected = option.get("selected")
+        if selected:
+            return True
+        child_options = option.get("options", [])
+        if any_drill_down_options_selected(child_options):
+            return True
+
+    return False
+
+
+class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_data_column"] = "gx_data_column"
+
+    @property
+    def py_type(self) -> Type:
+        return StrictInt
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return False
 
 
 DiscriminatorType = Union[bool, str]
@@ -586,18 +690,31 @@ class RepeatParameterModel(BaseGalaxyToolParameterModelDefinition):
             self.parameters, f"Repeat_{self.name}", state_representation
         )
 
+        initialize_repeat: Any
+        if self.request_requires_value:
+            initialize_repeat = ...
+        else:
+            initialize_repeat = None
+
         class RepeatType(RootModel):
-            root: List[instance_class] = Field(..., min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
+            root: List[instance_class] = Field(initialize_repeat, min_length=self.min, max_length=self.max)  # type: ignore[valid-type]
 
         return DynamicModelInformation(
             self.name,
-            (RepeatType, ...),
+            (RepeatType, initialize_repeat),
             {},
         )
 
     @property
     def request_requires_value(self) -> bool:
-        return True  # TODO:
+        if self.min is None or self.min == 0:
+            return False
+        # so we know we need at least one value, but maybe none of the parameters in the list
+        # are required
+        for parameter in self.parameters:
+            if parameter.request_requires_value:
+                return True
+        return False
 
 
 class SectionParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -799,8 +916,10 @@ GalaxyParameterT = Union[
     SelectParameterModel,
     DataParameterModel,
     DataCollectionParameterModel,
+    DataColumnParameterModel,
     DirectoryUriParameterModel,
     RulesParameterModel,
+    DrillDownParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,

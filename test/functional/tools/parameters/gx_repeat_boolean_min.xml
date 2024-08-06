@@ -1,6 +1,8 @@
-<tool id="gx_repeat_boolean" name="gx_repeat_boolean" version="1.0.0">
+<tool id="gx_repeat_boolean_min" name="gx_repeat_boolean_min" version="1.0.0">
     <command><![CDATA[
 echo '$parameter[0].boolean_parameter' >> '$output'
+#set $repeat_length = len($parameter)
+echo 'length: $repeat_length' >> '$output'
     ]]></command>
     <inputs>
         <repeat name="parameter" title="Repeat Parameter" min="2">
@@ -11,5 +13,13 @@ echo '$parameter[0].boolean_parameter' >> '$output'
         <data name="output" format="txt" />
     </outputs>
     <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="false" />
+                    <has_text text="length: 2" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>

@@ -30,8 +30,8 @@ def assert_has_json_property_with_value(
     value: str,
 ):
     """Assert JSON tree contains the specified property with specified JSON-ified value."""
-    output_json = json.loads(output)
-    expected_value = json.loads(value)
+    output_json = assert_json_and_load(output)
+    expected_value = assert_json_and_load(value)
 
     def is_property(key, value):
         return key == property and value == expected_value
@@ -45,9 +45,16 @@ def assert_has_json_property_with_text(
     text: str,
 ):
     """Assert JSON tree contains the specified property with specified JSON-ified value."""
-    output_json = json.loads(output)
+    output_json = assert_json_and_load(output)
 
     def is_property(key, value):
         return key == property and value == text
 
     assert any_in_tree(is_property, output_json), f"Failed to find property [{property}] with text [{text}]"
+
+
+def assert_json_and_load(json_str: str):
+    try:
+        return json.loads(json_str)
+    except Exception:
+        raise AssertionError(f"Failed to parse JSON from {json_str[0:1024]}.")
