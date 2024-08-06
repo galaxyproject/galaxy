@@ -4,18 +4,16 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
-import { getCurrentUser } from "@/stores/users/queries";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
-import { type UserQuotaUsageData } from "./Quota/model";
+import { type UserQuotaUsageData } from "./Quota/model/QuotaUsage";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 
-jest.mock("@/api/schema");
-jest.mock("@/stores/users/queries");
-
 const localVue = getLocalVue();
+
+const { server, http } = useServerMock();
 
 const quotaUsageClassSelector = ".quota-usage";
 const basicDiskUsageSummaryId = "#basic-disk-usage-summary";
@@ -25,10 +23,6 @@ const fakeUserWithQuota = getFakeRegisteredUser({
     quota_bytes: 104857600,
     quota_percent: 1,
 });
-
-// TODO: Replace this with a mockFetcher when #16608 is merged
-const mockGetCurrentUser = getCurrentUser as jest.Mock;
-mockGetCurrentUser.mockImplementation(() => Promise.resolve(fakeUserWithQuota));
 
 const fakeQuotaUsages: UserQuotaUsageData[] = [
     {
@@ -41,15 +35,17 @@ const fakeQuotaUsages: UserQuotaUsageData[] = [
 const FAKE_TASK_ID = "fakeTaskId";
 
 async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
-    mockFetcher
-        .path("/api/configuration")
-        .method("get")
-        .mock({ data: { enable_quotas: enableQuotas } });
-    mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: fakeQuotaUsages });
-    mockFetcher
-        .path("/api/users/current/recalculate_disk_usage")
-        .method("put")
-        .mock({ status: 200, data: { id: FAKE_TASK_ID } });
+    server.use(
+        http.get("/api/configuration", ({ response }) => {
+            return response.untyped(HttpResponse.json({ enable_quotas: enableQuotas }));
+        }),
+        http.get("/api/users/{user_id}", ({ response }) => {
+            return response(200).json(fakeUserWithQuota);
+        }),
+        http.get("/api/users/{user_id}/usage", ({ response }) => {
+            return response(200).json(fakeQuotaUsages);
+        })
+    );
 
     const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary, {
@@ -98,8 +94,17 @@ describe("DiskUsageSummary.vue", () => {
                 total_disk_usage: 2097152,
             },
         ];
-        mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: updatedFakeQuotaUsages });
-        mockFetcher.path("/api/tasks/{task_id}/state").method("get").mock({ data: "SUCCESS" });
+        server.use(
+            http.get("/api/users/{user_id}/usage", ({ response }) => {
+                return response(200).json(updatedFakeQuotaUsages);
+            }),
+            http.put("/api/users/current/recalculate_disk_usage", ({ response }) => {
+                return response(200).json({ id: FAKE_TASK_ID, ignored: false });
+            }),
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                return response(200).json("SUCCESS");
+            })
+        );
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
         const refreshingAlert = wrapper.find(".refreshing-alert");
