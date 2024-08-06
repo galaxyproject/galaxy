@@ -5,16 +5,16 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "../testUtils";
 
 import WorkflowList from "./WorkflowList.vue";
 
-jest.mock("@/api/schema");
-
 const localVue = getLocalVue();
+
+const { server, http } = useServerMock();
 
 const FAKE_USER_ID = "fake_user_id";
 const FAKE_USERNAME = "fake_username";
@@ -53,12 +53,20 @@ async function mountWorkflowList() {
 }
 
 describe("WorkflowList", () => {
-    afterEach(() => {
-        mockFetcher.clearMocks();
+    beforeEach(() => {
+        server.use(
+            http.get("/api/workflows/{workflow_id}/counts", ({ response }) => {
+                return response(200).json({});
+            })
+        );
     });
 
     it("render empty workflow list", async () => {
-        mockFetcher.path("/api/workflows").method("get").mock({ data: [] });
+        server.use(
+            http.get("/api/workflows", ({ response }) => {
+                return response(200).json([]);
+            })
+        );
 
         const wrapper = await mountWorkflowList();
 
@@ -69,7 +77,12 @@ describe("WorkflowList", () => {
     it("render workflow list", async () => {
         const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
 
-        mockFetcher.path("/api/workflows").method("get").mock({ data: FAKE_WORKFLOWS });
+        server.use(
+            http.get("/api/workflows", ({ response }) => {
+                // TODO: We use untyped here because the response is not yet defined in the schema
+                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+            })
+        );
 
         const wrapper = await mountWorkflowList();
 
@@ -84,7 +97,12 @@ describe("WorkflowList", () => {
         const FAKE_WORKFLOWS = generateRandomWorkflowList(FAKE_USERNAME, 10);
         FAKE_WORKFLOWS.forEach((w) => (w.deleted = true));
 
-        mockFetcher.path("/api/workflows").method("get").mock({ data: FAKE_WORKFLOWS });
+        server.use(
+            http.get("/api/workflows", ({ response }) => {
+                // TODO: We use untyped here because the response is not yet defined in the schema
+                return response.untyped(HttpResponse.json(FAKE_WORKFLOWS));
+            })
+        );
 
         const wrapper = await mountWorkflowList();
 
