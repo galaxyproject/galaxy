@@ -49,6 +49,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Job,
     StoredWorkflow,
+    ToolRequest,
 )
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -71,6 +72,12 @@ from galaxy.tool_util.ontologies.ontology_data import (
     expand_ontology_data,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
+from galaxy.tool_util.parameters import (
+    input_models_for_pages,
+    JobInternalToolState,
+    RequestInternalToolState,
+    ToolParameterBundle,
+)
 from galaxy.tool_util.parser import (
     get_tool_source,
     get_tool_source_from_representation,
@@ -147,7 +154,10 @@ from galaxy.tools.parameters.grouping import (
     UploadDataset,
 )
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
-from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.meta import (
+    expand_meta_parameters,
+    expand_meta_parameters_2,
+)
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
@@ -195,6 +205,8 @@ from .execute import (
     MappingParameters,
     ToolParameterRequestInstanceT,
     ToolParameterRequestT,
+    execute_2,
+    MappingParameters2,
 )
 
 if TYPE_CHECKING:
@@ -740,7 +752,7 @@ class _Options(Bunch):
     refresh: str
 
 
-class Tool(UsesDictVisibleKeys):
+class Tool(UsesDictVisibleKeys, ToolParameterBundle):
     """
     Represents a computational tool that can be executed through Galaxy.
     """
@@ -1410,6 +1422,11 @@ class Tool(UsesDictVisibleKeys):
         self.inputs: Dict[str, Union[Group, ToolParameter]] = {}
         pages = tool_source.parse_input_pages()
         enctypes: Set[str] = set()
+        try:
+            input_models = input_models_for_pages(pages)
+            self.input_models = input_models
+        except Exception:
+            pass
         if pages.inputs_defined:
             if hasattr(pages, "input_elem"):
                 input_elem = pages.input_elem
@@ -1794,6 +1811,50 @@ class Tool(UsesDictVisibleKeys):
         if self.check_values:
             visit_input_values(self.inputs, values, callback)
 
+    def expand_incoming_2(self, trans, tool_request_internal_state: RequestInternalToolState, request_context):
+        if self.input_translator:
+            raise exceptions.RequestParameterInvalidException(
+                "Failure executing tool request with id '%s' (cannot validate inputs from this type of data source tool - please POST to /api/tools).",
+                self.id,
+            )
+
+        expanded_incomings: List[JobInternalToolState]
+        collection_info: Optional[MatchingCollections]
+        expanded_incomings, collection_info = expand_meta_parameters_2(trans.app, self, tool_request_internal_state)
+
+        # Process incoming data
+        validation_timer = self.app.execution_timer_factory.get_timer(
+            "internals.galaxy.tools.validation",
+            "Validated and populated state for tool request",
+        )
+        all_errors = []
+        for expanded_incoming in expanded_incomings:
+            errors: Dict[str, str] = {}
+            if self.check_values:
+                # expand_incoming would use the params here... here we're
+                # only using populate_state to validate - so ignoring params
+                # after we're done.
+
+                params: Dict[str, Any] = {}
+                # values from `incoming`.
+                populate_state(
+                    request_context,
+                    self.inputs,
+                    expanded_incoming.input_state,
+                    params,
+                    errors,
+                    simple_errors=False,
+                    input_format="legacy",
+                )
+                # If the tool provides a `validate_input` hook, call it.
+                validate_input = self.get_hook("validate_input")
+                if validate_input:
+                    validate_input(request_context, errors, params, self.inputs)
+            all_errors.append(errors)
+
+        log.info(validation_timer)
+        return expanded_incomings, all_errors, collection_info
+
     def expand_incoming(self, trans, incoming, request_context, input_format="legacy"):
         rerun_remap_job_id = None
         if "rerun_remap_job_id" in incoming:
@@ -1868,6 +1929,42 @@ class Tool(UsesDictVisibleKeys):
 
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def handle_input_2(
+        self,
+        trans,
+        tool_request: ToolRequest,
+        history=None,
+        use_cached_job=False,
+        preferred_object_store_id: Optional[str] = None,
+        input_format="legacy",
+    ):
+        # TODO: original 1 added preferred object store on rebase, need to add it here.
+        request_context = proxy_work_context_for_history(trans, history=history)
+        tool_request_state = RequestInternalToolState(tool_request.request)
+        all_params, all_errors, collection_info = self.expand_incoming_2(trans, tool_request_state, request_context)
+        # If there were errors, we stay on the same page and display them
+        self.handle_incoming_errors(all_errors)
+
+        rerun_remap_job_id = None  # TODO:
+        mapping_params = MappingParameters2(tool_request_state, all_params)
+        completed_jobs: Dict[int, Optional[model.Job]] = {}
+        for i, param in enumerate(all_params):
+            print(f"Do something with {param}")
+            # TODO: use cached jobs here...
+            completed_jobs[i] = None
+
+            execute_2(
+                request_context,
+                self,
+                mapping_params,
+                history,
+                tool_request,
+                completed_jobs,
+                rerun_remap_job_id,
+                preferred_object_store_id,
+                collection_info=collection_info,
+            )
 
     def handle_input(
         self,
@@ -2100,6 +2197,8 @@ class Tool(UsesDictVisibleKeys):
         if incoming is None:
             incoming = {}
         try:
+            if isinstance(incoming, JobInternalToolState):
+                incoming = incoming.input_state
             return self.tool_action.execute(
                 self,
                 trans,
