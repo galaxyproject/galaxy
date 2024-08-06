@@ -276,7 +276,13 @@ def new_upload(
                 )
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
-
+        tags_raw = getattr(uploaded_dataset, "tags", None)
+        if tags_raw:
+            new_tags = tag_handler.parse_tags_list(tags_raw.split(","))
+            for tag in new_tags:
+                tag_handler.apply_item_tag(
+                    user=trans.user, item=upload_target_dataset_instance, name=tag[0], value=tag[1], flush=True
+                )
     if tag_list:
         tag_handler.add_tags_from_list(trans.user, upload_target_dataset_instance, tag_list, flush=False)
 
