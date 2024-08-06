@@ -134,13 +134,13 @@ async function load(overlayLoading = false, silent = false) {
         const { response, data, error } = await GalaxyApi().GET("/api/workflows", {
             params: {
                 query: {
-                    sortBy: sortBy.value,
-                    sortDesc: sortDesc.value,
+                    sort_by: sortBy.value,
+                    sort_desc: sortDesc.value,
                     limit: limit.value,
                     offset: offset.value,
-                    filterText: search?.trim(),
-                    showPublished: published.value,
-                    skipStepCounts: true,
+                    search: search?.trim(),
+                    show_published: published.value,
+                    skip_step_counts: true,
                 },
             },
         });
