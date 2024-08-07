@@ -71,7 +71,7 @@ def _parser():
     parser.add_argument("--directory-uri", type=str, help="directory target URI")
     parser.add_argument("--file-sources", type=str, help="file sources json")
     parser.add_argument("--files-to-export", type=str, help="files to export")
-    parser.add_argument("--export-metadata-files", type=bool, help="export metadata files", default=True)
+    parser.add_argument("--export-metadata-files", type=bool, help="export metadata files", default=False)
     return parser
 
 
