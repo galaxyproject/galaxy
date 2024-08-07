@@ -8,7 +8,7 @@ import {
     faSpinner,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
-import Vue, { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, set } from "vue";
 
 import {
     type InvocationStep,
@@ -174,7 +174,7 @@ export function useInvocationGraph(
 
             // add the graph step to the steps object if it doesn't exist yet
             if (!steps.value[i]) {
-                Vue.set(steps.value, i, graphStepFromWfStep);
+                set(steps.value, i, graphStepFromWfStep);
             }
         }
 
@@ -182,7 +182,7 @@ export function useInvocationGraph(
     }
 
     /**
-     * Store the state and status of jobs for the graph step.
+     * Store the state, jobs and class for the graph step based on the invocation step and its job summary.
      * @param graphStep - Invocation graph step
      * @param invocationStep - The invocation step for the workflow step
      * @param invocationStepSummary - The step job summary for the invocation step (based on its job id)
@@ -192,6 +192,9 @@ export function useInvocationGraph(
         invocationStep: InvocationStep | undefined,
         invocationStepSummary: StepJobSummary | undefined
     ) {
+        /** The new state for the graph step */
+        let newState = graphStep.state;
+
         // there is an invocation step for this workflow step
         if (invocationStep) {
             /** The `populated_state` for this graph step. (This may or may not be used to
@@ -218,48 +221,55 @@ export function useInvocationGraph(
                     if (invocationStepSummary.states) {
                         const statesForThisStep = Object.keys(invocationStepSummary.states);
                         // set the state of the graph step based on the job states for this step
-                        graphStep.state = getStepStateFromJobStates(statesForThisStep);
+                        newState = getStepStateFromJobStates(statesForThisStep);
                     }
-                    // now store the job states for this step in the graph step
-                    graphStep.jobs = invocationStepSummary.states;
+                    // now store the job states for this step in the graph step, if they changed since the last time
+                    if (JSON.stringify(graphStep.jobs) !== JSON.stringify(invocationStepSummary.states)) {
+                        set(graphStep, "jobs", invocationStepSummary.states);
+                    }
                 } else {
                     // TODO: There is no summary for this step's `job_id`; what does this mean?
-                    graphStep.state = "waiting";
+                    newState = "waiting";
                 }
             }
 
             // If the state still hasn't been set, set it based on the populated state
-            if (!graphStep.state) {
+            if (!newState) {
                 if (populatedState === "scheduled" || populatedState === "ready") {
-                    graphStep.state = "queued";
+                    newState = "queued";
                 } else if (populatedState === "resubmitted") {
-                    graphStep.state = "new";
+                    newState = "new";
                 } else if (populatedState === "failed") {
-                    graphStep.state = "error";
+                    newState = "error";
                 } else if (populatedState === "deleting") {
-                    graphStep.state = "deleted";
+                    newState = "deleted";
                 } else if (populatedState && !["stop", "stopped"].includes(populatedState)) {
-                    graphStep.state = populatedState as GraphStep["state"];
+                    newState = populatedState as GraphStep["state"];
                 }
             }
         }
 
         // there is no invocation step for this workflow step, it is probably queued
         else {
-            graphStep.state = "queued";
+            newState = "queued";
         }
 
-        /** Setting the header class for the graph step */
-        graphStep.headerClass = {
-            "node-header-invocation": true,
-            [`header-${graphStep.state}`]: !!graphStep.state,
-        };
-        // TODO: maybe a different one for inputs? Currently they have no state either.
+        // if the state has changed, update the graph step
+        if (graphStep.state !== newState) {
+            graphStep.state = newState;
 
-        /** Setting the header icon for the graph step */
-        if (graphStep.state) {
-            graphStep.headerIcon = iconClasses[graphStep.state]?.icon;
-            graphStep.headerIconSpin = iconClasses[graphStep.state]?.spin;
+            /** Setting the header class for the graph step */
+            graphStep.headerClass = {
+                "node-header-invocation": true,
+                [`header-${graphStep.state}`]: !!graphStep.state,
+            };
+            // TODO: maybe a different one for inputs? Currently they have no state either.
+
+            /** Setting the header icon for the graph step */
+            if (graphStep.state) {
+                graphStep.headerIcon = iconClasses[graphStep.state]?.icon;
+                graphStep.headerIconSpin = iconClasses[graphStep.state]?.spin;
+            }
         }
     }
 
