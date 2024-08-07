@@ -1,0 +1,61 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+  <head>
+    <!--
+      $RCSfile$
+      $Author: egonw $
+      $Date: 2005-01-24 13:43:52 -0600 (Mon, 24 Jan 2005) $
+      $Revision: 3221 $
+
+      Copyright (C) 2004-2005  The Jmol Development Team
+
+      Contact: jmol-developers@lists.sf.net
+
+      This library is free software; you can redistribute it and/or
+      modify it under the terms of the GNU Lesser General Public
+      License as published by the Free Software Foundation; either
+      version 2.1 of the License, or (at your option) any later version.
+      
+      This library is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+      Lesser General Public License for more details.
+      
+      You should have received a copy of the GNU Lesser General Public
+      License along with this library; if not, write to the Free Software
+      Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
+      02111-1307  USA.
+      
+    -->
+  </head>
+  <body bgcolor="white">
+    
+    <p>
+      Provides a software implementation of complete 3D graphics engine
+      for rendering molecules and associated shapes. 
+      basic shapes.
+    </p>
+    <p>
+      This package implements all graphics primitives used by Jmol. The
+      graphics engine does not use Java3D or OpenGL. It requires no specialized
+      graphics hardware. This allows Jmol and the JmolApplet to run on any
+      machine that has a JVM.
+    </p>
+    <p>
+      It is a software implementation of a graphics z-buffer. An int[] called
+      pbuf (for pixel buffer) is used to hold ARGB values for pixels. A short[]
+      called zbuf holds the z-depth value.
+    </p>
+    <p>
+      Shape primitives are provided for drawing spheres, cylinders, triangles, etc.
+      Shading primitives provide lighting/shading support
+    </p>
+    
+    <h2>Related Documentation</h2>
+
+    Makes use of javax.vecmath classes.
+
+    <!-- Put @see and @since tags down here. -->
+    
+  </body>
+</html>

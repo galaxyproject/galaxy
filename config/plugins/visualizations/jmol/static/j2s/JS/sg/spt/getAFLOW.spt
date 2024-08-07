@@ -1,0 +1,63 @@
+
+
+outdir = "c:/temp/bilbao/examples/";
+aflowroot = "https://www.aflowlib.org/prototype-encyclopedia/";
+aflowpages = ["triclinic_lattice.html","monoclinic_lattice.html","orthorhombic_lattice.html","tetragonal_lattice.html",
+"trigonal_lattice.html","hexagonal_lattice.html","cubic_lattice.html"];
+
+/* does not work
+function getAFLOWPages() {
+	for (var page in aflowpages) {
+		var x = load(aflowroot + page);
+		write var x @{outdir + "data/aflow_" + page};
+	}
+}
+*/
+
+function createAFlowJSON() {
+	var out = {};
+	for (var page in aflowpages) {
+		var fname = outdir + "data/aflow_" + page;
+		var aflowdata = load(fname).split('a href="');
+		for (name in aflowdata) {
+			var aname = name;
+			if (aname[1] != "A") continue;
+			aname = aname.split(".html")[1];
+			var sg = aname.split("_")[3];
+			var sgs = out[sg];
+			if (!sgs) {
+				sgs = [];
+				out[sg] = sgs;
+			}
+			sgs.push(aname);
+		}
+	}
+	out = out.format("JSON");
+	write var out @{outdir + "aflow_structures.json"}; 
+
+}
+
+aflowjson = "";
+
+function showSG(n, i) {
+
+	if (!aflowjson) {
+		aflowjson = load(outdir + "aflow_structures.json","JSON");
+	}  
+	var sgs = aflowjson["" + n];
+	if (!i) i = 1;
+	var aname = sgs[i];
+
+	var url = aflowroot + "CIF/" + aname + ".cif";
+	load @url packed;
+	draw spacegroup all;
+	set drawhover;
+	color {*} translucent;
+	set drawhover;
+}
+
+showSG 200;
+//draw off
+//wireframe -0.1
+//draw *rot3* on
+

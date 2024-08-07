@@ -1,0 +1,86 @@
+find    ?
+found    c:\temp\bilbao\wyckoff\json\ita_75.json 0000854: ?.","set": 2,"sg": 75,"tm": "a-b,a+b,c","u": "C 4"
+found    c:\temp\bilbao\wyckoff\json\ita_76.json 0000532: ?.","set": 2,"sg": 76,"tm": "a-b,a+b,c","u": "C 41
+found    c:\temp\bilbao\wyckoff\json\ita_77.json 0000925: ?.","set": 2,"sg": 77,"tm": "a-b,a+b,c","u": "C 42
+found    c:\temp\bilbao\wyckoff\json\ita_78.json 0000532: ?.","set": 2,"sg": 78,"tm": "a-b,a+b,c","u": "C 43
+found    c:\temp\bilbao\wyckoff\json\ita_79.json 0001043: ?.","set": 2,"sg": 79,"tm": "a-b,a+b,c","u": "F 4"
+found    c:\temp\bilbao\wyckoff\json\ita_80.json 0001023: ?.","set": 2,"sg": 80,"tm": "a-b,a+b,c","u": "F 41
+found    c:\temp\bilbao\wyckoff\json\ita_81.json 0001329: ?.","set": 2,"sg": 81,"tm": "a-b,a+b,c","u": "C -4
+found    c:\temp\bilbao\wyckoff\json\ita_82.json 0001513: ?.","set": 2,"sg": 82,"tm": "a-b,a+b,c","u": "F -4
+found    c:\temp\bilbao\wyckoff\json\ita_83.json 0002077: ?.","set": 2,"sg": 83,"tm": "a-b,a+b,c","u": "C 4/
+found    c:\temp\bilbao\wyckoff\json\ita_84.json 0002110: ?.","set": 2,"sg": 84,"tm": "a-b,a+b,c","u": "C 42
+found    c:\temp\bilbao\wyckoff\json\ita_85.json 0003521: ?.","set": 4,"sg": 85,"tm": "a-b-1/4,a+b+1/4,c","u
+found    c:\temp\bilbao\wyckoff\json\ita_86.json 0003839: ?.","set": 4,"sg": 86,"tm": "a-b-1/4,a+b-1/4,c-1/4
+found    c:\temp\bilbao\wyckoff\json\ita_87.json 0002278: ?.","set": 2,"sg": 87,"tm": "a-b,a+b,c","u": "F 4/
+found    c:\temp\bilbao\wyckoff\json\ita_88.json 0002727: ?.","set": 3,"sg": 88,"tm": "a,b-1/4,c-1/8","u": "
+found    c:\temp\bilbao\wyckoff\json\ita_89.json 0002776: ?.","set": 2,"sg": 89,"tm": "a-b,a+b,c","u": "C 4 
+found    c:\temp\bilbao\wyckoff\json\ita_90.json 0001671: ?.","set": 2,"sg": 90,"tm": "a-b,a+b,c","u": "C 4 
+found    c:\temp\bilbao\wyckoff\json\ita_91.json 0001279: ?.","set": 2,"sg": 91,"tm": "a-b,a+b,c","u": "C 41
+found    c:\temp\bilbao\wyckoff\json\ita_92.json 0001046: ?.","set": 2,"sg": 92,"tm": "a-b,a+b,c","u": "C 41
+found    c:\temp\bilbao\wyckoff\json\ita_93.json 0002977: ?.","set": 2,"sg": 93,"tm": "a-b,a+b,c","u": "C 42
+found    c:\temp\bilbao\wyckoff\json\ita_94.json 0001783: ?.","set":<20> 2,"sg":
+found    c:\temp\bilbao\wyckoff\json\ita_95.json 0001279: ?.","set": 2,"sg": 95,"tm": "a-b,a+b,c","u": "C 43
+found    c:\temp\bilbao\wyckoff\json\ita_96.json 0001046: ?.","set": 2,"sg": 96,"tm": "a-b,a+b,c","u": "C 43
+found    c:\temp\bilbao\wyckoff\json\ita_97.json 0002669: ?.","set": 2,"sg": 97,"tm": "a-b,a+b,c","u": "F 4 
+found    c:\temp\bilbao\wyckoff\json\ita_98.json 0002401: ?.","set": 2,"sg": 98,"tm": "a-b,a+b,c","u": "F 41
+found    c:\temp\bilbao\wyckoff\json\ita_99.json 0001499: ?.","set": 2,"sg": 99,"tm": "a-b,a+b,c","u": "C 4 
+found    c:\temp\bilbao\wyckoff\json\ita_100.json 0001198: ?.","set": 2,"sg": 100,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_101.json 0001353: ?.","set": 2,"sg": 101,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_102.json 0001289: ?.","set": 2,"sg": 102,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_103.json 0001153: ?.","set": 2,"sg": 103,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_104.json 0001065: ?.","set": 2,"sg": 104,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_105.json 0001443: ?.","set": 2,"sg": 105,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_106.json 0001092: ?.","set": 2,"sg": 106,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_107.json 0001771: ?.","set":<20> 2,"sg":<20> 107,"tm":<20> "
+found    c:\temp\bilbao\wyckoff\json\ita_108.json 0001704: ?.","set": 2,"sg": 108,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_109.json 0001653: ?.","set": 2,"sg": 109,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_110.json 0001525: ?.","set": 2,"sg": 110,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_111.json 0002597: ?.",
+found    c:\temp\bilbao\wyckoff\json\ita_112.json 0002630: ?.","set": 2,"sg": 112,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_113.json 0001492: ?.","set": 2,"sg": 113,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_114.json 0001362: ?.","set": 2,"sg": 114,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_115.json 0002187: ?.","set": 2,"sg": 115,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_116.json 0002101: ?.","set": 2,"sg": 116,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_117.json 0001923: ?.","set": 2,"sg": 117,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_118.json 0002020: ?.","set": 2,"sg": 118,"tm": "a-b,a+b,c","u": "C -
+found    c:\temp\bilbao\wyckoff\json\ita_119.json 0002472: ?.","set": 2,"sg": 119,"tm": "a-b,a+b,c","u": "F -
+found    c:\temp\bilbao\wyckoff\json\ita_120.json 0002433: ?.","set": 2,"sg": 120,"tm": "a-b,a+b,c","u": "F -
+found    c:\temp\bilbao\wyckoff\json\ita_121.json 0002467: ?.","set": 2,"sg": 121,"tm": "a-b,a+b,c","u": "F -
+found    c:\temp\bilbao\wyckoff\json\ita_122.json 0001934: ?.","set": 2,"sg": 122,"tm": "a-b,a+b,c","u": "F -
+found    c:\temp\bilbao\wyckoff\json\ita_123.json 0004098: ?.","set": 2,"sg": 123,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_124.json 0003289: ?.","set": 2,"sg": 124,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_125.json 0003551: ?.","set": 2,"sg": 125,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_125.json 0008085: ?.","set": 4,"sg": 125,"tm": "a-b-1/4,a+b-1/4,c","
+found    c:\temp\bilbao\wyckoff\json\ita_126.json 0003221: ?.","set": 2,"sg": 126,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_126.json 0007321: ?.","set": 4,"sg": 126,"tm": "a-b-1/4,a+b-1/4,c-1/
+found    c:\temp\bilbao\wyckoff\json\ita_127.json 0003027: ?.","set": 2,"sg": 127,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_128.json 0002609: ?.","set": 2,"sg": 128,"tm": "a+b,-a+b,c","u": "C 
+found    c:\temp\bilbao\wyckoff\json\ita_129.json 0003033: ?.","set": 2,"sg": 129,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_129.json 0006863: ?.","set": 4,"sg": 129,"tm": "a-b-1/4,a+b+1/4,c","
+found    c:\temp\bilbao\wyckoff\json\ita_130.json 0002488: ?.","set": 2,"sg": 130,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_130.json 0005520: ?.","set": 4,"sg": 130,"tm": "a-b-1/4,a+b+1/4,c","
+found    c:\temp\bilbao\wyckoff\json\ita_131.json 0003822: ?.","set": 2,"sg": 131,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_132.json 0003678: ?.","set": 2,"sg": 132,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_133.json 0003316: ?.","set": 2,"sg": 133,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_133.json 0007648: ?.","set": 4,"sg": 133,"tm": "a-b-1/4,a+b+1/4,c-1/
+found    c:\temp\bilbao\wyckoff\json\ita_134.json 0003854: ?.","set": 2,"sg": 134,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_134.json 0008916: ?.","set": 4,"sg": 134,"tm": "a-b-1/4,a+b+1/4,c-1/
+found    c:\temp\bilbao\wyckoff\json\ita_135.json 0002715: ?.","set": 2,"sg": 135,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_136.json 0003041: ?.","set": 2,"sg": 136,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_137.json 0002614: ?.","set": 2,"sg": 137,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_137.json 0005887: ?.","set": 4,"sg": 137,"tm": "a-b-1/4,a+b+1/4,c-1/
+found    c:\temp\bilbao\wyckoff\json\ita_138.json 0003118: ?.","set": 2,"sg": 138,"tm": "a-b,a+b,c","u": "C 4
+found    c:\temp\bilbao\wyckoff\json\ita_138.json 0007171: ?.","set": 4,"sg": 138,"tm": "a-b-1/4,a+b+1/4,c-1/
+found    c:\temp\bilbao\wyckoff\json\ita_139.json 0004284: ?.","set": 2,"sg": 139,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_140.json 0004136: ?.","set": 2,"sg": 140,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_141.json 0003888: ?.","set": 2,"sg": 141,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_141.json 0009125: ?.","set": 4,"sg": 141,"tm": "a-b,a+b+1/4,c-1/8","
+found    c:\temp\bilbao\wyckoff\json\ita_142.json 0003645: ?.","set": 2,"sg": 142,"tm": "a-b,a+b,c","u": "F 4
+found    c:\temp\bilbao\wyckoff\json\ita_142.json 0008607: ?.","set":<20> 4,"sg":<20> 142,"tm":<20> "a-b,a+b+1
+found    c:\temp\bilbao\wyckoff\json\ita_146.json 0000725: ?.","set": 2,"sg": 146,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_148.json 0001529: ?.","set": 2,"sg": 148,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_155.json 0001548: ?.","set": 2,"sg": 155,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_160.json 0001170: ?.","set": 2,"sg": 160,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_161.json 0001133: ?.","set": 2,"sg": 161,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_166.json 0002649: ?.","set": 2,"sg": 166,"tm": "2/3a+1/3b+1/3c,-1/3a
+found    c:\temp\bilbao\wyckoff\json\ita_167.json 0002451: ?.","set": 2,"sg": 167,"tm": "2/3a+1/3b+1/3c,-1/3a

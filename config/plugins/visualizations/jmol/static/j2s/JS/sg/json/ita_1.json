@@ -1,0 +1,1 @@
+{ "its": [ { "clegId": "1:a,b,c","det": 1.0,"gen": [ "x,y,z" ],"gp": [ "x,y,z" ],"hall": "P 1","hm": "P 1","id": "P_1","jmolId": "1","set": 1,"sg": 1,"trm": "a,b,c","wpos": { "pos": [ { "desc": "1","geom": "general","label": "a","mult": 1 } ] } } ],"n": 1,"sg": 1 }

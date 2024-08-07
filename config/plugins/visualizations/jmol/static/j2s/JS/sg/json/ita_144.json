@@ -1,0 +1,1 @@
+{ "its": [ { "clegId": "144:a,b,c","det": 1.0,"gen": [ "x,y,z","-y,x-y,z+1/3" ],"gp": [ "x,y,z","-y,x-y,z+1/3","-x+y,-x,z+2/3" ],"hall": "P 31","hm": "P 31","id": "P_31","jmolId": "144","set": 1,"sg": 144,"trm": "a,b,c","wpos": { "pos": [ { "desc": "1","geom": "general","label": "a","mult": 3 } ] } } ],"n": 1,"sg": 144 }
