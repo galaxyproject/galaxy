@@ -195,6 +195,7 @@
     "ts-loader": "^9.5.0",
     "tsconfig-paths-webpack-plugin": "^4.1.0",
     "typescript": "^5.2.2",
+    "undici": "^6.19.5",
     "vue-loader": "^15.11.1",
     "vue-template-compiler": "^2.7.14",
     "webpack": "^5.89.0",
