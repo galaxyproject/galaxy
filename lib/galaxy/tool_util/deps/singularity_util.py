@@ -102,7 +102,7 @@ def build_singularity_run_command(
     # the mounting behavior.
     command_parts.append("--contain")
     if working_directory:
-        command_parts.extend(["--pwd", working_directory])
+        command_parts.extend(["--pwd", shlex.quote(working_directory)])
     if cleanenv:
         command_parts.append("--cleanenv")
     if ipc:
