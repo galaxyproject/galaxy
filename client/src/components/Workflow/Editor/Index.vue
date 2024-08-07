@@ -44,9 +44,7 @@
                     <span class="sr-only">Workflow Editor</span>
                     <span>
                         {{ name || "..." }}
-                        <i v-if="isNewTempWorkflow">
-                            (Click Save <span class="fa fa-floppy-o" /> to create this workflow)
-                        </i>
+                        <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
                     </span>
                 </div>
             </div>

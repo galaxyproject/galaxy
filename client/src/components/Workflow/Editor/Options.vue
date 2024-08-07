@@ -28,7 +28,7 @@ const { confirm } = useConfirmDialog();
 
 const saveHover = computed(() => {
     if (props.isNewTempWorkflow) {
-        return "Create a new workflow";
+        return "Save Workflow";
     } else if (!props.hasChanges) {
         return "Workflow has no changes";
     } else if (props.hasInvalidConnections) {
