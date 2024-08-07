@@ -3867,8 +3867,14 @@ class RelabelFromFileTool(DatabaseOperationTool):
         if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
+            new_labels_dict = {}
             source_new_label = (line.strip().split("\t") for line in new_labels)
-            new_labels_dict = dict(source_new_label)
+            for i, label_pair in enumerate(source_new_label):
+                if not len(label_pair) == 2:
+                    raise exceptions.MessageException(
+                        f"Relabel mapping file line {i + 1} contains {len(label_pair)} columns, but 2 are required"
+                    )
+                new_labels_dict[label_pair[0]] = label_pair[1]
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier

@@ -1,7 +1,9 @@
 <tool id="metadata_columns" name="metadata_columns" version="1.0.0">
     <description>Tests whether metadata is being set correctly.</description>
     <command><![CDATA[
-        cp '$input' '$output'
+        cp '$input' '$output';
+        cp '$input' '$paired_output.forward' ;
+        cp '$input' '$paired_output.reverse' ;
     ]]></command>
     <inputs>
         <param name="input" type="data" multiple="false" />
@@ -12,6 +14,18 @@
                 <action name="column_names" type="metadata" default="First,${input.name}" />
             </actions>
         </data>
+        <collection name="paired_output" format="tabular" type="paired" label="Split Pair">
+            <data name="forward">
+                <actions>
+                    <action name="dbkey" type="metadata" default="hg38" />
+                </actions>
+            </data>
+            <data name="reverse">
+                <actions>
+                    <action name="column_names" type="metadata" default="A,B,C" />
+                </actions>
+            </data>
+    </collection>
     </outputs>
     <tests>
         <test>
@@ -19,6 +33,14 @@
             <output name="output">
                 <metadata name="column_names" value="First,2.tabular"/>
             </output>
+            <output_collection name="paired_output" type="paired">
+                <element name="forward" ftype="tabular" value="2.tabular">
+                    <metadata name="dbkey" value="hg38"/>
+                </element>
+                <element name="reverse" ftype="tabular" value="2.tabular">
+                    <metadata name="column_names" value="A,B,C"/>
+                </element>
+              </output_collection>
         </test>
     </tests>
 </tool>

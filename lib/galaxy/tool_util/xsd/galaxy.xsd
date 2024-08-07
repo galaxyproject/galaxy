@@ -5827,15 +5827,24 @@ on Human (hg18)``.
     <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
 
+  <!-- Allowed tags included in collection-data -->
+  <xs:group name="OutputCollectionDataElement">
+    <xs:choice>
+      <xs:element name="actions" type="Actions" />
+      <xs:element name="change_format" type="ChangeFormat" />
+    </xs:choice>
+  </xs:group>
+
+  <!-- Allowed tags included in collection -->
   <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="OutputCollectionDataElement" />
+      <xs:element name="data" type="OutputCollectionData" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
     </xs:choice>
   </xs:group>
 
-  <xs:complexType name="OutputCollectionDataElement">
+  <xs:complexType name="OutputCollectionData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -5844,7 +5853,7 @@ define the elements of a collection statically. See also [Planemo's documentatio
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionDataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon" />
     <xs:attributeGroup ref="OutputDataAttributes" />
@@ -6002,23 +6011,7 @@ Therefore a filter for such a variable looks like the following example.
     </xs:simpleContent>
   </xs:complexType>
 
-  <xs:complexType name="OutputDiscoverDatasets">
-     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[
-
-Describe datasets to dynamically collect after the job complete.
-
-There are many simple tools with examples of this element distributed with
-Galaxy, including:
-
-* [multi_output.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output.xml)
-* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
-* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_configured.xml)
-
-More information can be found on Planemo's documentation for
-[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
-]]></xs:documentation>
-    </xs:annotation>
+  <xs:attributeGroup name="OutputDiscoverDatasetsCommon">
     <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort must not be set.</xs:documentation>
@@ -6069,6 +6062,26 @@ More information can be found on Planemo's documentation for
         <xs:documentation xml:lang="en">Indication if this dataset is visible in output history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="OutputDiscoverDatasets">
+     <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+Describe datasets to dynamically collect after the job complete.
+
+There are many simple tools with examples of this element distributed with
+Galaxy, including:
+
+* [multi_output.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output.xml)
+* [multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)
+* [multi_output_configured.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_configured.xml)
+
+More information can be found on Planemo's documentation for
+[multiple output files](https://planemo.readthedocs.io/en/latest/writing_advanced.html#multiple-output-files).
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="OutputDiscoverDatasetsCommon"/>
     <xs:attribute name="assign_primary_output" type="xs:boolean" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Replace the primary dataset described by the parameter ``data`` parameter with the first output discovered.</xs:documentation>
@@ -6092,51 +6105,7 @@ Galaxy, including:
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="from_provided_metadata" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicate that dataset filenames should simply be read from the provided metadata file (e.g. galaxy.json). If this is set - pattern and sort_by must not be set.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="pattern" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Regular expression used to find filenames and parse dynamic properties.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="directory" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Directory (relative to working directory) to search for files.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="recurse" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicates that the specified directory should be searched recursively for matching files.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="match_relative_path" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indicates that the entire path of the discovered dataset relative to the specified directory should be available for matching patterns.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``ext``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="ext" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Format (or datatype) of discovered datasets (an alias with ``format``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="sort_by" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements. `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either `lexical` or `numeric`. Default is lexical sorting by filename.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="visible" type="xs:boolean" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Indication if this dataset is visible in the history. This defaults to ``false``, but probably shouldn't - be sure to set to ``true`` if that is your intention.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputDiscoverDatasetsCommon"/>
   </xs:complexType>
   <xs:complexType name="Actions">
     <xs:annotation>

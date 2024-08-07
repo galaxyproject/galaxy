@@ -98,10 +98,12 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
     app = get_app()
     request_id = request_context.data["X-Request-ID"]
     app.model.set_request_id(request_id)
+    app.install_model.set_request_id(request_id)
     try:
         yield app
     finally:
         app.model.unset_request_id(request_id)
+        app.install_model.unset_request_id(request_id)
 
 
 DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
@@ -118,9 +120,10 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T], get_app=get_app) -> T:
-    def _do_resolve(request: Request):
-        return get_app().resolve(dep_type)
+def depends(dep_type: Type[T], app=get_app_with_request_session) -> T:
+    async def _do_resolve(request: Request):
+        async for _dep in app():
+            yield _dep.resolve(dep_type)
 
     return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
