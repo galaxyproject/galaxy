@@ -1,14 +1,17 @@
+import { getFakeRegisteredUser } from "@tests/test-data";
 import { mount } from "@vue/test-utils";
-import MockCurrentHistory from "components/providers/MockCurrentHistory";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { useHistoryStore } from "stores/historyStore";
-import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
-import ToolForm from "./ToolForm";
+import ToolForm from "./ToolForm.vue";
 
 const { server, http } = useServerMock();
 
@@ -17,39 +20,33 @@ const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
+    let axiosMock;
     let userStore;
     let historyStore;
 
     beforeEach(() => {
         server.use(
             http.get("/api/configuration", ({ response }) => {
-                return response(200).json({
-                    enable_tool_source_display: false,
-                    object_store_allows_id_selection: false,
-                });
-            }),
-
-            http.get("/api/tools/{tool_id}/build", ({ response }) => {
-                return response(200).json({
-                    id: "tool_id",
-                    name: "tool_name",
-                    version: "version",
-                    inputs: [],
-                    help: "help_text",
-                    creator: [
-                        { class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" },
-                    ],
-                });
-            }),
-
-            http.get("/api/tools/{tool_id}/citations", ({ response }) => {
-                return response(200).json([]);
-            }),
-
-            http.get("/api/webhooks", ({ response }) => {
-                return response(200).json([]);
+                return response.untyped(
+                    HttpResponse.json({
+                        enable_tool_source_display: false,
+                        object_store_allows_id_selection: false,
+                    })
+                );
             })
         );
+
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, {
+            id: "tool_id",
+            name: "tool_name",
+            version: "version",
+            inputs: [],
+            help: "help_text",
+            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
+        });
+        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, []);
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -64,10 +61,16 @@ describe("ToolForm", () => {
             pinia,
         });
         userStore = useUserStore();
-        userStore.currentUser = { id: "fakeUser" };
+        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
+
         historyStore = useHistoryStore();
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
+    });
+
+    afterEach(() => {
+        axiosMock.restore();
+        axiosMock.reset();
     });
 
     it("shows props", async () => {
