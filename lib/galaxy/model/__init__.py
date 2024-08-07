@@ -95,6 +95,7 @@ from sqlalchemy import (
     tuple_,
     type_coerce,
     Unicode,
+    union,
     UniqueConstraint,
     update,
     VARCHAR,
@@ -5192,6 +5193,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     """
 
     history_id: Optional[int]
+    workflow_invocation_id: column_property
 
     def __init__(
         self,
@@ -11500,6 +11502,14 @@ mapper_registry.map_imperatively(
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_id == HistoryDatasetAssociation.id),
             back_populates="dataset",
         ),
+        invocation_id=column_property(
+            select(WorkflowInvocation.id)
+            .join(WorkflowInvocationStep, WorkflowInvocation.id == WorkflowInvocationStep.workflow_invocation_id)
+            .join(Job, Job.id == WorkflowInvocationStep.job_id)
+            .join(Dataset, and_(Dataset.job_id == Job.id, Dataset.id == HistoryDatasetAssociation.table.c.dataset_id))
+            .scalar_subquery(),
+            deferred=True,
+        ),
     ),
 )
 
@@ -11656,6 +11666,34 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
     )
     .scalar_subquery(),
 )
+
+HistoryDatasetCollectionAssociation.invocation_id = column_property(
+    union(
+        select(WorkflowInvocation.id)
+        .join(WorkflowInvocationStep, WorkflowInvocation.id == WorkflowInvocationStep.workflow_invocation_id)
+        .join(Job, Job.id == WorkflowInvocationStep.job_id)
+        .join(
+            JobToOutputDatasetCollectionAssociation,
+            and_(
+                JobToOutputDatasetCollectionAssociation.job_id == Job.id,
+                JobToOutputDatasetCollectionAssociation.dataset_collection_id == HistoryDatasetCollectionAssociation.id,
+            ),
+        ),
+        select(WorkflowInvocation.id)
+        .join(WorkflowInvocationStep, WorkflowInvocation.id == WorkflowInvocationStep.workflow_invocation_id)
+        .join(
+            ImplicitCollectionJobs,
+            and_(
+                ImplicitCollectionJobs.id == WorkflowInvocationStep.implicit_collection_jobs_id,
+                HistoryDatasetCollectionAssociation.implicit_collection_jobs_id == ImplicitCollectionJobs.id,
+            ),
+        ),
+    )
+    .limit(1)
+    .scalar_subquery(),
+    deferred=True,
+)
+
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value

@@ -1605,7 +1605,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         return collection_ids
 
     def _get_history_contents(self, history_id: str, query: str = ""):
-        return self._get(f"histories/{history_id}/contents{query}").json()
+        return self.dataset_populator._get_history_contents(history_id, query)
 
     def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
         return [content for content in history_contents if not content["visible"]]
