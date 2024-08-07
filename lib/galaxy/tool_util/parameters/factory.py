@@ -33,6 +33,7 @@ from .models import (
     DataParameterModel,
     DrillDownParameterModel,
     FloatParameterModel,
+    GroupTagParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
     LabelValue,
@@ -162,6 +163,10 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "data_column":
             return DataColumnParameterModel(
+                name=input_source.parse_name(),
+            )
+        elif param_type == "group_tag":
+            return GroupTagParameterModel(
                 name=input_source.parse_name(),
             )
         else:

@@ -587,6 +587,21 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
         return False
 
 
+class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+
+    @property
+    def py_type(self) -> Type:
+        return StrictStr
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return True
+
+
 DiscriminatorType = Union[bool, str]
 
 
@@ -920,6 +935,7 @@ GalaxyParameterT = Union[
     DirectoryUriParameterModel,
     RulesParameterModel,
     DrillDownParameterModel,
+    GroupTagParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,
