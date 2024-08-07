@@ -249,6 +249,8 @@ NCEichner, norbert.eichner@ur.de, https://github.com/galaxyproject/galaxy/pull/1
 meekrob, dcking@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2157094723
 nagoue, nadia.goue@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2162541083
 tshtatland, shtatland@neb.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2163521867
+katrinleinweber, kalei@posteo.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2172337847
+jdlogicman, jduddy@illumina.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2183469757
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -296,14 +298,12 @@ jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
 NA, Jianbin He, jbhe@bx.psu.edu
 joachimjacob, Joachim Jacob, joachim.jacob@gmail.com
 joachimwolff, Joachim Wolff, wolffj@informatik.uni-freiburg.de
-jdlogicman, John Duddy, jduddy@illumina.com
 jra001k, Jerome Raciazek, jra001k@gmail.com
 jraysajulga, (JR) Ray Sajulga, raysajulga@gmail.com
 juleengraham, Juleen Graham, juleengrah@gmail.com
 junzwang, Junzhou Wang, junzhouwang@gmail.com
 NA, Scott McManus, scottmcmanus@gatech.edu, last contribution in 2012
 scrathat, Sebastian Kapust, sebastian@kapust.org, last contribution in 2020
-katrinleinweber, Katrin Leinweber, kalei@posteo.de
 kpvincent, Kelly Vincent, kpvincent@bx.psu.edu
 kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
 lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
