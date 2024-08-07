@@ -28,6 +28,7 @@ from typing import (
 import h5py
 import numpy as np
 import pysam
+from astropy.io import fits
 from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
@@ -95,13 +96,6 @@ from . import (
     data,
     dataproviders,
 )
-
-# Optional dependency to enable better metadata support in FITS datatype
-try:
-    from astropy.io import fits
-except ModuleNotFoundError:
-    # If astropy cannot be found FITS datatype will work with minimal metadata support
-    pass
 
 if TYPE_CHECKING:
     from galaxy.util.compression_utils import FileObjType
@@ -4595,6 +4589,24 @@ class FITS(Binary):
             return dataset.peek
         except Exception:
             return f"Binary FITS file size ({nice_size(dataset.get_size())})"
+
+
+class FITSImage(FITS):
+    # Fits that contains image data in any of the extensions
+
+    file_ext = "image.fits"
+
+    def sniff(self, filename: str) -> bool:
+        try:
+            if super().sniff(filename):
+                with fits.open(filename) as hdus:
+                    for hdu in hdus:
+                        if hdu.is_image:
+                            return True
+            return False
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+            return False
 
 
 @build_sniff_from_prefix
