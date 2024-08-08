@@ -5777,14 +5777,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -6486,7 +6486,7 @@ export interface components {
          *     }
          */
         ConvertedDatasetsMap: {
-            [key: string]: string | undefined;
+            [key: string]: string;
         };
         /** CreateEntryPayload */
         CreateEntryPayload: {
@@ -6580,6 +6580,7 @@ export interface components {
              * @default dataset
              */
             type: components["schemas"]["HistoryContentType"] | null;
+        } & {
             [key: string]: unknown;
         };
         /** CreateHistoryFromStore */
@@ -6598,7 +6599,7 @@ export interface components {
             name: string;
             /** Secrets */
             secrets: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /** Template Id */
             template_id: string;
@@ -6606,7 +6607,7 @@ export interface components {
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             };
         };
         /** CreateInvocationsFromStorePayload */
@@ -6793,6 +6794,7 @@ export interface components {
              * @description The name of the page.
              */
             title: string;
+        } & {
             [key: string]: unknown;
         };
         /** CreateQuotaParams */
@@ -6972,7 +6974,7 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             contents_states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * Contents URL
@@ -7065,14 +7067,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids?: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             } | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
@@ -7202,7 +7204,7 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             contents_states?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * Contents URL
@@ -7290,14 +7292,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details?: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             } | null;
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids?: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             } | null;
             tags?: components["schemas"]["TagCollection"] | null;
             /**
@@ -7851,7 +7853,7 @@ export interface components {
          * @default {}
          */
         DatatypesEDAMDetailsDict: {
-            [key: string]: components["schemas"]["DatatypeEDAMDetails"] | undefined;
+            [key: string]: components["schemas"]["DatatypeEDAMDetails"];
         };
         /** DatatypesMap */
         DatatypesMap: {
@@ -7860,18 +7862,16 @@ export interface components {
              * @description Dictionary mapping datatype's classes with their base classes
              */
             class_to_classes: {
-                [key: string]:
-                    | {
-                          [key: string]: boolean | undefined;
-                      }
-                    | undefined;
+                [key: string]: {
+                    [key: string]: boolean;
+                };
             };
             /**
              * Extension Map
              * @description Dictionary mapping datatype's extensions with implementation classes
              */
             ext_to_class_name: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
         };
         /** DefaultQuota */
@@ -8371,7 +8371,7 @@ export interface components {
              * @default {}
              */
             inputs: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Job Runner Name
@@ -8390,7 +8390,7 @@ export interface components {
              * @default {}
              */
             output_collections: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
             };
             /**
              * Outputs
@@ -8398,7 +8398,7 @@ export interface components {
              * @default {}
              */
             outputs: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Parameters
@@ -8639,6 +8639,7 @@ export interface components {
                 | components["schemas"]["HdcaDataItemsFromTarget"]
                 | components["schemas"]["FtpImportTarget"]
             )[];
+        } & {
             [key: string]: unknown;
         };
         /** FileDataElement */
@@ -9403,6 +9404,7 @@ export interface components {
              * @description The collection of visualizations that can be applied to this dataset.
              */
             visualizations?: components["schemas"]["Visualization"][] | null;
+        } & {
             [key: string]: unknown;
         };
         /**
@@ -9779,6 +9781,7 @@ export interface components {
             state: components["schemas"]["DatasetState"];
             /** Tags */
             tags: string[];
+        } & {
             [key: string]: unknown;
         };
         /**
@@ -10396,6 +10399,7 @@ export interface components {
              * @description The username of the post author.
              */
             username: string;
+        } & {
             [key: string]: unknown;
         };
         /**
@@ -10799,14 +10803,14 @@ export interface components {
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
              */
             state_details: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * State IDs
              * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
              */
             state_ids: {
-                [key: string]: string[] | undefined;
+                [key: string]: string[];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -10952,7 +10956,7 @@ export interface components {
              * @default {}
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** ImportToolDataBundle */
@@ -11005,7 +11009,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -11048,7 +11052,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -11091,7 +11095,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -11479,7 +11483,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationOutput */
@@ -11677,7 +11681,7 @@ export interface components {
              * @default {}
              */
             output_collections: {
-                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"];
             };
             /**
              * Outputs
@@ -11685,7 +11689,7 @@ export interface components {
              * @default {}
              */
             outputs: {
-                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationStepOutput"];
             };
             /**
              * State of the invocation step
@@ -11757,7 +11761,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepJobsResponseJobModel */
@@ -11784,7 +11788,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepJobsResponseStepModel */
@@ -11811,7 +11815,7 @@ export interface components {
              * @description The states of all the jobs related to the Invocation.
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** InvocationStepOutput */
@@ -11887,7 +11891,7 @@ export interface components {
              * @default {}
              */
             ds_map: {
-                [key: string]: Record<string, never> | undefined;
+                [key: string]: Record<string, never>;
             } | null;
             /**
              * Effective Outputs
@@ -12127,6 +12131,7 @@ export interface components {
              * @description ID assigned to submitted job by external job running system
              */
             "Runner Job ID"?: string | null;
+        } & {
             [key: string]: unknown;
         };
         /** JobDisplayParametersSummary */
@@ -12141,7 +12146,7 @@ export interface components {
              * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.
              */
             outputs: {
-                [key: string]: components["schemas"]["JobOutput"][] | undefined;
+                [key: string]: components["schemas"]["JobOutput"][];
             };
             /**
              * Parameters
@@ -12459,7 +12464,7 @@ export interface components {
              * @default {}
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /**
@@ -13733,6 +13738,7 @@ export interface components {
              * @description The name of the user owning this Page.
              */
             username: string;
+        } & {
             [key: string]: unknown;
         };
         /** PageSummary */
@@ -13951,7 +13957,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -14074,21 +14080,21 @@ export interface components {
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Xref
@@ -14575,7 +14581,7 @@ export interface components {
         };
         /** RootModel[Dict[str, int]] */
         RootModel_Dict_str__int__: {
-            [key: string]: number | undefined;
+            [key: string]: number;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -14594,6 +14600,7 @@ export interface components {
              * @description The tool ID related to the job.
              */
             tool_id: string;
+        } & {
             [key: string]: unknown;
         };
         /** ServerDirElement */
@@ -15046,7 +15053,7 @@ export interface components {
              * @default {}
              */
             inputs: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Job Messages
@@ -15085,7 +15092,7 @@ export interface components {
              * @default {}
              */
             output_collections: {
-                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"];
             };
             /**
              * Outputs
@@ -15093,7 +15100,7 @@ export interface components {
              * @default {}
              */
             outputs: {
-                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"];
             };
             /**
              * Parameters
@@ -15292,7 +15299,7 @@ export interface components {
              * @default {}
              */
             inputs: {
-                [key: string]: components["schemas"]["WorkflowInput"] | undefined;
+                [key: string]: components["schemas"]["WorkflowInput"];
             };
             /**
              * Latest workflow UUID
@@ -15353,15 +15360,12 @@ export interface components {
              */
             steps: {
                 [key: string]:
-                    | (
-                          | components["schemas"]["InputDataStep"]
-                          | components["schemas"]["InputDataCollectionStep"]
-                          | components["schemas"]["InputParameterStep"]
-                          | components["schemas"]["PauseStep"]
-                          | components["schemas"]["ToolStep"]
-                          | components["schemas"]["SubworkflowStep"]
-                      )
-                    | undefined;
+                    | components["schemas"]["InputDataStep"]
+                    | components["schemas"]["InputDataCollectionStep"]
+                    | components["schemas"]["InputParameterStep"]
+                    | components["schemas"]["PauseStep"]
+                    | components["schemas"]["ToolStep"]
+                    | components["schemas"]["SubworkflowStep"];
             };
             tags: components["schemas"]["TagCollection"];
             /**
@@ -15399,7 +15403,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -15627,14 +15631,14 @@ export interface components {
             base_dir: string[];
             /** Fields */
             fields: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /**
              * Files
              * @description A dictionary of file names and their size in bytes
              */
             files: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
             /**
              * Fingerprint
@@ -15677,7 +15681,7 @@ export interface components {
              * @description A dictionary containing information about the inputs connected to this workflow step.
              */
             input_steps: {
-                [key: string]: components["schemas"]["InputStep"] | undefined;
+                [key: string]: components["schemas"]["InputStep"];
             };
             /**
              * Tool ID
@@ -15851,6 +15855,7 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+        } & {
             [key: string]: unknown;
         };
         /** UpdateCreatorAction */
@@ -15945,6 +15950,7 @@ export interface components {
              * @description A list of content items to update with the changes.
              */
             items: components["schemas"]["UpdateContentItem"][];
+        } & {
             [key: string]: unknown;
         };
         /**
@@ -15981,6 +15987,7 @@ export interface components {
              * @description Whether this item is visible in the history.
              */
             visible?: boolean | null;
+        } & {
             [key: string]: unknown;
         };
         /** UpdateHistoryPayload */
@@ -16015,7 +16022,7 @@ export interface components {
             name?: string | null;
             /** Variables */
             variables?: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /** UpdateInstanceSecretPayload */
@@ -16188,7 +16195,7 @@ export interface components {
              * @description The new notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+                [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
         };
         /** UpgradeAllStepsAction */
@@ -16203,13 +16210,13 @@ export interface components {
         UpgradeInstancePayload: {
             /** Secrets */
             secrets: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             };
             /** Template Version */
             template_version: number;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             };
         };
         /** UpgradeSubworkflowAction */
@@ -16349,7 +16356,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /** UserCreationPayload */
@@ -16426,7 +16433,7 @@ export interface components {
             uuid: string;
             /** Variables */
             variables: {
-                [key: string]: (string | boolean | number) | undefined;
+                [key: string]: string | boolean | number;
             } | null;
         };
         /**
@@ -16485,7 +16492,7 @@ export interface components {
              * @description The notification preferences of the user.
              */
             preferences: {
-                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+                [key: string]: components["schemas"]["NotificationCategorySettings"];
             };
         };
         /**
@@ -16705,6 +16712,7 @@ export interface components {
              * @description The name of the user owning this Visualization.
              */
             username: string;
+        } & {
             [key: string]: unknown;
         };
         /**
@@ -16805,14 +16813,14 @@ export interface components {
              * @description Input step parameters of the workflow invocation.
              */
             input_step_parameters: {
-                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
+                [key: string]: components["schemas"]["InvocationInputParameter"];
             };
             /**
              * Inputs
              * @description Input datasets/dataset collections of the workflow invocation.
              */
             inputs: {
-                [key: string]: components["schemas"]["InvocationInput"] | undefined;
+                [key: string]: components["schemas"]["InvocationInput"];
             };
             /**
              * Messages
@@ -16843,7 +16851,7 @@ export interface components {
              * @description Output dataset collections of the workflow invocation.
              */
             output_collections: {
-                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
+                [key: string]: components["schemas"]["InvocationOutputCollection"];
             };
             /**
              * Output values
@@ -16855,7 +16863,7 @@ export interface components {
              * @description Output datasets of the workflow invocation.
              */
             outputs: {
-                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
+                [key: string]: components["schemas"]["InvocationOutput"];
             };
             /**
              * Invocation state
@@ -16912,7 +16920,7 @@ export interface components {
              * @default {}
              */
             states: {
-                [key: string]: number | undefined;
+                [key: string]: number;
             };
         };
         /** WriteInvocationStoreToPayload */
@@ -16928,21 +16936,21 @@ export interface components {
              * @description Override algorithmic error for 'error domain' when generating BioCompute object.
              */
             bco_override_algorithmic_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Empirical Error
              * @description Override empirical error for 'error domain' when generating BioCompute object.
              */
             bco_override_empirical_error?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Environment Variables
              * @description Override environment variables for 'execution_domain' when generating BioCompute object.
              */
             bco_override_environment_variables?: {
-                [key: string]: string | undefined;
+                [key: string]: string;
             } | null;
             /**
              * Bco Override Xref
@@ -17194,7 +17202,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: number | undefined;
+                        [key: string]: number;
                     };
                 };
             };
@@ -17237,7 +17245,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     }[];
                 };
             };
@@ -17283,7 +17291,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
@@ -17326,7 +17334,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: Record<string, never> | undefined;
+                        [key: string]: Record<string, never>;
                     }[];
                 };
             };
@@ -18985,7 +18993,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
@@ -19063,7 +19071,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | undefined;
+                        [key: string]: string;
                     };
                 };
             };
@@ -19295,7 +19303,7 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": {
-                    [key: string]: string[] | undefined;
+                    [key: string]: string[];
                 } | null;
             };
         };

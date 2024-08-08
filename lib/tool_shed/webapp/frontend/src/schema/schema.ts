@@ -1951,7 +1951,7 @@ export interface components {
         }
         /** RepositoryMetadata */
         RepositoryMetadata: {
-            [key: string]: components["schemas"]["RepositoryRevisionMetadata"] | undefined
+            [key: string]: components["schemas"]["RepositoryRevisionMetadata"]
         }
         /** RepositoryMetadataInstallInfo */
         RepositoryMetadataInstallInfo: {
@@ -2023,7 +2023,7 @@ export interface components {
         }
         /** RepositoryRevisionReadmes */
         RepositoryRevisionReadmes: {
-            [key: string]: string | undefined
+            [key: string]: string
         }
         /** RepositorySearchHit */
         RepositorySearchHit: {
@@ -2588,7 +2588,7 @@ export interface components {
              * @description A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.
              */
             descriptor_type_version?: {
-                [key: string]: components["schemas"]["DescriptorTypeVersion"][] | undefined
+                [key: string]: components["schemas"]["DescriptorTypeVersion"][]
             } | null
             /**
              * Id
