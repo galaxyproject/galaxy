@@ -22,6 +22,7 @@ from pydantic import (
     Discriminator,
     Field,
     field_validator,
+    HttpUrl,
     RootModel,
     StrictBool,
     StrictFloat,
@@ -602,6 +603,21 @@ class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
         return True
 
 
+class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_baseurl"] = "gx_baseurl"
+
+    @property
+    def py_type(self) -> Type:
+        return HttpUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return True
+
+
 DiscriminatorType = Union[bool, str]
 
 
@@ -936,6 +952,7 @@ GalaxyParameterT = Union[
     RulesParameterModel,
     DrillDownParameterModel,
     GroupTagParameterModel,
+    BaseUrlParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,

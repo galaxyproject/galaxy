@@ -16,6 +16,7 @@ from galaxy.tool_util.parser.interface import (
 )
 from galaxy.util import string_as_bool
 from .models import (
+    BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
@@ -169,6 +170,10 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             return GroupTagParameterModel(
                 name=input_source.parse_name(),
             )
+        elif param_type == "baseurl":
+            return BaseUrlParameterModel(
+                name=input_source.parse_name(),
+            )
         else:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")
     elif input_type == "conditional":
@@ -313,6 +318,10 @@ def input_models_for_pages(pages: PagesSource) -> List[ToolParameterT]:
 def input_models_for_page(page_source: PageSource) -> List[ToolParameterT]:
     input_models = []
     for input_source in page_source.parse_input_sources():
+        input_type = input_source.parse_input_type()
+        if input_type == "display":
+            # not a real input... just skip this. Should this be handled in the parser layer better?
+            continue
         tool_parameter_model = from_input_source(input_source)
         input_models.append(tool_parameter_model)
     return input_models
