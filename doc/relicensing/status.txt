@@ -255,6 +255,15 @@ dpryan79, dpryan79@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970
 FredericBGA, frederic.sapet@limagrain.com, personal email to michael.crusoe@vu.nl
 lindenb, plindenbaum@yahoo.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227066629
 inkuzmin, inkuzm@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227069559
+osallou, olivier.sallou@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227121052
+joachimwolff, wolffj@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227158926
+scrathat, sebastian@kapust.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227309669
+remimarenco, remi.marenco@gmail.com, personal email to michael.crusoe@vu.nl
+MatthewRalston, mrals89@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227802568
+charesredhat, cstrittmatter@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228040313
+blankclemens, blankclemens@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228339100
+kellyv, kpvincent@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228731480
+tesujimath, simon.guest@agresearch.co.nz, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228830419
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -262,8 +271,8 @@ jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
 # not yet agreed, need to find a 2024-valid email for them
 crashGoBoom, Christopher Mundus, crashGoBoom@users.noreply.github.com
 NA, Ilya ichorny, none@none, currently at Quantum-Si
-jenzopr, Jens Preußner, jenzopr@users.noreply.github.com
-npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
+jenzopr, Jens Preußner, jenzopr@users.noreply.github.com, Jens.Preussner@mpi-bn.mpg.de ??
+npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com, niko.pinter@protonmail.com ??
 dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
 carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com, address bounced
 NA, Hiral Vora, hvora1@uncc.edu, address bounced
@@ -284,9 +293,7 @@ the-nidhogg, balto, balto_59@hotmail.fr, ¿same as BalthazarPavot (only commits 
 bensellak, Taoufik Bensellak, bensellak@ensat.ac.ma
 dtrudg, Dave Trudgian, dave@trudgian.net, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712375794
 cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
-charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
-blankclemens, Clemens Blank, blankclemens@gmail.com
 cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
 NA, dorine francheteau, dorine@bx.psu.edu
 NA, Eric Paniagua, paniagua.cshl@gmail.com
@@ -301,35 +308,28 @@ theboocock, James Boocock, sfk2001@gmail.com
 jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
 NA, Jianbin He, jbhe@bx.psu.edu
 joachimjacob, Joachim Jacob, joachim.jacob@gmail.com
-joachimwolff, Joachim Wolff, wolffj@informatik.uni-freiburg.de
 jra001k, Jerome Raciazek, jra001k@gmail.com
 jraysajulga, (JR) Ray Sajulga, raysajulga@gmail.com
 juleengraham, Juleen Graham, juleengrah@gmail.com
 junzwang, Junzhou Wang, junzhouwang@gmail.com
 NA, Scott McManus, scottmcmanus@gatech.edu, last contribution in 2012
-scrathat, Sebastian Kapust, sebastian@kapust.org, last contribution in 2020
-kpvincent, Kelly Vincent, kpvincent@bx.psu.edu
 kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
 lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
 leobiscassi, Léo Biscassi, leo.biscassi@gmail.com
 vavrusa, Marek Vavruša, marek@vavrusa.com
 markiskander, Mark Iskander, motiontracker@gmail.com
 martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
-MatthewRalston, Matt Ralston, mrals89@gmail.com
 NA, Michael EG Sauria, mgehrin@emory.edu
 NA, MORITA Hideyuki, h-morita@esm.co.jp
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
-osallou, Olivier Sallou, olivier.sallou@gmail.com
 ffinfo, Peter van 't Hof, pjrvanthof@gmail.com
 NA, Radhesh Kamath, radhesh@bx.psu.edu
 NA, Raj Ayyampalayam, raj76@uga.edu
 ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
 NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
-remimarenco, Rémi Marenco, remi.marenco@gmail.com
 remyd1, Rémy Dernat, remy.d1@gmail.com
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 simleo, Simone Leo, simone.leo@gmail.com
-tesujimath, Simon Guest, simon.guest@agresearch.co.nz
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
