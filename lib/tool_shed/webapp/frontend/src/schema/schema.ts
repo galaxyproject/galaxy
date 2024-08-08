@@ -1198,12 +1198,12 @@ export interface components {
              * Hidden
              * @default false
              */
-            hidden?: boolean
+            hidden: boolean
             /**
              * Is Dynamic
              * @default false
              */
-            is_dynamic?: boolean
+            is_dynamic: boolean
             /** Label */
             label?: string | null
             /** Name */
@@ -1212,14 +1212,14 @@ export interface components {
              * Optional
              * @default false
              */
-            optional?: boolean
+            optional: boolean
             /**
              * Parameter Type
              * @default gx_data_column
              * @constant
              * @enum {string}
              */
-            parameter_type?: "gx_data_column"
+            parameter_type: "gx_data_column"
         }
         /** DataParameterModel */
         DataParameterModel: {
@@ -1368,7 +1368,7 @@ export interface components {
              * Hidden
              * @default false
              */
-            hidden?: boolean
+            hidden: boolean
             /**
              * Hierarchy
              * @enum {string}
@@ -1378,7 +1378,7 @@ export interface components {
              * Is Dynamic
              * @default false
              */
-            is_dynamic?: boolean
+            is_dynamic: boolean
             /** Label */
             label?: string | null
             /** Multiple */
@@ -1389,7 +1389,7 @@ export interface components {
              * Optional
              * @default false
              */
-            optional?: boolean
+            optional: boolean
             /** Options */
             options?: components["schemas"]["DrillDownOptionsDict"][] | null
             /**
@@ -1398,7 +1398,7 @@ export interface components {
              * @constant
              * @enum {string}
              */
-            parameter_type?: "gx_drill_down"
+            parameter_type: "gx_drill_down"
         }
         /** FailedRepositoryUpdateMessage */
         FailedRepositoryUpdateMessage: {
