@@ -59,6 +59,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
+    jest.useFakeTimers();
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -102,17 +103,25 @@ describe("DiskUsageSummary.vue", () => {
                 return response(200).json({ id: FAKE_TASK_ID, ignored: false });
             }),
             http.get("/api/tasks/{task_id}/state", ({ response }) => {
-                return response(200).json("SUCCESS");
+                return response(200).json("PENDING");
             })
         );
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
-        const refreshingAlert = wrapper.find(".refreshing-alert");
-        expect(refreshingAlert.exists()).toBe(true);
-        // Make sure the refresh has finished before checking the quota usage
         await flushPromises();
+        expect(wrapper.find(".refreshing-alert").exists()).toBe(true);
+
+        // Make sure the refresh has finished before checking the quota usage
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                return response(200).json("SUCCESS");
+            })
+        );
+        jest.runAllTimers();
+        await flushPromises();
+
         // The refreshing alert should disappear and the quota usage should be updated
-        expect(refreshingAlert.exists()).toBe(false);
+        expect(wrapper.find(".refreshing-alert").exists()).toBe(false);
         expect(quotaUsage.text()).toContain("2 MB");
     });
 });
