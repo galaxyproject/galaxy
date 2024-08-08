@@ -42,8 +42,10 @@
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
-                    <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
-                    <i v-else>Create New Workflow</i>
+                    <span>
+                        {{ name || "..." }}
+                        <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
+                    </span>
                 </div>
             </div>
             <WorkflowGraph
@@ -389,12 +391,12 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
+            if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName && !this.isNewTempWorkflow) {
+            if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
