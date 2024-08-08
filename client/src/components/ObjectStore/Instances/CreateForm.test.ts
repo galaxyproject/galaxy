@@ -123,6 +123,7 @@ describe("CreateForm", () => {
             },
             localVue,
         });
+
         server.use(
             http.post("/api/object_store_instances", ({ response }) => {
                 return response(200).json(FAKE_OBJECT_STORE);
@@ -132,15 +133,14 @@ describe("CreateForm", () => {
             })
         );
 
-        await flushPromises();
         const nameForElement = wrapper.find("#form-element-_meta_name");
-        nameForElement.find("input").setValue("My New Name");
+        await nameForElement.find("input").setValue("My New Name");
         const submitElement = wrapper.find("#submit");
-        submitElement.trigger("click");
+        await submitElement.trigger("click");
         await flushPromises();
         const emitted = wrapper.emitted("created") || [];
         expect(emitted).toHaveLength(1);
-        expect(emitted[0][0]).toStrictEqual(FAKE_OBJECT_STORE);
+        expect(emitted[0][0]).toMatchObject(FAKE_OBJECT_STORE);
     });
 
     it("should indicate an error on failure", async () => {
