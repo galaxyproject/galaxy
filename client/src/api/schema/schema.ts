@@ -18035,6 +18035,8 @@ export interface operations {
                 order?: string | null;
             };
             header?: {
+                /** @description Accept header to determine the response format. Default is 'application/json'. */
+                accept?: "application/json" | "application/vnd.galaxy.history.contents.stats+json";
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
@@ -19094,6 +19096,8 @@ export interface operations {
                 order?: string | null;
             };
             header?: {
+                /** @description Accept header to determine the response format. Default is 'application/json'. */
+                accept?: "application/json" | "application/vnd.galaxy.history.contents.stats+json";
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
@@ -19105,12 +19109,11 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The contents of the history that match the query. */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["HistoryContentsResult"]
-                        | components["schemas"]["HistoryContentsWithStatsResult"];
+                    "application/json": components["schemas"]["HistoryContentsResult"];
+                    "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
             /** @description Request Error */
@@ -19686,6 +19689,8 @@ export interface operations {
                 offset?: number | null;
             };
             header?: {
+                /** @description Accept header to determine the response format. Default is 'application/json'. */
+                accept?: "application/json" | "application/vnd.galaxy.task.export+json";
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };

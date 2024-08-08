@@ -8,6 +8,7 @@ import logging
 from typing import (
     Any,
     List,
+    Literal,
     Optional,
     Union,
 )
@@ -33,7 +34,10 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    AcceptHeaderValidator,
+    DecodedDatabaseIdField,
+)
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
@@ -161,6 +165,16 @@ class UndeleteHistoriesPayload(BaseModel):
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
+
+
+IndexExportsAcceptHeader = Annotated[
+    Literal[
+        "application/json",
+        "application/vnd.galaxy.task.export+json",
+    ],
+    AcceptHeaderValidator,
+    Header(description="Accept header to determine the response format. Default is 'application/json'."),
+]
 
 
 @router.cbv
@@ -516,7 +530,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
-        accept: str = Header(default="application/json", include_in_schema=False),
+        accept: IndexExportsAcceptHeader = "application/json",
     ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
         """
         By default the legacy job-based history exports (jeha) are returned.
