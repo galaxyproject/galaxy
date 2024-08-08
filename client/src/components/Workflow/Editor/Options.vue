@@ -45,7 +45,7 @@ const { confirm } = useConfirmDialog();
 
 const saveHover = computed(() => {
     if (props.isNewTempWorkflow) {
-        return "Create a new workflow";
+        return "Save Workflow";
     } else if (!props.hasChanges) {
         return "Workflow has no changes";
     } else if (props.hasInvalidConnections) {
@@ -100,7 +100,7 @@ async function onSave() {
             <BButton
                 id="workflow-save-button"
                 role="button"
-                variant="link"
+                :variant="isNewTempWorkflow ? 'primary' : 'link'"
                 aria-label="Save Workflow"
                 class="editor-button-save"
                 :disabled="!isNewTempWorkflow && !hasChanges"
