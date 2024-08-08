@@ -108,9 +108,11 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "hidden":
             optional = input_source.parse_optional()
+            value = input_source.get("value")
             return HiddenParameterModel(
                 name=input_source.parse_name(),
                 optional=optional,
+                value=value,
             )
         elif param_type == "color":
             optional = input_source.parse_optional()

@@ -346,6 +346,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_hidden"] = "gx_hidden"
+    value: Optional[str]
 
     @property
     def py_type(self) -> Type:
@@ -356,7 +357,7 @@ class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional
+        return not self.optional and self.value is None
 
 
 def ensure_color_valid(value: Optional[Any]):

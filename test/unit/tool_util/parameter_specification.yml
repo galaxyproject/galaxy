@@ -202,6 +202,8 @@ gx_hidden:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    # it will use a default if value is set in definition and no value supplied (see hidden_param.xml)
+    - {}
   request_invalid:
     - parameter: null
     - parameter: 5
