@@ -60,6 +60,15 @@ type PreferenceOptions<T> = {
     description?: string;
 };
 
+/**
+ * This object type stores meta information about a preference.
+ * The preference value itself is stored inside the preference Store.
+ *
+ * It can be get/set directly, or via the store functions
+ *
+ * - `getValueForId(id)`
+ * - `setValueForId(id, value)`
+ */
 export type Preference<T> = {
     id: string;
     name: string;
@@ -145,6 +154,11 @@ function useLocalPreference<T>(
 }
 
 export const useLocalPreferencesStore = defineStore("localPreferencesStore", () => {
+    /**
+     * Stores the meta information about all defined preferences
+     *
+     * @see Preference
+     */
     const allPreferences = ref({
         uncategorized: [],
         categories: {},
@@ -153,12 +167,23 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
 
     const preferenceRefsById: Record<string, Ref<unknown>> = {};
 
+    /**
+     * Gets the value of a preference via it's id.
+     * A preferences value can also be read directly.
+     */
     const getValueForId = computed(() => (id: string) => ensureDefined(preferenceRefsById[id]).value);
 
+    /**
+     * Sets the value of a preference via it's id.
+     * A preferences value can also be written to directly.
+     */
     function setValueForId(id: string, value: unknown) {
         ensureDefined(preferenceRefsById[id]).value = value;
     }
 
+    /**
+     * Sets a preferences value to its default value.
+     */
     function resetPreference(id: string) {
         const preference = allPreferences.value.byId[id];
         assertDefined(preference, `Unknown preference with id "${id}"`);
@@ -166,6 +191,9 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         setValueForId(id, preference.default);
     }
 
+    /**
+     * Sets all preference values to their default values.
+     */
     function resetAllPreferences() {
         Object.keys(allPreferences.value.byId).forEach((id) => resetPreference(id));
     }
