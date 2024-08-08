@@ -1,6 +1,5 @@
 import "@testing-library/jest-dom";
 import "@testing-library/jest-dom/jest-globals";
-import "whatwg-fetch";
 import "fake-indexeddb/auto";
 
 import Vue from "vue";
