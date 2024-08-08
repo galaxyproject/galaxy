@@ -469,8 +469,11 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     @property
     def py_type(self) -> Type:
         if self.options is not None:
-            literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
-            py_type = union_type(literal_options)
+            if len(self.options) > 0:
+                literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
+                py_type = union_type(literal_options)
+            else:
+                py_type = type(None)
         else:
             py_type = StrictStr
         if self.multiple:
