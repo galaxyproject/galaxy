@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faLaptop, faUndoAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 
 import { useLocalPreferencesStore } from "@/stores/localPreferencesStore";
 
@@ -8,13 +9,11 @@ import Heading from "../Common/Heading.vue";
 import LocalPreference from "./LocalPreference.vue";
 import PreferencePage from "./PreferencePage.vue";
 
-library.add(faLaptop);
-
 const preferencesStore = useLocalPreferencesStore();
 </script>
 
 <template>
-    <PreferencePage heading="Local Preferences" icon="fa-laptop">
+    <PreferencePage heading="Local Preferences" :icon="faLaptop">
         <div class="preference-list">
             <LocalPreference
                 v-for="(preference, i) in preferencesStore.allPreferences.uncategorized"
@@ -38,10 +37,23 @@ const preferencesStore = useLocalPreferencesStore();
                     :preference="preference"></LocalPreference>
             </div>
         </section>
+
+        <BButton
+            class="reset-all-button"
+            variant="primary"
+            title="Reset all client-side preferences to their default value"
+            @click="preferencesStore.resetAllPreferences">
+            <FontAwesomeIcon :icon="faUndoAlt"></FontAwesomeIcon>
+            Reset all local preferences
+        </BButton>
     </PreferencePage>
 </template>
 
 <style scoped lang="scss">
+.reset-all-button {
+    align-self: flex-start;
+}
+
 .preference-list {
     display: flex;
     flex-direction: column;
@@ -50,6 +62,7 @@ const preferencesStore = useLocalPreferencesStore();
 
 .preference-category {
     margin-top: 1rem;
+    margin-bottom: 1rem;
 
     .preference-list {
         padding-left: 0.5rem;

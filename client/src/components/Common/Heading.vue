@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-
-library.add(faAngleDoubleDown, faAngleDoubleUp);
 
 interface Props {
     h1?: boolean;
@@ -17,7 +14,7 @@ interface Props {
     separator?: boolean;
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: string | [string, string];
+    icon?: any;
     truncate?: boolean;
     collapse?: "open" | "closed" | "none";
 }
@@ -87,8 +84,8 @@ const element = computed(() => {
         ]"
         @click="$emit('click')">
         <b-button v-if="collapsible" variant="link" size="sm">
-            <FontAwesomeIcon v-if="collapsed" fixed-width icon="angle-double-down" />
-            <FontAwesomeIcon v-else fixed-width icon="angle-double-up" />
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
         </b-button>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />

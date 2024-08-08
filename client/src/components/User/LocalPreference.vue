@@ -53,9 +53,8 @@ function getNumberType(type: PreferenceTypeNumber): "float" | "integer" {
     <div class="local-preference">
         <div class="preference-heading">
             <b> {{ name }} </b>
-            <BButton variant="primary" size="sm" @click="resetPreference">
+            <BButton size="sm" title="Reset" @click="resetPreference">
                 <FontAwesomeIcon :icon="faUndoAlt"></FontAwesomeIcon>
-                Reset
             </BButton>
         </div>
 

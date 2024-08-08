@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
@@ -7,11 +6,9 @@ import { computed } from "vue";
 
 import Heading from "@/components/Common/Heading.vue";
 
-library.add(faLongArrowAltLeft);
-
 const props = defineProps<{
     heading: string;
-    icon: string;
+    icon: any;
     backLinkUrl?: string;
     backLinkText?: string;
 }>();
@@ -23,7 +20,7 @@ const backText = computed(() => props.backLinkText ?? "back to preferences");
 <template>
     <section class="preferences-page">
         <BButton :to="backUrl" class="back-button" size="sm" variant="primary">
-            <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
+            <FontAwesomeIcon :icon="faLongArrowAltLeft" />
             {{ backText }}
         </BButton>
 
