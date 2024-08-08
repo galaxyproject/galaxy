@@ -49,10 +49,7 @@ from ._types import (
 
 # TODO:
 # - implement job vs request...
-# - drill down
 # - implement data_ref on rules and implement some cross model validation
-# - Optional conditionals... work through that?
-# - Sections - fight that battle again...
 
 # + request: Return info needed to build request pydantic model at runtime.
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
