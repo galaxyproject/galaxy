@@ -16,6 +16,7 @@ from typing import (
 )
 
 from pydantic import (
+    AnyUrl,
     BaseModel,
     ConfigDict,
     create_model,
@@ -421,8 +422,14 @@ class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 
 class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
-    parameter_type: Literal["gx_directory_uri"]
-    value: Optional[str]
+    parameter_type: Literal["gx_directory_uri"] = "gx_directory_uri"
+
+    @property
+    def py_type(self) -> Type:
+        return AnyUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:

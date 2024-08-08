@@ -32,6 +32,7 @@ from .models import (
     DataCollectionParameterModel,
     DataColumnParameterModel,
     DataParameterModel,
+    DirectoryUriParameterModel,
     DrillDownParameterModel,
     FloatParameterModel,
     GenomeBuildParameterModel,
@@ -185,6 +186,10 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 name=input_source.parse_name(),
                 optional=optional,
                 multiple=multiple,
+            )
+        elif param_type == "directory_uri":
+            return DirectoryUriParameterModel(
+                name=input_source.parse_name(),
             )
         else:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")

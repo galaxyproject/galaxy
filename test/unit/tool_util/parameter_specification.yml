@@ -188,6 +188,15 @@ gx_genomebuild_multiple:
   # DIVERGES_FROM_CURRENT_API
   - parameter: null
 
+gx_directory_uri:
+  request_valid:
+  - parameter: "gxfiles://foobar/"
+  - parameter: "gxfiles://foobar"
+  request_invalid:
+  - parameter: "justsomestring"
+  - parameter: true
+  - parameter: null
+
 gx_hidden:
   request_valid:
     - parameter: moocow
