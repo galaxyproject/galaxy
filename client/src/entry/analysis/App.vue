@@ -62,6 +62,7 @@ import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 import { ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
@@ -116,7 +117,21 @@ export default {
             { immediate: true }
         );
 
+        const confirmation = ref(null);
+        const route = useRoute();
+        watch(
+            () => route.fullPath,
+            (newVal, oldVal) => {
+                // sometimes, the confirmation is not cleared when the route changes
+                // and the confirmation alert is shown needlessly
+                if (confirmation.value) {
+                    confirmation.value = null;
+                }
+            }
+        );
+
         return {
+            confirmation,
             toastRef,
             confirmDialogRef,
             uploadModal,
@@ -128,7 +143,6 @@ export default {
     data() {
         return {
             config: getGalaxyInstance().config,
-            confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: null,
         };

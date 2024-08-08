@@ -42,8 +42,10 @@
             <div class="editor-top-bar" unselectable="on">
                 <span>
                     <span class="sr-only">Workflow Editor</span>
-                    <span v-if="!isNewTempWorkflow || name" class="editor-title" :title="name">{{ name }}</span>
-                    <i v-else class="editor-title">Create New Workflow</i>
+                    <span class="editor-title" :title="name"
+                        >{{ name }}
+                        <i v-if="hasChanges" class="text-muted"> (unsaved changes) </i>
+                    </span>
                 </span>
 
                 <b-button-group>
@@ -524,12 +526,12 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
+            if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName && !this.isNewTempWorkflow) {
+            if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
