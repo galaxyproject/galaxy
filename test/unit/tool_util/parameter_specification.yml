@@ -136,14 +136,13 @@ gx_select_optional:
   - parameter: {}
   - parameter: 5
 
-# TODO: confirm null should vaguely not be allowed here
 gx_select_multiple:
   request_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   request_invalid:
   - parameter: ["Ex1"]
-  # This doesn't refelct the actual behavior of pre 24.2 Galaxy I don't think
+  # DIVERGES_FROM_CURRENT_API
   - parameter: null
   - parameter: {}
   - parameter: 5
@@ -159,6 +158,35 @@ gx_select_multiple_optional:
   - parameter: ["Ex1"]
   - parameter: {}
   - parameter: 5
+
+gx_genomebuild:
+  request_valid:
+  - parameter: hg19
+  - parameter: hg18
+  # implicitly selects top option "?"
+  - {}
+  request_invalid:
+  - parameter: null
+  - parameter: 9
+
+gx_genomebuild_optional:
+  request_valid:
+  - parameter: hg19
+  - parameter: hg18
+  # these yield actual null parameters instead of ?
+  - {}
+  - parameter: null
+  request_invalid:
+  - parameter: 8
+  - parameter: true
+
+gx_genomebuild_multiple:
+  request_valid:
+  - parameter: ["hg18", hg19"]
+  request_invalid:
+  - parameter: 6
+  # DIVERGES_FROM_CURRENT_API
+  - parameter: null
 
 gx_hidden:
   request_valid:

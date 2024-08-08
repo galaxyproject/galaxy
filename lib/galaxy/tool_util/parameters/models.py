@@ -497,6 +497,26 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         return self.multiple and not self.optional
 
 
+class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_genomebuild"] = "gx_genomebuild"
+    multiple: bool
+
+    @property
+    def py_type(self) -> Type:
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        # assumes it uses behavior of select parameters - an API test to reference for this would be nice
+        return self.multiple and not self.optional
+
+
 DrillDownHierarchyT = Literal["recurse", "exact"]
 
 
@@ -950,6 +970,7 @@ GalaxyParameterT = Union[
     DrillDownParameterModel,
     GroupTagParameterModel,
     BaseUrlParameterModel,
+    GenomeBuildParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,

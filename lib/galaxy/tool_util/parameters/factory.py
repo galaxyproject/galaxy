@@ -34,6 +34,7 @@ from .models import (
     DataParameterModel,
     DrillDownParameterModel,
     FloatParameterModel,
+    GenomeBuildParameterModel,
     GroupTagParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
@@ -176,6 +177,14 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
         elif param_type == "baseurl":
             return BaseUrlParameterModel(
                 name=input_source.parse_name(),
+            )
+        elif param_type == "genomebuild":
+            optional = input_source.parse_optional()
+            multiple = input_source.get_bool("multiple", False)
+            return GenomeBuildParameterModel(
+                name=input_source.parse_name(),
+                optional=optional,
+                multiple=multiple,
             )
         else:
             raise Exception(f"Unknown Galaxy parameter type {param_type}")
