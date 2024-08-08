@@ -56,6 +56,21 @@ gx_int_optional:
    - parameter: "null"
    - parameter: [5]
 
+gx_int_required: &gx_int_required
+  request_valid:
+    - parameter: 5
+    - parameter: 6
+  request_invalid:
+    - {}
+    - parameter: null
+    - parameter: "null"
+    - parameter: "None"
+    - parameter: { 5 }
+    - parameter: {__class__: 'ConnectedValue'}
+
+gx_int_required_via_empty_string:
+  <<: *gx_int_required
+
 gx_text:
   request_valid:
     - parameter: moocow

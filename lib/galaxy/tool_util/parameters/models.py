@@ -183,7 +183,7 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return False
+        return not self.optional and self.value is None
 
 
 class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):

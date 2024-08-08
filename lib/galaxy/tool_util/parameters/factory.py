@@ -69,6 +69,9 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 int_value = int(value)
             elif optional:
                 int_value = None
+            elif value == "" or value is None:
+                # A truly required parameter: https://github.com/galaxyproject/galaxy/pull/16966/files
+                int_value = None
             else:
                 raise ParameterDefinitionError()
             return IntegerParameterModel(name=input_source.parse_name(), optional=optional, value=int_value)
