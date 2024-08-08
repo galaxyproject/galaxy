@@ -1,3 +1,5 @@
+import type { ComponentPublicInstanceConstructor } from "vue/types/v3-component-public-instance";
+
 /** length of const array or tuple */
 export type Length<T extends any[] | readonly any[]> = T["length"];
 
@@ -23,9 +25,7 @@ export type First<A extends readonly [...any]> = A[Length<A>];
  * @example
  * type MyComponentPropsType = GetComponentPropTypes<typeof MyComponent>;
  */
-export type GetComponentPropTypes<
-    T extends import("vue/types/v3-component-public-instance").ComponentPublicInstanceConstructor
-> = InstanceType<T>["$props"];
+export type GetComponentPropTypes<T extends ComponentPublicInstanceConstructor> = InstanceType<T>["$props"];
 
 /** Convert snake case string literal to camel case string literal */
 export type SnakeToCamelCase<S extends string> = S extends `${infer T}_${infer U}`
@@ -54,3 +54,17 @@ export type AsSnakeCase<T> = T extends Array<any>
           [K in keyof T as CamelToSnakeCase<K & string>]: AsSnakeCase<T[K]>;
       }
     : T;
+
+type Without<T, U> = { [_P in Exclude<keyof T, keyof U>]?: never };
+type SingleXOR<T, U> = T | U extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+type MultiXOR<T extends any[]> = T extends [infer Only]
+    ? Only
+    : T extends [infer A, infer B, ...infer Rest]
+    ? MultiXOR<[SingleXOR<A, B>, ...Rest]>
+    : never;
+
+/**
+ * Mutually exclusive type union.
+ * either takes two types, or an array of types.
+ */
+export type XOR<T, U = never> = T extends any[] ? MultiXOR<T> : SingleXOR<T, U>;

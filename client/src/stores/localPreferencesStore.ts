@@ -1,4 +1,5 @@
 import { defineStore, storeToRefs } from "pinia";
+import type { XOR } from "types/utilityTypes";
 import { computed, type Ref, ref, set } from "vue";
 
 import { useClamp, useStep } from "@/composables/math";
@@ -31,16 +32,16 @@ type SelectOption = {
     value: string;
 };
 
-type PreferenceTypeOption = {
+export type PreferenceTypeOption = {
     option: true;
     options: SelectOption[];
 };
 
-type PreferenceTypeBoolean = {
+export type PreferenceTypeBoolean = {
     boolean: true;
 };
 
-type PreferenceTypeNumber = {
+export type PreferenceTypeNumber = {
     number: true;
     range?: {
         min: number;
@@ -49,12 +50,12 @@ type PreferenceTypeNumber = {
     step?: number;
 };
 
-type PreferenceType = PreferenceTypeOption | PreferenceTypeBoolean | PreferenceTypeNumber;
+export type PreferenceType = XOR<[PreferenceTypeOption, PreferenceTypeBoolean, PreferenceTypeNumber]>;
 
 type PreferenceOptions<T> = {
     id: string;
     default: T;
-    type: PreferenceType;
+    type?: PreferenceType;
     category?: Readonly<PreferenceCategoryOptions>;
     name?: string;
     description?: string;
@@ -81,14 +82,14 @@ export type Preference<T> = {
  * wraps type constraints around refs
  */
 function useTypeConstrainedRef<T>(ref: Ref<T>, type: PreferenceType): Ref<T> {
-    if ("option" in type) {
+    if (type.option) {
         return useInSet(
             ref as Ref<string>,
             type.options.map((o) => o.value)
         ) as Ref<T>;
     }
 
-    if ("number" in type) {
+    if (type.number) {
         let constrainedRef = ref as Ref<number>;
 
         if (type.step) {
@@ -105,6 +106,18 @@ function useTypeConstrainedRef<T>(ref: Ref<T>, type: PreferenceType): Ref<T> {
     return ref;
 }
 
+function inferTypeFromDefault(defaultValue: unknown): PreferenceType {
+    if (typeof defaultValue === "boolean") {
+        return { boolean: true };
+    }
+
+    if (typeof defaultValue === "number") {
+        return { number: true };
+    }
+
+    throw new TypeError(`Cannot infer type from default value "${defaultValue}". Provide a type object.`);
+}
+
 /**
  * Creates a user scoped stored ref, and writes it to the preference tree
  * @param preferenceTree tree of all preferences which this preference will be written to
@@ -117,13 +130,14 @@ function useLocalPreference<T>(
     options: Readonly<PreferenceOptions<T>>
 ): Ref<T> {
     const preferencesRef = useUserLocalStorage(`local-preferences-store-${options.id}`, options.default) as Ref<T>;
+    const type = options.type ?? inferTypeFromDefault(options.default);
 
     const preference: Preference<T> = {
         id: options.id,
         name: options.name ?? options.id,
         description: options.description,
         default: structuredClone(options.default),
-        type: structuredClone(options.type),
+        type: type,
     };
 
     if (options.category) {
@@ -145,7 +159,7 @@ function useLocalPreference<T>(
         preferenceTree.value.uncategorized.push(preference);
     }
 
-    const constrainedRef = useTypeConstrainedRef(preferencesRef, options.type);
+    const constrainedRef = useTypeConstrainedRef(preferencesRef, type);
 
     refsById[options.id] = constrainedRef;
     set(preferenceTree.value.byId, options.id, preference);
@@ -198,32 +212,29 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         Object.keys(allPreferences.value.byId).forEach((id) => resetPreference(id));
     }
 
-    const preferredFormSelectElement = useLocalPreference<"none" | "multi" | "many">(
-        allPreferences,
-        preferenceRefsById,
-        {
-            id: "preferred-form-select",
-            default: "none",
-            name: "Preferred Form Multi-Select Element",
-            description: "The preferred type of multi-select element to appear in forms by default.",
-            type: {
-                option: true,
-                options: [
-                    { label: "No preference", value: "none" },
-                    { label: "Multi-Select (dropdown)", value: "multi" },
-                    { label: "Column-Select", value: "many" },
-                ],
-            },
-        }
-    );
+    type MultiSelectOption = "none" | "multi" | "many";
 
-    const hideSelectionQueryBreakWarning = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+    const preferredFormSelectElement = useLocalPreference(allPreferences, preferenceRefsById, {
+        id: "preferred-form-select",
+        default: "none" as MultiSelectOption,
+        name: "Preferred Form Multi-Select Element",
+        description: "The preferred type of multi-select element to appear in forms by default.",
+        type: {
+            option: true,
+            options: [
+                { label: "No preference", value: "none" },
+                { label: "Multi-Select (dropdown)", value: "multi" },
+                { label: "Column-Select", value: "many" },
+            ],
+        },
+    });
+
+    const hideSelectionQueryBreakWarning = useLocalPreference(allPreferences, preferenceRefsById, {
         id: "hide-selection-query-break-warning",
         default: false,
         name: "Hide history 'select all' warning",
         description:
             "Do not show the warning that pops up when manually modifying a 'select all' selection in the history",
-        type: { boolean: true },
     });
 
     const workflowEditorCategory = {
@@ -232,20 +243,34 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         description: "Local Preferences for the Workflow Editor",
     } as const satisfies PreferenceCategoryOptions;
 
-    const workflowEditorSnapActive = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+    const workflowEditorSnapActive = useLocalPreference(allPreferences, preferenceRefsById, {
         id: "workflow-editor-snap-active",
         category: workflowEditorCategory,
         default: false,
         name: "Snap Workflow Nodes to the Grid",
-        type: { boolean: true },
     });
 
-    const workflowEditorToolbarVisible = useLocalPreference<boolean>(allPreferences, preferenceRefsById, {
+    const workflowEditorToolbarVisible = useLocalPreference(allPreferences, preferenceRefsById, {
         id: "workflow-editor-toolbar-visible",
         category: workflowEditorCategory,
         default: true,
         name: "Show Editor Toolbar",
-        type: { boolean: true },
+    });
+
+    const workflowEditorMaxUndoActions = useLocalPreference(allPreferences, preferenceRefsById, {
+        id: "workflow-editor-max-undo-actions",
+        category: workflowEditorCategory,
+        default: 100,
+        name: "Max Undo Actions",
+        description: "How many steps are undoable in the workflow editor. Setting this lower saves resources",
+        type: {
+            number: true,
+            range: {
+                min: 10,
+                max: 10000,
+            },
+            step: 1,
+        },
     });
 
     return {
@@ -258,6 +283,7 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         hideSelectionQueryBreakWarning,
         workflowEditorSnapActive,
         workflowEditorToolbarVisible,
+        workflowEditorMaxUndoActions,
     };
 });
 

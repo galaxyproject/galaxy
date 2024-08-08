@@ -4,8 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { Preference, useLocalPreferencesStore } from "@/stores/localPreferencesStore";
+import { type Preference, type PreferenceTypeNumber, useLocalPreferencesStore } from "@/stores/localPreferencesStore";
 
+import FormNumber from "../Form/Elements/FormNumber.vue";
 import FormBoolean from "@/components/Form/Elements/FormBoolean.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
@@ -32,6 +33,20 @@ const preferenceValue = computed<any>({
 function resetPreference() {
     localPreferencesStore.resetPreference(id.value);
 }
+
+function getNumberType(type: PreferenceTypeNumber): "float" | "integer" {
+    if (!type.step) {
+        return "float";
+    }
+
+    const isWholeNumber = type.step % 1 === 0;
+
+    if (isWholeNumber) {
+        return "integer";
+    } else {
+        return "float";
+    }
+}
 </script>
 
 <template>
@@ -48,8 +63,14 @@ function resetPreference() {
             {{ description }}
         </p>
 
-        <FormSelect v-if="'option' in type" v-model="preferenceValue" :options="type.options"></FormSelect>
-        <FormBoolean v-if="'boolean' in type" v-model="preferenceValue"></FormBoolean>
+        <FormSelect v-if="type.option" v-model="preferenceValue" :options="type.options"></FormSelect>
+        <FormBoolean v-if="type.boolean" v-model="preferenceValue"></FormBoolean>
+        <FormNumber
+            v-if="type.number"
+            v-model="preferenceValue"
+            :type="getNumberType(type)"
+            :min="type.range?.min"
+            :max="type.range?.max"></FormNumber>
     </div>
 </template>
 

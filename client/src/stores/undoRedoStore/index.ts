@@ -1,7 +1,5 @@
 import { computed, ref } from "vue";
 
-import { useClamp, useStep } from "@/composables/math";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { defineScopedStore } from "@/stores/scopedStore";
 
 import { type LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
@@ -26,8 +24,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const minUndoActions = ref(10);
     const maxUndoActions = ref(10000);
 
-    const savedUndoActionsValue = useUserLocalStorage(`undoRedoStore-savedUndoActions`, 100);
-    const savedUndoActions = useClamp(useStep(savedUndoActionsValue), minUndoActions, maxUndoActions);
+    const savedUndoActions = ref(100);
 
     /** names of actions which were deleted due to savedUndoActions being exceeded */
     const deletedActions = ref<string[]>([]);
