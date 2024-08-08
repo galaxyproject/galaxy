@@ -28,6 +28,7 @@ const settings = reactive({
     initialY: -20,
     zoom: 1,
     applyStyle: true,
+    ignoreErrors: false,
 });
 
 function onChangePosition(event: Event, xy: "x" | "y") {
@@ -48,6 +49,7 @@ const embedUrl = computed(() => {
     url += `&zoom_controls=${settings.zoomControls}`;
     url += `&initialX=${settings.initialX}&initialY=${settings.initialY}`;
     url += `&zoom=${settings.zoom}`;
+    url += `&ignoreErrors=${settings.ignoreErrors}`;
     return url;
 });
 
@@ -92,6 +94,7 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             <BFormCheckbox v-model="settings.buttons"> Show buttons </BFormCheckbox>
             <BFormCheckbox v-model="settings.minimap"> Show minimap </BFormCheckbox>
             <BFormCheckbox v-model="settings.zoomControls"> Show zoom controls </BFormCheckbox>
+            <BFormCheckbox v-model="settings.ignoreErrors"> Ignore errors </BFormCheckbox>
 
             <label for="embed-position-control" class="control-label">
                 Initial position
@@ -161,7 +164,8 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                 :show-minimap="settings.minimap"
                 :show-zoom-controls="settings.zoomControls"
                 :initial-x="settings.initialX"
-                :initial-y="settings.initialY" />
+                :initial-y="settings.initialY"
+                :ignore-errors="settings.ignoreErrors" />
         </div>
     </div>
 </template>

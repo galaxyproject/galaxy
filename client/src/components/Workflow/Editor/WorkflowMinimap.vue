@@ -23,6 +23,7 @@ const props = defineProps<{
     comments: WorkflowComment[];
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
+    ignoreErrors?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -91,7 +92,7 @@ function recalculateAABB() {
 
 // redraw if any steps or comments change
 watch(
-    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed],
+    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed, props.ignoreErrors],
     () => {
         if (!toolbarStore.inputCatcherPressed) {
             redraw = true;
@@ -192,7 +193,7 @@ function renderMinimap() {
             selectedStep = step;
         }
 
-        if (step.errors) {
+        if (!props.ignoreErrors && step.errors) {
             errorSteps.push(step);
         } else {
             okSteps.push(step);
