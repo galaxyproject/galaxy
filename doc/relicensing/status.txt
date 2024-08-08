@@ -251,6 +251,10 @@ nagoue, nadia.goue@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970
 tshtatland, shtatland@neb.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2163521867
 katrinleinweber, kalei@posteo.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2172337847
 jdlogicman, jduddy@illumina.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2183469757
+dpryan79, dpryan79@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227060871
+FredericBGA, frederic.sapet@limagrain.com, personal email to michael.crusoe@vu.nl
+lindenb, plindenbaum@yahoo.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227066629
+inkuzmin, inkuzm@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227069559
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -261,6 +265,12 @@ NA, Ilya ichorny, none@none, currently at Quantum-Si
 jenzopr, Jens Preußner, jenzopr@users.noreply.github.com
 npinter, Niko Pinter, 34959927+npinter@users.noreply.github.com
 dlal-group, Marie Gramm, mariegramm@192-168-1-109.tpgi.com.au
+carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com, address bounced
+NA, Hiral Vora, hvora1@uncc.edu, address bounced
+odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr, address bounced
+sszakony, Scott Szakonyi, sszakony@nd.edu, address bounced; last contribution in 2016
+RichardJActon, Richard James Acton, racton@uni-koeln.de, address bounced
+NicHerndon, Nic Herndon, nic.herndon@uconn.edu, address bounced
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
@@ -276,23 +286,17 @@ dtrudg, Dave Trudgian, dave@trudgian.net, https://github.com/galaxyproject/galax
 cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
 charesredhat, Charles Strittmatter, cstrittmatter@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
-carmstrong1gw, Chris Armstrong, carmstrong1gw@github.com
 blankclemens, Clemens Blank, blankclemens@gmail.com
 cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
-dpryan79, Devon Ryan, dpryan79@gmail.com
 NA, dorine francheteau, dorine@bx.psu.edu
 NA, Eric Paniagua, paniagua.cshl@gmail.com
 fmareuil, Fabien Mareuil, fmareuil@pasteur.fr
-FredericBGA, Frederic Sapet, frederic.sapet@limagrain.com
 FreekDB, Freek de Bruijn, freek.de.bruijn@nbic.nl
 NA, Galaxy, galaxy-dev@plantandfood.co.nz
-sszakony, Scott Szakonyi, sszakony@nd.edu, last contribution in 2016
 NA, Guruprasad Ananda, gua110@bx.psu.edu
 hanfeisun, Hanfei Sun, ad9075@gmail.com
 vdtoorn, Henk van den Toorn, vdtoorn@hotmail.com
-NA, Hiral Vora, hvora1@uncc.edu
 NA, Hunter Moseley, hunter.moseley@louisville.edu
-inkuzmin, Ivan Kuzmin, inkuzm@gmail.com
 theboocock, James Boocock, sfk2001@gmail.com
 jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl
 NA, Jianbin He, jbhe@bx.psu.edu
@@ -314,21 +318,16 @@ martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 MatthewRalston, Matt Ralston, mrals89@gmail.com
 NA, Michael EG Sauria, mgehrin@emory.edu
 NA, MORITA Hideyuki, h-morita@esm.co.jp
-NicHerndon, Nic Herndon, nic.herndon@uconn.edu
 nturaga, Nitesh Turaga, nitesh.turaga@gmail.com
-odoppelt, Olivia Doppelt-Azeroual, olivia.doppelt@pasteur.fr
 osallou, Olivier Sallou, olivier.sallou@gmail.com
 ffinfo, Peter van 't Hof, pjrvanthof@gmail.com
-lindenb, Pierre Lindenbaum, plindenbaum@yahoo.fr
 NA, Radhesh Kamath, radhesh@bx.psu.edu
 NA, Raj Ayyampalayam, raj76@uga.edu
 ramezrawas, Ramez Alrawas, ramezrawas@gmail.com
 NA, Ramkrishna Chakrabarty, rc@bx.psu.edu
 remimarenco, Rémi Marenco, remi.marenco@gmail.com
 remyd1, Rémy Dernat, remy.d1@gmail.com
-RichardJActon, Richard James Acton, racton@uni-koeln.de
 golharam, Ryan Golhar, ngsbioinformatics@gmail.com
-sszakony, Scott Szakonyi, sszakony@nd.edu
 simleo, Simone Leo, simone.leo@gmail.com
 tesujimath, Simon Guest, simon.guest@agresearch.co.nz
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
@@ -346,7 +345,7 @@ NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
 ycgong, Yunchen Gong, yunchen.gong@gmail.com
 
 # not agreed, but contributions no longer present
-NA, Andrea Sbardellati, andrea.sbardellati@crs4.it, only one commit to bowtie2 wrapper; since moved to the tool shed
+NA, Andrea Sbardellati, andrea.sbardellati@crs4.it, address bounced; only one commit to bowtie2 wrapper; since moved to the tool shed
 cbare, Christopher Bare, christopherbare@gmail.com, contribution reverted or otherwise unused
 claresloggett, Clare Sloggett, sloc@unimelb.edu.au, code heavily refactored since 2012 contribution
 dan-blanchard, Dan Blanchard, dan.blanchard@gmail.com, one liner changing the drmaa version
