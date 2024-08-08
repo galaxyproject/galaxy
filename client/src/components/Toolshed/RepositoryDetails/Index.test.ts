@@ -1,44 +1,31 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { useServerMock } from "@/api/client/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
-import { Services } from "../services";
-import Index from "./Index";
-
-jest.mock("app");
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
-        async getRepository(toolshedUrl, repositoryId) {
-            expect(toolshedUrl).toBe("toolshedUrl");
-            expect(repositoryId).toBe("id");
-            return [];
-        },
-        async getInstalledRepositoriesByName(name, owner) {
-            expect(name).toBe("name");
-            expect(owner).toBe("owner");
-            return [];
-        },
-    };
-});
+import Index from "./Index.vue";
 
 const { server, http } = useServerMock();
 
 describe("RepositoryDetails", () => {
     it("test repository details index", async () => {
         server.use(
-            http.get("/api/tool_panels/default", ({ response }) => {
-                return response(200).json({});
-            }),
             http.get("/api/configuration", ({ response }) => {
                 return response(200).json({});
+            }),
+
+            http.untyped.get("/api/tool_panels/default", () => {
+                return HttpResponse.json({});
+            }),
+
+            http.untyped.get("api/tool_shed_repositories", () => {
+                return HttpResponse.json([]);
+            }),
+
+            http.untyped.get("api/tool_shed/request", () => {
+                return HttpResponse.json([]);
             })
         );
 
