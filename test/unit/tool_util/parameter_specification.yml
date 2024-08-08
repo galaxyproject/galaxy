@@ -143,6 +143,7 @@ gx_select_multiple:
   - parameter: ["ex2"]
   request_invalid:
   - parameter: ["Ex1"]
+  # This doesn't refelct the actual behavior of pre 24.2 Galaxy I don't think
   - parameter: null
   - parameter: {}
   - parameter: 5
