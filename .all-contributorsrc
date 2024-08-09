@@ -12,15 +12,6 @@
   "contributorTemplate": "<a href=\"http://github.com/<%= contributor.login %>\"><img src=\"<%= contributor.avatar_url %>?s=<%= options.imageSize %>\" width=\"<%= options.imageSize %>px;\" alt=\"<%= contributor.name %>\"/></a><br /><sub><b><%= contributor.name %> (<%= contributor.login %>)</b></sub><br />",
   "contributors": [
     {
-      "login": "anatskiy",
-      "name": "Evgeny Anatskiy",
-      "avatar_url": "https://avatars.githubusercontent.com/u/7281783?v=4",
-      "profile": "https://github.com/anatskiy",
-      "contributions": [
-        "code"
-      ]
-    },
-    {
       "login": "ashvark",
       "name": "Ashok Varadharajan",
       "avatar_url": "https://avatars.githubusercontent.com/u/7712157?v=4",
@@ -448,6 +439,15 @@
       "name": "Hanfei Sun",
       "avatar_url": "https://avatars.githubusercontent.com/u/922081?v=4",
       "profile": "https://github.com/hanfeisun",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "RichardJActon",
+      "name": "Richard James Acton",
+      "avatar_url": "https://avatars.githubusercontent.com/u/6893043?v=4",
+      "profile": "https://richardjacton.github.io/",
       "contributions": [
         "code"
       ]

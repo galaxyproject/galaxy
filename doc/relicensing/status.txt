@@ -268,6 +268,7 @@ ycgong, yunchen.gong@gmail.com, 2024-08-08 personal email to michael.crusoe@vu.n
 aloraine, aloraine@uncc.edu, 2024-08-09 persona email to michael.crusoe@vu.nl
 thomcuddihy, thom@hometreelab.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
 cbare, christopherbare@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
+anatskiy, evgeny.anatskiy@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2229566214
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -287,7 +288,6 @@ NicHerndon, Nic Herndon, nic.herndon@uconn.edu, address bounced
 
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
-anatskiy, Evgeny Anatskiy, evgeny.anatskiy@gmail.com
 arjunnath, Arjun Nath, arjun@bx.psu.edu
 ashvark, Ashok Varadharajan, ashvark@gmail.com
 arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
