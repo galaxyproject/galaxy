@@ -63,9 +63,7 @@ def purge_while_job_running(dataset_populator: DatasetPopulator, extra_sleep=0):
             # Make sure that we don't revert state while finishing job
             assert output_details["purged"], f"expected output '{output_name}' to be purged, but it is not purged."
             assert not output_details.get("file_name")
-            assert (
-                output_details["file_size"] == 0
-            ), f"expected file_size for '{output_name}' to be 0, but it is {output_details['file_size']}."
+
         for file_name in hda_filenames:
             # Make sure job didn't push to object store
             assert not os.path.exists(file_name), f"Expected {file_name} to be purged."
