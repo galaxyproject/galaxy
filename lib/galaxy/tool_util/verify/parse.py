@@ -357,7 +357,7 @@ def _process_simple_value(
                 if value_for_text is None and param_value == text:
                     value_for_text = opt_value
             dynamic_options = param.parse_dynamic_options()
-            if dynamic_options and not input_type == "drill_down":
+            if dynamic_options:
                 data_table_name = dynamic_options.get_data_table_name()
                 index_file_name = dynamic_options.get_index_file_name()
                 if data_table_name:
