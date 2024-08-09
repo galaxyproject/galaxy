@@ -2115,7 +2115,8 @@
     Map for the interactivetool proxy. Mappings are stored in a SQLite
     database file located on this path. As an alternative, you may
     also store them in any other RDBMS supported by SQLAlchemy using
-    the option ``interactivetools_map_sqlalchemy``.
+    the option ``interactivetools_map_sqlalchemy``, which overrides
+    this one.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
