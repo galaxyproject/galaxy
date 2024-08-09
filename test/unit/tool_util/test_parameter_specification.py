@@ -4,6 +4,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 import yaml
@@ -21,7 +22,10 @@ from galaxy.tool_util.parameters import (
     validate_test_case,
 )
 from galaxy.tool_util.parameters.json import to_json_schema_string
-from galaxy.tool_util.unittest_utils.parameters import parameter_bundle_for_file
+from galaxy.tool_util.unittest_utils.parameters import (
+    parameter_bundle_for_file,
+    parameter_bundle_for_framework_tool,
+)
 from galaxy.util.resources import resource_string
 
 RawStateDict = Dict[str, Any]
@@ -37,10 +41,29 @@ def specification_object():
     return yaml.safe_load(yaml_str)
 
 
+def framework_tool_checks():
+    # Extend parameter_specification with some extra tests against existing framework tools.
+    # There is something beautiful about a targeted tool for every parameter feature but realistically
+    # we've been doing a version of the for a decade with tool tests and we can leverage those also.
+    try:
+        yaml_str = resource_string(__package__, "framework_tool_checks.yml")
+    except AttributeError:
+        # hack for the main() function below where this file is interpreted as part of the
+        # Galaxy tree.
+        yaml_str = open("test/unit/tool_util/framework_tool_checks.yml").read()
+    return yaml.safe_load(yaml_str)
+
+
 def test_specification():
     parameter_spec = specification_object()
     for file in parameter_spec.keys():
         _test_file(file, parameter_spec)
+
+
+def test_framework_tool_checks():
+    parameter_spec = framework_tool_checks()
+    for file in parameter_spec.keys():
+        _test_file(file, parameter_spec, parameter_bundle_for_framework_tool(f"{file}.xml"))
 
 
 def test_single():
@@ -54,10 +77,12 @@ def test_single():
     _test_file("gx_conditional_boolean_checked")
 
 
-def _test_file(file: str, specification=None):
+def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolParameterBundleModel] = None):
     spec = specification or specification_object()
     combos = spec[file]
-    parameter_bundle: ToolParameterBundleModel = parameter_bundle_for_file(file)
+    if parameter_bundle is None:
+        parameter_bundle = parameter_bundle_for_file(file)
+    assert parameter_bundle
 
     assertion_functions = {
         "request_valid": _assert_requests_validate,

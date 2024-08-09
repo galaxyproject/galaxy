@@ -1,0 +1,8 @@
+# file format mirrors parameters_specification.yml but applies to any tool in the older
+# (and more general) test/functional/tools directory.
+
+empty_select:
+  request_valid:
+  - {}
+  request_invalid:
+  - select_optional: anyoption

@@ -16,6 +16,7 @@ from galaxy.tool_util.parser.interface import (
 )
 from galaxy.util import string_as_bool
 from .models import (
+    BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
@@ -31,8 +32,11 @@ from .models import (
     DataCollectionParameterModel,
     DataColumnParameterModel,
     DataParameterModel,
+    DirectoryUriParameterModel,
     DrillDownParameterModel,
     FloatParameterModel,
+    GenomeBuildParameterModel,
+    GroupTagParameterModel,
     HiddenParameterModel,
     IntegerParameterModel,
     LabelValue,
@@ -66,6 +70,9 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             if value:
                 int_value = int(value)
             elif optional:
+                int_value = None
+            elif value == "" or value is None:
+                # A truly required parameter: https://github.com/galaxyproject/galaxy/pull/16966/files
                 int_value = None
             else:
                 raise ParameterDefinitionError()
@@ -101,9 +108,11 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "hidden":
             optional = input_source.parse_optional()
+            value = input_source.get("value")
             return HiddenParameterModel(
                 name=input_source.parse_name(),
                 optional=optional,
+                value=value,
             )
         elif param_type == "color":
             optional = input_source.parse_optional()
@@ -162,6 +171,26 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "data_column":
             return DataColumnParameterModel(
+                name=input_source.parse_name(),
+            )
+        elif param_type == "group_tag":
+            return GroupTagParameterModel(
+                name=input_source.parse_name(),
+            )
+        elif param_type == "baseurl":
+            return BaseUrlParameterModel(
+                name=input_source.parse_name(),
+            )
+        elif param_type == "genomebuild":
+            optional = input_source.parse_optional()
+            multiple = input_source.get_bool("multiple", False)
+            return GenomeBuildParameterModel(
+                name=input_source.parse_name(),
+                optional=optional,
+                multiple=multiple,
+            )
+        elif param_type == "directory_uri":
+            return DirectoryUriParameterModel(
                 name=input_source.parse_name(),
             )
         else:
@@ -308,6 +337,10 @@ def input_models_for_pages(pages: PagesSource) -> List[ToolParameterT]:
 def input_models_for_page(page_source: PageSource) -> List[ToolParameterT]:
     input_models = []
     for input_source in page_source.parse_input_sources():
+        input_type = input_source.parse_input_type()
+        if input_type == "display":
+            # not a real input... just skip this. Should this be handled in the parser layer better?
+            continue
         tool_parameter_model = from_input_source(input_source)
         input_models.append(tool_parameter_model)
     return input_models
