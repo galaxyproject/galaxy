@@ -133,3 +133,15 @@ def ModelClassField(default_value):
         description="The name of the database model class.",
         json_schema_extra={"const": literal_to_value(default_value), "type": "string"},
     )
+
+
+def accept_wildcard_defaults_to_json(v):
+    assert isinstance(v, str)
+    # Accept header can have multiple comma separated values.
+    # If any of these values is the wildcard - we default to application/json.
+    if "*/*" in v:
+        return "application/json"
+    return v
+
+
+AcceptHeaderValidator = BeforeValidator(accept_wildcard_defaults_to_json)
