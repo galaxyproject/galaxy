@@ -1422,9 +1422,16 @@ galaxy:
   #galaxy_url_prefix: /
 
   # URL (with schema http/https) of the Galaxy instance as accessible
-  # within your local network. This URL is used as a default by pulsar
-  # file staging and Interactive Tool containers for communicating back
-  # with Galaxy via the API.
+  # from external networks, including ``galaxy_url_prefix`` if
+  # necessary. This URL is used to determine links outside of the web
+  # application, e.g. when requesting job finish emails.
+  #galaxy_external_url: null
+
+  # URL (with schema http/https) of the Galaxy instance as accessible
+  # within your local network, including ``galaxy_url_prefix`` if
+  # necessary. This URL is used as a default by pulsar file staging and
+  # Interactive Tool containers for communicating back with Galaxy via
+  # the API.
   # If you plan to run Interactive Tools make sure the docker container
   # can reach this URL.
   #galaxy_infrastructure_url: http://localhost:8080
