@@ -221,7 +221,7 @@ class DataSourceParser:
         # when no tests are given, default to isinstance( object, model_class )
         returned["tests"] = self.parse_tests(xml_tree.findall("test"))
 
-        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
+        # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_class, tests
         returned["to_params"] = {}
         if to_params := self.parse_to_params(xml_tree.findall("to_param")):
             returned["to_params"] = to_params
