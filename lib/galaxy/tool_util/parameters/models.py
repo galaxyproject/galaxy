@@ -621,14 +621,14 @@ class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def py_type(self) -> Type:
-        return StrictStr
+        return optional_if_needed(StrictStr, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
-        return True
+        return not self.optional
 
 
 class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):
