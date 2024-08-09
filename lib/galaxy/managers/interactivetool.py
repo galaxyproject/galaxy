@@ -62,8 +62,8 @@ class InteractiveToolPropagatorSQLAlchemy:
 
         with self._engine.connect() as conn:
             stmt = select(*gxitproxy.c[columns]).where(
-                gxitproxy.c["key"] == key,
-                gxitproxy.c["key_type"] == key_type,
+                gxitproxy.c.key == key,
+                gxitproxy.c.key_type == key_type,
             )
             result = conn.execute(stmt).fetchone()
 
@@ -82,8 +82,8 @@ class InteractiveToolPropagatorSQLAlchemy:
 
             # delete existing data with same key
             stmt_delete = delete(gxitproxy).where(
-                gxitproxy.c["key"] == key,
-                gxitproxy.c["key_type"] == key_type,
+                gxitproxy.c.key == key,
+                gxitproxy.c.key_type == key_type,
             )
             conn.execute(stmt_delete)
 
