@@ -322,6 +322,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
     collection_type: Optional[str] = None
     extensions: List[str] = ["data"]
+    value: Optional[Dict[str, Any]]
 
     @property
     def py_type(self) -> Type:
@@ -341,7 +342,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional
+        return not self.optional and self.value is None
 
 
 class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):

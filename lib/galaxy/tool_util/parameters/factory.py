@@ -135,9 +135,11 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "data_collection":
             optional = input_source.parse_optional()
+            default_value = input_source.parse_default()
             return DataCollectionParameterModel(
                 name=input_source.parse_name(),
                 optional=optional,
+                value=default_value,
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
