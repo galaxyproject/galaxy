@@ -70,9 +70,6 @@ def job_io(app: FileSourcesMockApp, job: Job) -> JobIO:
         builds_file_path=WORKING_DIRECTORY,
         user_context=USER_CONTEXT,
         file_sources_dict=app.file_sources.to_dict(for_serialization=True, user_context=user_context),
-        check_job_script_integrity=False,
-        check_job_script_integrity_count=1,
-        check_job_script_integrity_sleep=1,
         tool_dir=WORKING_DIRECTORY,
         is_task=False,
     )
