@@ -56,6 +56,21 @@ gx_int_optional:
    - parameter: "null"
    - parameter: [5]
 
+gx_int_required: &gx_int_required
+  request_valid:
+    - parameter: 5
+    - parameter: 6
+  request_invalid:
+    - {}
+    - parameter: null
+    - parameter: "null"
+    - parameter: "None"
+    - parameter: { 5 }
+    - parameter: {__class__: 'ConnectedValue'}
+
+gx_int_required_via_empty_string:
+  <<: *gx_int_required
+
 gx_text:
   request_valid:
     - parameter: moocow
@@ -121,13 +136,13 @@ gx_select_optional:
   - parameter: {}
   - parameter: 5
 
-# TODO: confirm null should vaguely not be allowed here
 gx_select_multiple:
   request_valid:
   - parameter: ["--ex1"]
   - parameter: ["ex2"]
   request_invalid:
   - parameter: ["Ex1"]
+  # DIVERGES_FROM_CURRENT_API
   - parameter: null
   - parameter: {}
   - parameter: 5
@@ -144,11 +159,51 @@ gx_select_multiple_optional:
   - parameter: {}
   - parameter: 5
 
+gx_genomebuild:
+  request_valid:
+  - parameter: hg19
+  - parameter: hg18
+  # implicitly selects top option "?"
+  - {}
+  request_invalid:
+  - parameter: null
+  - parameter: 9
+
+gx_genomebuild_optional:
+  request_valid:
+  - parameter: hg19
+  - parameter: hg18
+  # these yield actual null parameters instead of ?
+  - {}
+  - parameter: null
+  request_invalid:
+  - parameter: 8
+  - parameter: true
+
+gx_genomebuild_multiple:
+  request_valid:
+  - parameter: ["hg18", hg19"]
+  request_invalid:
+  - parameter: 6
+  # DIVERGES_FROM_CURRENT_API
+  - parameter: null
+
+gx_directory_uri:
+  request_valid:
+  - parameter: "gxfiles://foobar/"
+  - parameter: "gxfiles://foobar"
+  request_invalid:
+  - parameter: "justsomestring"
+  - parameter: true
+  - parameter: null
+
 gx_hidden:
   request_valid:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    # it will use a default if value is set in definition and no value supplied (see hidden_param.xml)
+    - {}
   request_invalid:
     - parameter: null
     - parameter: 5
@@ -656,6 +711,20 @@ gx_data_column:
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+
+gx_group_tag:
+  request_valid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'type:matched' }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'matched' }
+  request_invalid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: null }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 7 }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: true }
+  - { ref_parameter: { src: hdca, id: abcdabcd} }
+  request_internal_valid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: 'type: matched' }
+  request_internal_invalid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: null }
 
 cwl_int:
   request_valid:

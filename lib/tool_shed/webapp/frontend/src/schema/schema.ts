@@ -263,6 +263,39 @@ export interface components {
             /** Api Key */
             api_key: string
         }
+        /** BaseUrlParameterModel */
+        BaseUrlParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_baseurl
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_baseurl"
+        }
         /** Body_repositories__create_revision */
         Body_repositories__create_revision: {
             /** Commit Message */
@@ -457,6 +490,9 @@ export interface components {
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
                 | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -843,12 +879,11 @@ export interface components {
             optional?: boolean
             /**
              * Parameter Type
+             * @default gx_directory_uri
              * @constant
              * @enum {string}
              */
-            parameter_type: "gx_directory_uri"
-            /** Value */
-            value: string | null
+            parameter_type?: "gx_directory_uri"
         }
         /** DrillDownOptionsDict */
         DrillDownOptionsDict: {
@@ -980,6 +1015,74 @@ export interface components {
             /** Value */
             value?: number | null
         }
+        /** GenomeBuildParameterModel */
+        GenomeBuildParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Multiple */
+            multiple: boolean
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_genomebuild
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_genomebuild"
+        }
+        /** GroupTagParameterModel */
+        GroupTagParameterModel: {
+            /** Argument */
+            argument?: string | null
+            /** Help */
+            help?: string | null
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean
+            /**
+             * Is Dynamic
+             * @default false
+             */
+            is_dynamic?: boolean
+            /** Label */
+            label?: string | null
+            /** Name */
+            name: string
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean
+            /**
+             * Parameter Type
+             * @default gx_group_tag
+             * @constant
+             * @enum {string}
+             */
+            parameter_type?: "gx_group_tag"
+        }
         /** HiddenParameterModel */
         HiddenParameterModel: {
             /** Argument */
@@ -1012,6 +1115,8 @@ export interface components {
              * @enum {string}
              */
             parameter_type?: "gx_hidden"
+            /** Value */
+            value: string | null
         }
         /** ImageData */
         ImageData: {
@@ -1154,6 +1259,9 @@ export interface components {
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
                 | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -1237,6 +1345,9 @@ export interface components {
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
                 | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]
@@ -1585,6 +1696,9 @@ export interface components {
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
                 | components["schemas"]["DrillDownParameterModel"]
+                | components["schemas"]["GroupTagParameterModel"]
+                | components["schemas"]["BaseUrlParameterModel"]
+                | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
                 | components["schemas"]["ConditionalParameterModel"]
                 | components["schemas"]["RepeatParameterModel"]

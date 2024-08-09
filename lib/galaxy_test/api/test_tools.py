@@ -898,6 +898,38 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self._assert_status_code_is(response, 400)
             assert "an invalid option" in response.text
 
+    @skip_without_tool("gx_select_multiple")
+    @skip_without_tool("gx_select_multiple_optional")
+    def test_select_multiple_null_handling(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            inputs: Dict[str, Any] = {}
+            response = self._run("gx_select_multiple", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "None"
+
+            inputs = {}
+            response = self._run("gx_select_multiple_optional", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "None"
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_select_multiple", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "None"
+
+            inputs = {
+                "parameter": None,
+            }
+            response = self._run("gx_select_multiple_optional", history_id, inputs, assert_ok=True)
+            output = response["outputs"][0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+            assert output1_content.strip() == "None"
+
     @skip_without_tool("gx_drill_down_exact")
     @skip_without_tool("gx_drill_down_exact_multiple")
     @skip_without_tool("gx_drill_down_recurse")

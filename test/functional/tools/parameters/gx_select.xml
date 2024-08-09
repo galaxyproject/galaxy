@@ -24,8 +24,8 @@ echo '$parameter' >> '$output'
             </output>
         </test>
         <test>
-            <!-- Selects have an implicit first option default in tool tests.
-                 Do they in the actual API also?
+            <!-- Selects implicitly default to the first option as the default option.
+	             Additional verification in test_select_first_by_default API test in test_tools.py.
             -->
             <output name="output">
                 <assert_contents>

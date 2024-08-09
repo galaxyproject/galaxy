@@ -16,12 +16,14 @@ from typing import (
 )
 
 from pydantic import (
+    AnyUrl,
     BaseModel,
     ConfigDict,
     create_model,
     Discriminator,
     Field,
     field_validator,
+    HttpUrl,
     RootModel,
     StrictBool,
     StrictFloat,
@@ -48,10 +50,7 @@ from ._types import (
 
 # TODO:
 # - implement job vs request...
-# - drill down
 # - implement data_ref on rules and implement some cross model validation
-# - Optional conditionals... work through that?
-# - Sections - fight that battle again...
 
 # + request: Return info needed to build request pydantic model at runtime.
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
@@ -185,7 +184,7 @@ class IntegerParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return False
+        return not self.optional and self.value is None
 
 
 class FloatParameterModel(BaseGalaxyToolParameterModelDefinition):
@@ -347,6 +346,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_hidden"] = "gx_hidden"
+    value: Optional[str]
 
     @property
     def py_type(self) -> Type:
@@ -357,7 +357,7 @@ class HiddenParameterModel(BaseGalaxyToolParameterModelDefinition):
 
     @property
     def request_requires_value(self) -> bool:
-        return not self.optional
+        return not self.optional and self.value is None
 
 
 def ensure_color_valid(value: Optional[Any]):
@@ -423,8 +423,14 @@ class BooleanParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 
 class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
-    parameter_type: Literal["gx_directory_uri"]
-    value: Optional[str]
+    parameter_type: Literal["gx_directory_uri"] = "gx_directory_uri"
+
+    @property
+    def py_type(self) -> Type:
+        return AnyUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
@@ -464,8 +470,11 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     @property
     def py_type(self) -> Type:
         if self.options is not None:
-            literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
-            py_type = union_type(literal_options)
+            if len(self.options) > 0:
+                literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
+                py_type = union_type(literal_options)
+            else:
+                py_type = type(None)
         else:
             py_type = StrictStr
         if self.multiple:
@@ -496,6 +505,26 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         # API will allow an empty value and just grab the first static option
         # see API Tests -> test_tools.py -> test_select_first_by_default
         # so only require a value in the multiple case if optional is False
+        return self.multiple and not self.optional
+
+
+class GenomeBuildParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_genomebuild"] = "gx_genomebuild"
+    multiple: bool
+
+    @property
+    def py_type(self) -> Type:
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        # assumes it uses behavior of select parameters - an API test to reference for this would be nice
         return self.multiple and not self.optional
 
 
@@ -585,6 +614,36 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     @property
     def request_requires_value(self) -> bool:
         return False
+
+
+class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+
+    @property
+    def py_type(self) -> Type:
+        return StrictStr
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return True
+
+
+class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):
+    parameter_type: Literal["gx_baseurl"] = "gx_baseurl"
+
+    @property
+    def py_type(self) -> Type:
+        return HttpUrl
+
+    def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
+        return dynamic_model_information_from_py_type(self, self.py_type)
+
+    @property
+    def request_requires_value(self) -> bool:
+        return True
 
 
 DiscriminatorType = Union[bool, str]
@@ -920,6 +979,9 @@ GalaxyParameterT = Union[
     DirectoryUriParameterModel,
     RulesParameterModel,
     DrillDownParameterModel,
+    GroupTagParameterModel,
+    BaseUrlParameterModel,
+    GenomeBuildParameterModel,
     ColorParameterModel,
     ConditionalParameterModel,
     RepeatParameterModel,

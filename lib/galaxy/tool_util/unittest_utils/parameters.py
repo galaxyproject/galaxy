@@ -11,6 +11,7 @@ from galaxy.tool_util.parser import (
     ToolSource,
 )
 from galaxy.util import galaxy_directory
+from . import functional_test_tool_path
 
 
 class ParameterBundle(ToolParameterBundle):
@@ -21,6 +22,12 @@ class ParameterBundle(ToolParameterBundle):
 
 def parameter_bundle(parameter: ToolParameterT) -> ParameterBundle:
     return ParameterBundle(parameter)
+
+
+def parameter_bundle_for_framework_tool(filename: str) -> ToolParameterBundleModel:
+    path = functional_test_tool_path(filename)
+    tool_source = get_tool_source(path, macro_paths=[])
+    return input_models_for_tool_source(tool_source)
 
 
 def parameter_bundle_for_file(filename: str) -> ToolParameterBundleModel:
