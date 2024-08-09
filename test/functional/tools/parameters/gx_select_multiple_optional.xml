@@ -23,5 +23,12 @@ echo '$parameter' >> '$output'
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="None" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>
