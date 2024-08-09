@@ -2,24 +2,34 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { type DatasetStorageDetails } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 
-import DatasetStorage from "./DatasetStorage";
-
-jest.mock("@/api/schema");
+import DatasetStorage from "./DatasetStorage.vue";
 
 const localVue = getLocalVue();
 
-const TEST_STORAGE_API_RESPONSE_WITHOUT_ID = {
+const TEST_STORAGE_API_RESPONSE_WITHOUT_ID: DatasetStorageDetails = {
     object_store_id: null,
-    private: false,
+    name: "Test name",
+    description: "Test description",
+    dataset_state: "ok",
+    quota: { enabled: false, source: null },
+    relocatable: false,
+    shareable: false,
+    badges: [],
+    hashes: [],
+    sources: [],
+    percent_used: 0,
 };
 const TEST_DATASET_ID = "1";
 const STORAGE_FETCH_URL = "/api/datasets/{dataset_id}/storage";
 const TEST_ERROR_MESSAGE = "Opps all errors.";
 
+const { server, http } = useServerMock();
+
 describe("DatasetStorage.vue", () => {
-    let wrapper;
+    let wrapper: any;
 
     function mount() {
         wrapper = shallowMount(DatasetStorage, {
@@ -28,8 +38,12 @@ describe("DatasetStorage.vue", () => {
         });
     }
 
-    async function mountWithResponse(response) {
-        mockFetcher.path(STORAGE_FETCH_URL).method("get").mock({ data: response });
+    async function mountWithResponse(resp: DatasetStorageDetails) {
+        server.use(
+            http.get(STORAGE_FETCH_URL, ({ response }) => {
+                return response(200).json(resp);
+            })
+        );
         mount();
         await flushPromises();
     }
@@ -42,12 +56,12 @@ describe("DatasetStorage.vue", () => {
     });
 
     it("test error rendering...", async () => {
-        mockFetcher
-            .path(STORAGE_FETCH_URL)
-            .method("get")
-            .mock(() => {
-                throw Error(TEST_ERROR_MESSAGE);
-            });
+        server.use(
+            http.get(STORAGE_FETCH_URL, ({ response }) => {
+                return response("5XX").json({ err_msg: TEST_ERROR_MESSAGE, err_code: 500 }, { status: 500 });
+            })
+        );
+
         mount();
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);

@@ -2,12 +2,12 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { useInstanceRouting } from "./routing";
-import { update } from "./services";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
@@ -31,14 +31,21 @@ const loadingMessage = "Loading file source template and instance information";
 
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
-    const args = { user_file_source_id: String(props.instance.uuid) };
-    try {
-        const { data: fileSource } = await update({ ...args, ...payload });
-        await onUpgrade(fileSource);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
+
+    const { data: fileSource, error: requestError } = await GalaxyApi().PUT(
+        "/api/file_source_instances/{user_file_source_id}",
+        {
+            params: { path: { user_file_source_id: props.instance.uuid } },
+            body: payload,
+        }
+    );
+
+    if (requestError) {
+        error.value = errorMessageAsString(requestError);
         return;
     }
+
+    await onUpgrade(fileSource);
 }
 
 const { goToIndex } = useInstanceRouting();

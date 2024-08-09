@@ -1,20 +1,20 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { QuotaUsage } from "./model";
+import { type QuotaUsage, toQuotaUsage } from "./model";
 
 import QuotaUsageBar from "./QuotaUsageBar.vue";
 
 const localVue = getLocalVue();
 
-const NON_DEFAULT_QUOTA_USAGE: QuotaUsage = new QuotaUsage({
+const NON_DEFAULT_QUOTA_USAGE: QuotaUsage = toQuotaUsage({
     quota_source_label: "The label",
     quota_bytes: 68468436,
     total_disk_usage: 4546654,
     quota_percent: 20,
 });
 
-const UNLIMITED_USAGE: QuotaUsage = new QuotaUsage({
+const UNLIMITED_USAGE: QuotaUsage = toQuotaUsage({
     quota_source_label: "Unlimited",
     quota_bytes: undefined,
     total_disk_usage: 4546654,
@@ -22,7 +22,7 @@ const UNLIMITED_USAGE: QuotaUsage = new QuotaUsage({
 });
 
 function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
-    const wrapper = mount(QuotaUsageBar, { propsData: { quotaUsage }, localVue });
+    const wrapper = mount(QuotaUsageBar as object, { propsData: { quotaUsage }, localVue });
     return wrapper;
 }
 

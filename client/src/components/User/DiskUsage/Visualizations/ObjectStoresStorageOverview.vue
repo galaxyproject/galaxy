@@ -2,9 +2,10 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { fetchObjectStoreUsages } from "@/api/users";
+import { GalaxyApi } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import type { DataValuePoint } from "./Charts";
 import { byteFormattingForChart, useDataLoading } from "./util";
@@ -25,7 +26,15 @@ const { getObjectStoreNameById } = useObjectStoreStore();
 const { isLoading, loadDataOnMount } = useDataLoading();
 
 loadDataOnMount(async () => {
-    const { data } = await fetchObjectStoreUsages({ user_id: "current" });
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/objectstore_usage", {
+        params: { path: { user_id: "current" } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+        return;
+    }
+
     const objectStoresBySize = data.sort((a, b) => b.total_disk_usage - a.total_disk_usage);
     objectStoresBySizeData.value = objectStoresBySize.map((objectStore) => ({
         id: objectStore.object_store_id,

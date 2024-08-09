@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteRole, purgeRole, undeleteRole } from "@/api/roles";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -77,18 +77,23 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !data.deleted,
                 handler: async (data: RoleEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this role?"))) {
-                        try {
-                            await deleteRole({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been deleted.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().DELETE("/api/roles/{id}", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been deleted.`,
+                        };
                     }
                 },
             },
@@ -97,19 +102,24 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
-                    if (confirm(_l("Are you sure that you want to purge this role?"))) {
-                        try {
-                            await purgeRole({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been purged.`,
-                            };
-                        } catch (e) {
+                    if (confirm(_l("Are you sure that you want to permanently delete this role?"))) {
+                        const { error } = await GalaxyApi().POST("/api/roles/{id}/purge", {
+                            params: {
+                                path: { id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to permanently delete '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been permanently deleted.`,
+                        };
                     }
                 },
             },
@@ -118,18 +128,23 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
-                    try {
-                        await undeleteRole({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been restored.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/roles/{id}/undelete", {
+                        params: {
+                            path: { id: String(data.id) },
+                        },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.name}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.name}': ${errorMessageAsString(error)}`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `'${data.name}' has been restored.`,
+                    };
                 },
             },
         ],

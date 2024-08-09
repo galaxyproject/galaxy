@@ -1,13 +1,21 @@
 import { defineStore } from "pinia";
 
-import { type DatasetCollectionAttributes } from "@/api";
-import { fetchCollectionAttributes } from "@/api/datasetCollections";
-import { useKeyedCache } from "@/composables/keyedCache";
+import { type DatasetCollectionAttributes, GalaxyApi } from "@/api";
+import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export const useCollectionAttributesStore = defineStore("collectionAttributesStore", () => {
-    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<DatasetCollectionAttributes>((params) =>
-        fetchCollectionAttributes({ id: params.id, instance_type: "history" })
-    );
+    async function fetchAttributes(params: FetchParams): Promise<DatasetCollectionAttributes> {
+        const { data, error } = await GalaxyApi().GET("/api/dataset_collections/{id}/attributes", {
+            params: { path: params },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
+    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<DatasetCollectionAttributes>(fetchAttributes);
 
     return {
         storedAttributes: storedItems,

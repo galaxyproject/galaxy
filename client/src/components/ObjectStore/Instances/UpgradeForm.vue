@@ -2,12 +2,12 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import { type FormEntry, upgradeForm, upgradeFormDataToPayload } from "@/components/ConfigTemplates/formUtil";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ObjectStoreTemplateSummary } from "../Templates/types";
 import { useInstanceRouting } from "./routing";
-import { update } from "./services";
 import type { UserConcreteObjectStore } from "./types";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
@@ -32,14 +32,21 @@ const loadingMessage = "Loading storage location template and instance informati
 
 async function onSubmit(formData: any) {
     const payload = upgradeFormDataToPayload(props.latestTemplate, formData);
-    const args = { user_object_store_id: String(props.instance.uuid) };
-    try {
-        const { data: objectStore } = await update({ ...args, ...payload });
-        await onUpgrade(objectStore);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
+
+    const { data: objectStore, error: updateRequestError } = await GalaxyApi().PUT(
+        "/api/object_store_instances/{user_object_store_id}",
+        {
+            params: { path: { user_object_store_id: props.instance.uuid } },
+            body: payload,
+        }
+    );
+
+    if (updateRequestError) {
+        error.value = errorMessageAsString(updateRequestError);
         return;
     }
+
+    await onUpgrade(objectStore);
 }
 
 const { goToIndex } = useInstanceRouting();

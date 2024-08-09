@@ -1,6 +1,7 @@
 import { type Ref, ref } from "vue";
 
-import { datatypesFetcher, edamDataFetcher, edamFormatsFetcher } from "@/api/datatypes";
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface DetailedDatatypes {
     extension: string;
@@ -24,21 +25,30 @@ export function useDetailedDatatypes() {
 
     async function getDatatypes() {
         try {
-            const datatypesPromise = datatypesFetcher({ extension_only: false });
-            const datatypeEDAMFormatsPromise = edamFormatsFetcher({});
-            const datatypeEDAMDataPromise = edamDataFetcher({});
+            const datatypesPromise = GalaxyApi().GET("/api/datatypes", {
+                params: { query: { extension_only: false } },
+            });
+            const datatypeEDAMFormatsPromise = GalaxyApi().GET("/api/datatypes/edam_formats/detailed");
+            const datatypeEDAMDataPromise = GalaxyApi().GET("/api/datatypes/edam_data/detailed");
 
-            const [baseTypes, datatypeEDAMFormats, datatypeEDAMData] = await Promise.all([
-                datatypesPromise,
-                datatypeEDAMFormatsPromise,
-                datatypeEDAMDataPromise,
-            ]);
+            const [
+                { data: baseData, error: baseError },
+                { data: datatypeEDAMFormats, error: edamFormatsError },
+                { data: datatypeEDAMData, error: edamDataError },
+            ] = await Promise.all([datatypesPromise, datatypeEDAMFormatsPromise, datatypeEDAMDataPromise]);
 
-            type BaseTypes = Exclude<typeof baseTypes.data, string[]>;
+            type BaseTypes = Exclude<typeof baseData, string[]>;
 
-            datatypes.value = (baseTypes.data as BaseTypes).map((type) => {
-                const typeEDAMFormat = datatypeEDAMFormats.data[type.extension] ?? null;
-                const typeEDAMData = datatypeEDAMData.data[type.extension] ?? null;
+            const error = baseError || edamFormatsError || edamDataError;
+            if (error) {
+                rethrowSimple(error);
+            }
+
+            const items = baseData as BaseTypes;
+            // We can safely use non-null assertions here because otherwise we would have thrown an error
+            datatypes.value = items!.map((type) => {
+                const typeEDAMFormat = datatypeEDAMFormats![type.extension] ?? null;
+                const typeEDAMData = datatypeEDAMData![type.extension] ?? null;
 
                 return {
                     extension: type.extension,

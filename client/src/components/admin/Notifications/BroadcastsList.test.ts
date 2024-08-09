@@ -4,14 +4,12 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { useServerMock } from "@/api/client/__mocks__";
 import { type BroadcastNotification } from "@/stores/broadcastsStore";
 
 import { generateNewBroadcast } from "./test.utils";
 
 import BroadcastsList from "./BroadcastsList.vue";
-
-jest.mock("@/api/schema");
 
 const localVue = getLocalVue(true);
 
@@ -23,14 +21,17 @@ const selectors = {
     broadcastItem: "[data-test-id='broadcast-item']",
 } as const;
 
+const { server, http } = useServerMock();
+
 async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    mockFetcher
-        .path("/api/notifications/broadcast")
-        .method("get")
-        .mock({ data: broadcasts ?? [] });
+    server.use(
+        http.get("/api/notifications/broadcast", ({ response }) => {
+            return response(200).json(broadcasts ?? []);
+        })
+    );
 
     const wrapper = shallowMount(BroadcastsList as object, {
         localVue,

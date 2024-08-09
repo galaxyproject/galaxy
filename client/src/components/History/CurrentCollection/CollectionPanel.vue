@@ -68,12 +68,14 @@ const rootCollection = computed(() => {
 const isRoot = computed(() => dsc.value == rootCollection.value);
 const canEdit = computed(() => isRoot.value && canMutateHistory(props.history));
 
-function updateDsc(collection: any, fields: Object | undefined) {
-    updateContentFields(collection, fields).then((response) => {
-        Object.keys(response).forEach((key) => {
-            collection[key] = response[key];
-        });
-    });
+async function updateDsc(collection: CollectionEntry, fields: Object | undefined) {
+    if (!isHDCA(collection)) {
+        return;
+    }
+    const updatedCollection = await updateContentFields(collection, fields);
+    // Update only editable fields
+    collection.name = updatedCollection.name || collection.name;
+    collection.tags = updatedCollection.tags || collection.tags;
 }
 
 function getItemKey(item: DCESummary) {

@@ -12,7 +12,6 @@ const modulesToTransform = [
     "winbox",
     "pretty-bytes",
     "@fortawesome",
-    "openapi-typescript-fetch",
 ].join("|");
 
 // Override verbatimModuleSyntax to false to allow jest to transform the module syntax like it wants.
@@ -62,6 +61,9 @@ module.exports = {
     roots: ["<rootDir>/src/", "<rootDir>/tests/jest/standalone/"],
     setupFilesAfterEnv: ["<rootDir>/tests/jest/jest.setup.js"],
     testEnvironment: "<rootDir>/tests/jest/jest-environment.js",
+    testEnvironmentOptions: {
+        customExportConditions: ["msw"],
+    },
     testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",

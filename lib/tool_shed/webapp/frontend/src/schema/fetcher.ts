@@ -1,20 +1,20 @@
-import { Fetcher } from "openapi-typescript-fetch"
-import type { paths } from "./schema"
+import createClient, { Middleware } from "openapi-fetch"
+import type { paths as ToolShedApiPaths } from "./schema"
 
-/*
-import type { Middleware } from "openapi-typescript-fetch";
-import { rethrowSimple } from "@/utils/simple-error";
-const rethrowSimpleMiddleware: Middleware = async (url, init, next) => {
-    try {
-        const response = await next(url, init);
-        return response;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-};
+const errorHandlingMiddleware: Middleware = {
+    async onResponse({ response }) {
+        if (!response.ok) {
+            const errorMessage = response.headers.get("content-type")?.includes("json")
+                ? await response.clone().json()
+                : await response.clone().text()
+            throw new Error(`Request failed with status ${response.status}`, {
+                cause: errorMessage,
+            })
+        }
+    },
+}
 
-use: [rethrowSimpleMiddleware]
-*/
+const client = createClient<ToolShedApiPaths>({ baseUrl: "" })
+client.use(errorHandlingMiddleware)
 
-export const fetcher = Fetcher.for<paths>()
-fetcher.configure({ baseUrl: "" })
+export { type ToolShedApiPaths, client }

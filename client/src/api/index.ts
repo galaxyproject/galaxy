@@ -1,6 +1,9 @@
 /** Contains type alias and definitions related to Galaxy API models. */
 
-import { type components } from "@/api/schema";
+import { GalaxyApi } from "@/api/client";
+import { type components, type GalaxyApiPaths } from "@/api/schema";
+
+export { type components, GalaxyApi, type GalaxyApiPaths };
 
 /**
  * Contains minimal information about a History.
@@ -269,3 +272,16 @@ export type DatasetTransform = {
     action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
     datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
 };
+
+/**
+ * Base type for all exceptions returned by the API.
+ */
+export type MessageException = components["schemas"]["MessageExceptionModel"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
+export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+export type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+export type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
+export type AsyncTaskResultSummary = components["schemas"]["AsyncTaskResultSummary"];

@@ -2,6 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import {
     createFormDataToPayload,
     createTemplateForm,
@@ -11,8 +12,6 @@ import {
 import type { UserConcreteObjectStore } from "@/components/ObjectStore/Instances/types";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import { create, test } from "./services";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
@@ -31,19 +30,32 @@ const inputs = computed<Array<FormEntry>>(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
-    const { data: pluginStatus } = await test(payload);
+
+    const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST("/api/object_store_instances/test", {
+        body: payload,
+    });
+
+    if (testRequestError) {
+        error.value = errorMessageAsString(testRequestError);
+        return;
+    }
+
     const testError = pluginStatusToErrorMessage(pluginStatus);
     if (testError) {
         error.value = testError;
         return;
     }
-    try {
-        const { data: objectStore } = await create(payload);
-        emit("created", objectStore);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
+
+    const { data: objectStore, error: createRequestError } = await GalaxyApi().POST("/api/object_store_instances", {
+        body: payload,
+    });
+
+    if (createRequestError) {
+        error.value = errorMessageAsString(createRequestError);
         return;
     }
+
+    emit("created", objectStore);
 }
 
 const emit = defineEmits<{

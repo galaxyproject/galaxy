@@ -2,11 +2,12 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
-import { update } from "./services";
 import type { UserConcreteObjectStore } from "./types";
 
 import EditSecrets from "./EditSecrets.vue";
@@ -36,8 +37,21 @@ const loadingMessage = "Loading storage location template and instance informati
 async function onSubmit(formData: any) {
     if (template.value) {
         const payload = editFormDataToPayload(template.value, formData);
-        const args = { user_object_store_id: String(instance?.value?.uuid) };
-        const { data: objectStore } = await update({ ...args, ...payload });
+
+        const user_object_store_id = instance?.value?.uuid!;
+
+        const { data: objectStore, error } = await GalaxyApi().PUT(
+            "/api/object_store_instances/{user_object_store_id}",
+            {
+                params: { path: { user_object_store_id } },
+                body: payload,
+            }
+        );
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         await onUpdate(objectStore);
     }
 }

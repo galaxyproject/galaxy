@@ -1,7 +1,6 @@
 import { defineStore } from "pinia"
 
-import { fetcher, components } from "@/schema"
-const categoriesFetcher = fetcher.path("/api/categories").method("get").create()
+import { client, components } from "@/schema"
 type Category = components["schemas"]["Category"]
 
 export const useCategoriesStore = defineStore({
@@ -13,8 +12,8 @@ export const useCategoriesStore = defineStore({
     actions: {
         async getAll() {
             this.loading = true
-            const { data: categories } = await categoriesFetcher({})
-            this.categories = categories
+            const { data: categories } = await client.GET("/api/categories")
+            this.categories = categories ?? []
             this.loading = false
         },
     },

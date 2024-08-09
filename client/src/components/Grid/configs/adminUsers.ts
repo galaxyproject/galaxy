@@ -14,7 +14,7 @@ import {
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
+import { GalaxyApi } from "@/api";
 import { type GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
@@ -98,20 +98,23 @@ const fields: FieldArray = [
                 icon: faCalculator,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
-                    try {
-                        await recalculateDiskUsageByUserId({ user_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `Disk usage of '${data.username}' has been recalculated.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().PUT("/api/users/{user_id}/recalculate_disk_usage", {
+                        params: { path: { user_id: String(data.id) } },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
                             message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(
-                                e
+                                error
                             )}.`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `Disk usage of '${data.username}' has been recalculated.`,
+                    };
                 },
             },
             {
@@ -121,18 +124,22 @@ const fields: FieldArray = [
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
-                    try {
-                        await axios.put(withPrefix(`/api/users/${data.id}`), { active: true });
-                        return {
-                            status: "success",
-                            message: `'${data.username}' has been activated.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().PUT("/api/users/{user_id}", {
+                        params: { path: { user_id: String(data.id) } },
+                        body: { active: true },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to activate '${data.username}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to activate '${data.username}': ${errorMessageAsString(error)}.`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `'${data.username}' has been activated.`,
+                    };
                 },
             },
             {
@@ -142,20 +149,23 @@ const fields: FieldArray = [
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
-                    try {
-                        await sendActivationEmail({ user_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `Activation email has been sent to '${data.username}'.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/users/{user_id}/send_activation_email", {
+                        params: { path: { user_id: String(data.id) } },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
                             message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
-                                e
+                                error
                             )}.`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `Activation email has been sent to '${data.username}'.`,
+                    };
                 },
             },
             {
@@ -163,20 +173,23 @@ const fields: FieldArray = [
                 icon: faKey,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
-                    try {
-                        await createApiKey({ user_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `New API Key for '${data.username}' has been generated.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/users/{user_id}/api_key", {
+                        params: { path: { user_id: String(data.id) } },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
                             message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(
-                                e
+                                error
                             )}.`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `New API Key for '${data.username}' has been generated.`,
+                    };
                 },
             },
             {
@@ -197,41 +210,55 @@ const fields: FieldArray = [
                 },
                 handler: async (data: UserEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this user?"))) {
-                        try {
-                            await deleteUser({ user_id: String(data.id), purge: false });
-                            return {
-                                status: "success",
-                                message: `'${data.username}' has been deleted.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
+                            params: {
+                                path: { user_id: String(data.id) },
+                                query: { purge: false },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.username}': ${errorMessageAsString(e)}`,
+                                message: `Failed to delete '${data.username}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been deleted.`,
+                        };
                     }
                 },
             },
             {
-                title: "Purge",
+                title: "Permanently Delete",
                 icon: faTrash,
                 condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
-                    if (confirm(_l("Are you sure that you want to purge this user?"))) {
-                        try {
-                            await deleteUser({ user_id: String(data.id), purge: true });
-                            return {
-                                status: "success",
-                                message: `'${data.username}' has been purged.`,
-                            };
-                        } catch (e) {
+                    if (confirm(_l("Are you sure that you want to permanently delete this user?"))) {
+                        const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
+                            params: {
+                                path: { user_id: String(data.id) },
+                                query: { purge: true },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to purge '${data.username}': ${errorMessageAsString(e)}`,
+                                message: `Failed to permanently delete '${data.username}': ${errorMessageAsString(
+                                    error
+                                )}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been permanently deleted.`,
+                        };
                     }
                 },
             },
@@ -242,18 +269,21 @@ const fields: FieldArray = [
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
-                    try {
-                        await undeleteUser({ user_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.username}' has been restored.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/users/deleted/{user_id}/undelete", {
+                        params: { path: { user_id: String(data.id) } },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.username}': ${errorMessageAsString(error)}`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `'${data.username}' has been restored.`,
+                    };
                 },
             },
         ],

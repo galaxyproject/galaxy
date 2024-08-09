@@ -1,15 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { updateContentFields } from "components/History/model/queries";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { updateContentFields } from "@/components/History/model/queries";
 
-import ContentItem from "./ContentItem";
+import ContentItem from "./ContentItem.vue";
 
 jest.mock("components/History/model/queries");
+
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
 localVue.use(VueRouter);
@@ -36,7 +38,14 @@ describe("ContentItem", () => {
     let wrapper;
 
     beforeEach(() => {
-        mockFetcher.path("/api/datasets/{dataset_id}").method("get").mock({ data: item });
+        server.use(
+            http.get("/api/datasets/{dataset_id}", ({ response }) => {
+                // We need to use untyped here because this endpoint is not
+                // described in the OpenAPI spec due to its complexity for now.
+                return response.untyped(HttpResponse.json(item));
+            })
+        );
+
         wrapper = mount(ContentItem, {
             propsData: {
                 expandDataset: true,
