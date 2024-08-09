@@ -10,6 +10,7 @@ from typing import (
 
 from galaxy.tool_util.parser.interface import (
     InputSource,
+    TestCollectionDef,
     ToolSource,
     ToolSourceTest,
     ToolSourceTestInputs,
@@ -246,7 +247,8 @@ def _process_raw_inputs(
                     processed_value = param_value
                 elif param_type == "data_collection":
                     assert "collection" in param_extra
-                    collection_def = param_extra["collection"]
+                    collection_dict = param_extra["collection"]
+                    collection_def = TestCollectionDef.from_dict(collection_dict)
                     for input_dict in collection_def.collect_inputs():
                         name = input_dict["name"]
                         value = input_dict["value"]
