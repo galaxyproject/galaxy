@@ -1105,10 +1105,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping
-        self.interactivetools_map = "sqlite:///" + self._in_root_dir(
-            kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
-        )
-        if self.interactivetools_map_sqlalchemy:
+        if self.interactivetools_map_sqlalchemy is None:
+            self.interactivetools_map = "sqlite:///" + self._in_root_dir(
+                kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+            )
+        else:
+            self.interactivetools_map = None  # overridden by `self.interactivetools_map_sqlalchemy`
+
             # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
             urls = {
                 setting: parse_sqlalchemy_url(value)
