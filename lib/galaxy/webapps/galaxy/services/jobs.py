@@ -58,7 +58,10 @@ class JobsService(ServiceBase):
         id: DecodedDatabaseIdField,
         full: bool = False,
     ) -> Dict[str, Any]:
-        job = self.job_manager.get_accessible_job(trans, id)
+        job = self.job_manager.get_accessible_job(
+            trans,
+            id,
+        )
         return view_show_job(trans, job, bool(full))
 
     def index(

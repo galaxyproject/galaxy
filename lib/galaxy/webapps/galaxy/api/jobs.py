@@ -38,6 +38,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
+    JobConsoleOutput,
     JobDestinationParams,
     JobDisplayParametersSummary,
     JobErrorSummary,
@@ -368,6 +369,36 @@ class FastAPIJobs:
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
         return output_associations
+
+    @router.get(
+        "/api/jobs/{job_id}/console_output",
+        name="get_console_output",
+        summary="Returns STDOUT and STDERR from the tool running in a specific job.",
+    )
+    def console_output(
+        self,
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        stdout_position: int,
+        stdout_length: int,
+        stderr_position: int,
+        stderr_length: int,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobConsoleOutput:
+        """
+        Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+        of where to start reading stdout/stderr. The length parameters control how much
+        stdout/stderr is read.
+        """
+        job = self.service.get_job(trans, job_id)
+        output = self.service.job_manager.get_job_console_output(
+            trans,
+            job,
+            int(stdout_position),
+            int(stdout_length),
+            int(stderr_position),
+            int(stderr_length),
+        )
+        return JobConsoleOutput(state=output["state"], stdout=output["stdout"], stderr=output["stderr"])
 
     @router.get(
         "/api/jobs/{job_id}/parameters_display",
