@@ -156,7 +156,7 @@ def _process_raw_inputs(
             raw_input_dict = case_context.extract_value(raw_inputs)
             case_value = raw_input_dict["value"] if raw_input_dict else None
             case_when, case_input_sources = _matching_case_for_value(
-                tool_source, input_source, test_param_input_source, case_value
+                tool_source, input_source, test_param_input_source, case_value, allow_legacy_test_case_parameters
             )
             if case_input_sources:
                 for case_input_source in case_input_sources.parse_input_sources():
@@ -180,7 +180,11 @@ def _process_raw_inputs(
                     # an infinite loop - hence the "case_value is not None"
                     # check.
                     processed_value = _process_simple_value(
-                        test_param_input_source, expanded_case_value, required_data_tables, required_loc_files
+                        test_param_input_source,
+                        expanded_case_value,
+                        required_data_tables,
+                        required_loc_files,
+                        allow_legacy_test_case_parameters,
                     )
                     expanded_inputs[case_context.for_state()] = processed_value
         elif input_type == "section":
@@ -261,7 +265,11 @@ def _process_raw_inputs(
                     processed_value = collection_def
                 else:
                     processed_value = _process_simple_value(
-                        input_source, param_value, required_data_tables, required_loc_files
+                        input_source,
+                        param_value,
+                        required_data_tables,
+                        required_loc_files,
+                        allow_legacy_test_case_parameters,
                     )
                 expanded_inputs[context.for_state()] = processed_value
     return expanded_inputs
@@ -361,6 +369,7 @@ def _process_simple_value(
     param_value: Any,
     required_data_tables: RequiredDataTablesT,
     required_loc_files: RequiredLocFileT,
+    allow_legacy_test_case_parameters: bool,
 ):
     input_type = param.get("type")
     if input_type == "select":
@@ -371,12 +380,15 @@ def _process_simple_value(
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            static_options = param.parse_static_options()
-            for text, opt_value, _ in static_options:
-                if param_value == opt_value:
-                    found_value = True
-                if value_for_text is None and param_value == text:
-                    value_for_text = opt_value
+            if allow_legacy_test_case_parameters:
+                # we used to allow selections based on text - this
+                # should really be only based on key
+                static_options = param.parse_static_options()
+                for text, opt_value, _ in static_options:
+                    if param_value == opt_value:
+                        found_value = True
+                    if value_for_text is None and param_value == text:
+                        value_for_text = opt_value
             dynamic_options = param.parse_dynamic_options()
             if dynamic_options:
                 data_table_name = dynamic_options.get_data_table_name()
@@ -400,13 +412,19 @@ def _process_simple_value(
     elif input_type == "boolean":
         # Like above, tests may use the tool define values of simply
         # true/false.
-        processed_value = _process_bool_param_value(param, param_value)
+        processed_value = _process_bool_param_value(param, param_value, allow_legacy_test_case_parameters)
     else:
         processed_value = param_value
     return processed_value
 
 
-def _matching_case_for_value(tool_source: ToolSource, cond: InputSource, test_param: InputSource, declared_value: Any):
+def _matching_case_for_value(
+    tool_source: ToolSource,
+    cond: InputSource,
+    test_param: InputSource,
+    declared_value: Any,
+    allow_legacy_test_case_parameters: bool,
+):
     tool_id = tool_source.parse_id()
     cond_name = cond.parse_name()
 
@@ -418,10 +436,10 @@ def _matching_case_for_value(tool_source: ToolSource, cond: InputSource, test_pa
             # No explicit value for param in test case, determine from default
             query_value = boolean_is_checked(test_param)
         else:
-            query_value = _process_bool_param_value(test_param, declared_value)
+            query_value = _process_bool_param_value(test_param, declared_value, allow_legacy_test_case_parameters)
 
         def matches_declared_value(case_value):
-            return _process_bool_param_value(test_param, case_value) == query_value
+            return _process_bool_param_value(test_param, case_value, allow_legacy_test_case_parameters) == query_value
 
     elif test_param_type == "select":
         static_options = test_param.parse_static_options()
@@ -498,21 +516,25 @@ def require_file(name: str, value: str, extra: ExtraFileInfoDictT, required_file
     return value
 
 
-def _process_bool_param_value(input_source: InputSource, param_value: Any) -> Any:
+def _process_bool_param_value(
+    input_source: InputSource, param_value: Any, allow_legacy_test_case_parameters: bool
+) -> Any:
     truevalue, falsevalue = boolean_true_and_false_values(input_source)
     optional = input_source.parse_optional()
-    return process_bool_param_value(truevalue, falsevalue, optional, param_value)
+    return process_bool_param_value(truevalue, falsevalue, optional, param_value, allow_legacy_test_case_parameters)
 
 
-def process_bool_param_value(truevalue: str, falsevalue: str, optional: bool, param_value: Any) -> Any:
+def process_bool_param_value(
+    truevalue: str, falsevalue: str, optional: bool, param_value: Any, allow_legacy_test_case_parameters: bool
+) -> Any:
     was_list = False
     if isinstance(param_value, list):
         was_list = True
         param_value = param_value[0]
 
-    if truevalue == param_value:
+    if allow_legacy_test_case_parameters and truevalue == param_value:
         processed_value = True
-    elif falsevalue == param_value:
+    elif allow_legacy_test_case_parameters and falsevalue == param_value:
         processed_value = False
     else:
         if optional:
