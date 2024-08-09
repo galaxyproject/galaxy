@@ -33,6 +33,7 @@ from typing import (
 from urllib.parse import urlparse
 
 import yaml
+from sqlalchemy.engine import make_url as parse_sqlalchemy_url
 
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
@@ -1103,10 +1104,39 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
-        # InteractiveTools propagator mapping file
-        self.interactivetools_map = self._in_root_dir(
-            kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
-        )
+        # InteractiveTools propagator mapping
+        if self.interactivetools_map_sqlalchemy is None:
+            self.interactivetools_map = "sqlite:///" + self._in_root_dir(
+                kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
+            )
+        else:
+            self.interactivetools_map = None  # overridden by `self.interactivetools_map_sqlalchemy`
+
+            # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
+            urls = {
+                setting: parse_sqlalchemy_url(value)
+                for setting, value in (
+                    ("interactivetools_map_sqlalchemy", self.interactivetools_map_sqlalchemy),
+                    ("database_connection", self.database_connection),
+                    ("install_database_connection", self.install_database_connection),
+                )
+                if value is not None
+            }
+
+            def is_in_conflict(url1, url2):
+                return all((url1.host == url2.host, url1.port == url2.port, url1.database == url2.database))
+
+            conflicting_settings = {
+                setting
+                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetools_map_sqlalchemy"
+                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetools_map_sqlalchemy"
+            }
+
+            if conflicting_settings:
+                raise ConfigurationError(
+                    f"Option `{tuple(urls)[0]}` cannot take the same value as: %s"
+                    % ", ".join(f"`{setting}`" for setting in conflicting_settings)
+                )
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False
@@ -1227,6 +1257,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
+        if self.interactivetools_map_sqlalchemy is not None:
+            try_parsing(self.interactivetools_map_sqlalchemy, "interactivetools_map_sqlalchemy")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):
