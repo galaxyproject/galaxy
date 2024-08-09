@@ -58,16 +58,18 @@ class InteractiveToolPropagatorSQLAlchemy:
         self._encode_id = encode_id
 
     def get(self, key, key_type):
-        columns = ("token", "host", "port", "info")
-
         with self._engine.connect() as conn:
-            stmt = select(*gxitproxy.c[columns]).where(
+            stmt = select(*gxitproxy.c["token", "host", "port", "info"]).where(
                 gxitproxy.c.key == key,
                 gxitproxy.c.key_type == key_type,
             )
-            result = conn.execute(stmt).fetchone()
+            cursor_result = conn.execute(stmt)
 
-        return dict(key=key, key_type=key_type, **dict(zip(columns, result))) if result else None
+            try:
+                return dict(key=key, key_type=key_type, **dict(zip(cursor_result.keys(), cursor_result.fetchone())))
+            except TypeError:  # when `cursor_result.fetchone() is None` (no results)
+                log.warning("get(): invalid key: %s key_type %s", key, key_type)
+                return None
 
     def save(self, key, key_type, token, host, port, info=None):
         """
