@@ -121,6 +121,20 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="oidc_endpoint" minOccurs="0" type="xs:anyURI">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        OIDC endpoint for the IdP
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
+                            <xs:element name="custom_button_text" minOccurs="0" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Can be used to set a custom text value for the "Sign in with " button for your chosen IdP.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                             <xs:element name="pkce_support" minOccurs="0" type="xs:boolean">
                                 <xs:annotation>
                                     <xs:documentation>
