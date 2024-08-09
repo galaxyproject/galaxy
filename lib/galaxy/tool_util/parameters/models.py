@@ -618,10 +618,14 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
 
 class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+    multiple: bool
 
     @property
     def py_type(self) -> Type:
-        return optional_if_needed(StrictStr, self.optional)
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)

@@ -174,9 +174,12 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 name=input_source.parse_name(),
             )
         elif param_type == "group_tag":
+            multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional()
             return GroupTagParameterModel(
                 name=input_source.parse_name(),
-                optional = input_source.parse_optional(),
+                optional=optional,
+                multiple=multiple,
             )
         elif param_type == "baseurl":
             return BaseUrlParameterModel(
