@@ -64,12 +64,13 @@ class InteractiveToolPropagatorSQLAlchemy:
                 gxitproxy.c.key_type == key_type,
             )
             cursor_result = conn.execute(stmt)
+            result = cursor_result.fetchone()
 
-            try:
-                return dict(key=key, key_type=key_type, **dict(zip(cursor_result.keys(), cursor_result.fetchone())))
-            except TypeError:  # when `cursor_result.fetchone() is None` (no results)
+            if result is None:
                 log.warning("get(): invalid key: %s key_type %s", key, key_type)
                 return None
+
+            return dict(key=key, key_type=key_type, **dict(zip(cursor_result.keys(), result)))
 
     def save(self, key, key_type, token, host, port, info=None):
         """
