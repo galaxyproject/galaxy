@@ -61,11 +61,11 @@ class InteractiveToolPropagatorSQLAlchemy:
         columns = ("token", "host", "port", "info")
 
         with self._engine.connect() as conn:
-            query = select(*gxitproxy.c[columns]).where(
+            stmt = select(*gxitproxy.c[columns]).where(
                 gxitproxy.c["key"] == key,
                 gxitproxy.c["key_type"] == key_type,
             )
-            result = conn.execute(query).fetchone()
+            result = conn.execute(stmt).fetchone()
 
         return dict(key=key, key_type=key_type, **dict(zip(columns, result))) if result else None
 
@@ -81,14 +81,14 @@ class InteractiveToolPropagatorSQLAlchemy:
             gxitproxy.create(conn, checkfirst=True)
 
             # delete existing data with same key
-            query_delete = delete(gxitproxy).where(
+            stmt_delete = delete(gxitproxy).where(
                 gxitproxy.c["key"] == key,
                 gxitproxy.c["key_type"] == key_type,
             )
-            conn.execute(query_delete)
+            conn.execute(stmt_delete)
 
             # save data
-            query_insert = insert(gxitproxy).values(
+            stmt_insert = insert(gxitproxy).values(
                 key=key,
                 key_type=key_type,
                 token=token,
@@ -96,7 +96,7 @@ class InteractiveToolPropagatorSQLAlchemy:
                 port=port,
                 info=info,
             )
-            conn.execute(query_insert)
+            conn.execute(stmt_insert)
 
             conn.commit()
 
@@ -107,10 +107,10 @@ class InteractiveToolPropagatorSQLAlchemy:
         """
         assert kwd, ValueError("You must provide some values to key upon")
         with self._engine.connect() as conn:
-            query = delete(gxitproxy).where(
+            stmt = delete(gxitproxy).where(
                 *(gxitproxy.c[key] == value for key, value in kwd.items()),
             )
-            conn.execute(query)
+            conn.execute(stmt)
             conn.commit()
 
     def save_entry_point(self, entry_point):
