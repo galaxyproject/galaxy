@@ -58,7 +58,6 @@ const columns = computed(() => {
 const tableLoading = ref(false)
 
 async function onVirtualScroll(details: ScrollDetails) {
-    console.log(details)
     const { to, direction } = details
     if (direction == "decrease") {
         return
