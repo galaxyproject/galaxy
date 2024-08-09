@@ -21,8 +21,8 @@ export async function fetchHistoryExportRecords(historyId: string) {
     const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}/exports", {
         params: {
             path: { history_id: historyId },
-            headers: {
-                Accept: "application/vnd.galaxy.task.export+json",
+            header: {
+                accept: "application/vnd.galaxy.task.export+json",
             },
         },
     });
