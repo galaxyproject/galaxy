@@ -8,6 +8,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.parser.interface import (
     InputSource,
     TestCollectionDef,
@@ -139,7 +141,9 @@ def _process_raw_inputs(
     (| using to nest to new levels) structure and expand dataset
     information as proceeding to populate self.required_files.
     """
-    parent_context = parent_context or RootParamContext()
+    profile = tool_source.parse_profile()
+    allow_legacy_test_case_parameters = Version(profile) <= Version("24.1")
+    parent_context = parent_context or RootParamContext(allow_unqualified_access=allow_legacy_test_case_parameters)
     expanded_inputs: ExpandedToolInputs = {}
     for input_source in input_sources:
         input_type = input_source.parse_input_type()
@@ -274,10 +278,22 @@ def input_sources(tool_source: ToolSource) -> List[InputSource]:
 
 
 class ParamContext:
+    """Capture the context of a parameter's position within the inputs tree of a tool."""
+
+    parent_context: AnyParamContext
+    name: str
+    # if in a repeat - what position in the repeat
+    index: Optional[int]
+    # we've encouraged the use of repeat/conditional tags to capture fully qualified paths
+    # to parameters in tools. This brings the parameters closer to the API and prevents a
+    # variety of possible ambiguities. Disable this for newer tools.
+    allow_unqualified_access: bool
+
     def __init__(self, name: str, parent_context: AnyParamContext, index: Optional[int] = None):
         self.parent_context = parent_context
         self.name = name
         self.index = None if index is None else int(index)
+        self.allow_unqualified_access = parent_context.allow_unqualified_access
 
     def for_state(self) -> str:
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
@@ -291,15 +307,18 @@ class ParamContext:
         return f"Context[for_state={self.for_state()}]"
 
     def param_names(self):
-        for parent_context_param in self.parent_context.param_names():
-            if self.index is not None:
-                yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
-            else:
-                yield f"{parent_context_param}|{self.name}"
-        if self.index is not None:
-            yield "%s_%d" % (self.name, self.index)
+        if not self.allow_unqualified_access:
+            yield self.for_state()
         else:
-            yield self.name
+            for parent_context_param in self.parent_context.param_names():
+                if self.index is not None:
+                    yield "%s|%s_%d" % (parent_context_param, self.name, self.index)
+                else:
+                    yield f"{parent_context_param}|{self.name}"
+            if self.index is not None:
+                yield "%s_%d" % (self.name, self.index)
+            else:
+                yield self.name
 
     def extract_value(self, raw_inputs: ToolSourceTestInputs):
         for param_name in self.param_names():
@@ -322,8 +341,10 @@ class ParamContext:
 
 
 class RootParamContext:
-    def __init__(self):
-        pass
+    allow_unqualified_access: bool
+
+    def __init__(self, allow_unqualified_access: bool):
+        self.allow_unqualified_access = allow_unqualified_access
 
     def for_state(self):
         return ""
