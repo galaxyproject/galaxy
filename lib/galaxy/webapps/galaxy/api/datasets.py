@@ -143,6 +143,7 @@ class FastAPIDatasets:
     )
     def index(
         self,
+        response: Response,
         trans=DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
@@ -151,7 +152,9 @@ class FastAPIDatasets:
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
     ) -> List[AnyHistoryContentItem]:
-        return self.service.index(trans, history_id, serialization_params, filter_query_params)
+        entries, total_matches = self.service.index(trans, history_id, serialization_params, filter_query_params)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/datasets/{dataset_id}/storage",

@@ -69,14 +69,14 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Click the cancel button, make sure modal is hidden.
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_modal)
-        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_cancel_button)
-        self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_cancel)
+        self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal)
 
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
-        # Need to select the right item on the dropdown
+        # Need to search for the history and select it before we can select datasets.
         self.sleep_for(self.wait_types.UX_RENDER)
-        self._select_history_option("Unnamed history")
+        self._search_and_select_history(1, "Unnamed history")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
@@ -186,6 +186,9 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
-    def _select_history_option(self, label_text):
-        select = self.components.libraries.folder.add_history_items.wait_for_select()
-        select.select_by_visible_text(label_text)
+    def _search_and_select_history(self, row_index=1, label_text="Unnamed history"):
+        self.libraries_dataset_import_from_history_search_for(label_text)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
+            row_index=row_index
+        ).wait_for_and_click()

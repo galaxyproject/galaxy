@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
-import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { SELECTION_STATES, type SelectionItem, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
 
 /**
  * The following imports mock a remote file resource directory structure,
@@ -62,7 +62,7 @@ interface RemoteFilesParams {
 }
 
 interface RowElement extends SelectionItem, Element {
-    _rowVariant: string;
+    _rowVariant: SelectionState;
 }
 
 function paramsToKey(params: RemoteFilesParams) {
@@ -385,7 +385,7 @@ class Utils {
     }
 
     expectSelectAllIconStatusToBe(status: string) {
-        expect(this.getSelectionDialog().props("selectAllIcon")).toBe(status);
+        expect(this.getSelectionDialog().props("selectAllVariant")).toBe(status);
     }
 
     expectNoErrorMessage() {

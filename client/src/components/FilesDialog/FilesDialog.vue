@@ -16,6 +16,7 @@ import {
     type ItemsProviderContext,
     SELECTION_STATES,
     type SelectionItem,
+    type SelectionState,
 } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
@@ -73,7 +74,7 @@ const showDetails = ref(true);
 const isBusy = ref(false);
 const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
-const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
+const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 const totalItems = ref(0);
 
@@ -415,7 +416,7 @@ onMounted(() => {
         :modal-static="modalStatic"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-icon="selectAllIcon"
+        :select-all-variant="selectAllIcon"
         :show-select-icon="undoShow && multiple"
         :undo-show="undoShow"
         @onCancel="() => (modalShow = false)"

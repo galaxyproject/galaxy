@@ -325,7 +325,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_id: Optional[DecodedDatabaseIdField],
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> Tuple[List[AnyHistoryContentItem], int]:
         """
         Search datasets or collections using a query system and returns a list
         containing summary of dataset or dataset_collection information.
@@ -345,12 +345,20 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             order_by=order_by,
             user_id=user.id,
         )
-        return [
-            self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
-            )
-            for content in contents
-        ]
+        total_matches = self.history_contents_manager.contents_count(
+            container=container,
+            filters=filters,
+            user_id=user.id,
+        )
+        return (
+            [
+                self.serializer_by_type[content.history_content_type].serialize_to_view(
+                    content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
+                )
+                for content in contents
+            ],
+            total_matches,
+        )
 
     def show(
         self,
