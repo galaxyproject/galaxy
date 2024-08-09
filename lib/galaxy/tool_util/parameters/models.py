@@ -610,14 +610,14 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
         py_type: Type = StrictInt
         if self.multiple:
             py_type = list_type(py_type)
-        return py_type
+        return optional_if_needed(py_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
-        return False
+        return self.multiple and not self.optional
 
 
 class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):

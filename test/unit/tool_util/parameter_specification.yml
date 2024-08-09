@@ -707,6 +707,20 @@ gx_data_column:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: 0 }
   request_invalid:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [ 0 ] }
+  request_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
+  request_internal_invalid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+
+gx_data_column_optional:
+  request_valid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: 0 }
+  - { ref_parameter: {src: hda, id: abcdabcd} }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: null }
+  request_invalid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [ 0 ] }
   request_internal_valid:
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
   request_internal_invalid:
