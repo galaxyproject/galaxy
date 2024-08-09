@@ -137,7 +137,9 @@ def ModelClassField(default_value):
 
 def accept_wildcard_defaults_to_json(v):
     assert isinstance(v, str)
-    if v == "*/*":
+    # Accept header can have multiple comma separated values.
+    # If any of these values is the wildcard - we default to application/json.
+    if "*/*" in v:
         return "application/json"
     return v
 
