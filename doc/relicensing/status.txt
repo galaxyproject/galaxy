@@ -265,10 +265,14 @@ blankclemens, blankclemens@gmail.com, https://github.com/galaxyproject/galaxy/pu
 kellyv, kpvincent@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228731480
 tesujimath, simon.guest@agresearch.co.nz, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228830419
 ycgong, yunchen.gong@gmail.com, 2024-08-08 personal email to michael.crusoe@vu.nl
-aloraine, aloraine@uncc.edu, 2024-08-09 persona email to michael.crusoe@vu.nl
+aloraine, aloraine@uncc.edu, 2024-08-09 personal email to michael.crusoe@vu.nl
 thomcuddihy, thom@hometreelab.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
 cbare, christopherbare@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
 anatskiy, evgeny.anatskiy@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2229566214
+dan-blanchard, dan.blanchard@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2230421183
+cginmn, carlos.andrew.garcia@gmail.com, 2024-08-09 personal email to michael.crusoe@vu.nl
+markiskander, motiontracker@gmail.com, 2024-08-12 personal email to michael.crusoe@vu.nl
+leobiscassi, leo.biscassi@gmail.com, 2024-08-12 personal email to michael.crusoe@vu.nl
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -295,7 +299,6 @@ BalthazarPavot, Balthazar Pavot, balthazar.pavot@hotmail.fr, GitHub account dele
 the-nidhogg, balto, balto_59@hotmail.fr, ¿same as BalthazarPavot (only commits from both are in the same PR)?
 bensellak, Taoufik Bensellak, bensellak@ensat.ac.ma
 dtrudg, Dave Trudgian, dave@trudgian.net, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712375794
-cginmn, Carlos Garcia, carlos.andrew.garcia@gmail.com
 NA, Chinmay Rao, chinmay@bx.psu.edu
 cmonjeau, Cyril Monjeaud, cyril.monjeaud@gmail.com
 NA, dorine francheteau, dorine@bx.psu.edu
@@ -318,9 +321,7 @@ junzwang, Junzhou Wang, junzhouwang@gmail.com
 NA, Scott McManus, scottmcmanus@gatech.edu, last contribution in 2012
 kidanem, Kidane M. Tekle, kidane.tekle@gmail.com
 lawrence1470, Lawrence Nicastro, lawrence.nicastro1@gmail.com
-leobiscassi, Léo Biscassi, leo.biscassi@gmail.com
 vavrusa, Marek Vavruša, marek@vavrusa.com
-markiskander, Mark Iskander, motiontracker@gmail.com
 martijnvermaattest, Martijn Vermaat, m.vermaat.hg@lumc.nl
 NA, Michael EG Sauria, mgehrin@emory.edu
 NA, MORITA Hideyuki, h-morita@esm.co.jp
@@ -348,4 +349,4 @@ NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
 # not agreed, but contributions no longer present
 NA, Andrea Sbardellati, andrea.sbardellati@crs4.it, address bounced; only one commit to bowtie2 wrapper; since moved to the tool shed
 claresloggett, Clare Sloggett, sloc@unimelb.edu.au, code heavily refactored since 2012 contribution
-dan-blanchard, Dan Blanchard, dan.blanchard@gmail.com, one liner changing the drmaa version
+
