@@ -19,6 +19,7 @@ from typing import (
 import packaging.version
 from pydantic import BaseModel
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -376,7 +377,7 @@ class ToolSource(metaclass=ABCMeta):
             paths_and_modtimes[self.source_path] = os.path.getmtime(self.source_path)
         return paths_and_modtimes
 
-    def parse_tests_to_dict(self) -> ToolSourceTests:
+    def parse_tests_to_dict(self, for_json: bool = False) -> ToolSourceTests:
         return {"tests": []}
 
     def __str__(self):
@@ -547,6 +548,23 @@ class PageSource(metaclass=ABCMeta):
     @abstractmethod
     def parse_input_sources(self) -> List[InputSource]:
         """Return a list of InputSource objects."""
+
+
+TestCollectionAttributeDict = Dict[str, Any]
+CollectionType = str
+
+
+class TestCollectionDictElement(TypedDict):
+    element_identifier: str
+    element_definition: Union["TestCollectionDict", "ToolSourceTestInput"]
+
+
+class TestCollectionDict(TypedDict):
+    model_class: Literal["TestCollectionDef"] = "TestCollectionDef"
+    attributes: TestCollectionAttributeDict
+    collection_type: CollectionType
+    elements: List[TestCollectionDictElement]
+    name: str
 
 
 class TestCollectionDef:

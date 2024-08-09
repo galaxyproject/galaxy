@@ -189,7 +189,7 @@ class YamlToolSource(ToolSource):
         )
         return output_collection
 
-    def parse_tests_to_dict(self) -> ToolSourceTests:
+    def parse_tests_to_dict(self, for_json: bool = False) -> ToolSourceTests:
         tests: List[ToolSourceTest] = []
         rval: ToolSourceTests = dict(tests=tests)
 
