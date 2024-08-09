@@ -45,7 +45,9 @@ from .interface import (
     PageSource,
     PagesSource,
     RequiredFiles,
-    TestCollectionDef,
+    TestCollectionDefDict,
+    TestCollectionDefElementDict,
+    TestCollectionDefElementObject,
     TestCollectionOutputDef,
     ToolSource,
     ToolSourceTest,
@@ -757,7 +759,7 @@ def __parse_output_elems(test_elem) -> ToolSourceTestOutputs:
 
 
 def __parse_output_elem(output_elem):
-    attrib = dict(output_elem.attrib)
+    attrib = _element_to_dict(output_elem)
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output does not have a 'name'")
@@ -779,7 +781,7 @@ def __parse_output_collection_elems(test_elem, profile=None):
 
 
 def __parse_output_collection_elem(output_collection_elem, profile=None):
-    attrib = dict(output_collection_elem.attrib)
+    attrib = _element_to_dict(output_collection_elem)
     name = attrib.pop("name", None)
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
@@ -790,7 +792,7 @@ def __parse_output_collection_elem(output_collection_elem, profile=None):
 def __parse_element_tests(parent_element, profile=None):
     element_tests = {}
     for idx, element in enumerate(parent_element.findall("element")):
-        element_attrib = dict(element.attrib)
+        element_attrib: dict = _element_to_dict(element)
         identifier = element_attrib.pop("name", None)
         if identifier is None:
             raise Exception("Test primary dataset does not have a 'identifier'")
@@ -861,7 +863,7 @@ def __parse_test_attributes(
     primary_datasets: Dict[str, Any] = {}
     if parse_discovered_datasets:
         for primary_elem in output_elem.findall("discovered_dataset") or []:
-            primary_attrib = dict(primary_elem.attrib)
+            primary_attrib = _element_to_dict(primary_elem)
             designation = primary_attrib.pop("designation", None)
             if designation is None:
                 raise Exception("Test primary dataset does not have a 'designation'")
@@ -911,7 +913,7 @@ def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
     def convert_elem(elem):
         """Converts and XML element to a dictionary format, used by assertion checking code."""
         tag = elem.tag
-        attributes = dict(elem.attrib)
+        attributes = _element_to_dict(elem)
         converted_children = []
         for child_elem in elem:
             converted_children.append(convert_elem(child_elem))
@@ -928,7 +930,7 @@ def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
 def __parse_extra_files_elem(extra):
     # File or directory, when directory, compare basename
     # by basename
-    attrib = dict(extra.attrib)
+    attrib = _element_to_dict(extra)
     extra_type = attrib.pop("type", "file")
     extra_name = attrib.pop("name", None)
     assert (
@@ -999,6 +1001,31 @@ def __parse_inputs_elems(test_elem, i) -> ToolSourceTestInputs:
     return raw_inputs
 
 
+def _test_collection_def_dict(elem: Element) -> TestCollectionDefDict:
+    elements: List[TestCollectionDefElementDict] = []
+    attrib: Dict[str, Any] = _element_to_dict(elem)
+    collection_type = attrib["type"]
+    name = attrib.get("name", "Unnamed Collection")
+    for element in elem.findall("element"):
+        element_attrib: Dict[str, Any] = _element_to_dict(element)
+        element_identifier = element_attrib["name"]
+        nested_collection_elem = element.find("collection")
+        element_definition: TestCollectionDefElementObject
+        if nested_collection_elem is not None:
+            element_definition = _test_collection_def_dict(nested_collection_elem)
+        else:
+            element_definition = __parse_param_elem(element)
+        elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
+
+    return TestCollectionDefDict(
+        model_class="TestCollectionDef",
+        attributes=attrib,
+        collection_type=collection_type,
+        elements=elements,
+        name=name,
+    )
+
+
 def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
     attrib: ToolSourceTestInputAttributes = dict(param_elem.attrib)
     if "values" in attrib:
@@ -1037,7 +1064,7 @@ def __parse_param_elem(param_elem, i=0) -> ToolSourceTestInput:
             elif child.tag == "edit_attributes":
                 attrib["edit_attributes"].append(child)
             elif child.tag == "collection":
-                attrib["collection"] = TestCollectionDef.from_xml(child, __parse_param_elem)
+                attrib["collection"] = _test_collection_def_dict(child)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
@@ -1544,6 +1571,12 @@ class XmlDrillDownDynamicOptions(DrillDownDynamicOptions):
 
     def from_filters(self) -> Optional[DrillDownDynamicFilters]:
         return self._filters
+
+
+def _element_to_dict(elem: Element) -> Dict[str, Any]:
+    # every call to this function needs to be replaced with something more type safe and with
+    # an actual typed dictionary - but centralizing this hack for now.
+    return dict(elem.attrib)  # type: ignore [arg-type]
 
 
 def _recurse_drill_down_elems(options: List[DrillDownOptionsDict], option_elems: List[Element]):

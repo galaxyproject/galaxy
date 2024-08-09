@@ -19,6 +19,7 @@ from typing import (
 import packaging.version
 from pydantic import BaseModel
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -549,6 +550,24 @@ class PageSource(metaclass=ABCMeta):
         """Return a list of InputSource objects."""
 
 
+TestCollectionDefElementObject = Union["TestCollectionDefDict", "ToolSourceTestInput"]
+TestCollectionAttributeDict = Dict[str, Any]
+CollectionType = str
+
+
+class TestCollectionDefElementDict(TypedDict):
+    element_identifier: str
+    element_definition: TestCollectionDefElementObject
+
+
+class TestCollectionDefDict(TypedDict):
+    model_class: Literal["TestCollectionDef"]
+    attributes: TestCollectionAttributeDict
+    collection_type: CollectionType
+    elements: List[TestCollectionDefElementDict]
+    name: str
+
+
 class TestCollectionDef:
     __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
@@ -558,30 +577,7 @@ class TestCollectionDef:
         self.elements = elements
         self.name = name
 
-    @staticmethod
-    def from_xml(elem, parse_param_elem):
-        elements = []
-        attrib = dict(elem.attrib)
-        collection_type = attrib["type"]
-        name = attrib.get("name", "Unnamed Collection")
-        for element in elem.findall("element"):
-            element_attrib = dict(element.attrib)
-            element_identifier = element_attrib["name"]
-            nested_collection_elem = element.find("collection")
-            if nested_collection_elem is not None:
-                element_definition = TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)
-            else:
-                element_definition = parse_param_elem(element)
-            elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
-
-        return TestCollectionDef(
-            attrib=attrib,
-            collection_type=collection_type,
-            elements=elements,
-            name=name,
-        )
-
-    def to_dict(self):
+    def to_dict(self) -> TestCollectionDefDict:
         def element_to_dict(element_dict):
             element_identifier, element_def = element_dict["element_identifier"], element_dict["element_definition"]
             if isinstance(element_def, TestCollectionDef):
@@ -600,7 +596,7 @@ class TestCollectionDef:
         }
 
     @staticmethod
-    def from_dict(as_dict):
+    def from_dict(as_dict: TestCollectionDefDict):
         assert as_dict["model_class"] == "TestCollectionDef"
 
         def element_from_dict(element_dict):
