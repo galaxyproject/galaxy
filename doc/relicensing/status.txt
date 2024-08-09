@@ -252,18 +252,22 @@ tshtatland, shtatland@neb.com, https://github.com/galaxyproject/galaxy/pull/1697
 katrinleinweber, kalei@posteo.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2172337847
 jdlogicman, jduddy@illumina.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2183469757
 dpryan79, dpryan79@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227060871
-FredericBGA, frederic.sapet@limagrain.com, personal email to michael.crusoe@vu.nl
+FredericBGA, frederic.sapet@limagrain.com, 2024-08-08 personal email to michael.crusoe@vu.nl
 lindenb, plindenbaum@yahoo.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227066629
 inkuzmin, inkuzm@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227069559
 osallou, olivier.sallou@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227121052
 joachimwolff, wolffj@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227158926
 scrathat, sebastian@kapust.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227309669
-remimarenco, remi.marenco@gmail.com, personal email to michael.crusoe@vu.nl
+remimarenco, remi.marenco@gmail.com, 2024-08-08 personal email to michael.crusoe@vu.nl
 MatthewRalston, mrals89@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2227802568
 charesredhat, cstrittmatter@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228040313
 blankclemens, blankclemens@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228339100
 kellyv, kpvincent@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228731480
 tesujimath, simon.guest@agresearch.co.nz, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228830419
+ycgong, yunchen.gong@gmail.com, 2024-08-08 personal email to michael.crusoe@vu.nl
+aloraine, aloraine@uncc.edu, 2024-08-09 persona email to michael.crusoe@vu.nl
+thomcuddihy, thom@hometreelab.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
+cbare, christopherbare@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2228972535
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -284,7 +288,6 @@ NicHerndon, Nic Herndon, nic.herndon@uconn.edu, address bounced
 # not yet agreed, needs research
 # GitHub username or NA, Name, email address, Comment
 anatskiy, Evgeny Anatskiy, evgeny.anatskiy@gmail.com
-aloraine, Ann Loraine, aloraine@uncc.edu, only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
 arjunnath, Arjun Nath, arjun@bx.psu.edu
 ashvark, Ashok Varadharajan, ashvark@gmail.com
 arbernard, Aurélien Bernard, aurelien.bernard.bioinfo63@gmail.com
@@ -333,7 +336,6 @@ simleo, Simone Leo, simone.leo@gmail.com
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
 ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
-thomcuddihy, Thom Cuddihy, thom@hometreelab.com
 XDtim, Tim Thompson, tim.thompson@xdbio.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
 WilliamHolden, William Holden, theappdev@protonmail.com
@@ -342,10 +344,8 @@ xgaia, Xavier Garnier, xgaia@gmx.com
 xiaojay, Jay Young, xiaojay@gmail.com
 xiaoqian1984, Xiaoqian Jiang, jxq198409@hotmail.com
 NA, Yi Zhang, yizhang@bx.psu.edu, last contribution in 2007
-ycgong, Yunchen Gong, yunchen.gong@gmail.com
 
 # not agreed, but contributions no longer present
 NA, Andrea Sbardellati, andrea.sbardellati@crs4.it, address bounced; only one commit to bowtie2 wrapper; since moved to the tool shed
-cbare, Christopher Bare, christopherbare@gmail.com, contribution reverted or otherwise unused
 claresloggett, Clare Sloggett, sloc@unimelb.edu.au, code heavily refactored since 2012 contribution
 dan-blanchard, Dan Blanchard, dan.blanchard@gmail.com, one liner changing the drmaa version
