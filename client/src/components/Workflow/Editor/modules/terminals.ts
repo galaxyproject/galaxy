@@ -534,7 +534,7 @@ export class InputParameterTerminal extends BaseInputTerminal {
     }
 
     effectiveType(parameterType: string) {
-        return parameterType == "select" ? "text" : parameterType;
+        return parameterType == "select" || parameterType == "data_column" ? "text" : parameterType;
     }
     attachable(other: BaseOutputTerminal) {
         const effectiveThisType = this.effectiveType(this.type);
