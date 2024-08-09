@@ -68,7 +68,7 @@ async function load(concat = false) {
     loading.value = true;
 
     try {
-        const datasets = await getDatasets({
+        const { data: datasets } = await getDatasets({
             query: query.value,
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,

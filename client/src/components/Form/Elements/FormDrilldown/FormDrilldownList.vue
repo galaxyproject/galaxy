@@ -7,6 +7,7 @@ defineProps<{
     currentValue: string[];
     handleClick: Function;
     multiple: boolean;
+    showIcons?: boolean;
     options: Array<Option>;
 }>();
 </script>
@@ -15,6 +16,7 @@ defineProps<{
     <div class="ui-drilldown">
         <div v-for="option in options" :key="option.name" class="descendant-lines">
             <FormDrilldownOption
+                :show-icons="showIcons"
                 :current-value="currentValue"
                 :handle-click="handleClick"
                 :multiple="multiple"

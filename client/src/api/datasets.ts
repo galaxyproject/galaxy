@@ -8,7 +8,7 @@ import { withPrefix } from "@/utils/redirect";
 export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
 
 type GetDatasetsApiOptions = FetchArgType<typeof datasetsFetcher>;
-type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
+type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset" | "history_id">;
 // custom interface for how we use getDatasets
 interface GetDatasetsOptions extends GetDatasetsQuery {
     sortBy?: string;
@@ -33,8 +33,14 @@ export async function getDatasets(options: GetDatasetsOptions = {}) {
         params.q = ["name-contains"];
         params.qv = [options.query];
     }
-    const { data } = await datasetsFetcher(params);
-    return data;
+    if (options.history_id) {
+        params.history_id = options.history_id;
+    }
+    const { data, headers } = await datasetsFetcher(params);
+
+    const total_matches = parseInt(headers.get("total_matches") ?? "0");
+
+    return { data, total_matches };
 }
 
 export const fetchDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();

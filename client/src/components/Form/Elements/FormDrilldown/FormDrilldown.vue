@@ -11,10 +11,12 @@ const props = withDefaults(
         value?: Value;
         options: Array<Option>;
         multiple: boolean;
+        showIcons?: boolean;
     }>(),
     {
         value: null,
         multiple: true,
+        showIcons: false,
     }
 );
 
@@ -102,6 +104,7 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
             Select / Deselect All
         </b-form-checkbox>
         <FormDrilldownList
+            :show-icons="showIcons"
             :multiple="multiple"
             :current-value="currentValue"
             :options="options"

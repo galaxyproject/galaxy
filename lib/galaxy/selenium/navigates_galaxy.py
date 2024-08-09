@@ -1395,25 +1395,36 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_click_dataset_import()
         self.wait_for_and_click(btn)
 
+    def libraries_dataset_import_from_history_search_for(self, search_term=None):
+        return self._inline_search_for(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_history_search,
+            search_term,
+        )
+
     def libraries_dataset_import_from_history_select(self, to_select_items):
-        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
-        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
+        self.wait_for_visible(
+            self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_list_is_ready
+        )
         for to_select_item in to_select_items:
             found = False
-            for history_element in history_elements:
-                if to_select_item in history_element.text:
-                    history_element.find_element(By.CSS_SELECTOR, "input").click()
-                    found = True
-                    break
-
-            if not found:
-                raise Exception(f"Failed to find history item [{to_select_item}] to select")
+            self._inline_search_for(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_dataset_search,
+                to_select_item,
+            )
+            self.components.libraries.folder.import_datasets_from_history_modal_select_list_item_by_index(
+                row_index=1
+            ).wait_for_and_click()
+            found = True
+        if not found:
+            raise Exception(f"Failed to find history item [{to_select_item}] to select")
 
     def libraries_dataset_import_from_history_click_ok(self, wait=True):
-        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_ok)
         if wait:
             # Let the progress bar disappear...
-            self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+            self.wait_for_absent_or_hidden(
+                self.navigation.libraries.folder.selectors.import_datasets_from_history_modal
+            )
 
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body > tbody")
