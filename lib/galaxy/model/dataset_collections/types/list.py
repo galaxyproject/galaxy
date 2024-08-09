@@ -7,7 +7,7 @@ class ListDatasetCollectionType(BaseDatasetCollectionType):
 
     collection_type = "list"
 
-    def generate_elements(self, elements):
+    def generate_elements(self, elements, **kwds):
         for identifier, element in elements.items():
             association = DatasetCollectionElement(
                 element=element,

@@ -335,6 +335,7 @@ do
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="not cwl_conformance"
           report_file="./run_api_tests.html"
+          generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
               api_script=$2
               shift 2
@@ -407,6 +408,8 @@ do
           marker="tool"
           report_file="run_framework_tests.html"
           framework_test=1
+          # CWL tools don't have embedded tests, so no need to set
+          # generate_cwl_conformance_tests=1
           shift 1
           ;;
       -w|--framework-workflows)

@@ -1135,7 +1135,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
     @property
     def is_cwl_job(self):
-        return self.tool.tool_type == "cwl"
+        return self.tool.tool_type in ["galactic_cwl", "cwl"]
 
     def get_job_runner_url(self):
         log.warning(f"({self.job_id}) Job runner URLs are deprecated, use destinations instead.")
@@ -1752,8 +1752,9 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.mark_unhidden()
         elif not purged:
             # If the tool was expected to set the extension, attempt to retrieve it
-            if dataset.ext == "auto":
-                dataset.extension = context.get("ext", "data")
+            context_ext = context.get("ext", "data")
+            if dataset.ext == "auto" or (dataset.ext == "data" and context_ext != "data"):
+                dataset.extension = context_ext
                 dataset.init_meta(copy_from=dataset)
             # if a dataset was copied, it won't appear in our dictionary:
             # either use the metadata from originating output dataset, or call set_meta on the copies
