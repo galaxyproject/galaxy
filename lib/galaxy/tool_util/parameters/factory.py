@@ -170,8 +170,10 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 options=static_options,
             )
         elif param_type == "data_column":
+            multiple = input_source.get_bool("multiple", False)
             return DataColumnParameterModel(
                 name=input_source.parse_name(),
+                multiple=multiple,
             )
         elif param_type == "group_tag":
             multiple = input_source.get_bool("multiple", False)

@@ -603,10 +603,14 @@ def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool
 
 class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
+    multiple: bool
 
     @property
     def py_type(self) -> Type:
-        return StrictInt
+        py_type: Type = StrictInt
+        if self.multiple:
+            py_type = list_type(py_type)
+        return py_type
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)

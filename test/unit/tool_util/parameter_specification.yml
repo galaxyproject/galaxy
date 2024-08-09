@@ -712,6 +712,18 @@ gx_data_column:
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
 
+gx_data_column_multiple:
+  request_valid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [0] }
+  request_invalid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: ["0"] }
+  request_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: [0] }
+  request_internal_invalid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
+
 gx_group_tag:
   request_valid:
   - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'type:matched' }
