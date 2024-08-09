@@ -2112,9 +2112,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Map for the interactivetool proxy. Mappings are stored on a SQLite
+    Map for the interactivetool proxy. Mappings are stored in a SQLite
     database file located on this path. As an alternative, you may
-    also store them on any other RDBMS supported by SQLAlchemy using
+    also store them in any other RDBMS supported by SQLAlchemy using
     the option ``interactivetools_map_sqlalchemy``.
     The value of this option will be resolved with respect to
     <data_dir>.

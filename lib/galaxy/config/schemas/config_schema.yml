@@ -1520,8 +1520,8 @@ mapping:
         default: interactivetools_map.sqlite
         path_resolves_to: data_dir
         desc: |
-          Map for the interactivetool proxy. Mappings are stored on a SQLite database file
-          located on this path. As an alternative, you may also store them on any other RDBMS
+          Map for the interactivetool proxy. Mappings are stored in a SQLite database file
+          located on this path. As an alternative, you may also store them in any other RDBMS
           supported by SQLAlchemy using the option ``interactivetools_map_sqlalchemy``.
 
       interactivetools_map_sqlalchemy:
