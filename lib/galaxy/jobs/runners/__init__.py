@@ -31,7 +31,6 @@ from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
-    DescribesScriptIntegrityChecks,
     job_script,
     write_script,
 )
@@ -520,8 +519,8 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path: str, contents: str, job_io: DescribesScriptIntegrityChecks) -> None:
-        write_script(path, contents, job_io)
+    def write_executable_script(self, path: str, contents: str) -> None:
+        write_script(path, contents)
 
     def _find_container(
         self,
