@@ -20,10 +20,15 @@ from typing_extensions import (
 )
 
 
+def optional(type: Type) -> Type:
+    return_type: Type = Optional[type]  # type: ignore[assignment]
+    return return_type
+
+
 def optional_if_needed(type: Type, is_optional: bool) -> Type:
     return_type: Type = type
     if is_optional:
-        return_type = Optional[type]  # type: ignore[assignment]
+        return_type = optional(type)
     return return_type
 
 

@@ -6,7 +6,6 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Type,
     Union,
 )
@@ -18,6 +17,8 @@ from .models import (
     create_job_internal_model,
     create_request_internal_model,
     create_request_model,
+    create_workflow_step_linked_model,
+    create_workflow_step_model,
     StateRepresentationT,
     ToolParameterBundle,
     ToolParameterBundleModel,
@@ -51,7 +52,7 @@ class ToolState(ABC):
         """Get state representation of the inputs."""
 
     @classmethod
-    def parameter_model_for(cls, input_models: HasToolParameters) -> Optional[Type[BaseModel]]:
+    def parameter_model_for(cls, input_models: HasToolParameters) -> Type[BaseModel]:
         bundle: ToolParameterBundle
         if isinstance(input_models, list):
             bundle = ToolParameterBundleModel(input_models=input_models)
@@ -61,7 +62,7 @@ class ToolState(ABC):
 
     @classmethod
     @abstractmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Optional[Type[BaseModel]]:
+    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
         """Return a model type for this tool state kind."""
 
 
@@ -96,3 +97,19 @@ class TestCaseToolState(ToolState):
     def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
         # implement a test case model...
         return create_request_internal_model(input_models)
+
+
+class WorkflowStepToolState(ToolState):
+    state_representation: Literal["workflow_step"] = "workflow_step"
+
+    @classmethod
+    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
+        return create_workflow_step_model(input_models)
+
+
+class WorkflowStepLinkedToolState(ToolState):
+    state_representation: Literal["workflow_step_linked"] = "workflow_step_linked"
+
+    @classmethod
+    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
+        return create_workflow_step_linked_model(input_models)

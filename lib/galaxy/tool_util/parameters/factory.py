@@ -19,6 +19,7 @@ from .models import (
     BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
+    cond_test_parameter_default_value,
     ConditionalParameterModel,
     ConditionalWhen,
     CwlBooleanParameterModel,
@@ -211,16 +212,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             Union[BooleanParameterModel, SelectParameterModel], _from_input_source_galaxy(test_param_input_source)
         )
         whens = []
-        default_value = object()
-        if isinstance(test_parameter, BooleanParameterModel):
-            default_value = test_parameter.value
-        elif isinstance(test_parameter, SelectParameterModel):
-            select_parameter = cast(SelectParameterModel, test_parameter)
-            select_default_value = select_parameter.default_value
-            if select_default_value is not None:
-                default_value = select_default_value
-
-        # TODO: handle select parameter model...
+        default_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():
             if isinstance(test_parameter, BooleanParameterModel):
                 # TODO: investigate truevalue/falsevalue when...
