@@ -38,6 +38,7 @@ from galaxy import util
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
+    TestCollectionDefDict,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
@@ -1753,7 +1754,8 @@ def expanded_inputs_from_json(expanded_inputs_json: ExpandedToolInputsJsonified)
     loaded_inputs: ExpandedToolInputs = {}
     for key, value in expanded_inputs_json.items():
         if isinstance(value, dict) and value.get("model_class"):
-            loaded_inputs[key] = TestCollectionDef.from_dict(value)
+            collection_def_dict = cast(TestCollectionDefDict, value)
+            loaded_inputs[key] = TestCollectionDef.from_dict(collection_def_dict)
         else:
             loaded_inputs[key] = value
     return loaded_inputs
