@@ -745,6 +745,8 @@ export interface components {
             is_dynamic?: boolean
             /** Label */
             label?: string | null
+            /** Multiple */
+            multiple: boolean
             /** Name */
             name: string
             /**
@@ -1068,6 +1070,8 @@ export interface components {
             is_dynamic?: boolean
             /** Label */
             label?: string | null
+            /** Multiple */
+            multiple: boolean
             /** Name */
             name: string
             /**
