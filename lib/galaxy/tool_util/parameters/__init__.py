@@ -58,6 +58,7 @@ from .visitor import (
     flat_state_path,
     keys_starting_with,
     repeat_inputs_to_array,
+    validate_explicit_conditional_test_value,
     visit_input_values,
 )
 
@@ -100,6 +101,7 @@ __all__ = (
     "validate_test_case",
     "validate_workflow_step",
     "validate_workflow_step_linked",
+    "validate_explicit_conditional_test_value",
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",

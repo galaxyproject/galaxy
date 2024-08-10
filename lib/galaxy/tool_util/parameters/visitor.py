@@ -105,3 +105,9 @@ def repeat_inputs_to_array(flat_state_path: str, inputs: Dict[str, KVT]) -> List
         except ValueError:
             continue
     return params
+
+
+def validate_explicit_conditional_test_value(test_parameter_name: str, value: Any) -> Optional[Union[str, bool]]:
+    if value is not None and not isinstance(value, (str, bool)):
+        raise Exception(f"Invalid conditional test value ({value}) for parameter ({test_parameter_name})")
+    return cast(Optional[Union[str, bool]], value)
