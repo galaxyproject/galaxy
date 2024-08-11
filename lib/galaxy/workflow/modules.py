@@ -1290,6 +1290,18 @@ class InputParameterModule(WorkflowModule):
             optional_cond.cases = optional_cases
 
             if param_type == "text":
+
+                specify_multiple_source = dict(
+                    name="multiple",
+                    label="Allow multiple selection",
+                    help="Only applies when connected to multi-select parameter(s)",
+                    type="boolean",
+                    checked=parameter_def.get("multiple", False),
+                )
+                specify_multiple = BooleanToolParameter(None, specify_multiple_source)
+                # Insert multiple option as first option, which is determined by dictionary insert order
+                when_this_type.inputs = {"multiple": specify_multiple, **when_this_type.inputs}
+
                 restrict_how_source: Dict[str, Union[str, List[Dict[str, Union[str, bool]]]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
@@ -1449,6 +1461,8 @@ class InputParameterModule(WorkflowModule):
 
         # Optional parameters for tool input source definition.
         parameter_kwds: Dict[str, Union[str, List[Dict[str, Any]]]] = {}
+        if "multiple" in parameter_def:
+            parameter_kwds["multiple"] = parameter_def["multiple"]
 
         is_text = parameter_type == "text"
         restricted_inputs = False
@@ -1498,9 +1512,6 @@ class InputParameterModule(WorkflowModule):
                 parameter_kwds["value"] = default_value
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value
-
-        if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
-            parameter_kwds["value"] = str(0)
 
         if is_text and parameter_def.get("suggestions") is not None:
             suggestion_values = parameter_def.get("suggestions")
@@ -1556,6 +1567,7 @@ class InputParameterModule(WorkflowModule):
             default_set = True
             default_value = state["default"]
             state["optional"] = True
+        multiple = state.get("multiple")
         restrictions = state.get("restrictions")
         restrictOnConnections = state.get("restrictOnConnections")
         suggestions = state.get("suggestions")
@@ -1573,6 +1585,8 @@ class InputParameterModule(WorkflowModule):
                 "optional": {"optional": str(state.get("optional", False))},
             }
         }
+        if multiple is not None:
+            state["parameter_definition"]["multiple"] = multiple
         state["parameter_definition"]["restrictions"] = {}
         state["parameter_definition"]["restrictions"]["how"] = restrictions_how
 
@@ -1614,6 +1628,8 @@ class InputParameterModule(WorkflowModule):
                     rval["default"] = optional_state["specify_default"]["default"]
             else:
                 optional = False
+            if "multiple" in parameters_def:
+                rval["multiple"] = parameters_def["multiple"]
             restrictions_cond_values = parameters_def.get("restrictions")
             if restrictions_cond_values:
 
