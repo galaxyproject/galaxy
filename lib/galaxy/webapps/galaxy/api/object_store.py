@@ -27,6 +27,7 @@ from galaxy.managers.object_store_instances import (
     ObjectStoreInstancesManager,
     UserConcreteObjectStoreModel,
 )
+from galaxy.model import User
 from galaxy.objectstore import (
     BaseObjectStore,
     ConcreteObjectStoreModel,
@@ -36,6 +37,7 @@ from galaxy.util.config_templates import PluginStatus
 from . import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     Router,
 )
 
@@ -95,6 +97,7 @@ class FastAPIObjectStore:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
         payload: CreateInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.create_instance(trans, payload)
@@ -107,6 +110,7 @@ class FastAPIObjectStore:
     def test_instance_configuration(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
         payload: CreateInstancePayload = Body(...),
     ) -> PluginStatus:
         return self.object_store_instance_manager.plugin_status(trans, payload)
@@ -119,6 +123,7 @@ class FastAPIObjectStore:
     def instance_index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> List[UserConcreteObjectStoreModel]:
         return self.object_store_instance_manager.index(trans)
 
@@ -130,6 +135,7 @@ class FastAPIObjectStore:
     def instances_show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
         user_object_store_id: str = UserObjectStoreIdPathParam,
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.show(trans, user_object_store_id)
@@ -153,6 +159,7 @@ class FastAPIObjectStore:
     def update_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
         user_object_store_id: str = UserObjectStoreIdPathParam,
         payload: ModifyInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
@@ -167,6 +174,7 @@ class FastAPIObjectStore:
     def purge_instance(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
         user_object_store_id: str = UserObjectStoreIdPathParam,
     ):
         self.object_store_instance_manager.purge_instance(trans, user_object_store_id)
@@ -181,6 +189,7 @@ class FastAPIObjectStore:
     def index_templates(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
     ) -> ObjectStoreTemplateSummaries:
         return self.object_store_instance_manager.summaries
 
