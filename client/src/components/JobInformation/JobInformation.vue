@@ -8,6 +8,7 @@ import { formatDuration, intervalToDuration } from "date-fns";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -59,14 +60,17 @@ function filterMetadata(jobMessages) {
 
 async function fetchInvocation(jobId) {
     if (jobId) {
-        const { data: invocation } = await GalaxyApi().GET("/api/invocations", {
+        const { data: invocation, error } = await GalaxyApi().GET("/api/invocations", {
             params: {
                 query: { job_id: jobId },
             },
         });
-        if (invocation) {
-            invocationId.value = invocation.id;
+
+        if (error) {
+            rethrowSimple(error);
         }
+
+        invocationId.value = invocation.id;
     }
 }
 </script>
