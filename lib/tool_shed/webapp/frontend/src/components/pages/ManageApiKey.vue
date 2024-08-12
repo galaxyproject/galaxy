@@ -29,7 +29,7 @@ async function init() {
     })
 
     if (error) {
-        notifyOnCatch(new Error("Error fetching API key"))
+        notifyOnCatch(new Error(`Error fetching API key: ${error.err_msg}`))
         return
     }
 
@@ -44,7 +44,7 @@ async function deleteKey() {
     })
 
     if (error) {
-        notifyOnCatch(new Error("Error deactivating API key"))
+        notifyOnCatch(new Error(`Error deactivating API key: ${error.err_msg}`))
         return
     }
 
@@ -60,7 +60,7 @@ async function recreateKey() {
     })
 
     if (error) {
-        notifyOnCatch(new Error("Error re-generating API key"))
+        notifyOnCatch(new Error(`Error re-generating API key: ${error.err_msg}`))
         return
     }
 
