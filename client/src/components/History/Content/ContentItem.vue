@@ -41,6 +41,7 @@ interface Props {
     selectable?: boolean;
     filterable?: boolean;
     isPlaceholder?: boolean;
+    isSubItem?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
     selectable: false,
     filterable: false,
     isPlaceholder: false,
+    isSubItem: false,
 });
 
 const emit = defineEmits<{
@@ -80,6 +82,7 @@ const entryPointStore = useEntryPointStore();
 const eventStore = useEventStore();
 
 const contentItem = ref<HTMLElement | null>(null);
+const subItemsVisible = ref(false);
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -100,6 +103,15 @@ const contentCls = computed(() => {
     } else {
         return `alert-${status}`;
     }
+});
+const computedClass = computed(() => {
+    return {
+        "content-item m-1 p-0 rounded btn-transparent-background": true,
+        [contentCls.value]: true,
+        "being-used": Object.values(itemUrls.value).includes(route.path),
+        "range-select-anchor": props.isRangeSelectAnchor,
+        "sub-item": props.isSubItem,
+    };
 });
 const contentState = computed(() => {
     return STATES[state.value] && STATES[state.value];
@@ -181,14 +193,6 @@ const itemUrls = computed<ItemUrls>(() => {
     };
 });
 
-const isBeingUsed = computed(() => {
-    return Object.values(itemUrls.value).includes(route.path) ? "being-used" : "";
-});
-
-const rangeSelectClass = computed(() => {
-    return props.isRangeSelectAnchor ? "range-select-anchor" : "";
-});
-
 /** Based on the user's keyboard platform, checks if it is the
  * typical key for selection (ctrl for windows/linux, cmd for mac)
  */
@@ -197,7 +201,8 @@ function isSelectKey(event: KeyboardEvent) {
 }
 
 function onKeyDown(event: KeyboardEvent) {
-    if (!(event.target as HTMLElement)?.classList?.contains("content-item")) {
+    const classList = (event.target as HTMLElement)?.classList;
+    if (!classList.contains("content-item") || classList.contains("sub-item")) {
         return;
     }
 
@@ -287,6 +292,7 @@ function onUndelete() {
 }
 
 function onDragStart(evt: DragEvent) {
+    console.log(evt);
     emit("drag-start", evt);
 }
 
@@ -339,12 +345,12 @@ function unexpandedClick(event: Event) {
     <div
         :id="contentId"
         ref="contentItem"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed, rangeSelectClass]"
+        :class="computedClass"
         :data-hid="id"
         :data-state="dataState"
         tabindex="0"
         role="button"
-        :draggable="props.item.accessible === false ? false : true"
+        :draggable="props.item.accessible === false || props.isSubItem || subItemsVisible ? false : true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
         @keydown="onKeyDown">
@@ -407,7 +413,10 @@ function unexpandedClick(event: Event) {
                     :is-history-item="isHistoryItem"
                     :is-visible="item.visible"
                     :state="state"
+                    :sub-items-count="item.sub_items?.length || 0"
                     :item-urls="itemUrls"
+                    :is-sub-item="isSubItem"
+                    :sub-items-visible.sync="subItemsVisible"
                     @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
@@ -448,6 +457,7 @@ function unexpandedClick(event: Event) {
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
         </BCollapse>
+        <slot name="sub_items" :sub-items-visible="subItemsVisible" />
     </div>
 </template>
 
