@@ -16,7 +16,7 @@ const error = ref<string | null>(null)
 
 async function update() {
     error.value = null
-    const { data } = await client.GET("/api/repositories", {
+    const { data, error: requestError } = await client.GET("/api/repositories", {
         params: {
             query: {
                 owner: props.username,
@@ -24,7 +24,9 @@ async function update() {
             },
         },
     })
-    if (data instanceof Array) {
+    if (requestError) {
+        error.value = requestError.err_msg
+    } else if (data instanceof Array) {
         if (data.length == 0) {
             error.value = `Repository ${props.username}/${props.repositoryName} is not found`
         } else {
