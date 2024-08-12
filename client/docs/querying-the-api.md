@@ -34,6 +34,8 @@ If there is no Composable for the API endpoint you are using, try using a (Pinia
 
 ```typescript
 import { GalaxyApi } from "@/api";
+import { Toast } from "@/composables/toast";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
     params: {
@@ -45,11 +47,14 @@ const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
 });
 
 if (error) {
-    // Handle error here and return otherwise `data` will be undefined
+    // Handle error here.
+    // For example, you can notify the user with a toast message
+    Toast.error(errorMessageAsString(error));
+    // Make sure to return here, otherwise `data` will be undefined
     return;
 }
 
-// Use `data` here
+// Use `data` here. The correct type will be inferred using the API schema.
 ```
 
 **Don't**
