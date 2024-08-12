@@ -15,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from pydantic import UUID4
 
 from galaxy.exceptions import (
     ObjectNotFound,
@@ -49,7 +50,7 @@ ConcreteObjectStoreIdPathParam: str = Path(
     ..., title="Concrete Object Store ID", description="The concrete object store ID."
 )
 
-UserObjectStoreIdPathParam: str = Path(
+UserObjectStoreIdPathParam: UUID4 = Path(
     ...,
     title="User Object Store UUID",
     description="The UUID used to identify a persisted UserObjectStore object.",
@@ -136,7 +137,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: str = UserObjectStoreIdPathParam,
+        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.show(trans, user_object_store_id)
 
@@ -160,7 +161,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: str = UserObjectStoreIdPathParam,
+        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
         payload: ModifyInstancePayload = Body(...),
     ) -> UserConcreteObjectStoreModel:
         return self.object_store_instance_manager.modify_instance(trans, user_object_store_id, payload)
@@ -175,7 +176,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-        user_object_store_id: str = UserObjectStoreIdPathParam,
+        user_object_store_id: UUID4 = UserObjectStoreIdPathParam,
     ):
         self.object_store_instance_manager.purge_instance(trans, user_object_store_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
