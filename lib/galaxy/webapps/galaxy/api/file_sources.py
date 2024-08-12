@@ -16,10 +16,12 @@ from galaxy.managers.file_source_instances import (
     ModifyInstancePayload,
     UserFileSourceModel,
 )
+from galaxy.model import User
 from galaxy.util.config_templates import PluginStatus
 from . import (
     depends,
     DependsOnTrans,
+    DependsOnUser,
     Router,
 )
 
@@ -36,6 +38,7 @@ UserFileSourceIdPathParam: str = Path(
 @router.cbv
 class FastAPIFileSources:
     file_source_instances_manager: FileSourceInstancesManager = depends(FileSourceInstancesManager)
+    user: User = DependsOnUser
 
     @router.get(
         "/api/file_source_templates",
