@@ -23,7 +23,6 @@ const TEST_STORAGE_API_RESPONSE_WITHOUT_ID: DatasetStorageDetails = {
     percent_used: 0,
 };
 const TEST_DATASET_ID = "1";
-const STORAGE_FETCH_URL = "/api/datasets/{dataset_id}/storage";
 const TEST_ERROR_MESSAGE = "Opps all errors.";
 
 const { server, http } = useServerMock();
@@ -31,38 +30,35 @@ const { server, http } = useServerMock();
 describe("DatasetStorage.vue", () => {
     let wrapper: any;
 
-    function mount() {
+    function mount(options: { simulateError: boolean } = { simulateError: false }) {
+        server.use(
+            http.get("/api/datasets/{dataset_id}/storage", ({ response }) => {
+                if (options.simulateError) {
+                    return response("5XX").json({ err_msg: TEST_ERROR_MESSAGE, err_code: 500 }, { status: 500 });
+                }
+                return response(200).json(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
+            })
+        );
+
         wrapper = shallowMount(DatasetStorage, {
             propsData: { datasetId: TEST_DATASET_ID },
             localVue,
         });
     }
 
-    async function mountWithResponse(resp: DatasetStorageDetails) {
-        server.use(
-            http.get(STORAGE_FETCH_URL, ({ response }) => {
-                return response(200).json(resp);
-            })
-        );
-        mount();
-        await flushPromises();
-    }
-
     it("test loading...", async () => {
         mount();
-        await wrapper.vm.$nextTick();
+        // Do not await flushPromises here so the API call is not resolved
         expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
         expect(wrapper.findAll("describeobjectstore-stub").length).toBe(0);
+
+        await flushPromises();
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
+        expect(wrapper.findAll("describeobjectstore-stub").length).toBe(1);
     });
 
     it("test error rendering...", async () => {
-        server.use(
-            http.get(STORAGE_FETCH_URL, ({ response }) => {
-                return response("5XX").json({ err_msg: TEST_ERROR_MESSAGE, err_code: 500 }, { status: 500 });
-            })
-        );
-
-        mount();
+        mount({ simulateError: true });
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);
         expect(wrapper.findAll(".error").at(0).text()).toBe(TEST_ERROR_MESSAGE);
@@ -70,7 +66,8 @@ describe("DatasetStorage.vue", () => {
     });
 
     it("test dataset storage with object store without id", async () => {
-        await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
+        mount();
+        await flushPromises();
         expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
         expect(wrapper.findAll("describeobjectstore-stub").length).toBe(1);
     });
