@@ -32,49 +32,92 @@ If there is no Composable for the API endpoint you are using, try using a (Pinia
 
 **Do**
 
-```typescript
-import { GalaxyApi } from "@/api";
-import { Toast } from "@/composables/toast";
+```ts
+import { ref, onMounted } from "vue";
+
+import { GalaxyApi, type HDADetailed } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
-    params: {
-        path: {
-            dataset_id: datasetId,
-        },
-        query: { view: "detailed" },
-    },
-});
-
-if (error) {
-    // Handle error here.
-    // For example, you can notify the user with a toast message
-    Toast.error(errorMessageAsString(error));
-    // Make sure to return here, otherwise `data` will be undefined
-    return;
+interface Props {
+    datasetId: string;
 }
 
-// Use `data` here. The correct type will be inferred using the API schema.
+const props = defineProps<Props>();
+
+const datasetDetails = ref<HDADetailed>();
+const errorMessage = ref<string>();
+
+async function loadDatasetDetails() {
+    // Your IDE will provide you with autocompletion for the route and all the parameters
+    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
+        params: {
+            path: {
+                dataset_id: props.datasetId,
+            },
+            query: { view: "detailed" },
+        },
+    });
+
+    if (error) {
+        // Handle error here. For example, you can display a message to the user.
+        errorMessage.value = errorMessageAsString(error);
+        // Make sure to return here, otherwise `data` will be undefined
+        return;
+    }
+
+    // Use `data` here. We are casting it to HDADetailed to help the type inference because
+    // we requested the "detailed" view and this endpoint returns different types depending
+    // on the view. In general, the correct type will be inferred automatically using the
+    // API schema so you don't need to (and shouldn't) cast it.
+    datasetDetails.value = data as HDADetailed;
+}
+
+onMounted(() => {
+    loadDatasetDetails();
+});
 ```
 
 **Don't**
 
-```js
+```ts
+import { ref, onMounted } from "vue";
+
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-async getDataset(datasetId) {
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
+
+const datasetDetails = ref<HDADetailed>();
+const errorMessage = ref<string>();
+
+async function loadDatasetDetails() {
+    // You need to construct the URL yourself
     const url = `${getAppRoot()}api/datasets/${datasetId}`;
+    // You are forced to use a try-catch block to handle errors
+    // and you may forget to do so.
     try {
-        const response = await axios.get(url);
-        return response.data;
+        // This is not type-safe and cannot detect changes in the API schema.
+        const response = await axios.get(url, {
+            // You need to know the API parameters, no type inference here.
+            params: { view: "detailed" },
+        });
+        // In this case, you need to cast the response to the correct type
+        // (as in the previous example), but you will also have to do it in the general
+        // case because there is no type inference.
+        datasetDetails = response.data as HDADetailed;
     } catch (e) {
-        rethrowSimple(e);
+        errorMessage.value = errorMessageAsString(error);
     }
 }
 
-const dataset = await getDataset("testID");
+onMounted(() => {
+    loadDatasetDetails();
+});
 ```
 
 > **Reason**
