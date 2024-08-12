@@ -21,8 +21,6 @@ const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
 const inputs = computed<Array<FormEntry> | undefined>(() => {
-    template.value;
-    instance.value;
     if (template.value && instance.value) {
         return editTemplateForm(template.value, "storage location", instance.value);
     }
@@ -35,9 +33,9 @@ const submitTitle = "Update Settings";
 const loadingMessage = "Loading file source template and instance information";
 
 async function onSubmit(formData: any) {
-    if (template.value) {
+    if (template.value && instance.value) {
         const payload = editFormDataToPayload(template.value, formData);
-        const user_file_source_id = instance?.value?.uuid!;
+        const user_file_source_id = instance.value.uuid;
 
         const { data: fileSource, error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
             params: { path: { user_file_source_id } },
