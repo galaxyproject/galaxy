@@ -5,7 +5,7 @@ import { client } from "@/schema"
 import { notify, copyAndNotify, notifyOnCatch } from "@/util"
 import ConfigFileContents from "@/components/ConfigFileContents.vue"
 
-const apiKey = ref(null as string | null)
+const apiKey = ref<string | null>(null)
 const planemoConfig = computed(
     () =>
         `sheds:
@@ -22,50 +22,50 @@ async function copyKey() {
 const params = { encoded_user_id: "current" }
 
 async function init() {
-    client
-        .GET("/api/users/{encoded_user_id}/api_key", {
-            params: {
-                path: params,
-            },
-        })
-        .then(({ data }) => {
-            if (!data) {
-                throw Error("Error fetching API key")
-            }
-            apiKey.value = data
-        })
-        .catch(notifyOnCatch)
+    const { data, error } = await client.GET("/api/users/{encoded_user_id}/api_key", {
+        params: {
+            path: params,
+        },
+    })
+
+    if (error) {
+        notifyOnCatch(new Error("Error fetching API key"))
+        return
+    }
+
+    apiKey.value = data
 }
 
 async function deleteKey() {
-    client
-        .DELETE("/api/users/{encoded_user_id}/api_key", {
-            params: {
-                path: params,
-            },
-        })
-        .then(() => {
-            apiKey.value = null
-            notify("API key deactivated")
-        })
-        .catch(notifyOnCatch)
+    const { error } = await client.DELETE("/api/users/{encoded_user_id}/api_key", {
+        params: {
+            path: params,
+        },
+    })
+
+    if (error) {
+        notifyOnCatch(new Error("Error deactivating API key"))
+        return
+    }
+
+    apiKey.value = null
+    notify("API key deactivated")
 }
 
 async function recreateKey() {
-    client
-        .POST("/api/users/{encoded_user_id}/api_key", {
-            params: {
-                path: params,
-            },
-        })
-        .then(({ data }) => {
-            if (!data) {
-                throw Error("Error re-generating API key")
-            }
-            apiKey.value = data
-            notify("Re-generated API key")
-        })
-        .catch(notifyOnCatch)
+    const { data, error } = await client.POST("/api/users/{encoded_user_id}/api_key", {
+        params: {
+            path: params,
+        },
+    })
+
+    if (error) {
+        notifyOnCatch(new Error("Error re-generating API key"))
+        return
+    }
+
+    apiKey.value = data
+    notify("Re-generated API key")
 }
 
 void init()
