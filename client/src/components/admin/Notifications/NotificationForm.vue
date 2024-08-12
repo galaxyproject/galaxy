@@ -83,12 +83,8 @@ async function loadData<T>(
     target: Ref<SelectOption[]>,
     formatter: (item: T) => SelectOption
 ) {
-    try {
-        const tmp = await getData();
-        target.value = tmp.map(formatter);
-    } catch (error) {
-        Toast.error(errorMessageAsString(error));
-    }
+    const tmp = await getData();
+    target.value = tmp.map(formatter);
 }
 
 async function getAllGroups() {
