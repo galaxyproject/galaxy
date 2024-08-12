@@ -68,6 +68,7 @@ from galaxy import (
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
+    UserRequiredException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -181,6 +182,17 @@ def get_user(
     if galaxy_session:
         return galaxy_session.user
     return api_user
+
+
+def get_required_user(
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    api_user=cast(Optional[User], Depends(get_api_user)),
+) -> User:
+    if galaxy_session and (user := galaxy_session.user):
+        return user
+    if api_user:
+        return api_user
+    raise UserRequiredException
 
 
 class UrlBuilder:
@@ -310,7 +322,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         )
 
 
-DependsOnUser = cast(Optional[User], Depends(get_user))
+DependsOnUser = cast(User, Depends(get_required_user))
 
 
 def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
@@ -485,6 +497,7 @@ class FrameworkRouter(APIRouter):
 
 class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
+    user_dependency = DependsOnUser
 
 
 class APIContentTypeRoute(APIRoute):
