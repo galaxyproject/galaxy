@@ -657,7 +657,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             display_link.prepare_display()
                         preparable_steps = display_link.get_prepare_steps()
                     else:
-                        raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
+                        # Ideally we should respond with 202 in both cases.
+                        # Since we don't exactly know if any consumer relies on this we'll just keep continuing to
+                        # respond with a 500 status code.
+                        trans.response.status = 500
+                        return trans.show_error_message(
+                            f"Attempted a view action ({app_action}) on a non-ready display application"
+                        )
             return trans.fill_template_mako(
                 "dataset/display_application/display.mako",
                 msg=msg,

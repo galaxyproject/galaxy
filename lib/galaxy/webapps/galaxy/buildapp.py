@@ -89,17 +89,18 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_route("/activate", controller="user", action="activate")
 
     # Authentication endpoints.
-    webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
-    webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
-    webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
-    webapp.add_route(
-        "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
-    )
-    webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
-    webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
-    # Returns the provider specific logout url for currently logged in provider
-    webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
-    webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
+    if app.config.enable_oidc:
+        webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
+        webapp.add_route("/authnz/{provider}/login", controller="authnz", action="login", provider=None)
+        webapp.add_route("/authnz/{provider}/callback", controller="authnz", action="callback", provider=None)
+        webapp.add_route(
+            "/authnz/{provider}/disconnect/{email}", controller="authnz", action="disconnect", provider=None, email=None
+        )
+        webapp.add_route("/authnz/{provider}/logout", controller="authnz", action="logout", provider=None)
+        webapp.add_route("/authnz/{provider}/create_user", controller="authnz", action="create_user")
+        # Returns the provider specific logout url for currently logged in provider
+        webapp.add_route("/authnz/logout", controller="authnz", action="get_logout_url")
+        webapp.add_route("/authnz/get_cilogon_idps", controller="authnz", action="get_cilogon_idps")
 
     # These two routes handle our simple needs at the moment
     webapp.add_route(
