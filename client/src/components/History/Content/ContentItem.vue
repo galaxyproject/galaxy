@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowCircleDown,
+    faArrowCircleUp,
+    faCheckCircle,
+    faExchangeAlt,
+    faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -21,7 +27,7 @@ import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faExchangeAlt, faSpinner);
 
 const router = useRouter();
 const route = useRoute();
@@ -400,29 +406,39 @@ function unexpandedClick(event: Event) {
                     <span class="id hid">{{ id }}:</span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
-                <span v-if="item.purged" class="align-self-start btn-group p-1">
+                <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">
                     <BBadge variant="secondary" title="This dataset has been permanently deleted">
                         <icon icon="burn" /> Purged
                     </BBadge>
                 </span>
-                <ContentOptions
-                    v-if="!isPlaceholder && !item.purged"
-                    :writable="writable"
-                    :is-dataset="isDataset"
-                    :is-deleted="item.deleted"
-                    :is-history-item="isHistoryItem"
-                    :is-visible="item.visible"
-                    :state="state"
-                    :sub-items-count="item.sub_items?.length || 0"
-                    :item-urls="itemUrls"
-                    :is-sub-item="isSubItem"
-                    :sub-items-visible.sync="subItemsVisible"
-                    @delete="onDelete"
-                    @display="onDisplay"
-                    @showCollectionInfo="onShowCollectionInfo"
-                    @edit="onEdit"
-                    @undelete="onUndelete"
-                    @unhide="emit('unhide')" />
+                <span class="align-self-start btn-group">
+                    <BButton
+                        v-if="item.sub_items?.length && !isSubItem"
+                        title="Show converted items"
+                        tabindex="0"
+                        class="display-btn px-1 align-items-center"
+                        size="sm"
+                        variant="link"
+                        @click.prevent.stop="subItemsVisible = !subItemsVisible">
+                        <FontAwesomeIcon :icon="faExchangeAlt" />
+                        <span class="indicator">{{ item.sub_items?.length }}</span>
+                    </BButton>
+                    <ContentOptions
+                        v-if="!isPlaceholder && !item.purged"
+                        :writable="writable"
+                        :is-dataset="isDataset"
+                        :is-deleted="item.deleted"
+                        :is-history-item="isHistoryItem"
+                        :is-visible="item.visible"
+                        :state="state"
+                        :item-urls="itemUrls"
+                        @delete="onDelete"
+                        @display="onDisplay"
+                        @showCollectionInfo="onShowCollectionInfo"
+                        @edit="onEdit"
+                        @undelete="onUndelete"
+                        @unhide="emit('unhide')" />
+                </span>
             </div>
         </div>
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
@@ -470,6 +486,18 @@ function unexpandedClick(event: Event) {
 
     .name {
         word-break: break-all;
+    }
+
+    .indicator {
+        align-items: center;
+        border-radius: 50%;
+        color: $brand-primary;
+        display: flex;
+        justify-content: center;
+        height: 1.2rem;
+        position: absolute;
+        top: -0.3rem;
+        width: 1.2rem;
     }
 
     // improve focus visibility

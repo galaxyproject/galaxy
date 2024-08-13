@@ -12,9 +12,6 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
-    subItemsCount: { type: Number, default: 0 },
-    isSubItem: { type: Boolean, default: false },
-    subItemsVisible: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -24,7 +21,6 @@ const emit = defineEmits<{
     (e: "delete", recursive?: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
-    (e: "update:sub-items-visible", value: boolean): void;
 }>();
 
 const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
@@ -91,17 +87,6 @@ function onDisplay($event: MouseEvent) {
             <icon icon="info-circle" />
         </b-button>
         <!-- Common for all content items -->
-        <b-button
-            v-if="subItemsCount && !isSubItem"
-            title="Show associated items"
-            tabindex="0"
-            class="display-btn px-1 align-items-center"
-            size="sm"
-            variant="link"
-            @click.prevent.stop="emit('update:sub-items-visible', !subItemsVisible)">
-            <icon icon="plus" />
-            <span class="indicator">{{ subItemsCount }}</span>
-        </b-button>
         <b-button
             v-if="isDataset"
             :disabled="displayDisabled"
@@ -177,19 +162,4 @@ function onDisplay($event: MouseEvent) {
     font-weight: normal;
 }
 </style>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-
-.indicator {
-    align-items: center;
-    border-radius: 50%;
-    color: $brand-primary;
-    display: flex;
-    justify-content: center;
-    height: 1.2rem;
-    position: absolute;
-    top: -0.3rem;
-    width: 1.2rem;
-}
-</style>
+```
