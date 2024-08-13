@@ -145,6 +145,11 @@
         "message": "Action requires account activation."
     },
     {
+        "name": "USER_REQUIRED",
+        "code": 403008,
+        "message": "Action requires user authentication."
+    },
+    {
         "name": "USER_OBJECT_NOT_FOUND",
         "code": 404001,
         "message": "No such object found."

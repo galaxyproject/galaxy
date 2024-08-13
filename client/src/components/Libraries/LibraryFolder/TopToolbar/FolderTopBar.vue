@@ -89,6 +89,9 @@ const canDelete = computed(() => {
 const datasetManipulation = computed(() => {
     return !!(containsFileOrFolder.value && Galaxy.user);
 });
+const totalRows = computed(() => {
+    return props.metadata?.total_rows ?? 0;
+});
 
 function updateSearch(value: string) {
     emit("updateSearch", value);
@@ -106,7 +109,8 @@ async function getSelected() {
             const selected = await services.getFilteredFolderContents(
                 props.folderId,
                 props.unselected,
-                props.searchText
+                props.searchText,
+                totalRows.value
             );
 
             emit("setBusy", false);
