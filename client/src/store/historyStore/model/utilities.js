@@ -1,8 +1,5 @@
 import { set } from "vue";
 
-// TODO: This is a temporary solution to handle compressed files. We need to find a better way to handle this.
-const COMPRESSED_EXTENSIONS = ["tabix", "tar.gz", "zip", "tar.bz2", "fa.gz", "fa.bz2", "_bgzip"];
-
 /* This function merges the existing data with new incoming data. */
 export function mergeArray(id, payload, items, itemKey) {
     if (!items[id]) {
@@ -28,12 +25,9 @@ export function mergeArray(id, payload, items, itemKey) {
                 // But first, we check a few conditions and based on those, possibly replace the `localItem` with the new item
                 if (
                     // 1: `localItem` is not in the `payload` (for filter)
-                    !payload.find((p) => p.id === localItem.id) ||
-                    // 2: `localItem` is compressed and the new `item` is not
-                    (localItem.extension &&
-                        item.extension &&
-                        COMPRESSED_EXTENSIONS.some((ext) => localItem.extension.includes(ext)) &&
-                        !COMPRESSED_EXTENSIONS.some((ext) => item.extension.includes(ext)))
+                    new Date(item.create_time) < new Date(localItem.create_time) ||
+                    // 2: `localItem` has fewer keys than the new item
+                    Object.keys(localItem).length < Object.keys(item).length
                 ) {
                     set(itemArray, itemIndex, item);
                     pushSubItem(item, localItem);
