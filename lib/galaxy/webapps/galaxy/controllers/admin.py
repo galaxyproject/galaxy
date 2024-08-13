@@ -73,7 +73,7 @@ class UserListGrid(grids.GridData):
                 .group_by(model.GalaxySession.table.c.user_id)
                 .subquery()
             )
-            query = query.outerjoin((last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id))
+            query = query.outerjoin(last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id)
 
             if not ascending:
                 query = query.order_by((last_login_subquery.c.last_login).desc().nullslast())
