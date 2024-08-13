@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from pydantic import (
     BaseModel,
+    UUID4,
     ValidationError,
 )
 
@@ -87,7 +88,7 @@ USER_FILE_SOURCES_SCHEME = "gxuserfiles"
 
 
 class UserFileSourceModel(BaseModel):
-    uuid: str
+    uuid: UUID4
     uri_root: str
     name: str
     description: Optional[str]
@@ -142,16 +143,16 @@ class FileSourceInstancesManager:
         stores = self._sa_session.query(UserFileSource).filter(UserFileSource.user_id == trans.user.id).all()
         return [self._to_model(trans, s) for s in stores]
 
-    def show(self, trans: ProvidesUserContext, uuid: str) -> UserFileSourceModel:
+    def show(self, trans: ProvidesUserContext, uuid: UUID4) -> UserFileSourceModel:
         user_file_source = self._get(trans, uuid)
         return self._to_model(trans, user_file_source)
 
-    def purge_instance(self, trans: ProvidesUserContext, uuid: str) -> None:
+    def purge_instance(self, trans: ProvidesUserContext, uuid: UUID4) -> None:
         persisted_file_source = self._get(trans, uuid)
         purge_template_instance(trans, persisted_file_source, self._app_config)
 
     def modify_instance(
-        self, trans: ProvidesUserContext, id: str, payload: ModifyInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: ModifyInstancePayload
     ) -> UserFileSourceModel:
         if isinstance(payload, UpgradeInstancePayload):
             return self._upgrade_instance(trans, id, payload)
@@ -162,7 +163,7 @@ class FileSourceInstancesManager:
             return self._update_instance(trans, id, payload)
 
     def _upgrade_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpgradeInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpgradeInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source, payload.template_version)
@@ -181,7 +182,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _update_instance(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstancePayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstancePayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -189,7 +190,7 @@ class FileSourceInstancesManager:
         return self._to_model(trans, persisted_file_source)
 
     def _update_instance_secret(
-        self, trans: ProvidesUserContext, id: str, payload: UpdateInstanceSecretPayload
+        self, trans: ProvidesUserContext, id: UUID4, payload: UpdateInstanceSecretPayload
     ) -> UserFileSourceModel:
         persisted_file_source = self._get(trans, id)
         template = self._get_template(persisted_file_source)
@@ -300,10 +301,10 @@ class FileSourceInstancesManager:
             exception = e
         return file_source, connection_exception_to_status("file source", exception)
 
-    def _index_filter(self, uuid: str):
+    def _index_filter(self, uuid: UUID4):
         return UserFileSource.__table__.c.uuid == uuid
 
-    def _get(self, trans: ProvidesUserContext, uuid: str) -> UserFileSource:
+    def _get(self, trans: ProvidesUserContext, uuid: UUID4) -> UserFileSource:
         filter = self._index_filter(uuid)
         user_file_source = self._sa_session.query(UserFileSource).filter(filter).one_or_none()
         if user_file_source is None:
