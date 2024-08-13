@@ -210,6 +210,9 @@ export default {
             // logic from legacy code
             return !!(this.contains_file_or_folder && Galaxy.user);
         },
+        totalRows: function () {
+            return this.metadata?.total_rows ?? 0;
+        },
     },
     created() {
         const Galaxy = getGalaxyInstance();
@@ -241,7 +244,8 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.searchText
+                    this.$parent.searchText,
+                    this.totalRows
                 );
                 this.$emit("setBusy", false);
                 return selected;
