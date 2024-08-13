@@ -14,7 +14,7 @@ import ConfigFileContents from "@/components/ConfigFileContents.vue"
 import RepositoryLinks from "@/components/RepositoryLinks.vue"
 import RepositoryExplore from "@/components/RepositoryExplore.vue"
 import { type RevisionMetadata } from "@/schema"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notifyOnCatch } from "@/util"
 import { UPDATING_WITH_PLANEMO_URL, EPHEMERIS_TRAINING } from "@/constants"
 
@@ -30,7 +30,7 @@ function onUpdate() {
 async function onDeprecate() {
     const repositoryId = repository.value?.id
     if (repositoryId) {
-        client
+        ToolShedApi()
             .PUT("/api/repositories/{encoded_repository_id}/deprecated", {
                 params: { path: { encoded_repository_id: repositoryId } },
             })
@@ -42,7 +42,7 @@ async function onDeprecate() {
 async function onUndeprecate() {
     const repositoryId = repository.value?.id
     if (repositoryId) {
-        client
+        ToolShedApi()
             .DELETE("/api/repositories/{encoded_repository_id}/deprecated", {
                 params: { path: { encoded_repository_id: repositoryId } },
             })
@@ -132,7 +132,7 @@ watch(
 
 watch(currentRevision, () => {
     if (currentRevision.value) {
-        client
+        ToolShedApi()
             .GET("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes", {
                 params: {
                     path: {

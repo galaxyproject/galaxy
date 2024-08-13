@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import RepositoryPage from "./RepositoryPage.vue"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import type { Repository } from "@/schema/types"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
@@ -16,7 +16,7 @@ const error = ref<string | null>(null)
 
 async function update() {
     error.value = null
-    const { data, error: requestError } = await client.GET("/api/repositories", {
+    const { data, error: requestError } = await ToolShedApi().GET("/api/repositories", {
         params: {
             query: {
                 owner: props.username,

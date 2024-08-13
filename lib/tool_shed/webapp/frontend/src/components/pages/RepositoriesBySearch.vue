@@ -3,7 +3,7 @@ import { computed, ref, watch } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
 import RepositoryGrid from "@/components/RepositoriesGrid.vue"
 import { type RepositoryGridItem, type OnScroll } from "@/components/RepositoriesGridInterface"
-import { client, components } from "@/schema"
+import { ToolShedApi, components } from "@/schema"
 
 const query = ref("")
 const page = ref(1)
@@ -14,7 +14,7 @@ type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
 async function doQuery() {
     const queryValue = query.value
-    const { data } = await client.GET("/api/repositories", {
+    const { data } = await ToolShedApi().GET("/api/repositories", {
         params: {
             query: { q: queryValue, page: page.value, page_size: 10 },
         },

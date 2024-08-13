@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify, copyAndNotify, notifyOnCatch } from "@/util"
 import ConfigFileContents from "@/components/ConfigFileContents.vue"
 
@@ -22,7 +22,7 @@ async function copyKey() {
 const params = { encoded_user_id: "current" }
 
 async function init() {
-    const { data, error } = await client.GET("/api/users/{encoded_user_id}/api_key", {
+    const { data, error } = await ToolShedApi().GET("/api/users/{encoded_user_id}/api_key", {
         params: {
             path: params,
         },
@@ -37,7 +37,7 @@ async function init() {
 }
 
 async function deleteKey() {
-    const { error } = await client.DELETE("/api/users/{encoded_user_id}/api_key", {
+    const { error } = await ToolShedApi().DELETE("/api/users/{encoded_user_id}/api_key", {
         params: {
             path: params,
         },
@@ -53,7 +53,7 @@ async function deleteKey() {
 }
 
 async function recreateKey() {
-    const { data, error } = await client.POST("/api/users/{encoded_user_id}/api_key", {
+    const { data, error } = await ToolShedApi().POST("/api/users/{encoded_user_id}/api_key", {
         params: {
             path: params,
         },

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { RevisionMetadata } from "@/schema"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
 
 interface RevisionActionsProps {
@@ -12,7 +12,7 @@ interface RevisionActionsProps {
 const props = defineProps<RevisionActionsProps>()
 
 async function setMalicious() {
-    client
+    ToolShedApi()
         .PUT("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious", {
             params: {
                 path: {
@@ -29,7 +29,7 @@ async function setMalicious() {
 }
 
 async function unsetMalicious() {
-    client
+    ToolShedApi()
         .DELETE("/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious", {
             params: {
                 path: {

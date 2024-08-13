@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
 
 async function resetMetadata() {
-    client
+    ToolShedApi()
         .POST("/api/repositories/{encoded_repository_id}/reset_metadata", {
             params: { path: { encoded_repository_id: props.repositoryId } },
         })

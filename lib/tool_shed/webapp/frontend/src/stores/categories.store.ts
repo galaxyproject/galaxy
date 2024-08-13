@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 
-import { client, components } from "@/schema"
+import { ToolShedApi, components } from "@/schema"
 type Category = components["schemas"]["Category"]
 
 export const useCategoriesStore = defineStore({
@@ -12,7 +12,7 @@ export const useCategoriesStore = defineStore({
     actions: {
         async getAll() {
             this.loading = true
-            const { data: categories } = await client.GET("/api/categories")
+            const { data: categories } = await ToolShedApi().GET("/api/categories")
             this.categories = categories ?? []
             this.loading = false
         },

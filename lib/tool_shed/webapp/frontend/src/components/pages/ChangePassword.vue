@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { errorMessage } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import router from "@/router"
@@ -13,7 +13,7 @@ const confirm = ref("")
 const error = ref<string | null>(null)
 
 async function onChange() {
-    client
+    ToolShedApi()
         .PUT("/api_internal/change_password", {
             body: {
                 current: current.value,

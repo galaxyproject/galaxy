@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify } from "@/util"
 import router from "@/router"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
@@ -18,7 +18,7 @@ async function onRegister() {
     // TODO: handle confirm and implement bear_field.
     // let data: Response
     try {
-        const { data } = await client.POST("/api_internal/register", {
+        const { data } = await ToolShedApi().POST("/api_internal/register", {
             body: {
                 email: email.value,
                 password: password.value,

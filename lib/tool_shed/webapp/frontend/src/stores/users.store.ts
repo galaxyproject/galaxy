@@ -1,6 +1,6 @@
 import { defineStore } from "pinia"
 
-import { client, components } from "@/schema"
+import { ToolShedApi, components } from "@/schema"
 
 type User = components["schemas"]["UserV2"]
 
@@ -13,7 +13,7 @@ export const useUsersStore = defineStore({
     actions: {
         async getAll() {
             this.loading = true
-            const { data: users } = await client.GET("/api/users")
+            const { data: users } = await ToolShedApi().GET("/api/users")
             this.users = users ?? []
             this.loading = false
         },

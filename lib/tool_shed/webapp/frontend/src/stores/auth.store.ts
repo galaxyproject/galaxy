@@ -2,7 +2,7 @@ import { defineStore } from "pinia"
 import { ensureCookie, notifyOnCatch } from "@/util"
 import { getCurrentUser } from "@/apiUtil"
 
-import { client } from "@/schema"
+import { ToolShedApi } from "@/schema"
 
 export const useAuthStore = defineStore({
     id: "auth",
@@ -21,7 +21,7 @@ export const useAuthStore = defineStore({
         async login(username: string, password: string) {
             const token = ensureCookie("session_csrf_token")
             console.log(token)
-            client
+            ToolShedApi()
                 .PUT("/api_internal/login", {
                     body: {
                         login: username,
@@ -38,7 +38,7 @@ export const useAuthStore = defineStore({
         },
         async logout() {
             const token = ensureCookie("session_csrf_token")
-            client
+            ToolShedApi()
                 .PUT("/api_internal/logout", {
                     body: {
                         session_csrf_token: token,

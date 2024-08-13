@@ -1,9 +1,9 @@
 import { defineStore } from "pinia"
 
-import { client, components } from "@/schema"
+import { ToolShedApi, components } from "@/schema"
 
 function fetchRepositoryPermissions(repositoryId: string) {
-    return client.GET("/api/repositories/{encoded_repository_id}/permissions", {
+    return ToolShedApi().GET("/api/repositories/{encoded_repository_id}/permissions", {
         params: {
             path: { encoded_repository_id: repositoryId },
         },
@@ -35,7 +35,7 @@ export const useRepositoryStore = defineStore({
                 encoded_repository_id: this.repositoryId,
                 username: username,
             }
-            await client.POST("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+            await ToolShedApi().POST("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
                 params: { path: params },
             })
             const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
@@ -49,7 +49,7 @@ export const useRepositoryStore = defineStore({
                 encoded_repository_id: this.repositoryId,
                 username: username,
             }
-            await client.DELETE("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
+            await ToolShedApi().DELETE("/api/repositories/{encoded_repository_id}/allow_push/{username}", {
                 params: { path: params },
             })
             const { data: _repositoryPermissions } = await fetchRepositoryPermissions(this.repositoryId)
@@ -66,8 +66,8 @@ export const useRepositoryStore = defineStore({
             this.loading = true
             const params = { encoded_repository_id: this.repositoryId }
             const [{ data: repository }, { data: repositoryMetadata }] = await Promise.all([
-                client.GET("/api/repositories/{encoded_repository_id}", { params: { path: params } }),
-                client.GET("/api_internal/repositories/{encoded_repository_id}/metadata", {
+                ToolShedApi().GET("/api/repositories/{encoded_repository_id}", { params: { path: params } }),
+                ToolShedApi().GET("/api_internal/repositories/{encoded_repository_id}/metadata", {
                     params: { path: params, query: { downloadable_only: false } },
                 }),
             ])
@@ -97,7 +97,7 @@ export const useRepositoryStore = defineStore({
                     owner: repository.owner,
                     changeset_revision: latestMetadata.changeset_revision,
                 }
-                const { data: repositoryInstallInfo } = await client.GET("/api/repositories/install_info", {
+                const { data: repositoryInstallInfo } = await ToolShedApi().GET("/api/repositories/install_info", {
                     params: { query: installParams },
                 })
                 this.repositoryInstallInfo = repositoryInstallInfo ?? null
