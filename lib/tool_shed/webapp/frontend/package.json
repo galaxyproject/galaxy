@@ -42,7 +42,6 @@
     "@quasar/extras": "^1.12.4",
     "@vue/apollo-composable": "^4.0.0-beta.1",
     "@vue/apollo-option": "^4.0.0-alpha.20",
-    "axios": "^1.2.1",
     "date-fns": "^2.29.3",
     "date-fns-tz": "^1.3.7",
     "e": "^0.2.2",
