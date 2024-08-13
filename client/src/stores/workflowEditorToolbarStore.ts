@@ -1,9 +1,10 @@
 import { useMagicKeys } from "@vueuse/core";
+import { storeToRefs } from "pinia";
 import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 
 import { type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
-import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
+import { useLocalPreferencesStore } from "./localPreferencesStore";
 import { defineScopedStore } from "./scopedStore";
 import { type WorkflowCommentColor } from "./workflowEditorCommentStore";
 
@@ -29,12 +30,14 @@ export interface InputCatcherEvent {
 export type WorkflowEditorToolbarStore = ReturnType<typeof useWorkflowEditorToolbarStore>;
 
 export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorToolbarStore", () => {
-    const snapActive = useUserLocalStorage("workflow-editor-toolbar-snap-active", false);
+    const { workflowEditorSnapActive, workflowEditorToolbarVisible } = storeToRefs(useLocalPreferencesStore());
+
+    const snapActive = workflowEditorSnapActive;
     const currentTool = ref<EditorTool>("pointer");
     const inputCatcherActive = ref<boolean>(false);
     const inputCatcherEventListeners = new Set<InputCatcherEventListener>();
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
-    const toolbarVisible = useUserLocalStorage("workflow-editor-toolbar-visible", true);
+    const toolbarVisible = workflowEditorToolbarVisible;
     const boxSelectMode = ref<"add" | "remove">("add");
     const boxSelectRect = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });
 

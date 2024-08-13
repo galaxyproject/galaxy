@@ -229,6 +229,22 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         },
     });
 
+    type ListViewMode = "grid" | "list";
+
+    const preferredListViewMode = useLocalPreference(allPreferences, preferenceRefsById, {
+        id: "preferred-list-view-mode",
+        default: "grid" as ListViewMode,
+        name: "Preferred List View Mode",
+        description: "If Lists should be displayed as a grid, or list of items",
+        type: {
+            option: true,
+            options: [
+                { label: "Grid", value: "grid" },
+                { label: "List", value: "list" },
+            ],
+        },
+    });
+
     const hideSelectionQueryBreakWarning = useLocalPreference(allPreferences, preferenceRefsById, {
         id: "hide-selection-query-break-warning",
         default: false,
@@ -280,6 +296,7 @@ export const useLocalPreferencesStore = defineStore("localPreferencesStore", () 
         resetPreference,
         resetAllPreferences,
         preferredFormSelectElement,
+        preferredListViewMode,
         hideSelectionQueryBreakWarning,
         workflowEditorSnapActive,
         workflowEditorToolbarVisible,

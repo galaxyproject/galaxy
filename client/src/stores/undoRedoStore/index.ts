@@ -1,7 +1,9 @@
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import { defineScopedStore } from "@/stores/scopedStore";
 
+import { useLocalPreferencesStore } from "../localPreferencesStore";
 import { type LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
@@ -24,7 +26,9 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const minUndoActions = ref(10);
     const maxUndoActions = ref(10000);
 
-    const savedUndoActions = ref(100);
+    // TODO: generalize this is the undo redo store is used outside of the workflow editor
+    const { workflowEditorMaxUndoActions } = storeToRefs(useLocalPreferencesStore());
+    const savedUndoActions = workflowEditorMaxUndoActions;
 
     /** names of actions which were deleted due to savedUndoActions being exceeded */
     const deletedActions = ref<string[]>([]);
