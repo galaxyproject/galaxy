@@ -20,14 +20,21 @@ from sqlalchemy.sql import text
 import galaxy.model
 from galaxy.model import (
     Dataset,
+    DatasetCollection,
     DatasetPermissions,
+    DefaultHistoryPermissions,
+    DefaultUserPermissions,
     Group,
     GroupRoleAssociation,
     HistoryDatasetAssociationDisplayAtAuthorization,
     Library,
     LibraryDataset,
+    LibraryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    LibraryDatasetDatasetAssociationPermissions,
     LibraryDatasetPermissions,
+    LibraryFolder,
+    LibraryFolderPermissions,
     LibraryPermissions,
     Role,
     User,
@@ -51,22 +58,17 @@ log = logging.getLogger(__name__)
 
 
 class GalaxyRBACAgent(RBACAgent):
-    def __init__(self, model, permitted_actions=None):
-        self.model = model
+    def __init__(self, sa_session, permitted_actions=None):
+        self.sa_session = sa_session
         if permitted_actions:
             self.permitted_actions = permitted_actions
         # List of "library_item" objects and their associated permissions and info template objects
         self.library_item_assocs = (
-            (self.model.Library, self.model.LibraryPermissions),
-            (self.model.LibraryFolder, self.model.LibraryFolderPermissions),
-            (self.model.LibraryDataset, self.model.LibraryDatasetPermissions),
-            (self.model.LibraryDatasetDatasetAssociation, self.model.LibraryDatasetDatasetAssociationPermissions),
+            (Library, LibraryPermissions),
+            (LibraryFolder, LibraryFolderPermissions),
+            (LibraryDataset, LibraryDatasetPermissions),
+            (LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociationPermissions),
         )
-
-    @property
-    def sa_session(self):
-        """Returns a SQLAlchemy session"""
-        return self.model.context
 
     def sort_by_attr(self, seq, attr):
         """
@@ -139,11 +141,11 @@ class GalaxyRBACAgent(RBACAgent):
         else:
             limit = None
         total_count = None
-        if isinstance(item, self.model.Library) and self.library_is_public(item):
+        if isinstance(item, Library) and self.library_is_public(item):
             is_public_item = True
-        elif isinstance(item, self.model.Dataset) and self.dataset_is_public(item):
+        elif isinstance(item, Dataset) and self.dataset_is_public(item):
             is_public_item = True
-        elif isinstance(item, self.model.LibraryFolder):
+        elif isinstance(item, LibraryFolder):
             is_public_item = True
         else:
             is_public_item = False
@@ -238,8 +240,8 @@ class GalaxyRBACAgent(RBACAgent):
         """
         admin_controller = cntrller in ["library_admin"]
         roles = set()
-        if (isinstance(item, self.model.Library) and self.library_is_public(item)) or (
-            isinstance(item, self.model.Dataset) and self.dataset_is_public(item)
+        if (isinstance(item, Library) and self.library_is_public(item)) or (
+            isinstance(item, Dataset) and self.dataset_is_public(item)
         ):
             return self.get_all_roles(trans, cntrller)
         # If item has roles associated with the access permission, we need to start with them.
@@ -272,13 +274,13 @@ class GalaxyRBACAgent(RBACAgent):
         """
         role_type = role.type
         if user:
-            if role_type == self.model.Role.types.PRIVATE:
+            if role_type == Role.types.PRIVATE:
                 return role == self.get_private_user_role(user)
-            if role_type == self.model.Role.types.SHARING:
+            if role_type == Role.types.SHARING:
                 return role in self.get_sharing_roles(user)
             # If role_type is neither private nor sharing, it's ok to display
             return True
-        return role_type != self.model.Role.types.PRIVATE and role_type != self.model.Role.types.SHARING
+        return role_type != Role.types.PRIVATE and role_type != Role.types.SHARING
 
     def allow_action(self, roles, action, item):
         """
@@ -329,7 +331,7 @@ class GalaxyRBACAgent(RBACAgent):
         ret_permissions = {}
         if len(permission_items) > 0:
             # SM: NB: LibraryDatasets became Datasets for some odd reason.
-            if isinstance(permission_items[0], trans.model.LibraryDataset):
+            if isinstance(permission_items[0], LibraryDataset):
                 ids = [item.library_dataset_id for item in permission_items]
                 stmt = select(LibraryDatasetPermissions).where(
                     and_(
@@ -348,7 +350,7 @@ class GalaxyRBACAgent(RBACAgent):
                     ret_permissions[item.library_dataset_id] = []
                 for permission in permissions:
                     ret_permissions[permission.library_dataset_id].append(permission)
-            elif isinstance(permission_items[0], trans.model.Dataset):
+            elif isinstance(permission_items[0], Dataset):
                 ids = [item.id for item in permission_items]
 
                 stmt = select(DatasetPermissions).where(
@@ -499,7 +501,7 @@ class GalaxyRBACAgent(RBACAgent):
     def item_permission_map_for_add(self, trans, user_roles, libitems):
         return self.allow_action_on_libitems(trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems)
 
-    def can_access_dataset(self, user_roles, dataset: galaxy.model.Dataset):
+    def can_access_dataset(self, user_roles, dataset: Dataset):
         # SM: dataset_is_public will access dataset.actions, which is a
         # backref that causes a query to be made to DatasetPermissions
         retval = self.dataset_is_public(dataset) or self.allow_action(
@@ -518,7 +520,7 @@ class GalaxyRBACAgent(RBACAgent):
 
         return True
 
-    def can_access_collection(self, user_roles: List[galaxy.model.Role], collection: galaxy.model.DatasetCollection):
+    def can_access_collection(self, user_roles: List[Role], collection: DatasetCollection):
         action_tuples = collection.dataset_action_tuples
         if not self.can_access_datasets(user_roles, action_tuples):
             return False
@@ -599,21 +601,21 @@ class GalaxyRBACAgent(RBACAgent):
         return False
 
     def can_access_library_item(self, roles, item, user):
-        if isinstance(item, self.model.Library):
+        if isinstance(item, Library):
             return self.can_access_library(roles, item)
-        elif isinstance(item, self.model.LibraryFolder):
+        elif isinstance(item, LibraryFolder):
             return (
                 self.can_access_library(roles, item.parent_library) and self.check_folder_contents(user, roles, item)[0]
             )
-        elif isinstance(item, self.model.LibraryDataset):
+        elif isinstance(item, LibraryDataset):
             return self.can_access_library(roles, item.folder.parent_library) and self.can_access_dataset(
                 roles, item.library_dataset_dataset_association.dataset
             )
-        elif isinstance(item, self.model.LibraryDatasetDatasetAssociation):
+        elif isinstance(item, LibraryDatasetDatasetAssociation):
             return self.can_access_library(
                 roles, item.library_dataset.folder.parent_library
             ) and self.can_access_dataset(roles, item.dataset)
-        elif isinstance(item, self.model.LibraryDatasetCollectionAssociation):
+        elif isinstance(item, LibraryDatasetCollectionAssociation):
             return self.can_access_library(roles, item.folder.parent_library)
         else:
             log.warning(f"Unknown library item type: {type(item)}")
@@ -658,7 +660,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         datasets = datasets or []
         perms = {}
         for dataset in datasets:
-            if not isinstance(dataset, self.model.Dataset):
+            if not isinstance(dataset, Dataset):
                 dataset = dataset.dataset
             these_perms = {}
             # initialize blank perms
@@ -715,28 +717,28 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         raise Exception(f"No valid method of associating provided components: {kwd}")
 
     def associate_user_group(self, user, group):
-        assoc = self.model.UserGroupAssociation(user, group)
+        assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
         with transaction(self.sa_session):
             self.sa_session.commit()
         return assoc
 
     def associate_user_role(self, user, role):
-        assoc = self.model.UserRoleAssociation(user, role)
+        assoc = UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
         with transaction(self.sa_session):
             self.sa_session.commit()
         return assoc
 
     def associate_group_role(self, group, role):
-        assoc = self.model.GroupRoleAssociation(group, role)
+        assoc = GroupRoleAssociation(group, role)
         self.sa_session.add(assoc)
         with transaction(self.sa_session):
             self.sa_session.commit()
         return assoc
 
     def associate_action_dataset_role(self, action, dataset, role):
-        assoc = self.model.DatasetPermissions(action, dataset, role)
+        assoc = DatasetPermissions(action, dataset, role)
         self.sa_session.add(assoc)
         with transaction(self.sa_session):
             self.sa_session.commit()
@@ -767,14 +769,14 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return role
 
     def get_role(self, name, type=None):
-        type = type or self.model.Role.types.SYSTEM
+        type = type or Role.types.SYSTEM
         # will raise exception if not found
         stmt = select(Role).where(and_(Role.name == name, Role.type == type))
         return self.sa_session.execute(stmt).scalar_one()
 
     def create_role(self, name, description, in_users, in_groups, create_group_for_role=False, type=None):
-        type = type or self.model.Role.types.SYSTEM
-        role = self.model.Role(name=name, description=description, type=type)
+        type = type or Role.types.SYSTEM
+        role = Role(name=name, description=description, type=type)
         self.sa_session.add(role)
         # Create the UserRoleAssociations
         for user in [self.sa_session.get(User, x) for x in in_users]:
@@ -784,7 +786,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             self.associate_group_role(group, role)
         if create_group_for_role:
             # Create the group
-            group = self.model.Group(name=name)
+            group = Group(name=name)
             self.sa_session.add(group)
             # Associate the group with the role
             self.associate_group_role(group, role)
@@ -831,7 +833,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         for action, roles in permissions.items():
             if isinstance(action, Action):
                 action = action.action
-            for dup in [self.model.DefaultUserPermissions(user, action, role) for role in roles]:
+            for dup in [DefaultUserPermissions(user, action, role) for role in roles]:
                 self.sa_session.add(dup)
                 flush_needed = True
         if flush_needed:
@@ -871,7 +873,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         for action, roles in permissions.items():
             if isinstance(action, Action):
                 action = action.action
-            for dhp in [self.model.DefaultHistoryPermissions(history, action, role) for role in roles]:
+            for dhp in [DefaultHistoryPermissions(history, action, role) for role in roles]:
                 self.sa_session.add(dhp)
                 flush_needed = True
         if flush_needed:
@@ -922,7 +924,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             for _, roles in _walk_action_roles(permissions, self.permitted_actions.DATASET_ACCESS):
                 dataset_access_roles.extend(roles)
 
-            if len(dataset_access_roles) != 1 or dataset_access_roles[0].type != self.model.Role.types.PRIVATE:
+            if len(dataset_access_roles) != 1 or dataset_access_roles[0].type != Role.types.PRIVATE:
                 return galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE
 
         flush_needed = False
@@ -940,7 +942,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     role_id = role.id
                 else:
                     role_id = role
-                dp = self.model.DatasetPermissions(action, dataset, role_id=role_id)
+                dp = DatasetPermissions(action, dataset, role_id=role_id)
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed and flush:
@@ -970,7 +972,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     self.sa_session.delete(dp)
                     flush_needed = True
             # Add the new specific permission on the dataset
-            for dp in [self.model.DatasetPermissions(action, dataset, role) for role in roles]:
+            for dp in [DatasetPermissions(action, dataset, role) for role in roles]:
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed:
@@ -993,9 +995,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return permissions
 
     def copy_dataset_permissions(self, src, dst, flush=True):
-        if not isinstance(src, self.model.Dataset):
+        if not isinstance(src, Dataset):
             src = src.dataset
-        if not isinstance(dst, self.model.Dataset):
+        if not isinstance(dst, Dataset):
             dst = dst.dataset
         self.set_all_dataset_permissions(dst, self.get_permissions(src), flush=flush)
 
@@ -1004,7 +1006,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         intersect = None
         users = users or []
         for user in users:
-            roles = [ura.role for ura in user.roles if ura.role.type == self.model.Role.types.SHARING]
+            roles = [ura.role for ura in user.roles if ura.role.type == Role.types.SHARING]
             if intersect is None:
                 intersect = roles
             else:
@@ -1021,9 +1023,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     sharing_role = role
                     break
         if sharing_role is None:
-            sharing_role = self.model.Role(
-                name=f"Sharing role for: {', '.join(u.email for u in users)}", type=self.model.Role.types.SHARING
-            )
+            sharing_role = Role(name=f"Sharing role for: {', '.join(u.email for u in users)}", type=Role.types.SHARING)
             self.sa_session.add(sharing_role)
             with transaction(self.sa_session):
                 self.sa_session.commit()
@@ -1047,7 +1047,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     for role_assoc in [permission_class(action, library_item, role) for role in roles]:
                         self.sa_session.add(role_assoc)
                         flush_needed = True
-                    if isinstance(library_item, self.model.LibraryDatasetDatasetAssociation):
+                    if isinstance(library_item, LibraryDatasetDatasetAssociation):
                         # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
                         # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
                         # permission.  In this case, we'll reset this permission to the library_item user's private role.
@@ -1086,14 +1086,12 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     self.sa_session.delete(item_permission)
                     flush_needed = True
             # Add the new specific permission on the library item
-            if isinstance(library_item, self.model.LibraryDataset):
-                for item_permission in [
-                    self.model.LibraryDatasetPermissions(action, library_item, role) for role in roles
-                ]:
+            if isinstance(library_item, LibraryDataset):
+                for item_permission in [LibraryDatasetPermissions(action, library_item, role) for role in roles]:
                     self.sa_session.add(item_permission)
                     flush_needed = True
-            elif isinstance(library_item, self.model.LibraryPermissions):
-                for item_permission in [self.model.LibraryPermissions(action, library_item, role) for role in roles]:
+            elif isinstance(library_item, LibraryPermissions):
+                for item_permission in [LibraryPermissions(action, library_item, role) for role in roles]:
                     self.sa_session.add(item_permission)
                     flush_needed = True
         if flush_needed:
@@ -1151,7 +1149,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             if not dataset.purged and not self.dataset_is_public(dataset):
                 self.make_dataset_public(dataset)
 
-    def dataset_is_public(self, dataset: galaxy.model.Dataset):
+    def dataset_is_public(self, dataset: Dataset):
         """
         A dataset is considered public if there are no "access" actions
         associated with it.  Any other actions ( 'manage permissions',
@@ -1194,7 +1192,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             return False
         else:
             access_role = access_roles[0]
-            return access_role.type == self.model.Role.types.PRIVATE
+            return access_role.type == Role.types.PRIVATE
 
     def datasets_are_public(self, trans, datasets):
         """
@@ -1294,7 +1292,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     # permission on this dataset, or the dataset is not accessible.
                     # Since we have more than 1 role, none of them can be private.
                     for role in in_roles:
-                        if role.type == self.model.Role.types.PRIVATE:
+                        if role.type == Role.types.PRIVATE:
                             private_role_found = True
                             break
                 if len(in_roles) == 1:
@@ -1358,7 +1356,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     f"Invalid class ({target_library_item.__class__}) specified for target_library_item ({target_library_item.__class__.__name__})"
                 )
             # Make sure user's private role is included
-            private_role = self.model.security_agent.get_private_user_role(user)
+            private_role = self.get_private_user_role(user)
             for action in self.permitted_actions.values():
                 if not found_permission_class.filter_by(role_id=private_role.id, action=action.action).first():
                     lp = found_permission_class(action.action, target_library_item, private_role)
@@ -1407,9 +1405,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         for action in actions_to_check:
             if self.allow_action(roles, action, library_item):
                 return True, hidden_folder_ids
-        if isinstance(library_item, self.model.Library):
+        if isinstance(library_item, Library):
             return self.show_library_item(user, roles, library_item.root_folder, actions_to_check, hidden_folder_ids="")
-        if isinstance(library_item, self.model.LibraryFolder):
+        if isinstance(library_item, LibraryFolder):
             for folder in library_item.active_folders:
                 can_show, hidden_folder_ids = self.show_library_item(
                     user, roles, folder, actions_to_check, hidden_folder_ids=hidden_folder_ids
@@ -1433,11 +1431,11 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         """
         hidden_folder_ids = hidden_folder_ids or []
         showable_folders = showable_folders or []
-        if isinstance(library_item, self.model.Library):
+        if isinstance(library_item, Library):
             return self.get_showable_folders(
                 user, roles, library_item.root_folder, actions_to_check, showable_folders=[]
             )
-        if isinstance(library_item, self.model.LibraryFolder):
+        if isinstance(library_item, LibraryFolder):
             if library_item.id not in hidden_folder_ids:
                 for action in actions_to_check:
                     if self.allow_action(roles, action, library_item):
@@ -1594,15 +1592,10 @@ class HostAgent(RBACAgent):
         ucsc_archaea=("lowepub.cse.ucsc.edu",),
     )
 
-    def __init__(self, model, permitted_actions=None):
-        self.model = model
+    def __init__(self, sa_session, permitted_actions=None):
+        self.sa_session = sa_session
         if permitted_actions:
             self.permitted_actions = permitted_actions
-
-    @property
-    def sa_session(self):
-        """Returns a SQLAlchemy session"""
-        return self.model.context
 
     def allow_action(self, addr, action, **kwd):
         if "dataset" in kwd and action == self.permitted_actions.DATASET_ACCESS:
@@ -1664,7 +1657,7 @@ class HostAgent(RBACAgent):
         if hdadaa:
             hdadaa.update_time = datetime.utcnow()
         else:
-            hdadaa = self.model.HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
+            hdadaa = HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)
         with transaction(self.sa_session):
             self.sa_session.commit()

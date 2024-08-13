@@ -97,7 +97,7 @@ def _build_model_mapping(engine, map_install_models, thread_local_log) -> Galaxy
         model_modules.append(tool_shed_install)
 
     model_mapping = GalaxyModelMapping(model_modules, engine)
-    model_mapping.security_agent = GalaxyRBACAgent(model_mapping)
+    model_mapping.security_agent = GalaxyRBACAgent(model_mapping.session)
     model_mapping.thread_local_log = thread_local_log
     return model_mapping
 
