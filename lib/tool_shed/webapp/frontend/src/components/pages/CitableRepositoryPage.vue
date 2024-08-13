@@ -5,6 +5,7 @@ import { ToolShedApi } from "@/schema"
 import type { Repository } from "@/schema/types"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import ErrorBanner from "@/components/ErrorBanner.vue"
+import { errorMessageAsString } from "@/util"
 
 interface CitableRepositoryPageProps {
     username: string
@@ -16,25 +17,28 @@ const error = ref<string | null>(null)
 
 async function update() {
     error.value = null
-    const { data, error: requestError } = await ToolShedApi().GET("/api/repositories", {
-        params: {
-            query: {
-                owner: props.username,
-                name: props.repositoryName,
+    try {
+        const { data } = await ToolShedApi().GET("/api/repositories", {
+            params: {
+                query: {
+                    owner: props.username,
+                    name: props.repositoryName,
+                },
             },
-        },
-    })
-    if (requestError) {
-        error.value = requestError.err_msg
-    } else if (data instanceof Array) {
-        if (data.length == 0) {
-            error.value = `Repository ${props.username}/${props.repositoryName} is not found`
-        } else {
-            const repository: Repository = data[0]
-            if (repository.id != repositoryId.value) {
-                repositoryId.value = repository.id
+        })
+
+        if (data instanceof Array) {
+            if (data.length == 0) {
+                error.value = `Repository ${props.username}/${props.repositoryName} is not found`
+            } else {
+                const repository: Repository = data[0]
+                if (repository.id != repositoryId.value) {
+                    repositoryId.value = repository.id
+                }
             }
         }
+    } catch (e) {
+        error.value = errorMessageAsString(e)
     }
 }
 

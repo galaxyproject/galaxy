@@ -2,7 +2,7 @@
 import { ref, computed } from "vue"
 import PageContainer from "@/components/PageContainer.vue"
 import { ToolShedApi } from "@/schema"
-import { notify, copyAndNotify, notifyOnCatch } from "@/util"
+import { notify, copyAndNotify, notifyOnCatch, errorMessageAsString } from "@/util"
 import ConfigFileContents from "@/components/ConfigFileContents.vue"
 
 const apiKey = ref<string | null>(null)
@@ -22,50 +22,48 @@ async function copyKey() {
 const params = { encoded_user_id: "current" }
 
 async function init() {
-    const { data, error } = await ToolShedApi().GET("/api/users/{encoded_user_id}/api_key", {
-        params: {
-            path: params,
-        },
-    })
-
-    if (error) {
-        notifyOnCatch(new Error(`Error fetching API key: ${error.err_msg}`))
-        return
+    try {
+        const { data } = await ToolShedApi().GET("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
+        apiKey.value = data ?? null
+    } catch (e) {
+        notifyOnCatch(new Error(`Error fetching API key: ${errorMessageAsString(e)}`))
     }
-
-    apiKey.value = data
 }
 
 async function deleteKey() {
-    const { error } = await ToolShedApi().DELETE("/api/users/{encoded_user_id}/api_key", {
-        params: {
-            path: params,
-        },
-    })
+    try {
+        await ToolShedApi().DELETE("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
 
-    if (error) {
-        notifyOnCatch(new Error(`Error deactivating API key: ${error.err_msg}`))
-        return
+        apiKey.value = null
+        notify("API key deactivated")
+    } catch (e) {
+        notifyOnCatch(new Error(`Error deactivating API key: ${errorMessageAsString(e)}`))
     }
-
-    apiKey.value = null
-    notify("API key deactivated")
 }
 
 async function recreateKey() {
-    const { data, error } = await ToolShedApi().POST("/api/users/{encoded_user_id}/api_key", {
-        params: {
-            path: params,
-        },
-    })
+    try {
+        const { data } = await ToolShedApi().POST("/api/users/{encoded_user_id}/api_key", {
+            params: {
+                path: params,
+            },
+        })
 
-    if (error) {
-        notifyOnCatch(new Error(`Error re-generating API key: ${error.err_msg}`))
-        return
+        if (data) {
+            apiKey.value = data
+            notify("Re-generated API key")
+        }
+    } catch (e) {
+        notifyOnCatch(new Error(`Error re-generating API key: ${errorMessageAsString(e)}`))
     }
-
-    apiKey.value = data
-    notify("Re-generated API key")
 }
 
 void init()

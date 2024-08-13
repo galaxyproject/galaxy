@@ -2,7 +2,7 @@
 import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { ToolShedApi } from "@/schema"
-import { notify } from "@/util"
+import { notifyOnCatch } from "@/util"
 import router from "@/router"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 
@@ -26,9 +26,11 @@ async function onRegister() {
                 bear_field: "",
             },
         })
+
         if (!data) {
-            throw new Error("No data returned")
+            return
         }
+
         const query = {
             activation_error: data.activation_error ? "true" : "false",
             activation_sent: data.activation_sent ? "true" : "false",
@@ -37,7 +39,7 @@ async function onRegister() {
         }
         router.push({ path: "/registration_success", query: query })
     } catch (e) {
-        notify(String(e))
+        notifyOnCatch(e)
     }
 }
 </script>

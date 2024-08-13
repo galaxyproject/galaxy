@@ -23,7 +23,7 @@ async function onChange() {
         .then(() => {
             router.push("/")
         })
-        .catch((e: Error) => {
+        .catch((e) => {
             error.value = errorMessageAsString(e)
         })
 }

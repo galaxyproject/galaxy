@@ -58,5 +58,6 @@ export function queryParamToString(param: LocationQueryValue | LocationQueryValu
 }
 
 export function notifyOnCatch(e: unknown) {
+    console.debug(e)
     notify(errorMessageAsString(e))
 }

@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { ensureCookie, notifyOnCatch } from "@/util"
+import { ensureCookie, errorMessageAsString, notifyOnCatch } from "@/util"
 
 import { ToolShedApi } from "@/schema"
 
@@ -12,10 +12,14 @@ export const useAuthStore = defineStore({
     }),
     actions: {
         async setup() {
-            const { data: user } = await ToolShedApi().GET("/api/users/current")
-            this.user = user
-            // store user details and jwt in local storage to keep user logged in between page refreshes
-            localStorage.setItem("user", user ? JSON.stringify(user) : "null")
+            try {
+                const { data: user } = await ToolShedApi().GET("/api/users/current")
+                this.user = user
+                // store user details and jwt in local storage to keep user logged in between page refreshes
+                localStorage.setItem("user", user ? JSON.stringify(user) : "null")
+            } catch (e) {
+                console.debug(`Failed to get current user: ${errorMessageAsString(e)}`)
+            }
         },
         async login(username: string, password: string) {
             const token = ensureCookie("session_csrf_token")

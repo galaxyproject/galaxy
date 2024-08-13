@@ -4,6 +4,7 @@ import PageContainer from "@/components/PageContainer.vue"
 import RepositoryGrid from "@/components/RepositoriesGrid.vue"
 import { type RepositoryGridItem, type OnScroll } from "@/components/RepositoriesGridInterface"
 import { ToolShedApi, components } from "@/schema"
+import { notifyOnCatch } from "@/util"
 
 const query = ref("")
 const page = ref(1)
@@ -14,30 +15,34 @@ type RepositorySearchHit = components["schemas"]["RepositorySearchHit"]
 
 async function doQuery() {
     const queryValue = query.value
-    const { data } = await ToolShedApi().GET("/api/repositories", {
-        params: {
-            query: { q: queryValue, page: page.value, page_size: 10 },
-        },
-    })
-    if (query.value != queryValue) {
-        console.log("query changed.... not using these results...")
-        return
-    }
-    if (!data) {
-        throw Error("Server response error.")
-    }
-    if ("hits" in data) {
-        if (page.value == 1) {
-            hits.value = data.hits
+
+    try {
+        const { data } = await ToolShedApi().GET("/api/repositories", {
+            params: {
+                query: { q: queryValue, page: page.value, page_size: 10 },
+            },
+        })
+
+        if (query.value != queryValue) {
+            console.log("query changed.... not using these results...")
+            return
+        }
+
+        if (data && "hits" in data) {
+            if (page.value == 1) {
+                hits.value = data.hits
+            } else {
+                data.hits.forEach((h) => hits.value.push(h))
+            }
+            if (hits.value.length >= parseInt(data.total_results)) {
+                fetchedLastPage.value = true
+            }
+            page.value = page.value + 1
         } else {
-            data.hits.forEach((h) => hits.value.push(h))
+            throw Error("Server response structure error.")
         }
-        if (hits.value.length >= parseInt(data.total_results)) {
-            fetchedLastPage.value = true
-        }
-        page.value = page.value + 1
-    } else {
-        throw Error("Server response structure error.")
+    } catch (e) {
+        notifyOnCatch(e)
     }
 }
 
