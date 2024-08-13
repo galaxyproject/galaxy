@@ -101,6 +101,8 @@ export interface paths {
     "/api/repositories/{encoded_repository_id}": {
         /** Show */
         get: operations["repositories__show"]
+        /** Update Repository */
+        put: operations["repositories__update_repository"]
     }
     "/api/repositories/{encoded_repository_id}/allow_push": {
         /** Show Allow Push */
@@ -2207,6 +2209,23 @@ export interface components {
             /** Email */
             email: string
         }
+        /** UpdateRepositoryRequest */
+        UpdateRepositoryRequest: {
+            /** Category IDs */
+            category_ids?: string[] | null
+            /** Description */
+            description?: string | null
+            /** Homepage Url */
+            homepage_url?: string | null
+            /** Name */
+            name?: string | null
+            /** Remote Repository Url */
+            remote_repository_url?: string | null
+            /** Synopsis */
+            synopsis?: string | null
+            /** Type */
+            type?: ("repository_suite_definition" | "tool_dependency_definition" | "unrestricted") | null
+        }
         /** UserV2 */
         UserV2: {
             /** Id */
@@ -2792,6 +2811,40 @@ export interface operations {
             path: {
                 /** @description The encoded database identifier of the repository. */
                 encoded_repository_id: string
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DetailedRepository"]
+                }
+            }
+            /** @description Request Error */
+            "4XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+            /** @description Server Error */
+            "5XX": {
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"]
+                }
+            }
+        }
+    }
+    /** Update Repository */
+    repositories__update_repository: {
+        parameters: {
+            path: {
+                /** @description The encoded database identifier of the repository. */
+                encoded_repository_id: string
+            }
+        }
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRepositoryRequest"]
             }
         }
         responses: {
