@@ -1,5 +1,6 @@
 import createClient, { Middleware } from "openapi-fetch"
 import type { paths as ToolShedApiPaths } from "./schema"
+import { errorMessageAsString } from "@/util"
 
 let client: ToolShedApiClient
 
@@ -11,7 +12,7 @@ function apiClientFactory() {
                     ? await response.clone().json()
                     : await response.clone().text()
                 throw new Error(`Request failed with status ${response.status}`, {
-                    cause: message,
+                    cause: errorMessageAsString(message),
                 })
             }
             return response

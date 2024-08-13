@@ -3,7 +3,7 @@ import { ref } from "vue"
 import ModalForm from "@/components/ModalForm.vue"
 import { AUTH_FORM_INPUT_PROPS } from "@/constants"
 import { ToolShedApi } from "@/schema"
-import { errorMessage } from "@/util"
+import { errorMessageAsString } from "@/util"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import router from "@/router"
 
@@ -24,7 +24,7 @@ async function onChange() {
             router.push("/")
         })
         .catch((e: Error) => {
-            error.value = errorMessage(e)
+            error.value = errorMessageAsString(e)
         })
 }
 
