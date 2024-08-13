@@ -4,7 +4,7 @@
  */
 
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
-import { computed, type Ref } from "vue";
+import { customRef, type Ref } from "vue";
 
 /**
  * Wraps a number ref, restricting it's values to a given range
@@ -19,10 +19,16 @@ export function useClamp(ref: Ref<number>, min: MaybeRefOrGetter<number>, max: M
         return Math.min(Math.max(value, toValue(min)), toValue(max));
     };
 
-    const clampedRef = computed({
-        get: () => clamp(ref.value),
-        set: (value) => (ref.value = clamp(value)),
-    });
+    const clampedRef = customRef<number>((track, trigger) => ({
+        get: () => {
+            track();
+            return clamp(ref.value);
+        },
+        set: (value) => {
+            ref.value = clamp(value);
+            trigger();
+        },
+    }));
 
     return clampedRef;
 }
@@ -40,10 +46,16 @@ export function useStep(ref: Ref<number>, stepSize: MaybeRefOrGetter<number> = 1
         return Math.round(value / stepSizeValue) * stepSizeValue;
     };
 
-    const steppedRef = computed({
-        get: () => step(ref.value),
-        set: (value) => (ref.value = step(value)),
-    });
+    const steppedRef = customRef<number>((track, trigger) => ({
+        get: () => {
+            track();
+            return step(ref.value);
+        },
+        set: (value) => {
+            ref.value = step(value);
+            trigger();
+        },
+    }));
 
     return steppedRef;
 }
