@@ -177,12 +177,11 @@ import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
 import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
 import { useUserStore } from "@/stores/userStore";
 
-import UserBeaconSettings from "./UserBeaconSettings";
-import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
 import ThemeSelector from "./ThemeSelector.vue";
+import UserBeaconSettings from "./UserBeaconSettings.vue";
 import UserDeletion from "./UserDeletion.vue";
 import UserPreferencesElement from "./UserPreferencesElement.vue";
+import UserPreferredObjectStore from "./UserPreferredObjectStore.vue";
 
 library.add(faBell, faCloud, faCubes, faHdd, faIdCardAlt, faKey, faLaptop, faLock, faPalette, faSignOutAlt, faUsers);
 
