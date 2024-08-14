@@ -1,5 +1,6 @@
 <template>
     <UserPreferencesElement
+        id="select-preferred-object-store"
         :icon="faHdd"
         :title="title"
         :description="`Select a ${preferredOrEmptyString} storage location for the outputs of new jobs.`"

@@ -1,5 +1,6 @@
 <template>
     <UserPreferencesElement
+        id="delete-account"
         icon="fa-radiation"
         title="Delete Account"
         description="Delete your account on this Galaxy server."
