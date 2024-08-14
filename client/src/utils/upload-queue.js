@@ -66,6 +66,14 @@ export class UploadQueue {
         return this.queue.size;
     }
 
+    get historyId() {
+        return this.opts.historyId;
+    }
+
+    set historyId(historyId) {
+        this.opts.historyId = historyId;
+    }
+
     // Initiate upload process
     start() {
         if (!this.isRunning) {

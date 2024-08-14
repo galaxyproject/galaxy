@@ -4,7 +4,7 @@ import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
-import Vue, { computed, ref } from "vue";
+import Vue, { computed, onMounted, ref, watch } from "vue";
 
 import { UploadQueue } from "@/utils/upload-queue.js";
 
@@ -84,6 +84,7 @@ const uploadCompleted = ref(0);
 const uploadFile = ref(null);
 const uploadItems = ref({});
 const uploadSize = ref(0);
+const queue = ref();
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableBuild = computed(
@@ -99,7 +100,16 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
-const queue = computed(() => createUploadQueue());
+onMounted(() => {
+    queue.value = initUploadQueue();
+});
+
+watch(
+    () => props.historyId,
+    () => {
+        queue.value = initUploadQueue();
+    }
+);
 
 function createUploadQueue() {
     return new UploadQueue({
@@ -114,6 +124,26 @@ function createUploadQueue() {
         success: eventSuccess,
         warning: eventWarning,
     });
+}
+
+function initUploadQueue() {
+    if (!queue.value) {
+        return createUploadQueue();
+    }
+
+    if (queue.value.historyId !== historyId.value) {
+        // The history has changed since the queue was created
+        if (isRunning.value) {
+            // The queue is running on the old history, so we need to create a new queue
+            // that will target the new history
+            return createUploadQueue();
+        }
+        // The queue is not running, so we can just update the target historyId and reuse the queue
+        queue.value.historyId = historyId.value;
+        return queue.value;
+    }
+    // Nothing has changed, so we can just return the existing queue
+    return queue.value;
 }
 
 /** Add files to queue */
