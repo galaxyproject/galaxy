@@ -67,7 +67,7 @@ export async function purgeDataset(datasetId: string) {
 }
 
 const datasetCopy = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
-type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
+export type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
 export async function copyDataset(
     datasetId: HistoryContentsArgs["content"],
     historyId: HistoryContentsArgs["history_id"],

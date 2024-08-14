@@ -3,8 +3,15 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import {
+    type HDAObject,
+    type HistoryItemSummary,
+    type HistorySummaryExtended,
+    isDatasetElement,
+    isHistoryItem,
+    userOwnsHistory,
+} from "@/api";
+import { copyDataset, HistoryContentsArgs } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -17,7 +24,7 @@ import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
-import { setDrag } from "@/utils/setDrag";
+import { setItemDragstart } from "@/utils/setDrag";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -53,6 +60,8 @@ interface Props {
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
+
+type DraggableHistoryItem = HistoryItemSummary | HDAObject;
 
 type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
 
@@ -227,7 +236,13 @@ function getDragData() {
     const eventStore = useEventStore();
     const dragItems = eventStore.getDragItems();
     // Filter out any non-history items
-    const historyItems = dragItems?.filter((item: any) => isHistoryItem(item)) as HistoryItemSummary[];
+    const historyItems = dragItems?.map((item: any) => {
+        if (isHistoryItem(item)) {
+            return item;
+        } else if (isDatasetElement(item)) {
+            return item.object;
+        }
+    }) as DraggableHistoryItem[];
     const historyId = historyItems?.[0]?.history_id;
     return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
 }
@@ -381,10 +396,18 @@ async function onDrop() {
     try {
         // iterate over the data array and copy each item to the current history
         for (const item of data) {
-            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
+            let dataSource: HistoryContentsArgs["source"];
+            const type = item.history_content_type as "dataset" | "dataset_collection" | undefined;
+            if (type) {
+                // it's a `HistoryItemSummary`
+                dataSource = type === "dataset" ? "hda" : "hdca";
+            } else {
+                // it's a `HDAObject` from a collection
+                dataSource = "hda";
+            }
+            await copyDataset(item.id, props.history.id, type, dataSource);
 
-            if (item.history_content_type === "dataset") {
+            if (dataSource === "hda") {
                 datasetCount++;
                 if (!multiple) {
                     Toast.info("Dataset copied to history");
@@ -450,24 +473,6 @@ function arrowNavigate(item: HistoryItemSummary, eventKey: string) {
         itemElement?.focus();
     }
     return nextItem;
-}
-
-function setItemDragstart(
-    item: HistoryItemSummary,
-    itemIsSelected: boolean,
-    selectedItems: Map<string, HistoryItemSummary>,
-    selectionSize: number,
-    event: DragEvent
-) {
-    if (itemIsSelected && selectionSize > 1) {
-        const selectedItemsObj: any = {};
-        for (const [key, value] of selectedItems) {
-            selectedItemsObj[key] = value;
-        }
-        setDrag(event, selectedItemsObj, true);
-    } else {
-        setDrag(event, item as any);
-    }
 }
 </script>
 
@@ -629,10 +634,10 @@ function setItemDragstart(
                                     @drag-start="
                                         setItemDragstart(
                                             item,
+                                            $event,
                                             showSelection && isSelected(item),
-                                            selectedItems,
                                             selectionSize,
-                                            $event
+                                            selectedItems
                                         )
                                     "
                                     @hide-selection="setShowSelection(false)"

@@ -25,3 +25,21 @@ export function clearDrag() {
     const eventStore = useEventStore();
     eventStore.clearDragData();
 }
+
+export function setItemDragstart<T>(
+    item: T,
+    event: DragEvent,
+    itemIsSelected = false,
+    selectionSize = 0,
+    selectedItems?: Map<string, T>
+) {
+    if (selectedItems && itemIsSelected && selectionSize > 1) {
+        const selectedItemsObj: Record<string, T> = {};
+        for (const [key, value] of selectedItems) {
+            selectedItemsObj[key] = value;
+        }
+        setDrag(event, selectedItemsObj, true);
+    } else {
+        setDrag(event, item as any);
+    }
+}
