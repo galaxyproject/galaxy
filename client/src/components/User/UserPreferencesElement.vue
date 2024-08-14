@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
-
-library.add(faCog);
+import type { PropType } from "vue";
 
 const props = defineProps({
     id: {
@@ -12,8 +10,8 @@ const props = defineProps({
         default: null,
     },
     icon: {
-        type: String,
-        default: "fa-cog",
+        type: String as PropType<any>,
+        default: faCog,
     },
     title: {
         type: String,
