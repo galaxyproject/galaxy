@@ -13,7 +13,10 @@ const preferencesStore = useLocalPreferencesStore();
 </script>
 
 <template>
-    <PreferencePage heading="Local Preferences" :icon="faLaptop">
+    <PreferencePage
+        heading="Local Preferences"
+        :icon="faLaptop"
+        description="Settings specific to this client. These settings will not be synced when logging in on another device.">
         <div class="preference-list">
             <LocalPreference
                 v-for="(preference, i) in preferencesStore.allPreferences.uncategorized"

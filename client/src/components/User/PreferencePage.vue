@@ -9,6 +9,7 @@ import Heading from "@/components/Common/Heading.vue";
 const props = defineProps<{
     heading: string;
     icon: any;
+    description?: string;
     backLinkUrl?: string;
     backLinkText?: string;
 }>();
@@ -28,6 +29,10 @@ const backText = computed(() => props.backLinkText ?? "back to preferences");
             {{ props.heading }}
         </Heading>
 
+        <p v-if="props.description">
+            {{ props.description }}
+        </p>
+
         <slot></slot>
     </section>
 </template>
@@ -40,6 +45,10 @@ const backText = computed(() => props.backLinkText ?? "back to preferences");
 
     .back-button {
         align-self: self-start;
+    }
+
+    p {
+        margin: 0;
     }
 }
 </style>
