@@ -66,14 +66,6 @@ export class UploadQueue {
         return this.queue.size;
     }
 
-    get historyId() {
-        return this.opts.historyId;
-    }
-
-    set historyId(historyId) {
-        this.opts.historyId = historyId;
-    }
-
     // Initiate upload process
     start() {
         if (!this.isRunning) {
@@ -104,7 +96,11 @@ export class UploadQueue {
             // Remove item from queue
             this.remove(index);
             // Collect upload request data
-            const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
+            const item = this.opts.get(index);
+            if (!item.targetHistoryId) {
+                throw new Error(`Missing target history for upload item [${index}] ${item.fileName}`);
+            }
+            const data = uploadPayload([item], item.targetHistoryId);
             // Initiate upload request
             this._processSubmit(index, data);
         } catch (e) {
