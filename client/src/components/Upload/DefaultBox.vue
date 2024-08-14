@@ -2,9 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchImmediate } from "@vueuse/core";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
-import Vue, { computed, onMounted, ref, watch } from "vue";
+import Vue, { computed, ref } from "vue";
 
 import { UploadQueue } from "@/utils/upload-queue.js";
 
@@ -100,11 +101,7 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
-onMounted(() => {
-    queue.value = initUploadQueue();
-});
-
-watch(
+watchImmediate(
     () => props.historyId,
     () => {
         queue.value = initUploadQueue();
