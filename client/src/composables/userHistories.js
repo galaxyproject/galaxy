@@ -15,6 +15,10 @@ export function useUserHistories(user) {
     );
 
     const currentHistoryId = computed(() => historyStore.currentHistoryId);
+    const currentHistory = computed(() => historyStore.currentHistory);
 
-    return { currentHistoryId };
+    return {
+        currentHistoryId,
+        currentHistory,
+    };
 }
