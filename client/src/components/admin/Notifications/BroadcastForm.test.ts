@@ -4,13 +4,11 @@ import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 
 import { generateNewBroadcast, generateRandomString } from "./test.utils";
 
 import BroadcastForm from "./BroadcastForm.vue";
-
-jest.mock("@/api/schema");
 
 const SUBJECT_INPUT_SELECTOR = "#broadcast-subject";
 const MESSAGE_INPUT_SELECTOR = "#broadcast-message";
@@ -47,6 +45,8 @@ async function mountBroadcastForm(props?: object) {
     return { wrapper, mockRouter };
 }
 
+const { server, http } = useServerMock();
+
 describe("BroadcastForm.vue", () => {
     function expectSubmitButton(wrapper: Wrapper<Vue>, enabled: boolean) {
         expect(wrapper.find(SUBMIT_BUTTON_SELECTOR).exists()).toBeTruthy();
@@ -57,7 +57,12 @@ describe("BroadcastForm.vue", () => {
     }
 
     async function createBroadcast(wrapper: Wrapper<Vue>, mockRouter: { push: jest.Mock }, actionsLink = false) {
-        mockFetcher.path("/api/notifications/broadcast").method("post").mock({ data: {} });
+        server.use(
+            http.post("/api/notifications/broadcast", ({ response }) => {
+                // We use untyped here because we don't care about the response
+                return response.untyped(HttpResponse.json({}, { status: 200 }));
+            })
+        );
 
         expectSubmitButton(wrapper, false);
 
@@ -67,7 +72,7 @@ describe("BroadcastForm.vue", () => {
         if (actionsLink) {
             await wrapper.find(ACTION_LINK_SELECTOR).trigger("click");
 
-            await wrapper.vm.$nextTick();
+            await flushPromises();
 
             await wrapper.find("#broadcast-action-link-name-0").setValue("Test link name");
             await wrapper.find("#broadcast-action-link-link-0").setValue("https://test.link");
@@ -77,7 +82,7 @@ describe("BroadcastForm.vue", () => {
 
         await wrapper.find(SUBMIT_BUTTON_SELECTOR).trigger("click");
 
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         expect(mockRouter.push).toHaveBeenCalledTimes(1);
         expect(mockRouter.push).toHaveBeenCalledWith("/admin/notifications");
@@ -103,11 +108,15 @@ describe("BroadcastForm.vue", () => {
 
     it("should get broadcast data when id is defined", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ actionLink: true });
-        mockFetcher.path("/api/notifications/broadcast/{notification_id}").method("get").mock({ data: FAKE_BROADCAST });
+        server.use(
+            http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
+                return response(200).json(FAKE_BROADCAST);
+            })
+        );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
 
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         expect((wrapper.find(SUBJECT_INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
             FAKE_BROADCAST.content.subject
@@ -121,8 +130,15 @@ describe("BroadcastForm.vue", () => {
 
     it("should update broadcast when id is defined and all inputs are defined", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ actionLink: true });
-        mockFetcher.path("/api/notifications/broadcast/{notification_id}").method("get").mock({ data: FAKE_BROADCAST });
-        mockFetcher.path("/api/notifications/broadcast/{notification_id}").method("put").mock({ data: {} });
+        server.use(
+            http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
+                return response(200).json(FAKE_BROADCAST);
+            }),
+
+            http.put("/api/notifications/broadcast/{notification_id}", ({ response }) => {
+                return response(204).empty();
+            })
+        );
 
         const { wrapper, mockRouter } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
 
@@ -133,7 +149,7 @@ describe("BroadcastForm.vue", () => {
 
         await wrapper.find(SUBMIT_BUTTON_SELECTOR).trigger("click");
 
-        await wrapper.vm.$nextTick();
+        await flushPromises();
 
         expect(mockRouter.push).toHaveBeenCalledTimes(1);
         expect(mockRouter.push).toHaveBeenCalledWith("/admin/notifications");
@@ -141,7 +157,11 @@ describe("BroadcastForm.vue", () => {
 
     it("should not show the published warning when editing a scheduled broadcast", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ published: false });
-        mockFetcher.path("/api/notifications/broadcast/{notification_id}").method("get").mock({ data: FAKE_BROADCAST });
+        server.use(
+            http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
+                return response(200).json(FAKE_BROADCAST);
+            })
+        );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
 
@@ -150,7 +170,11 @@ describe("BroadcastForm.vue", () => {
 
     it("should show the published published when editing a published broadcast", async () => {
         const FAKE_BROADCAST = generateNewBroadcast({ published: true });
-        mockFetcher.path("/api/notifications/broadcast/{notification_id}").method("get").mock({ data: FAKE_BROADCAST });
+        server.use(
+            http.get("/api/notifications/broadcast/{notification_id}", ({ response }) => {
+                return response(200).json(FAKE_BROADCAST);
+            })
+        );
 
         const { wrapper } = await mountBroadcastForm({ id: FAKE_BROADCAST.id });
 

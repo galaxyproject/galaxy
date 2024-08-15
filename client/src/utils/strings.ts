@@ -28,3 +28,16 @@ export function orList(items: string[]): string {
         .reverse()
         .join("");
 }
+
+/**
+ * Capitalize the first letter of each word of a string in snake_case format
+ *
+ * @param str String to capitalize in snake_case format (e.g. "this_is_a_string")
+ * @returns Capitalized string in title case (e.g. "This Is A String")
+ */
+export function snakeCaseToTitleCase(str: string): string {
+    return str
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+}

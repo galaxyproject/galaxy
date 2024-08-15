@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { fetcher, components } from "@/schema"
+import { ToolShedApi, components } from "@/schema"
 import PageContainer from "@/components/PageContainer.vue"
+import { notifyOnCatch } from "@/util"
 
-const searchIndexer = fetcher.path("/api/tools/build_search_index").method("put").create()
 type IndexResults = components["schemas"]["BuildSearchIndexResponse"]
 
-const searchResults = ref(null as IndexResults | null)
+const searchResults = ref<IndexResults>()
 
 async function onIndex() {
-    const { data } = await searchIndexer({})
-    searchResults.value = data
+    try {
+        const { data } = await ToolShedApi().PUT("/api/tools/build_search_index")
+        searchResults.value = data
+    } catch (e) {
+        notifyOnCatch(e)
+    }
 }
 </script>
 <template>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { fetcher } from "@/schema"
+import { ToolShedApi } from "@/schema"
 import { notify, notifyOnCatch } from "@/util"
-const resetFetcher = fetcher.path("/api/repositories/{encoded_repository_id}/reset_metadata").method("post").create()
 
 async function resetMetadata() {
-    resetFetcher({ encoded_repository_id: props.repositoryId })
+    ToolShedApi()
+        .POST("/api/repositories/{encoded_repository_id}/reset_metadata", {
+            params: { path: { encoded_repository_id: props.repositoryId } },
+        })
         .catch(notifyOnCatch)
         .then(() => {
             notify("Repository metadata reset.")

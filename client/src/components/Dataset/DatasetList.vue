@@ -3,10 +3,11 @@ import { BAlert, BTable } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { type HDASummary } from "@/api";
-import { copyDataset, getDatasets } from "@/api/datasets";
+import { GalaxyApi, type HDASummary } from "@/api";
+import { copyDataset } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import DatasetName from "@/components/Dataset/DatasetName.vue";
@@ -68,18 +69,29 @@ async function load(concat = false) {
     loading.value = true;
 
     try {
-        const datasets = await getDatasets({
-            query: query.value,
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            offset: offset.value,
-            limit: limit.value,
+        const { data, error } = await GalaxyApi().GET("/api/datasets", {
+            params: {
+                query: {
+                    q: ["name-contains"],
+                    qv: [query.value],
+                    limit: limit.value,
+                    offset: offset.value,
+                    order: `${sortBy.value}${sortDesc.value ? "-dsc" : "-asc"}`,
+                    view: "summary",
+                },
+            },
         });
 
+        if (error) {
+            rethrowSimple(error);
+        }
+
+        const datasets = data as HDASummary[];
+
         if (concat) {
-            rows.value = rows.value.concat(datasets as HDASummary[]);
+            rows.value = rows.value.concat(datasets);
         } else {
-            rows.value = datasets as HDASummary[];
+            rows.value = datasets;
         }
     } catch (error: any) {
         onError(error);
@@ -92,7 +104,11 @@ async function onCopyDataset(item: HDASummary) {
     const dataset_id = item.id;
 
     try {
-        await copyDataset(dataset_id, currentHistoryId.value as string);
+        if (!currentHistoryId.value) {
+            throw new Error("No current history found.");
+        }
+
+        await copyDataset(dataset_id, currentHistoryId.value);
 
         historyStore.loadCurrentHistory();
     } catch (error: any) {

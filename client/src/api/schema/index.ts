@@ -1,2 +1,3 @@
-export { type ApiResponse, fetcher } from "./fetcher";
-export type { components, operations, paths } from "./schema";
+import { type components, type paths as GalaxyApiPaths } from "./schema";
+
+export { type components, type GalaxyApiPaths };

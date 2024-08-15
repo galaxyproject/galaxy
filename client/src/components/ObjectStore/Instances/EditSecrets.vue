@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { ObjectStoreTemplateSummary } from "@/components/ObjectStore/Templates/types";
+import { rethrowSimple } from "@/utils/simple-error";
 
-import { update } from "./services";
 import type { UserConcreteObjectStore } from "./types";
 
 import EditSecretsForm from "@/components/ConfigTemplates/EditSecretsForm.vue";
@@ -16,12 +17,17 @@ const props = defineProps<Props>();
 const title = computed(() => `Update Storage Location ${props.objectStore?.name} Secrets`);
 
 async function onUpdate(secretName: string, secretValue: string) {
-    const payload = {
-        secret_name: secretName,
-        secret_value: secretValue,
-    };
-    const args = { user_object_store_id: String(props.objectStore.uuid) };
-    await update({ ...args, ...payload });
+    const { error } = await GalaxyApi().PUT("/api/object_store_instances/{user_object_store_id}", {
+        params: { path: { user_object_store_id: props.objectStore.uuid } },
+        body: {
+            secret_name: secretName,
+            secret_value: secretValue,
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
 }
 </script>
 <template>

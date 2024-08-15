@@ -21,7 +21,7 @@ describe("AdminUsers", () => {
             "Key",
             "Impersonate",
             "Delete",
-            "Purge",
+            "Permanently Delete",
             "Restore",
         ];
         titles.forEach((title, index) => {

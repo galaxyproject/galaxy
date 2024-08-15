@@ -1,9 +1,8 @@
 import { format, parseISO } from "date-fns";
 import { computed, type Ref, ref, watch } from "vue";
 
-import { fetcher } from "@/api/schema";
-
-const jobsFetcher = fetcher.path("/api/jobs").method("get").create();
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface SelectOption {
     value: string;
@@ -32,8 +31,18 @@ export function useMappingJobs(
         implicitCollectionJobsId,
         async () => {
             if (implicitCollectionJobsId.value) {
-                const response = await jobsFetcher({ implicit_collection_jobs_id: implicitCollectionJobsId.value });
-                const jobs: Job[] = response.data as unknown as Job[];
+                const { data: jobs, error } = await GalaxyApi().GET("/api/jobs", {
+                    params: {
+                        query: {
+                            implicit_collection_jobs_id: implicitCollectionJobsId.value,
+                        },
+                    },
+                });
+
+                if (error) {
+                    rethrowSimple(error);
+                }
+
                 selectJobOptions.value = jobs.map((value, index) => {
                     const isoCreateTime = parseISO(`${value.create_time}Z`);
                     const prettyTime = format(isoCreateTime, "eeee MMM do H:mm:ss yyyy zz");

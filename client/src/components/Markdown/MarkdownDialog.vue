@@ -3,11 +3,9 @@ import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { publishedHistoriesFetcher } from "@/api/histories";
-import { invocationsFetcher } from "@/api/invocations";
-import { jobsFetcher } from "@/api/jobs";
-import { workflowsFetcher } from "@/api/workflows";
+import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { type WorkflowLabel, type WorkflowLabels } from "./labels";
 
@@ -90,20 +88,36 @@ const selectedLabelTitle = computed(() => {
     return (config && config.labelTitle) || "Select Label";
 });
 
-function getInvocations() {
-    return invocationsFetcher({});
+async function getInvocations() {
+    const { data, error } = await GalaxyApi().GET("/api/invocations");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
-function getJobs() {
-    return jobsFetcher({});
+async function getJobs() {
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
-function getWorkflows() {
-    return workflowsFetcher({});
+async function getWorkflows() {
+    const { data, error } = await GalaxyApi().GET("/api/workflows");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
-function getHistories() {
-    return publishedHistoriesFetcher({});
+async function getHistories() {
+    const { data, error } = await GalaxyApi().GET("/api/histories/published");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
 }
 
 function onData(response: string) {

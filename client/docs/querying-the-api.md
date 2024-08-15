@@ -24,44 +24,105 @@ If there is no Composable for the API endpoint you are using, try using a (Pinia
 
 ### Direct API Calls
 
--   If the type of data you are querying should not be cached, or you just need to update or create new data, you can use the API directly. Make sure to use the **Fetcher** (see below) instead of Axios, as it provides a type-safe interface to the API along with some extra benefits.
+-   If the type of data you are querying should not be cached, or you just need to update or create new data, you can use the API directly. Make sure to use the **GalaxyApi client** (see below) instead of Axios, as it provides a type-safe interface to the API along with some extra benefits.
 
-## 2. Prefer Fetcher over Axios (when possible)
+## 2. Prefer **GalaxyApi client** over Axios (when possible)
 
--   **Use Fetcher with OpenAPI Specs**: If there is an OpenAPI spec for the API endpoint you are using (in other words, there is a FastAPI route defined in Galaxy), always use the Fetcher. It will provide you with a type-safe interface to the API.
+-   **Use **GalaxyApi client** with OpenAPI Specs**: If there is an OpenAPI spec for the API endpoint you are using (in other words, there is a FastAPI route defined in Galaxy), always use the GalaxyApi client. It will provide you with a type-safe interface to the API.
 
 **Do**
 
-```typescript
-import { fetcher } from "@/api/schema";
-const datasetsFetcher = fetcher.path("/api/dataset/{id}").method("get").create();
+```ts
+import { ref, onMounted } from "vue";
 
-const { data: dataset } = await datasetsFetcher({ id: "testID" });
+import { GalaxyApi, type HDADetailed } from "@/api";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
+
+const datasetDetails = ref<HDADetailed>();
+const errorMessage = ref<string>();
+
+async function loadDatasetDetails() {
+    // Your IDE will provide you with autocompletion for the route and all the parameters
+    const { data, error } = await GalaxyApi().GET("/api/datasets/{dataset_id}", {
+        params: {
+            path: {
+                dataset_id: props.datasetId,
+            },
+            query: { view: "detailed" },
+        },
+    });
+
+    if (error) {
+        // Handle error here. For example, you can display a message to the user.
+        errorMessage.value = errorMessageAsString(error);
+        // Make sure to return here, otherwise `data` will be undefined
+        return;
+    }
+
+    // Use `data` here. We are casting it to HDADetailed to help the type inference because
+    // we requested the "detailed" view and this endpoint returns different types depending
+    // on the view. In general, the correct type will be inferred automatically using the
+    // API schema so you don't need to (and shouldn't) cast it.
+    datasetDetails.value = data as HDADetailed;
+}
+
+onMounted(() => {
+    loadDatasetDetails();
+});
 ```
 
 **Don't**
 
-```js
+```ts
+import { ref, onMounted } from "vue";
+
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-async getDataset(datasetId) {
+interface Props {
+    datasetId: string;
+}
+
+const props = defineProps<Props>();
+
+const datasetDetails = ref<HDADetailed>();
+const errorMessage = ref<string>();
+
+async function loadDatasetDetails() {
+    // You need to construct the URL yourself
     const url = `${getAppRoot()}api/datasets/${datasetId}`;
+    // You are forced to use a try-catch block to handle errors
+    // and you may forget to do so.
     try {
-        const response = await axios.get(url);
-        return response.data;
+        // This is not type-safe and cannot detect changes in the API schema.
+        const response = await axios.get(url, {
+            // You need to know the API parameters, no type inference here.
+            params: { view: "detailed" },
+        });
+        // In this case, you need to cast the response to the correct type
+        // (as in the previous example), but you will also have to do it in the general
+        // case because there is no type inference.
+        datasetDetails = response.data as HDADetailed;
     } catch (e) {
-        rethrowSimple(e);
+        errorMessage.value = errorMessageAsString(error);
     }
 }
 
-const dataset = await getDataset("testID");
+onMounted(() => {
+    loadDatasetDetails();
+});
 ```
 
 > **Reason**
 >
-> The `fetcher` class provides a type-safe interface to the API, and is already configured to use the correct base URL and error handling.
+> The `GalaxyApi client` function provides a type-safe interface to the API, and is already configured to use the correct base URL. In addition, it will force you to handle errors properly, and will provide you with a type-safe response object. It uses `openapi-fetch` and you can find more information about it [here](https://openapi-ts.dev/openapi-fetch/).
 
 ## 3. Where to put your API queries?
 
@@ -79,8 +140,8 @@ If so, you should consider putting the query in a Store. If not, you should cons
 
 If so, you should consider putting it under src/api/<resource>.ts and exporting it from there. This will allow you to reuse the query in multiple places specially if you need to do some extra processing of the data. Also it will help to keep track of what parts of the API are being used and where.
 
-### Should I use the `fetcher` directly or should I write a wrapper function?
+### Should I use the `GalaxyApi client` directly or should I write a wrapper function?
 
--   If you **don't need to do any extra processing** of the data, you can use the `fetcher` directly.
--   If you **need to do some extra processing**, you should consider writing a wrapper function. Extra processing can be anything from transforming the data to adding extra parameters to the query or omitting some of them, handling conditional types in response data, etc.
--   Using a **wrapper function** will help in case we decide to replace the `fetcher` with something else in the future (as we are doing now with _Axios_).
+-   If you **don't need to do any additional processing** of the data, you **should** use the `GalaxyApi client` directly.
+-   If you **need to do some additional processing**, then consider writing a wrapper function. Additional processing can be anything from transforming the data to adding extra parameters to the query, providing useful defaults, handling conditional types in response data, etc.
+-   In any case, please try to avoid modeling your own types if you can use the ones defined in the OpenAPI spec (client/src/api/schema/schema.ts). This will help to keep the codebase consistent and avoid duplication of types or API specification drifting.

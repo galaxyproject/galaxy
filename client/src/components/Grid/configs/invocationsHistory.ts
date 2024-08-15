@@ -1,11 +1,13 @@
 import { faArrowLeft, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { invocationsFetcher, type WorkflowInvocation } from "@/api/invocations";
+import { GalaxyApi } from "@/api";
+import { type WorkflowInvocation } from "@/api/invocations";
 import { type StoredWorkflowDetailed } from "@/api/workflows";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import _l from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { type ActionArray, type FieldArray, type GridConfig } from "./types";
 
@@ -34,17 +36,25 @@ async function getData(
     }
     const historyId = extraProps["history_id"] as string;
 
-    const { data, headers } = await invocationsFetcher({
-        limit,
-        offset,
-        sort_by: sort_by as SortKeyLiteral,
-        sort_desc,
-        user_id: userStore.currentUser.id,
-        include_nested_invocations: false,
-        history_id: historyId,
+    const { response, data, error } = await GalaxyApi().GET("/api/invocations", {
+        params: {
+            query: {
+                limit,
+                offset,
+                sort_by: sort_by as SortKeyLiteral,
+                sort_desc,
+                user_id: userStore.currentUser.id,
+                include_nested_invocations: false,
+                history_id: historyId,
+            },
+        },
     });
+    if (error) {
+        rethrowSimple(error);
+    }
+
     fetchHistories(data);
-    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
+    const totalMatches = parseInt(response.headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
