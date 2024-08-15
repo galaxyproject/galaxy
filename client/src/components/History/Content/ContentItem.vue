@@ -298,7 +298,6 @@ function onUndelete() {
 }
 
 function onDragStart(evt: DragEvent) {
-    console.log(evt);
     emit("drag-start", evt);
 }
 
