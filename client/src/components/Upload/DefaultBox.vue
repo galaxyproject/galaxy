@@ -58,7 +58,7 @@ const props = defineProps({
     },
     lazyLoad: {
         type: Number,
-        default: 50,
+        default: 150,
     },
     listDbKeys: {
         type: Array,
@@ -84,6 +84,7 @@ const uploadCompleted = ref(0);
 const uploadFile = ref(null);
 const uploadItems = ref({});
 const uploadSize = ref(0);
+const queue = ref(createUploadQueue());
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableBuild = computed(
@@ -99,8 +100,6 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
-const queue = computed(() => createUploadQueue());
-
 function createUploadQueue() {
     return new UploadQueue({
         announce: eventAnnounce,
@@ -108,7 +107,6 @@ function createUploadQueue() {
         complete: eventComplete,
         error: eventError,
         get: (index) => uploadItems.value[index],
-        historyId: historyId.value,
         multiple: props.multiple,
         progress: eventProgress,
         success: eventSuccess,
@@ -268,6 +266,11 @@ function eventStart() {
         uploadValues.value.forEach((model) => {
             if (model.status === "init") {
                 model.status = "queued";
+                if (!model.targetHistoryId) {
+                    // Associate with current history once upload starts
+                    // This will not change if the current history is changed during upload
+                    model.targetHistoryId = historyId.value;
+                }
                 uploadSize.value += model.fileSize;
             }
         });
