@@ -215,7 +215,9 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 url = trans.app.config.organization_url
                 rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_time":
-                invocation = workflow_manager.get_invocation(trans, object_id)
+                invocation = workflow_manager.get_invocation(
+                    trans, object_id, check_ownership=False, check_accessible=True
+                )
                 rval = self.handle_invocation_time(line, invocation)
             elif container == "visualization":
                 rval = None
