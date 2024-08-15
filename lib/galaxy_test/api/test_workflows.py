@@ -2056,14 +2056,25 @@ steps:
           pick_from:
           - value:
             __class__: RuntimeValue
+  consume_index:
+    tool_id: metadata_bam
+    in:
+      input_bam: pick_value/data_param
+    tool_state:
+      ref_names:
+        - chr10_random
+        - chr11
+        - chrM
+        - chrX
+        - chr16
 outputs:
   pick_out:
     outputSource: pick_value/data_param
 """,
                 test_data="""
 some_file:
-  value: 1.bam
-  file_type: bam
+  value: 3.bam
+  file_type: unsorted.bam
   type: File
 """,
                 history_id=history_id,
@@ -2076,6 +2087,7 @@ some_file:
         )
         assert dataset_details["metadata_reference_names"]
         assert dataset_details["metadata_bam_index"]
+        assert dataset_details["file_ext"] == "bam"
 
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
