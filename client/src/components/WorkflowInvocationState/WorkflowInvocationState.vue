@@ -168,11 +168,10 @@ function cancelWorkflowSchedulingLocal() {
             </BTab>
             <BTab title="Steps" lazy>
                 <WorkflowInvocationSteps
-                    v-if="invocation"
+                    v-if="invocation && storeId"
                     :invocation="invocation"
                     :store-id="storeId"
-                    :is-full-page="props.isFullPage"
-                    :showing-job-id="''" />
+                    :is-full-page="props.isFullPage" />
             </BTab>
             <WorkflowInvocationInputOutputTabs :invocation="invocation" />
             <!-- <BTab title="Workflow Overview">

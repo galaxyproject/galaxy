@@ -4,7 +4,7 @@ import { faChevronDown, faChevronUp, faSignInAlt } from "@fortawesome/free-solid
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -16,30 +16,14 @@ import WorkflowInvocationStep from "@/components/WorkflowInvocationState/Workflo
 
 library.add(faChevronDown, faChevronUp, faSignInAlt);
 
-interface Props {
+const props = defineProps<{
     /** The store id for the invocation graph */
     storeId: string;
     /** The invocation to display */
     invocation: WorkflowInvocationElementView;
-    /** Whether the invocation graph is hidden */
-    hideGraph?: boolean;
-    /** The id for the currently shown job */
-    showingJobId: string;
     /** Whether the steps are being rendered on the dedicated invocation page/route */
     isFullPage?: boolean;
-    /** The active node on the graph */
-    activeNodeId?: number;
-}
-
-const emit = defineEmits<{
-    (e: "focus-on-step", stepId: number): void;
-    (e: "update:showing-job-id", value: string | undefined): void;
 }>();
-
-const props = withDefaults(defineProps<Props>(), {
-    hideGraph: true,
-    activeNodeId: undefined,
-});
 
 const invocationStore = useInvocationStore();
 const { graphStepsByStoreId } = storeToRefs(invocationStore);
@@ -54,35 +38,6 @@ const workflowInputSteps = workflow.value
     : [];
 const oneOrNoInput = computed(() => workflowInputSteps.length <= 1);
 const expandInvocationInputs = ref(oneOrNoInput.value);
-
-watch(
-    () => [props.activeNodeId, stepsDiv.value],
-    async ([nodeId, card]) => {
-        // if the active node id is an input step, expand the inputs section if not already expanded
-        if (!expandInvocationInputs.value) {
-            const isAnInput = workflowInputSteps.findIndex((step) => step.id === props.activeNodeId) !== -1;
-            expandInvocationInputs.value = isAnInput;
-        }
-
-        await nextTick();
-
-        // on full page view, scroll to the active step card in the steps section
-        if (props.isFullPage) {
-            if (nodeId !== undefined && card) {
-                // scroll to the active step card
-                const stepCard = stepsDiv.value?.querySelector(`[data-index="${props.activeNodeId}"]`);
-                stepCard?.scrollIntoView({ block: "nearest", inline: "start" });
-            }
-        }
-        // clear any job being shown
-        emit("update:showing-job-id", undefined);
-    },
-    { immediate: true }
-);
-
-function showJob(jobId: string | undefined) {
-    emit("update:showing-job-id", jobId);
-}
 </script>
 
 <template>
@@ -118,12 +73,7 @@ function showJob(jobId: string | undefined) {
                 :invocation="props.invocation"
                 :workflow="workflow"
                 :workflow-step="step"
-                :in-graph-view="!props.hideGraph"
-                :graph-step="graphSteps[step.id]"
-                :expanded="props.hideGraph ? undefined : props.activeNodeId === step.id"
-                :showing-job-id="props.showingJobId"
-                @show-job="showJob"
-                @update:expanded="emit('focus-on-step', step.id)" />
+                :graph-step="graphSteps[step.id]" />
         </div>
     </div>
     <BAlert v-else variant="info" show> There are no steps to display. </BAlert>
