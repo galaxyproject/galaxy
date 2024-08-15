@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import Vue, { computed, ref, watch } from "vue";
 
-import { fetchJobDetails, type JobBaseModel, type JobDetails } from "@/api/jobs";
+import { GalaxyApi } from "@/api";
+import { type JobBaseModel, type JobDetails } from "@/api/jobs";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -33,11 +34,15 @@ watch(
     async (propJobs: JobBaseModel[]) => {
         loading.value = true;
         for (const job of propJobs) {
-            try {
-                const { data } = await fetchJobDetails({ job_id: job.id, full: true });
-                Vue.set(jobsDetails.value, job.id, data);
-            } catch (e) {
-                rethrowSimple(e);
+            const { data, error } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+                params: {
+                    path: { job_id: job.id },
+                    query: { full: true },
+                },
+            });
+            Vue.set(jobsDetails.value, job.id, data);
+            if (error) {
+                rethrowSimple(error);
             }
         }
         if (initialLoading.value) {
