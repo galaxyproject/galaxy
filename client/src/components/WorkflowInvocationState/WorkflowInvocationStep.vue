@@ -58,9 +58,7 @@
                                             v-if="!inGraphView"
                                             :key="inGraphView"
                                             :jobs="stepDetails.jobs"
-                                            :invocation-graph="inGraphView"
-                                            :showing-job-id="showingJobId"
-                                            @row-clicked="showJob" />
+                                            :invocation-graph="inGraphView" />
                                         <JobStepTabs v-else class="mt-1" :jobs="stepDetails.jobs" />
                                     </span>
                                     <b-alert v-else v-localize variant="info" show>This step has no jobs</b-alert>
@@ -143,7 +141,6 @@ export default {
         workflow: Object,
         graphStep: { type: Object, default: undefined },
         expanded: { type: Boolean, default: undefined },
-        showingJobId: { type: String, default: null },
         inGraphView: { type: Boolean, default: false },
     },
     data() {
@@ -214,9 +211,6 @@ export default {
             } else {
                 return "No jobs";
             }
-        },
-        showJob(id) {
-            this.$emit("show-job", id);
         },
         toggleStep() {
             this.computedExpanded = !this.computedExpanded;
