@@ -28,7 +28,11 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     // TODO: generalize this is the undo redo store is used outside of the workflow editor
     const { workflowEditorMaxUndoActions } = storeToRefs(useLocalPreferencesStore());
-    const savedUndoActions = workflowEditorMaxUndoActions;
+    const savedUndoActions = computed(() => workflowEditorMaxUndoActions.value);
+
+    function setSavedUndoActions(actions: number) {
+        workflowEditorMaxUndoActions.value = actions;
+    }
 
     /** names of actions which were deleted due to savedUndoActions being exceeded */
     const deletedActions = ref<string[]>([]);
@@ -197,6 +201,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         minUndoActions,
         maxUndoActions,
         savedUndoActions,
+        setSavedUndoActions,
         deletedActions,
         undo,
         redo,

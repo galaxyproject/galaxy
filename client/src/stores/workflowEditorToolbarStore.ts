@@ -32,12 +32,22 @@ export type WorkflowEditorToolbarStore = ReturnType<typeof useWorkflowEditorTool
 export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorToolbarStore", () => {
     const { workflowEditorSnapActive, workflowEditorToolbarVisible } = storeToRefs(useLocalPreferencesStore());
 
-    const snapActive = workflowEditorSnapActive;
+    const snapActive = computed(() => workflowEditorSnapActive.value);
+
+    function setSnapActive(active: boolean) {
+        workflowEditorSnapActive.value = active;
+    }
+
+    const toolbarVisible = computed(() => workflowEditorToolbarVisible.value);
+
+    function setToolbarVisible(visible: boolean) {
+        workflowEditorToolbarVisible.value = visible;
+    }
+
     const currentTool = ref<EditorTool>("pointer");
     const inputCatcherActive = ref<boolean>(false);
     const inputCatcherEventListeners = new Set<InputCatcherEventListener>();
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
-    const toolbarVisible = workflowEditorToolbarVisible;
     const boxSelectMode = ref<"add" | "remove">("add");
     const boxSelectRect = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });
 
@@ -105,6 +115,8 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
         toolbarVisible,
         snapActive,
         snapDistance,
+        setSnapActive,
+        setToolbarVisible,
         currentTool,
         inputCatcherActive,
         inputCatcherEnabled,

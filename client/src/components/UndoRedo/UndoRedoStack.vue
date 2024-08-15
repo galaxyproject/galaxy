@@ -25,7 +25,7 @@ function onInput(event: Event) {
     const valueNumber = parseFloat(value);
     const nonNanValue = isNaN(valueNumber) ? 0 : valueNumber;
 
-    currentStore.value.savedUndoActions = nonNanValue;
+    currentStore.value.setSavedUndoActions(nonNanValue);
     savedUndoActions.value = nonNanValue;
 }
 
