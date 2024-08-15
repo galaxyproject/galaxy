@@ -2,13 +2,14 @@
 Ordered dictionary implementation with `insert` functionality.
 
 This is only used in one specific place in the codebase:
-    galaxy.tools.toolbox.panel
+    galaxy.tool_util.toolbox.panel
 
 Whenever possible the stdlib `collections.OrderedDict` should be used instead of
 this custom implementation.
 """
 
-from six.moves import UserDict
+from collections import UserDict
+
 dict_alias = dict
 
 
@@ -29,7 +30,7 @@ class odict(UserDict):
         else:
             UserDict.__init__(self, None)
         if isinstance(item, list):
-            for (key, value) in item:
+            for key, value in item:
                 self[key] = value
 
     def __delitem__(self, key):
@@ -60,7 +61,7 @@ class odict(UserDict):
         try:
             key = self._keys[-1]
         except IndexError:
-            raise KeyError('dictionary is empty')
+            raise KeyError("dictionary is empty")
         val = self[key]
         del self[key]
         return (key, val)
@@ -69,10 +70,6 @@ class odict(UserDict):
         if key not in self._keys:
             self._keys.append(key)
         return UserDict.setdefault(self, key, failobj)
-
-    def update(self, dict):
-        for (key, val) in dict.items():
-            self.__setitem__(key, val)
 
     def values(self):
         return map(self.get, self._keys)
@@ -89,8 +86,7 @@ class odict(UserDict):
             yield key, self.get(key)
 
     def __iter__(self):
-        for key in self._keys:
-            yield key
+        yield from self._keys
 
     def reverse(self):
         self._keys.reverse()

@@ -77,7 +77,7 @@
         config.addInitialization(function() {
             console.log("common.mako, container_javascripts");
 
-            var store = window.bundleEntries.store;
+            var store = window.bundleToolshed.store;
             var init_dependencies = function() {
                 var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
                 var restore_folder_state = function() {
@@ -229,11 +229,6 @@
     %>
     <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
 </%def>
-
-<%def name="render_clone_str( repository )"><%
-        from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
-        clone_str = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
-    %>hg clone ${ clone_str }</%def>
 
 <%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%
@@ -1002,7 +997,7 @@
         </td>
     %else:
         <td>
-            <img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/>
+            <img src="${h.url_for('/static')}/style/ok_small.png"/>
             %if prepare_for_install:
                 Installed through ${dependency['dependency_type'].title() | h}
             %endif
@@ -1051,7 +1046,7 @@
 
 <%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
-        from tool_shed.util.encoding_util import tool_shed_encode
+        from galaxy.util.tool_shed.encoding_util import tool_shed_encode
 
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata

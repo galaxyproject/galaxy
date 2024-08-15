@@ -1,0 +1,13 @@
+name: Merged Section Example
+type: generic
+items:
+- type: section
+  id: my-new-section
+  name: My New Section
+  items:
+  - items_from: test
+    excludes:
+    -  tool_id_regex: '.*column.*'
+  - type: label
+    text: A cool label is here
+  - items_from: filter

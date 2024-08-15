@@ -1,9 +1,12 @@
-
-
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
 doc: |
   Simple workflow that no-op cats a file and then selects 10 random lines.
+creator:
+  - class: Person
+    name: John Chilton
+    email: jmchilton@gmail.com
+    identifier: https://orcid.org/0000-0002-6794-0756
 inputs:
   the_input:
     type: data
@@ -54,14 +57,101 @@ steps:
 """
 
 
+WORKFLOW_SELECT_FROM_OPTIONAL_DATASET = """
+class: GalaxyWorkflow
+steps:
+  select_from_dataset_optional:
+    tool_id: select_from_dataset_optional
+    state:
+      select_single: null
+"""
+
+
+# Throwing a bunch of broken steps in to get a really long modal and sure it
+# is scrollable.
 WORKFLOW_WITH_INVALID_STATE = """
 class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  mul_versions:
+  mul_versions_1:
     tool_id: multiple_versions
     tool_version: "0.0.1"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step2':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step3':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step4':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step5':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step6':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step7':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step8':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step9':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step10':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step11':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step12':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step13':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
+    state:
+      inttest: "moocow"
+  'another bad step14':
+    tool_id: multiple_versions
+    tool_version: "0.0.3c"
     state:
       inttest: "moocow"
 """
@@ -88,6 +178,21 @@ test_data:
     d
 """
 
+WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data_collection_input
+    collection_type: list
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+"""
 
 WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION = """
 class: GalaxyWorkflow
@@ -143,11 +248,11 @@ steps:
   - tool_id: collection_paired_test
     state:
       f1:
-        $link: 1#paired_output
+        $link: 1/paired_output
   - tool_id: cat_list
     state:
       input1:
-        $link: 2#out1
+        $link: 2/out1
 """
 
 
@@ -175,13 +280,13 @@ steps:
     state:
       num_lines: 1
       input:
-        $link: apply#output
+        $link: apply/output
       seed_source:
         seed_source_selector: set_seed
         seed: asdf
 test_data:
   input_c:
-    type: list
+    collection_type: list
     elements:
       - identifier: i1
         content: "0"
@@ -263,6 +368,102 @@ steps:
       queries_0|input2: nested_workflow/workflow_output
 """
 
+# WORKFLOW_NESTED_SIMPLE with a nested workflow output marked as an
+# output on the outer workflow.
+WORKFLOW_NESTED_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
+
+# WORKFLOW_NESTED_OUTPUT with two levels of nesting for the workflow
+# output
+WORKFLOW_NESTED_TWICE_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: inner_nested_workflow/inner_workflow_output
+      steps:
+        inner_nested_workflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              really_inner_input: data
+            outputs:
+              inner_workflow_output:
+                outputSource: random_lines/out_file1
+            steps:
+              random_lines:
+                tool_id: random_lines1
+                state:
+                  num_lines: 1
+                  input:
+                    $link: really_inner_input
+                  seed_source:
+                    seed_source_selector: set_seed
+                    seed: asdf
+          in:
+            really_inner_input: inner_input
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
 
 WORKFLOW_NESTED_RUNTIME_PARAMETER = """
 class: GalaxyWorkflow
@@ -279,7 +480,7 @@ steps:
         inner_input: data
       outputs:
         workflow_output:
-          outputSource: random_lines#out_file1
+          outputSource: random_lines/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -295,6 +496,49 @@ steps:
       inner_input: outer_input
 """
 
+WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: cat/out_file1
+steps:
+  tool_update_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: tool_update_step/out_file1
+  cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+  compose_text_param:
+    tool_id: compose_text_param
+    tool_version: 0.1.0
+    label: compose_text_param
+"""
 
 WORKFLOW_WITH_OUTPUT_ACTIONS = """
 class: GalaxyWorkflow
@@ -315,6 +559,18 @@ steps:
       input1: first_cat/out_file1
 """
 
+WORKFLOW_INPUTS_AS_OUTPUTS = """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+  text_input: text
+outputs:
+  wf_output_1:
+    outputSource: input1
+  wf_output_param:
+    outputSource: text_input
+steps: []
+"""
 
 WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED = """
 class: GalaxyWorkflow
@@ -451,6 +707,44 @@ steps:
       f1: input1
     out:
       out1: out1
+"""
+
+
+WORKFLOW_OPTIONAL_INPUT_DELAYED_SCHEDULING = """
+class: GalaxyWorkflow
+inputs:
+  required:
+    type: data
+  optional:
+    type: data
+    optional: true
+outputs:
+  out1:
+    outputSource: count_multi_file/out_file1
+steps:
+  expression:
+    tool_id: expression_parse_int
+    state:
+      input1: 1
+  head:
+    tool_id: head
+    in:
+      input: required
+    state:
+      lineNum:
+        $link:  expression/out1
+  count_multi_file:
+    tool_id: count_multi_file
+    in:
+      input1:
+      - optional
+      - head/out_file1
+    out:
+      out_file1: out_file1
+test_data:
+  required:
+    value: 1.bed
+    type: File
 """
 
 
@@ -637,16 +931,6 @@ report:
     The next two sections demonstrate the auto generated inputs and outputs sections
     in the default workflow invocation report template.
 
-        ## Workflow Inputs
-        ```galaxy
-        invocation_inputs()
-        ```
-
-        ## Workflow Outputs
-        ```galaxy
-        invocation_outputs()
-        ```
-
     ## Workflow Inputs
     ```galaxy
     invocation_inputs()
@@ -672,19 +956,11 @@ report:
 
     Once can reference an output and embed a display of it as follows:
 
-        ```galaxy
-        history_dataset_display(output=output_1)
-        ```
-
     ```galaxy
     history_dataset_display(output=output_1)
     ```
 
     Inputs can be referenced and displayed the same way:
-
-        ```galaxy
-        history_dataset_display(input=input_1)
-        ```
 
     ```galaxy
     history_dataset_display(input=input_1)
@@ -693,10 +969,6 @@ report:
     ---
 
     Images can be embedded directly into the report as follows:
-
-        ```galaxy
-        history_dataset_as_image(output=output_image)
-        ```
 
     ```galaxy
     history_dataset_as_image(output=output_image)
@@ -707,10 +979,6 @@ report:
     Dataset peek content can be displayed to quickly provided an embedded
     summary of an input or output:
 
-        ```galaxy
-        history_dataset_peek(output=output_1)
-        ```
-
     ```galaxy
     history_dataset_peek(output=output_1)
     ```
@@ -719,10 +987,6 @@ report:
 
     Dataset "info" content can be displayed as well:
 
-        ```galaxy
-        history_dataset_info(input=input_1)
-        ```
-
     ```galaxy
     history_dataset_info(input=input_1)
     ```
@@ -730,10 +994,6 @@ report:
     ---
 
     Collections can be displayed:
-
-        ```galaxy
-        history_dataset_collection_display(input=input_list)
-        ```
 
     ```galaxy
     history_dataset_collection_display(input=input_list)
@@ -744,10 +1004,6 @@ report:
     The whole workflow can be embedded to provide some context and display
     annotations and steps.
 
-        ```galaxy
-        workflow_display()
-        ```
-
     ```galaxy
     workflow_display()
     ```
@@ -755,10 +1011,6 @@ report:
     ---
 
     Job parameters can be summarized:
-
-        ```galaxy
-        job_parameters(step=qc_step)
-        ```
 
     ```galaxy
     job_parameters(step=qc_step)
@@ -768,10 +1020,6 @@ report:
 
     Job metrics can be summarized as well:
 
-        ```galaxy
-        job_metrics(step=image_cat)
-        ```
-
     ```galaxy
     job_metrics(step=image_cat)
     ```
@@ -780,17 +1028,9 @@ report:
 
     Tool standard out and error are also available for steps.
 
-        ```galaxy
-        tool_stdout(step=qc_step)
-        ```
-
     ```galaxy
     tool_stdout(step=qc_step)
     ```
-
-        ```galaxy
-        tool_stderr(step=qc_step)
-        ```
 
     ```galaxy
     tool_stderr(step=qc_step)
@@ -813,9 +1053,187 @@ image_input:
   file_type: png
   name: my input image
 input_list:
-  type: list
+  collection_type: list
   elements:
     - identifier: i1
       content: "0"
   name: example list
 """
+
+
+WORKFLOW_WITH_BAD_COLUMN_PARAMETER = """
+class: GalaxyWorkflow
+inputs:
+    bed_input: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: bed_input
+  column_param_list:
+    tool_id: column_param
+    in:
+      input1: cat1/out_file1
+    state:
+      col: 9
+      col_names: notacolumn
+"""
+
+
+WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA = """
+step_parameters:
+  '2':
+    'col': 1
+    'col_names': 'c1: chr1'
+bed_input:
+  value: 1.bed
+  file_type: bed
+  type: File
+"""
+
+
+NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE = """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+       input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+        should_run: boolean
+      steps:
+        create_more_inputs:
+          tool_id: collection_creates_dynamic_nested
+        consume_expression_parameter:
+          tool_id: cat1
+          state:
+            input1:
+              $link: create_more_inputs/list_output
+            queries:
+              - input2:
+                $link: boolean_input_file
+          out:
+            out_file1:
+              change_datatype: txt
+        consume_expression_parameter_2:
+          tool_id: cat1
+          state:
+            input1:
+              $link: consume_expression_parameter/out_file1
+      outputs:
+        inner_create_nested:
+          outputSource: create_more_inputs/list_output
+        inner_output_1:
+          outputSource: consume_expression_parameter/out_file1
+        inner_output_2:
+          outputSource: consume_expression_parameter_2/out_file1
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+    when: $(inputs.should_run)
+outputs:
+  outer_create_nested:
+    outputSource: subworkflow/inner_create_nested
+  outer_output_1:
+    outputSource: subworkflow/inner_output_1
+  outer_output_2:
+    outputSource: subworkflow/inner_output_2
+"""
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+"""
+
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+"""
+
+WORKFLOW_FLAT_CROSS_PRODUCT = """
+class: GalaxyWorkflow
+inputs:
+  collection_a: collection
+  collection_b: collection
+steps:
+  cross_product:
+    tool_id: __CROSS_PRODUCT_FLAT__
+    in:
+      input_a:
+        collection_a
+      input_b:
+        collection_b
+outputs:
+  output_a:
+    outputSource: cross_product/output_a
+  output_b:
+    outputSource: cross_product/output_b
+"""
+
+WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
+    "a_galaxy_workflow": "true",
+    "annotation": null,
+    "comments": [],
+    "format-version": "0.1",
+    "name": "Export WF4 Assembly HiC (imported from URL) (imported from uploaded file)",
+    "steps": {
+        "0": {
+            "annotation": "With dataset tag : genomescope_model ",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "With dataset tag : genomescope_model ",
+                    "name": "Genomescope Model"
+                }
+            ],
+            "label": "Genomescope Model",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"txt\"], \"tag\": \"genomescope_model\"}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "a165c531-371f-4073-9cdd-85ce3506586f",
+            "when": null,
+            "workflow_outputs": []
+        }
+    },
+    "tags": [],
+    "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
+    "version": 3
+}"""

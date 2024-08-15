@@ -1,16 +1,16 @@
 import time
 
+from galaxy.selenium.navigates_galaxy import WAIT_TYPES
 from galaxy_test.base.api_asserts import assert_status_code_is
 from galaxy_test.base.populators import flakey
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
-class HistoryPanelCollectionsTestCase(SeleniumTestCase):
-
+class TestHistoryPanelCollections(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
@@ -19,21 +19,18 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         input_collection, failed_collection = self._generate_partially_failed_collection_with_input()
         input_hid = input_collection["hid"]
         failed_hid = failed_collection["hid"]
+        self.home()
+
         ok_inputs = {
-            "input1": {'batch': True, 'values': [{"src": "hdca", "id": input_collection["id"]}]},
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": input_collection["id"]}]},
             "sleep_time": 0,
         }
         ok_response = self.dataset_populator.run_tool(
             "cat_data_and_sleep",
             ok_inputs,
             history_id,
-            assert_ok=True,
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
-        # sleep really shouldn't be needed :(
-        time.sleep(1)
-
-        self.home()
 
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
@@ -44,16 +41,17 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     @flakey  # Some times a Paste web thread will stall when jobs are running.
     def test_mapping_collection_states_running(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1"]).json()
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1"]
+        ).json()
         running_inputs = {
-            "input1": {'batch': True, 'values': [{"src": "hdca", "id": input_collection["id"]}]},
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": input_collection["id"]}]},
             "sleep_time": 60,
         }
-        running_response = self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
         try:
             assert_status_code_is(running_response, 200)
@@ -73,17 +71,14 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     @selenium_test
     def test_output_collection_states_terminal(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json()["outputs"][0]
 
-        ok_inputs = {
-            "input1": {"src": "hdca", "id": input_collection["id"]}
-        }
-        ok_response = self.dataset_populator.run_tool(
-            "collection_creates_list",
-            ok_inputs,
-            history_id
-        )
+        ok_inputs = {"input1": {"src": "hdca", "id": input_collection["id"]}}
+        ok_response = self.dataset_populator.run_tool("collection_creates_list", ok_inputs, history_id)
         ok_hid = ok_response["output_collections"][0]["hid"]
+        assert ok_hid > 0
 
         failed_response = self.dataset_populator.run_tool(
             "collection_creates_dynamic_nested_fail",
@@ -91,6 +86,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             history_id,
         )
         failed_hid = failed_response["output_collections"][0]["hid"]
+        assert failed_hid > 0
 
         # sleep really shouldn't be needed :(
         time.sleep(1)
@@ -99,6 +95,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
         self.history_panel_wait_for_hid_state(ok_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
+
         self.screenshot("history_panel_collections_state_terminal")
 
     @selenium_test
@@ -108,93 +105,126 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         running_inputs = {
             "sleep_time": 180,
         }
-        running_response = self.dataset_populator.run_tool(
+        payload = self.dataset_populator.run_tool(
             "collection_creates_dynamic_nested",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
+        assert payload["output_collections"]
+        assert payload["jobs"]
+        assert len(payload["jobs"]) > 0
+        assert len(["output_collections"]) > 0
+        running_hid = payload["output_collections"][0]["hid"]
+        assert running_hid
         try:
-            assert_status_code_is(running_response, 200)
-            running_hid = running_response.json()["output_collections"][0]["hid"]
-
-            # sleep really shouldn't be needed :(
-            time.sleep(1)
-
-            self.home()
             self.history_panel_wait_for_hid_state(running_hid, "running")
             self.screenshot("history_panel_collections_state_running")
         finally:
-            for job in running_response.json()["jobs"]:
+            for job in payload["jobs"]:
                 self.dataset_populator.cancel_job(job["id"])
 
     @selenium_test
-    def test_collection_operations(self):
-        # Test back and rename.
+    def test_collection_job_details(self):
+        ok_collection_hid, failed_collection_hid = self._generate_ok_and_failed_collections()
+        ok_collection_element = self.history_panel_wait_for_hid_state(ok_collection_hid, "ok")
+        failed_collection_element = self.history_panel_wait_for_hid_state(failed_collection_hid, "error")
+
+        ok_collection_element.collection_job_details_button.wait_for_and_click()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list").wait_for_visible()
+        tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
+        self.screenshot("history_panel_collections_job_details_ok")
+        assert int(tool_exit_code_component.text) == 0
+
+        failed_collection_element.collection_job_details_button.wait_for_and_click()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list_fail").wait_for_visible()
+        tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
+        self.screenshot("history_panel_collections_job_details_failed")
+        assert int(tool_exit_code_component.text) > 0
+
+    @selenium_test
+    def test_back_to_history_button(self):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
-        collection_view = self._click_and_wait_for_collection_view(collection_hid)
-
-        collection_view.back.wait_for_and_click()
+        self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        self.history_panel_expand_collection(collection_hid)
+        self._back_to_history()
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
 
-        self._click_and_wait_for_collection_view(collection_hid)
+    def _back_to_history(self):
+        menu = self.history_element("collection breadcrumbs menu")
+        if not menu.is_absent:
+            menu.wait_for_and_click()
+        back = self.history_element("back to history")
+        back.wait_for_and_click()
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
 
-        title_element = collection_view.title.wait_for_visible()
-        assert title_element.text == input_collection["name"]
-        title_element.click()
-        title_rename_element = collection_view.title_input.wait_for_visible()
+    @selenium_test
+    def test_rename_collection(self):
+        input_collection = self._populated_paired_and_wait_for_it()
+        collection_hid = input_collection["hid"]
+        self.history_panel_expand_collection(collection_hid)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.history_panel_wait_for_hid_state(collection_hid, "ok")
+        new_name = "My New Name"
+        self.history_panel_collection_rename(collection_hid, new_name, assert_old_name=input_collection["name"])
         self.screenshot("history_panel_collection_view_rename")
-        title_rename_element.send_keys("My New Name")
-        self.send_enter(title_rename_element)
-        title_element = collection_view.title.wait_for_visible()
-        assert title_element.text == "My New Name"
+
+        @retry_assertion_during_transitions
+        def assert_name_changed():
+            title_element = self.history_panel_collection_name_element()
+            assert title_element.text == new_name
+
+        assert_name_changed()
 
     @selenium_test
     def test_name_tags_display(self):
         # Test setting a name tag and viewing it from the outer history panel.
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
-        collection_view = self._click_and_wait_for_collection_view(collection_hid)
-
-        # the space on the end of the parent_selector is important
-        self.tagging_add(["#moo"], parent_selector="#current-history-panel .dataset-collection-panel .controls ")
-
+        self.history_panel_expand_collection(collection_hid)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.history_panel_add_tags(["#moo"])
+        self.sleep_for(self.wait_types.HISTORY_POLL)
         self.screenshot("history_panel_collection_view_add_nametag")
-        collection_view.back.wait_for_and_click()
-
+        self._back_to_history()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
-        nametags = self.history_panel_item_get_nametags(collection_hid)
-
-        assert nametags == ["moo"]
+        nametags = self.history_panel_item_get_tags(collection_hid)
+        assert nametags == ["#moo"]
         self.screenshot("history_panel_collection_with_nametag")
 
     @selenium_test
     def test_paired_display(self):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
-        collection_view = self._click_and_wait_for_collection_view(collection_hid)
-
+        collection_view = self.history_panel_expand_collection(collection_hid)
+        self.sleep_for(WAIT_TYPES.UX_TRANSITION)
         dataset_elements = collection_view.list_items.all()
         assert len(dataset_elements) == 2, dataset_elements
-        title_elements = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
-        assert title_elements == ["forward", "reverse"]
+        selector = ".title .name"
+        selector = ".content-title"
+        titles = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
+        assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 
     @selenium_test
-    @flakey  # Fails only in Jenkins full suite - possibly due to #3782.
+    @flakey  # Fails only in Jenkins full suite - possibly due to #3782
     def test_list_display(self):
-        _, failed_collection = self._generate_partially_failed_collection_with_input()
+        input_collection, failed_collection = self._generate_partially_failed_collection_with_input()
         failed_hid = failed_collection["hid"]
+
         self.home()
         self.history_panel_wait_for_hid_state(failed_hid, "error")
-        collection_view = self._click_and_wait_for_collection_view(failed_hid)
+        collection_view = self.history_panel_expand_collection(failed_hid)
 
         @retry_assertion_during_transitions
         def check_four_datasets_shown():
+            self.sleep_for(WAIT_TYPES.HISTORY_POLL)
             dataset_elements = collection_view.list_items.all()
             assert len(dataset_elements) == 4, dataset_elements
-            title_elements = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
+            selector = ".title .name"
+            selector = ".content-title"
+            title_elements = [de.find_element(self.by.CSS_SELECTOR, selector).text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
         check_four_datasets_shown()
@@ -207,7 +237,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         collection_hid = collection["hid"]
         self.home()
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
-        self._click_and_wait_for_collection_view(collection_hid)
+        self.history_panel_expand_collection(collection_hid)
         self.screenshot("history_panel_collection_view_list_paired")
 
     @selenium_test
@@ -217,43 +247,36 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         collection_hid = collection["hid"]
         self.home()
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
-        self._click_and_wait_for_collection_view(collection_hid)
+        self.history_panel_expand_collection(collection_hid)
         self.screenshot("history_panel_collection_view_list_list")
-
-    @selenium_test
-    def test_limiting_collection_rendering(self):
-        history_id = self.current_history_id()
-        collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
-        collection_hid = collection["hid"]
-
-        with self.local_storage("collectionFuzzyCountDefault", 2):
-            self.home()
-
-            self.history_panel_wait_for_hid_state(collection_hid, "ok")
-            self._click_and_wait_for_collection_view(collection_hid)
-            self.screenshot("history_panel_collection_view_limiting")
-            warning_text = self.components.history_panel.collection_view.elements_warning.wait_for_text()
-            assert "only 2 of 4 items" in warning_text, warning_text
 
     def _generate_partially_failed_collection_with_input(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()["outputs"][0]
         failed_response = self.dataset_populator.run_exit_code_from_file(history_id, input_collection["id"])
         failed_collection = failed_response["implicit_collections"][0]
         return input_collection, failed_collection
 
-    def _click_and_wait_for_collection_view(self, collection_hid):
-        self.history_panel_click_item_title(collection_hid)
-
-        collection_view = self.components.history_panel.collection_view
-        collection_view._.wait_for_visible()
-        return collection_view
-
     def _populated_paired_and_wait_for_it(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+        input_collection = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()[
+            "outputs"
+        ][0]
         collection_hid = input_collection["hid"]
-        self.home()
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
-
         return input_collection
+
+    def _generate_ok_and_failed_collections(self):
+        history_id = self.current_history_id()
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json()
+        hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
+        collection_input = {"input1": {"src": "hdca", "id": hdca_id}}
+        ok_response = self.dataset_populator.run_tool("collection_creates_list", collection_input, history_id)
+        failed_response = self.dataset_populator.run_tool("collection_creates_list_fail", collection_input, history_id)
+        ok_collection_hid = ok_response["output_collections"][0]["hid"]
+        failed_collection_hid = failed_response["output_collections"][0]["hid"]
+        return ok_collection_hid, failed_collection_hid

@@ -1,17 +1,19 @@
 import json
 import logging
-
-from six.moves.urllib.parse import quote
+from urllib.parse import quote
 
 from galaxy.exceptions import MessageException
 from galaxy.util import url_get
-from galaxy.web import expose_api, require_admin
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.web import (
+    expose_api,
+    require_admin,
+)
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ToolShedController(BaseAPIController):
+class ToolShedController(BaseGalaxyAPIController):
     """RESTful controller for interactions with Toolsheds."""
 
     @expose_api
@@ -22,7 +24,7 @@ class ToolShedController(BaseAPIController):
         """
         tool_sheds = []
         for name, url in trans.app.tool_shed_registry.tool_sheds.items():
-            tool_sheds.append(dict(name=name, url=quote(url, '')))
+            tool_sheds.append(dict(name=name, url=quote(url, "")))
         return tool_sheds
 
     @require_admin
@@ -47,6 +49,6 @@ class ToolShedController(BaseAPIController):
             try:
                 return json.loads(url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
             except Exception as e:
-                raise MessageException("Invalid server response. %s." % str(e))
+                raise MessageException(f"Invalid server response. {str(e)}.")
         else:
             raise MessageException("Invalid toolshed url.")

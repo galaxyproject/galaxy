@@ -14,9 +14,9 @@ def stop_err(msg):
 
 def main():
     try:
-        lav_file = open(sys.argv[1], 'r')
-        bed_file1 = open(sys.argv[2], 'w')
-        bed_file2 = open(sys.argv[3], 'w')
+        lav_file = open(sys.argv[1])
+        bed_file1 = open(sys.argv[2], "w")
+        bed_file2 = open(sys.argv[3], "w")
     except Exception as e:
         stop_err(str(e))
 
@@ -36,7 +36,9 @@ def main():
                 else:
                     continue  # this is a pairwise alignment...
             if spec in species:
-                species[spec].write("%s\t%i\t%i\t%s_%s\t%i\t%s\n" % (chrom, c.start, c.end, spec, str(bedsWritten), 0, c.strand))
+                species[spec].write(
+                    "%s\t%i\t%i\t%s_%s\t%i\t%s\n" % (chrom, c.start, c.end, spec, str(bedsWritten), 0, c.strand)
+                )
         bedsWritten += 1
 
     for spec, file in species.items():

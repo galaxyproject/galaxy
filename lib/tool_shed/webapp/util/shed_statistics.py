@@ -1,8 +1,14 @@
-from time import gmtime
-from time import strftime
+from time import (
+    gmtime,
+    strftime,
+)
+
+from sqlalchemy import select
+
+from tool_shed.webapp.model import Repository
 
 
-class ShedCounter(object):
+class ShedCounter:
     def __init__(self, model):
         # TODO: Enhance the ShedCounter to retrieve information from the db instead of displaying what's currently in memory.
         self.model = model
@@ -17,14 +23,8 @@ class ShedCounter(object):
         self.unique_owners = 0
         self.unique_valid_tools = 0
         self.workflows = 0
-        self.generate_statistics()
 
-    @property
-    def sa_session(self):
-        """Returns a SQLAlchemy session"""
-        return self.model.context
-
-    def generate_statistics(self):
+    def generate_statistics(self, sa_session):
         self.custom_datatypes = 0
         self.deleted_repositories = 0
         self.deprecated_repositories = 0
@@ -36,7 +36,7 @@ class ShedCounter(object):
         self.unique_valid_tools = 0
         self.workflows = 0
         unique_user_ids = []
-        for repository in self.sa_session.query(self.model.Repository):
+        for repository in sa_session.scalars(select(Repository)):
             self.repositories += 1
             self.total_clones += repository.times_downloaded
             is_deleted = repository.deleted
@@ -57,35 +57,35 @@ class ShedCounter(object):
                 # repository_metadata.downloadable column.
                 for metadata_revision in repository.metadata_revisions:
                     metadata = metadata_revision.metadata
-                    if 'tools' in metadata:
-                        tool_dicts = metadata['tools']
+                    if "tools" in metadata:
+                        tool_dicts = metadata["tools"]
                         for tool_dict in tool_dicts:
-                            if 'guid' in tool_dict:
-                                guid = tool_dict['guid']
+                            if "guid" in tool_dict:
+                                guid = tool_dict["guid"]
                                 if guid not in processed_guids:
                                     self.valid_versions_of_tools += 1
                                     processed_guids.append(guid)
-                            if 'id' in tool_dict:
-                                tool_id = tool_dict['id']
+                            if "id" in tool_dict:
+                                tool_id = tool_dict["id"]
                                 if tool_id not in processed_tool_ids:
                                     self.unique_valid_tools += 1
                                     processed_tool_ids.append(tool_id)
-                    if 'invalid_tools' in metadata:
-                        invalid_tool_configs = metadata['invalid_tools']
+                    if "invalid_tools" in metadata:
+                        invalid_tool_configs = metadata["invalid_tools"]
                         for invalid_tool_config in invalid_tool_configs:
                             if invalid_tool_config not in processed_invalid_tool_configs:
                                 self.invalid_versions_of_tools += 1
                                 processed_invalid_tool_configs.append(invalid_tool_config)
-                    if 'datatypes' in metadata:
-                        datatypes = metadata['datatypes']
+                    if "datatypes" in metadata:
+                        datatypes = metadata["datatypes"]
                         for datatypes_dict in datatypes:
-                            if 'extension' in datatypes_dict:
-                                extension = datatypes_dict['extension']
+                            if "extension" in datatypes_dict:
+                                extension = datatypes_dict["extension"]
                                 if extension not in processed_datatypes:
                                     self.custom_datatypes += 1
                                     processed_datatypes.append(extension)
-                    if 'workflows' in metadata:
-                        workflows = metadata['workflows']
+                    if "workflows" in metadata:
+                        workflows = metadata["workflows"]
                         for workflow_tup in workflows:
                             relative_path, exported_workflow_dict = workflow_tup
                             if relative_path not in processed_relative_workflow_paths:

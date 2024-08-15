@@ -2,8 +2,7 @@ from galaxy import exceptions
 
 
 def split_dataset_collection_instance(dataset_collection_instance, collection_type):
-    """ Split up collection into collection.
-    """
+    """Split up collection into collection."""
     return _split_dataset_collection(dataset_collection_instance.collection, collection_type)
 
 

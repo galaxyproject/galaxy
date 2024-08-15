@@ -1,0 +1,12 @@
+{
+    "name": "openseadragon",
+    "version": "2.4.2",
+    "license": "New BSD",
+    "dependencies": {
+        "cpy-cli": "^3.1.1",
+        "openseadragon": "^2.4.2"
+    },
+    "scripts": {
+        "build": "cpy --cwd='node_modules/openseadragon/build/openseadragon' --parents './' '../../../../static/dist'"
+    }
+}

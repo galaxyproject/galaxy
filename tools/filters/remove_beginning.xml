@@ -1,5 +1,8 @@
 <tool id="Remove beginning1" name="Remove beginning" version="1.0.0">
   <description>of a file</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <command>
 perl '$__tool_directory__/remove_beginning.pl' '$input' $num_lines '$out_file1'
   </command>

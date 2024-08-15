@@ -1,0 +1,130 @@
+---
+area/admin:
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/components/admin/**/*
+      - doc/source/admin/**/*
+area/API:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/webapps/galaxy/api/**/*
+area/auth:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/auth/**/*
+      - lib/galaxy/authnz/**/*
+area/client:
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/*
+area/database:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/model/**/*
+area/datatypes:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/datatypes/**/*
+      - lib/galaxy/config/sample/datatypes_conf.xml.sample
+area/dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/dependencies/**/*
+area/documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - doc/**/*
+area/jobs:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/jobs/**/*
+area/libraries:
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/components/LibraryFolder/**/*
+      - lib/galaxy/webapps/galaxy/api/libraries.py
+area/objectstore:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/objectstore/**/*
+area/packaging:
+  - changed-files:
+    - any-glob-to-any-file:
+      - packages/**/*
+area/reports:
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/reports/**/*
+      - lib/galaxy/webapps/reports/**/*
+      - templates/webapps/reports/**/*
+area/scripts:
+  - changed-files:
+    - any-glob-to-any-file:
+      - scripts/**/*
+area/security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/security/**/*
+area/testing:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy_test/**/*
+      - run_tests.sh
+      - test/**/*
+      - test-data/**/*
+area/testing/api:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy_test/api/**/*
+area/testing/integration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - test/integration/**/*
+      - test/integration_selenium/**/*
+area/testing/selenium:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/selenium/**/*
+      - lib/galaxy_test/selenium/**/*
+area/tool-dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/tool_util/deps/**/*
+area/tool-framework:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/tools/**/*
+      - lib/galaxy/tool_util/**/*
+      - lib/galaxy/webapps/galaxy/api/tools.py
+area/tools:
+  - changed-files:
+    - any-glob-to-any-file:
+      - tools/**/*
+      - tool-data/**/*
+area/toolshed:
+  - changed-files:
+    - any-glob-to-any-file:
+      - client/src/toolshed/**/*
+      - lib/galaxy/webapps/galaxy/api/toolshed.py
+      - lib/toolshed/**/*
+      - templates/webapps/tool_shed/**/*
+area/UI-UX:
+  - all:
+    - changed-files:
+      - any-glob-to-any-file:
+        - client/src/**/*
+        - templates/**/*
+      - all-globs-to-all-files:
+        - '!client/src/api/schema/schema.ts'
+area/util:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/util/**/*
+area/visualizations:
+  - changed-files:
+    - any-glob-to-any-file:
+      - config/plugins/visualizations/**/*
+area/workflows:
+  - changed-files:
+    - any-glob-to-any-file:
+      - lib/galaxy/workflow/**/*

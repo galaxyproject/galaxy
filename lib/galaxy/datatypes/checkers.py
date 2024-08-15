@@ -2,6 +2,7 @@
 
 External datatypes may make use of these functions.
 """
+
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -14,12 +15,12 @@ from galaxy.util.checkers import (
 )
 
 __all__ = (
-    'check_binary',
-    'check_bz2',
-    'check_gzip',
-    'check_html',
-    'check_image',
-    'check_zip',
-    'is_gzip',
-    'is_bz2',
+    "check_binary",
+    "check_bz2",
+    "check_gzip",
+    "check_html",
+    "check_image",
+    "check_zip",
+    "is_gzip",
+    "is_bz2",
 )

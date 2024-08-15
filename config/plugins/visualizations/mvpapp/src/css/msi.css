@@ -1,0 +1,442 @@
+body {
+  padding-top: 70px;
+}
+.navbar-fixed-top {
+  background-color: #9e9f9f;
+}
+
+.tip-help {
+    cursor: pointer; 
+}
+
+.vertical-align {
+    display: flex;
+    align-items: center;
+}
+
+.row{
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+.msi_button {
+    margin-bottom: 10px;
+}
+
+.ui-widget-content {
+    background: none;
+    border: none;
+}
+
+.ui-widget-header {
+    background: rgba(255, 255, 255, 0);
+    border: 1px solid rgba(195, 219, 255, 0);
+}
+
+.score-filter {
+    border: 1px solid #DDD;
+}
+
+.brush .extent {
+    fill-opacity: .125;
+    shape-rendering: crispEdges;
+}
+
+#galaxy_save {
+    background-color: #9e9f9f;
+    color: #337ab7;
+}
+
+.galaxy_file {
+    padding: 10px 10px 10px 10px;
+    background-color: #bbbbbb;
+}
+
+.selected_file {
+    background-color: #4cae4c;
+}
+
+svg {
+    font: 10px sans-serif;
+}
+
+.resize path {
+    fill: #666;
+    fill-opacity: .8;
+    stroke: #000;
+    stroke-width: 1.5px;
+}
+
+path {
+    fill: currentColor;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+.low_score {
+    color: darkblue;
+}
+.high_score {
+    color: red;
+}
+
+.score-svg-component {
+    background: rgba(195, 219, 255, 0.31);
+}
+
+.glyphicon-ok-circle {
+    color: green;
+}
+
+.glyphicon-ok {
+    color: green;
+}
+
+.pep_seq {
+    font-family: "Courier New", Courier, monospace;
+    font-size: large;
+    font-weight: bold;
+}
+
+.pep_seq_selected {
+    background: rgba(70, 130, 180, 0.62);
+}
+
+#selectable .ui-selecting { background: rgba(70, 130, 180, 0.62); }
+#selectable .ui-selected { background: darkblue; color: white; }
+
+.well {
+    background-color: #DDDDDD;
+    border: 1px solid #DDDDDD;
+}
+
+.btn-group {
+    padding-bottom: 15px;
+}
+
+.p_accession {
+    background-color: rgba(128, 128, 128, 0.04);
+}
+
+.prot-sequence {
+    color: rgba(14, 92, 173, 0.5);
+    max-height: 300px;
+    overflow-y: scroll;
+    overflow-x: scroll;
+}
+
+.pep-cov {
+    color: rgb(14, 92, 173);
+}
+
+.pep-cov-hide {
+    color: transparent;
+}
+
+.inv {
+    color: transparent;
+}
+
+#mod_banner {
+    font-weight: 200;
+    overflow-y: scroll;
+    margin-bottom: 20px
+}
+
+.baseMod {
+    cursor: help;
+    color: rgb(10, 173, 63);
+    font-size: larger;
+    text-shadow: 0 1px 0 #ccc,
+    0 2px 0 #c9c9c9,
+    0 3px 0 #bbb,
+    0 4px 0 #b9b9b9,
+    0 5px 0 #aaa,
+    0 6px 1px rgba(0,0,0,.1),
+    0 0 5px rgba(0,0,0,.1),
+    0 1px 3px rgba(0,0,0,.3),
+    0 3px 5px rgba(0,0,0,.2),
+    0 5px 10px rgba(0,0,0,.25),
+    0 10px 10px rgba(0,0,0,.2),
+    0 20px 20px rgba(0,0,0,.15);
+}
+
+.file_picker {
+    cursor: pointer;    
+    padding: 2em;
+}
+
+.fdr_score {
+    display: block;
+    width: 400px;
+    padding: 10px;
+    cursor: pointer;
+    background-color: #337ab7;
+}
+
+.fdr_pct_value {
+    display: block;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.detail_table_title {
+    cursor: pointer;
+    padding: 5px;
+}
+
+.scan-mark {
+    padding: 10px;
+}
+
+.u-config {
+    cursor: pointer;
+}
+.config-true {
+    color: green;
+}
+
+.config-false {
+    color: red;
+}
+
+.mod-require {
+    cursor: pointer;
+}
+
+td.details-control {
+    width: 20px;
+    cursor: pointer;
+}
+
+.app_nav_btn {
+    background-color: transparent;
+    color: #337ab7;
+}
+
+.igv_track_div {
+    padding: 10px;
+}
+
+.igv_load_track {
+    background-color: gainsboro;
+}
+
+.fv-protein {
+    cursor: pointer;
+}
+
+.fv-protein:hover {
+   color: #337ab7;
+}
+
+.fv-seq {
+    font-size: 1.25em;
+}
+
+.fv-entry {
+    background-color: gainsboro;
+    margin: 5px;
+}
+
+.filter-entry {
+    padding: 5px 5px 5px 5px;
+    cursor: pointer;
+}
+
+.filter-entry-selected {
+    background-color: #1b6d85;
+}
+
+/**
+Amino Acid  Color      Triple        Amino Acid    Color  Triple
+ASP,GLU   bright red [230,10,10]     CYS,MET     yellow [230,230,0]
+LYS,ARG   blue       [20,90,255]     SER,THR     orange [250,150,0]
+PHE,TYR   mid blue   [50,50,170]     ASN,GLN     cyan   [0,220,220]
+GLY       light grey [235,235,235]   LEU,VAL,ILE green  [15,130,15]
+ALA       dark grey  [200,200,200]   TRP         pink   [180,90,180]
+HIS       pale blue  [130,130,210]   PRO         flesh  [220,150,130]
+*/
+
+.amino_acid {
+    fill: #feedde;
+    stroke: gray;
+    stroke-width: 1px;
+}
+
+.reference_mismatch {
+    fill: #9c3e0d;
+    stroke: #9c3e0d;
+    stroke-width: 5px;
+}
+
+.align_match {
+    stroke: gray;
+    stroke-width: 1px;
+}
+
+.ctx {
+    fill: #feedde;
+    stroke: gray;
+    stroke-width: 1px;
+}
+
+.asp, .glu {
+    fill: rgb(230, 10, 10);
+}
+
+.lys, .arg {
+    fill: rgb(20, 90, 255);
+}
+
+.phe, .tyr {
+    fill: rgb(50, 50, 170);
+}
+
+.gly {
+    fill: rgb(235, 235, 235);
+}
+
+.ala {
+    fill: rgb(200, 200, 200);
+}
+
+.his {
+    fill: rgb(130, 130, 210);
+}
+
+.cys, .met {
+    fill: rgb(230, 230, 0);
+}
+
+.ser, .thr {
+    fill: rgb(250, 150, 0);
+}
+
+.asn, .gln {
+    fill: rgb(0, 220, 220);
+}
+
+.leu, .val, .ile {
+    fill: rgb(15, 130, 15);
+}
+
+.trp {
+    fill: rgb(180, 90, 180);
+}
+
+.pro {
+    fill: rgb(220, 150, 130);
+}
+
+.aa_residue {
+    text-shadow: 1px 1px 2px white;
+    font-family: monospace;
+    font-size: 18px;
+    fill: black;
+}
+
+.txt_pep {
+    font-family: monospace;
+    font-size: 18px;
+    fill: black;
+}
+
+.offset {
+    font-family: monospace;
+    font-size: 10px;
+    fill: black;
+}
+
+
+
+.psm {
+    fill: #fd8d3c;
+    stroke: gray;
+}
+
+.ctx_psm {
+    fill: #fd8d3c;
+}
+
+.ctx_peptide {
+    fill: #fdbe85;
+}
+
+.peptide {
+    fill: #fdbe85;
+    stroke: gray;
+}
+
+.locator {
+    stroke-width: 100%;
+    stroke: #333333;
+    opacity: 0.2;
+}
+
+.genome_line {
+    stroke: gray;
+    stroke-width: 1;
+    cursor: pointer;
+}
+
+.genome_dummy {
+    stroke-width: 40px;
+    stroke: #a8a8a8;
+    stroke-dasharray: 1,1;
+}
+
+.ptm {
+    fill: #E5E7E9;
+}
+
+text.ptm {
+    fill: #6E2C00;
+    text-shadow: 2px 2px 3px #AEB6BF;
+}
+
+text.itraq4plex {
+    fill: #884EA0;
+    text-shadow: 2px 2px 3px #AEB6BF;
+}
+
+text.oxidation {
+    fill: #2471A3;
+    text-shadow: 2px 2px 3px #AEB6BF;
+}
+
+.mismatch {
+    fill: #018571;
+}
+
+.score_line {
+    fill: none;
+    stroke: steelblue;
+    opacity: 0.5;
+    stroke-width: 4px;
+    cursor: pointer;
+}
+
+.decoy_score_pct {
+    fill: steelblue;
+    opacity: 0.5;
+    stroke: gray;
+    cursor:pointer;
+}
+
+.tooltip {
+    background: steelblue;
+    color: white;
+}
+
+.tooltip-inner {
+    background: steelblue;
+    color:white;
+}

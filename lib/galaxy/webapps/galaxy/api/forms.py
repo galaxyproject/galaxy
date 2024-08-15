@@ -1,18 +1,48 @@
 """
 API operations on FormDefinition objects.
 """
+
 import logging
-from xml.etree.ElementTree import XML
+
+from sqlalchemy import select
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
-from galaxy.webapps.base.controller import BaseAPIController, url_for
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.forms import FormManager
+from galaxy.model import FormDefinition
+from galaxy.model.base import transaction
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.util import XML
+from galaxy.webapps.base.controller import url_for
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["forms"])
 
-class FormDefinitionAPIController(BaseAPIController):
 
+@router.cbv
+class FastAPIForms:
+    form_manager: FormManager = depends(FormManager)
+
+    @router.delete("/api/forms/{id}", require_admin=True)
+    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.delete(trans, form)
+
+    @router.post("/api/forms/{id}/undelete", require_admin=True)
+    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.undelete(trans, form)
+
+
+class FormDefinitionAPIController(BaseGalaxyAPIController):
     @web.legacy_expose_api
     def index(self, trans, **kwd):
         """
@@ -22,11 +52,14 @@ class FormDefinitionAPIController(BaseAPIController):
         if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to view the list of forms."
-        query = trans.sa_session.query(trans.app.model.FormDefinition)
+
         rval = []
-        for form_definition in query:
-            item = form_definition.to_dict(value_mapper={'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id})
-            item['url'] = url_for('form', id=trans.security.encode_id(form_definition.id))
+        form_defs = trans.sa_session.scalars(select(FormDefinition))
+        for form_definition in form_defs:
+            item = form_definition.to_dict(
+                value_mapper={"id": trans.security.encode_id, "form_definition_current_id": trans.security.encode_id}
+            )
+            item["url"] = url_for("form", id=trans.security.encode_id(form_definition.id))
             rval.append(item)
         return rval
 
@@ -41,16 +74,19 @@ class FormDefinitionAPIController(BaseAPIController):
             decoded_form_definition_id = trans.security.decode_id(form_definition_id)
         except TypeError:
             trans.response.status = 400
-            return "Malformed form definition id ( %s ) specified, unable to decode." % str(form_definition_id)
+            return f"Malformed form definition id ( {str(form_definition_id)} ) specified, unable to decode."
         try:
-            form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(decoded_form_definition_id)
+            form_definition = trans.sa_session.get(FormDefinition, decoded_form_definition_id)
         except Exception:
             form_definition = None
         if not form_definition or not trans.user_is_admin:
             trans.response.status = 400
-            return "Invalid form definition id ( %s ) specified." % str(form_definition_id)
-        item = form_definition.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id})
-        item['url'] = url_for('form', id=form_definition_id)
+            return f"Invalid form definition id ( {str(form_definition_id)} ) specified."
+        item = form_definition.to_dict(
+            view="element",
+            value_mapper={"id": trans.security.encode_id, "form_definition_current_id": trans.security.encode_id},
+        )
+        item["url"] = url_for("form", id=form_definition_id)
         return item
 
     @web.legacy_expose_api
@@ -62,15 +98,19 @@ class FormDefinitionAPIController(BaseAPIController):
         if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to create a new form."
-        xml_text = payload.get('xml_text', None)
+        xml_text = payload.get("xml_text", None)
         if xml_text is None:
             trans.response.status = 400
             return "Missing required parameter 'xml_text'."
             # enhance to allow creating from more than just xml
         form_definition = form_factory.from_elem(XML(xml_text))
         trans.sa_session.add(form_definition)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         encoded_id = trans.security.encode_id(form_definition.id)
-        item = form_definition.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id})
-        item['url'] = url_for('form', id=encoded_id)
+        item = form_definition.to_dict(
+            view="element",
+            value_mapper={"id": trans.security.encode_id, "form_definition_current_id": trans.security.encode_id},
+        )
+        item["url"] = url_for("form", id=encoded_id)
         return [item]

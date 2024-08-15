@@ -4,8 +4,7 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here:
-    https://docs.python.org/2/library/logging.html#logging-levels
+    here: https://docs.python.org/library/logging.html#logging-levels
 :Default: ``DEBUG``
 :Type: str
 
@@ -29,7 +28,7 @@
 
 :Description:
     Where dataset files are stored.
-:Default: ``database/files``
+:Default: ``database/objects``
 :Type: str
 
 
@@ -54,26 +53,6 @@
 :Type: str
 
 
-~~~~~~~~~
-``debug``
-~~~~~~~~~
-
-:Description:
-    Configuration for debugging middleware
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~
-``use_lint``
-~~~~~~~~~~~~
-
-:Description:
-    Check for WSGI compliance.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~
 ``use_heartbeat``
 ~~~~~~~~~~~~~~~~~
@@ -81,16 +60,6 @@
 :Description:
     Write thread status periodically to 'heartbeat.log' (careful, uses
     disk space rapidly!)
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~
-``use_profile``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Profiling middleware (cProfile based)
 :Default: ``true``
 :Type: bool
 

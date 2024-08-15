@@ -1,15 +1,26 @@
-galaxy.webapps.tool\_shed.framework package
-===========================================
+tool\_shed.webapp.framework package
+===================================
 
-.. automodule:: galaxy.webapps.tool_shed.framework
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.framework
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-    galaxy.webapps.tool_shed.framework.middleware
+   tool_shed.webapp.framework.middleware
 
+Submodules
+----------
+
+tool\_shed.webapp.framework.decorators module
+---------------------------------------------
+
+.. automodule:: tool_shed.webapp.framework.decorators
+   :members:
+   :undoc-members:
+   :show-inheritance:

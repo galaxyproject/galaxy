@@ -1,0 +1,492 @@
+#!/usr/bin/perl --
+use strict;
+use warnings;
+use Cwd;
+use File::Path qw(rmtree);
+$|++;
+
+
+## This program is Copyright (C) 2010-12, Felix Krueger (felix.krueger@bbsrc.ac.uk)
+
+## This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+use Getopt::Long;
+use Cwd;
+
+my $verbose;
+my $help;
+my $version;
+my $man;
+my $path_to_bowtie;
+my $multi_fasta;
+my $single_fasta;
+my $bowtie2;
+
+my $bismark_version = 'v0.7.7';
+
+GetOptions ('verbose' => \$verbose,
+	    'help' => \$help,
+	    'man' => \$man,
+	    'version' => \$version,
+	    'path_to_bowtie:s' => \$path_to_bowtie,
+	    'single_fasta' => \$single_fasta,
+	    'bowtie2' => \$bowtie2,
+	   );
+
+my $genome_folder = shift @ARGV; # mandatory
+my $CT_dir;
+my $GA_dir;
+
+if ($help or $man){
+  print_helpfile();
+  exit;
+}
+
+if ($version){
+  print << "VERSION";
+
+          Bismark - Bisulfite Mapper and Methylation Caller.
+
+          Bismark Genome Preparation Version: $bismark_version
+        Copyright 2010-12 Felix Krueger, Babraham Bioinformatics
+              www.bioinformatics.babraham.ac.uk/projects/
+
+VERSION
+    exit;
+}
+
+if ($single_fasta){
+  print "Writing individual genomes out into single-entry fasta files (one per chromosome)\n\n";
+  $multi_fasta = 0;
+}
+else{
+  print "Writing bisulfite genomes out into a single MFA (multi FastA) file\n\n";
+  $single_fasta = 0;
+  $multi_fasta = 1;
+}
+
+my @filenames = create_bisulfite_genome_folders();
+
+process_sequence_files ();
+
+launch_bowtie_indexer();
+
+sub launch_bowtie_indexer{
+  if ($bowtie2){
+    print "Bismark Genome Preparation - Step III: Launching the Bowtie 2 indexer\n";
+  }
+  else{
+    print "Bismark Genome Preparation - Step III: Launching the Bowtie (1) indexer\n";
+  }
+  print "Please be aware that this process can - depending on genome size - take up to several hours!\n";
+  sleep(5);
+
+  ### if the path to bowtie was specfified explicitely
+  if ($path_to_bowtie){
+    if ($bowtie2){
+      $path_to_bowtie =~ s/$/bowtie2-build/;
+    }
+    else{
+      $path_to_bowtie =~ s/$/bowtie-build/;
+    }
+  }
+  ### otherwise we assume that bowtie-build is in the path
+  else{
+    if ($bowtie2){
+      $path_to_bowtie = 'bowtie2-build';
+    }
+    else{
+      $path_to_bowtie = 'bowtie-build';
+    }
+  }
+
+  $verbose and print "\n";
+
+  ### Forking the program to run 2 instances of Bowtie-build or Bowtie2-build (= the Bowtie (1/2) indexer)
+  my $pid = fork();
+
+  # parent process
+  if ($pid){
+    sleep(1);
+    chdir $CT_dir or die "Unable to change directory: $!\n";
+    $verbose and warn "Preparing indexing of CT converted genome in $CT_dir\n";
+    my @fasta_files = <*.fa>;
+    my $file_list = join (',',@fasta_files);
+    $verbose and print "Parent process: Starting to index C->T converted genome with the following command:\n\n";
+    $verbose and print "$path_to_bowtie -f $file_list BS_CT\n\n";
+
+    sleep (11);
+    exec ("$path_to_bowtie","-f","$file_list","BS_CT");
+  }
+
+  # child process
+  elsif ($pid == 0){
+    sleep(2);
+    chdir $GA_dir or die "Unable to change directory: $!\n";
+    $verbose and warn "Preparing indexing of GA converted genome in $GA_dir\n";
+    my @fasta_files = <*.fa>;
+    my $file_list = join (',',@fasta_files);
+    $verbose and print "Child process: Starting to index G->A converted genome with the following command:\n\n";
+    $verbose and print "$path_to_bowtie -f $file_list BS_GA\n\n";
+    $verbose and print "(starting in 10 seconds)\n";
+    sleep(10);
+    exec ("$path_to_bowtie","-f","$file_list","BS_GA");
+  }
+
+  # if the platform doesn't support the fork command we will run the indexing processes one after the other
+  else{
+    print "Forking process was not successful, therefore performing the indexing sequentially instead\n";
+    sleep(10);
+
+    ### moving to CT genome folder
+    $verbose and warn "Preparing to index CT converted genome in $CT_dir\n";
+    chdir $CT_dir or die "Unable to change directory: $!\n";
+    my @fasta_files = <*.fa>;
+    my $file_list = join (',',@fasta_files);
+    $verbose and print "$file_list\n\n";
+    sleep(2);
+    system ("$path_to_bowtie","-f","$file_list","BS_CT");
+    @fasta_files=();
+    $file_list= '';
+
+    ### moving to GA genome folder
+    $verbose and warn "Preparing to index GA converted genome in $GA_dir\n";
+    chdir $GA_dir or die "Unable to change directory: $!\n";
+    @fasta_files = <*.fa>;
+    $file_list = join (',',@fasta_files);
+    $verbose and print "$file_list\n\n";
+    sleep(2);
+    exec ("$path_to_bowtie","-f","$file_list","BS_GA");
+  }
+}
+
+
+sub process_sequence_files {
+
+  my ($total_CT_conversions,$total_GA_conversions) = (0,0);
+  $verbose and print "Bismark Genome Preparation - Step II: Bisulfite converting reference genome\n\n";
+  sleep (3);
+
+  $verbose and print "conversions performed:\n";
+  $verbose and print join("\t",'chromosome','C->T','G->A'),"\n";
+
+
+  ### If someone wants to index a genome which consists of thousands of contig and scaffold files we need to write the genome conversions into an MFA file
+  ### Otherwise the list of comma separated chromosomes we provide for bowtie-build will get too long for the kernel to handle
+  ### This is now the default option
+
+  if ($multi_fasta){
+    ### Here we just use one multi FastA file name, append .CT_conversion or .GA_conversion and print all sequence conversions into these files
+    my $bisulfite_CT_conversion_filename = "$CT_dir/genome_mfa.CT_conversion.fa";
+    open (CT_CONVERT,'>',$bisulfite_CT_conversion_filename) or die "Can't write to file $bisulfite_CT_conversion_filename: $!\n";
+
+    my $bisulfite_GA_conversion_filename = "$GA_dir/genome_mfa.GA_conversion.fa";
+    open (GA_CONVERT,'>',$bisulfite_GA_conversion_filename) or die "Can't write to file $bisulfite_GA_conversion_filename: $!\n";
+  }
+
+  foreach my $filename(@filenames){
+    my ($chromosome_CT_conversions,$chromosome_GA_conversions) = (0,0);
+    open (IN,$filename) or die "Failed to read from sequence file $filename $!\n";
+    # warn "Reading chromosome information from $filename\n\n";
+
+    ### first line needs to be a fastA header
+    my $first_line = <IN>;
+    chomp $first_line;
+
+    ### Extracting chromosome name from the FastA header
+    my $chromosome_name = extract_chromosome_name($first_line);
+
+    ### alternatively, chromosomes can be written out into single-entry FastA files. This will only work for genomes with up to a few hundred chromosomes.
+    unless ($multi_fasta){
+      my $bisulfite_CT_conversion_filename = "$CT_dir/$chromosome_name";
+      $bisulfite_CT_conversion_filename =~ s/$/.CT_conversion.fa/;
+      open (CT_CONVERT,'>',$bisulfite_CT_conversion_filename) or die "Can't write to file $bisulfite_CT_conversion_filename: $!\n";
+
+      my $bisulfite_GA_conversion_filename = "$GA_dir/$chromosome_name";
+      $bisulfite_GA_conversion_filename =~ s/$/.GA_conversion.fa/;
+      open (GA_CONVERT,'>',$bisulfite_GA_conversion_filename) or die "Can't write to file $bisulfite_GA_conversion_filename: $!\n";
+    }
+
+    print CT_CONVERT ">",$chromosome_name,"_CT_converted\n"; # first entry
+    print GA_CONVERT ">",$chromosome_name,"_GA_converted\n"; # first entry
+
+
+    while (<IN>){
+
+      ### in case the line is a new fastA header
+      if ($_ =~ /^>/){
+	### printing out the stats for the previous chromosome
+	$verbose and print join ("\t",$chromosome_name,$chromosome_CT_conversions,$chromosome_GA_conversions),"\n";
+	### resetting the chromosome transliteration counters
+	($chromosome_CT_conversions,$chromosome_GA_conversions) = (0,0);
+	
+	### Extracting chromosome name from the additional FastA header
+	$chromosome_name = extract_chromosome_name($_);
+
+	### alternatively, chromosomes can be written out into single-entry FastA files. This will only work for genomes with up to a few hundred chromosomes.
+	unless ($multi_fasta){
+	  my $bisulfite_CT_conversion_filename = "$CT_dir/$chromosome_name";
+	  $bisulfite_CT_conversion_filename =~ s/$/.CT_conversion.fa/;
+	  open (CT_CONVERT,'>',$bisulfite_CT_conversion_filename) or die "Can't write to file $bisulfite_CT_conversion_filename: $!\n";
+	
+	  my $bisulfite_GA_conversion_filename = "$GA_dir/$chromosome_name";
+	  $bisulfite_GA_conversion_filename =~ s/$/.GA_conversion.fa/;
+	  open (GA_CONVERT,'>',$bisulfite_GA_conversion_filename) or die "Can't write to file $bisulfite_GA_conversion_filename: $!\n";
+	}
+
+	print CT_CONVERT ">",$chromosome_name,"_CT_converted\n";
+	print GA_CONVERT ">",$chromosome_name,"_GA_converted\n";
+      }
+
+      else{
+	my $sequence = uc$_;
+
+	### (I) First replacing all ambiguous sequence characters (such as M,S,R....) by N (G,A,T,C,N and the line endings \r and \n are added to a character group)
+	
+	$sequence =~ s/[^ATCGN\n\r]/N/g;
+	
+	### (II) Writing the chromosome out into a C->T converted version (equals forward strand conversion)
+	
+	my $CT_sequence = $sequence;
+	my $CT_transliterations_performed = ($CT_sequence =~ tr/C/T/); # converts all Cs into Ts
+	$total_CT_conversions += $CT_transliterations_performed;
+	$chromosome_CT_conversions += $CT_transliterations_performed;
+	
+	print CT_CONVERT $CT_sequence;
+	
+	### (III) Writing the chromosome out in a G->A converted version of the forward strand (this is equivalent to reverse-
+	### complementing the forward strand and then C->T converting it)
+	
+	my $GA_sequence = $sequence;
+	my $GA_transliterations_performed = ($GA_sequence =~ tr/G/A/); # converts all Gs to As on the forward strand
+	$total_GA_conversions += $GA_transliterations_performed;
+	$chromosome_GA_conversions += $GA_transliterations_performed;
+	
+	print GA_CONVERT $GA_sequence;
+	
+      }
+    }
+    $verbose and print join ("\t",$chromosome_name,$chromosome_CT_conversions,$chromosome_GA_conversions),"\n";
+  }
+  close (CT_CONVERT) or die "Failed to close filehandle: $!\n";
+  close (GA_CONVERT) or die "Failed to close filehandle: $!\n";
+
+
+  print "\nTotal number of conversions performed:\n";
+  print "C->T:\t$total_CT_conversions\n";
+  print "G->A:\t$total_GA_conversions\n";
+
+  warn "\nStep II - Genome bisulfite conversions - completed\n\n\n";
+}
+
+sub extract_chromosome_name {
+
+  my $header = shift;
+
+  ## Bowtie extracts the first string after the initial > in the FASTA file, so we are doing this as well
+
+  if ($header =~ s/^>//){
+    my ($chromosome_name) = split (/\s+/,$header);
+    return $chromosome_name;
+  }
+  else{
+    die "The specified chromosome file doesn't seem to be in FASTA format as required! $!\n";
+  }
+}
+
+sub create_bisulfite_genome_folders{
+
+  $verbose and print "Bismark Genome Preparation - Step I: Preparing folders\n\n";
+
+  # Ensuring a genome folder has been specified
+  if ($genome_folder){
+    unless ($genome_folder =~ /\/$/){
+      $genome_folder =~ s/$/\//;
+    }
+    $verbose and print "Path to genome folder specified: $genome_folder\n";
+    chdir $genome_folder or die "Could't move to directory $genome_folder. Make sure the directory exists! $!";
+
+    # making the genome folder path abolsolute so it won't break if the path was specified relative
+    $genome_folder = getcwd;
+    unless ($genome_folder =~ /\/$/){
+      $genome_folder =~ s/$/\//;
+    }
+  }
+
+  else{
+    $verbose and print "Genome folder was not provided as argument ";
+    while (1){
+      print "Please specify a genome folder to be bisulfite converted:\n";
+      $genome_folder = <STDIN>;
+      chomp $genome_folder;
+
+      # adding a trailing slash unless already present
+      unless ($genome_folder =~ /\/$/){
+	$genome_folder =~ s/$/\//;
+      }
+      if (chdir $genome_folder){
+	last;
+      }
+      else{
+	warn "Could't move to directory $genome_folder! $!";
+      }
+    }
+  }
+
+  if ($path_to_bowtie){
+    unless ($path_to_bowtie =~ /\/$/){
+      $path_to_bowtie =~ s/$/\//;
+    }
+    if (chdir $path_to_bowtie){
+      if ($bowtie2){
+	$verbose and print "Path to Bowtie 2 specified: $path_to_bowtie\n";
+      }
+      else{
+	$verbose and print "Path to Bowtie (1) specified: $path_to_bowtie\n";
+      }
+    }
+    else{
+      die "There was an error with the path to bowtie: $!\n";
+    }
+  }
+
+  chdir $genome_folder or die "Could't move to directory $genome_folder. Make sure the directory exists! $!";
+
+
+  # Exiting unless there are fastA files in the folder
+  my @filenames = <*.fa>;
+
+  ### if there aren't any genomic files with the extension .fa we will look for files with the extension .fasta
+  unless (@filenames){
+    @filenames =  <*.fasta>;
+  }
+
+  unless (@filenames){
+    die "The specified genome folder $genome_folder does not contain any sequence files in FastA format (with .fa or .fasta file extensions\n";
+  }
+
+  warn "Bisulfite Genome Indexer version $bismark_version (last modified 17 Nov 2011)\n\n";
+  sleep (3);
+
+  # creating a directory inside the genome folder to store the bisfulfite genomes unless it already exists
+  my $bisulfite_dir = "${genome_folder}Bisulfite_Genome/";
+  unless (-d $bisulfite_dir){
+    mkdir $bisulfite_dir or die "Unable to create directory $bisulfite_dir $!\n";
+    $verbose and print "Created Bisulfite Genome folder $bisulfite_dir\n";
+  }
+  else{
+    while (1){
+      print "\nA directory called $bisulfite_dir already exists. Bisulfite converted sequences and/or already existing Bowtie (1 or 2) indexes might be overwritten!\nDo you want to continue anyway?\t";
+      my $proceed = <STDIN>;
+      chomp $proceed;
+      if ($proceed =~ /^y/i ){
+	last;
+      }
+      elsif ($proceed =~ /^n/i){
+	die "Terminated by user\n\n";
+      }
+    }
+  }
+
+  ### as of version 0.6.0 the Bismark indexer will no longer delete the Bisulfite_Genome directory if it was present already, since it could store the Bowtie 1 or 2  indexes already
+  # removing any existing files and subfolders in the bisulfite directory (the specified directory won't be deleted)
+  # rmtree($bisulfite_dir, {verbose => 1,keep_root => 1});
+  #  unless (-d $bisulfite_dir){ #  had to add this after changing remove_tree to rmtree // suggested by Samantha Cooper @ Illumina
+  #    mkdir $bisulfite_dir or die "Unable to create directory $bisulfite_dir $!\n";
+  #  }
+  # }
+
+  chdir $bisulfite_dir or die "Unable to move to $bisulfite_dir\n";
+  $CT_dir = "${bisulfite_dir}CT_conversion/";
+  $GA_dir = "${bisulfite_dir}GA_conversion/";
+
+  # creating 2 subdirectories to store a C->T (forward strand conversion) and a G->A (reverse strand conversion)
+  # converted version of the genome
+  unless (-d $CT_dir){
+    mkdir $CT_dir or die "Unable to create directory $CT_dir $!\n";
+    $verbose and print "Created Bisulfite Genome folder $CT_dir\n";
+  }
+  unless (-d $GA_dir){
+    mkdir $GA_dir or die "Unable to create directory $GA_dir $!\n";
+    $verbose and print "Created Bisulfite Genome folder $GA_dir\n";
+  }
+
+  # moving back to the original genome folder
+  chdir $genome_folder or die "Could't move to directory $genome_folder $!";
+  # $verbose and print "Moved back to genome folder folder $genome_folder\n";
+  warn "\nStep I - Prepare genome folders - completed\n\n\n";
+  return @filenames;
+}
+
+sub print_helpfile{
+  print << 'HOW_TO';
+
+
+DESCRIPTION
+
+This script is supposed to convert a specified reference genome into two different bisulfite
+converted versions and index them for alignments with Bowtie 1 (default), or Bowtie 2. The first
+bisulfite genome will have all Cs converted to Ts (C->T), and the other one will have all Gs
+converted to As (G->A). Both bisulfite genomes will be stored in subfolders within the reference
+genome folder. Once the bisulfite conversion has been completed the program will fork and launch
+two simultaneous instances of the bowtie 1 or 2 indexer (bowtie-build or bowtie2-build). Be aware
+that the indexing process can take up to several hours; this will mainly depend on genome size
+and system resources.
+
+
+
+
+The following is a brief description of command line options and arguments to control the
+Bismark Genome Preparation script:
+
+
+USAGE: bismark_genome_preparation [options] <arguments>
+
+
+OPTIONS:
+
+--help/--man             Displays this help filea and exits.
+
+--version                Displays version information and exits.
+
+--verbose                Print verbose output for more details or debugging.
+
+--path_to_bowtie         The full path to the Bowtie 1 or Bowtie 2 installation on your system.If
+                         the path </../../> is not provided as an option you will be prompted for it.
+
+--bowtie2                This will create bisulfite indexes for Bowtie 2. (Default: Bowtie 1).
+
+--single_fasta           Instruct the Bismark Indexer to write the converted genomes into
+                         single-entry FastA files instead of making one multi-FastA file (MFA)
+                         per chromosome. This might be useful if individual bisulfite converted
+                         chromosomes are needed (e.g. for debugging), however it can cause a
+                         problem with indexing if the number of chromosomes is vast (this is likely
+                         to be in the range of several thousand files; the operating system can
+                         only handle lists up to a certain length, and some newly assembled
+                         genomes may contain 20000-50000 contigs of scaffold files which do exceed
+                         this list length limit).
+
+
+ARGUMENTS:
+
+<path_to_genome_folder>  The path to the folder containing the genome to be bisulfite converted.
+                         At the current time Bismark Genome Preparation expects one or more fastA
+                         files in the folder (with the file extension: .fa or .fasta). If the path
+                         is not provided as an argument you will be prompted for it.
+
+
+
+This script was last modified on 18 Nov 2011.
+HOW_TO
+}

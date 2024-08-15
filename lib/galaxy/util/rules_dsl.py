@@ -1,26 +1,33 @@
 import abc
 import itertools
 import re
+from typing import (
+    List,
+    Type,
+)
 
-import six
-from six.moves import map
+import yaml
 
-from galaxy.util import strip_control_characters_nested
+from galaxy.util.resources import resource_string
+
+
+def get_rules_specification():
+    return yaml.safe_load(resource_string(__package__, "rules_dsl_spec.yml"))
 
 
 def _ensure_rule_contains_keys(rule, keys):
     for key, instance_class in keys.items():
         if key not in rule:
-            raise ValueError("Rule of type [%s] does not contain key [%s]." % (rule["type"], key))
+            raise ValueError(f"Rule of type [{rule['type']}] does not contain key [{key}].")
         value = rule[key]
         if not isinstance(value, instance_class):
-            raise ValueError("Rule of type [%s] does not contain correct value type for key [%s]." % (rule["type"], key))
+            raise ValueError(f"Rule of type [{rule['type']}] does not contain correct value type for key [{key}].")
 
 
 def _ensure_key_value_in(rule, key, values):
     value = rule[key]
     if value not in values:
-        raise ValueError("Invalid value [%s] for [%s] encountered." % (value, key))
+        raise ValueError(f"Invalid value [{value}] for [{key}] encountered.")
 
 
 def _ensure_valid_pattern(expression):
@@ -35,7 +42,7 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem applying regular expression [%s] to [%s]." % (regex, source))
+                raise Exception(f"Problem applying regular expression [{regex}] to [{source}].")
 
             if group_count:
                 if len(match.groups()) != group_count:
@@ -53,10 +60,9 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
     return new_data
 
 
-@six.add_metaclass(abc.ABCMeta)
-class BaseRuleDefinition(object):
-
-    @abc.abstractproperty
+class BaseRuleDefinition(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
     def rule_type(self):
         """Short string describing type of rule (plugin class) to use."""
 
@@ -73,12 +79,12 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_metadata"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
         if rule_value.startswith("identifier"):
-            identifier_index = int(rule_value[len("identifier"):])
+            identifier_index = int(rule_value[len("identifier") :])
 
             new_rows = []
             for index, row in enumerate(data):
@@ -101,11 +107,11 @@ class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_group_tag_value"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
-        tag_prefix = "group:%s:" % rule_value
+        tag_prefix = f"group:{rule_value}:"
 
         new_rows = []
         for index, row in enumerate(data):
@@ -114,7 +120,7 @@ class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
             tags = source["tags"]
             for tag in sorted(tags):
                 if tag.startswith(tag_prefix):
-                    group_tag_value = tag[len(tag_prefix):]
+                    group_tag_value = tag[len(tag_prefix) :]
                     break
 
             if group_tag_value is None:
@@ -136,7 +142,7 @@ class AddColumnConcatenateRuleDefinition(BaseRuleDefinition):
         column_1 = rule["target_column_1"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [row[column_0] + row[column_1]])
 
         return new_rows, sources
@@ -158,7 +164,7 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_regex"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"target_column": int, "expression": six.string_types})
+        _ensure_rule_contains_keys(rule, {"target_column": int, "expression": str})
         _ensure_valid_pattern(rule["expression"])
 
     def apply(self, rule, data, sources):
@@ -190,13 +196,13 @@ class AddColumnValueRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_value"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+        _ensure_rule_contains_keys(rule, {"value": str})
 
     def apply(self, rule, data, sources):
         value = rule["value"]
 
         new_rows = []
-        for index, row in enumerate(data):
+        for row in data:
             new_rows.append(row + [str(value)])
 
         return new_rows, sources
@@ -206,11 +212,14 @@ class AddColumnSubstrRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_substr"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "length": int,
-            "substr_type": six.string_types,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column": int,
+                "length": int,
+                "substr_type": str,
+            },
+        )
         _ensure_key_value_in(rule, "substr_type", ["keep_prefix", "drop_prefix", "keep_suffix", "drop_suffix"])
 
     def apply(self, rule, data, sources):
@@ -245,9 +254,12 @@ class RemoveColumnsRuleDefinition(BaseRuleDefinition):
     rule_type = "remove_columns"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_columns": list,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_columns": list,
+            },
+        )
 
     def apply(self, rule, data, sources):
         target_columns = rule["target_columns"]
@@ -275,11 +287,14 @@ class AddFilterRegexRuleDefinition(BaseRuleDefinition):
     rule_type = "add_filter_regex"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "invert": bool,
-            "expression": six.string_types,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column": int,
+                "invert": bool,
+                "expression": str,
+            },
+        )
         _ensure_valid_pattern(rule["expression"])
 
     def apply(self, rule, data, sources):
@@ -300,11 +315,14 @@ class AddFilterCountRuleDefinition(BaseRuleDefinition):
     rule_type = "add_filter_count"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "count": int,
-            "invert": bool,
-            "which": six.string_types,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "count": int,
+                "invert": bool,
+                "which": str,
+            },
+        )
         _ensure_key_value_in(rule, "which", ["first", "last"])
 
     def apply(self, rule, data, sources):
@@ -327,10 +345,7 @@ class AddFilterEmptyRuleDefinition(BaseRuleDefinition):
     rule_type = "add_filter_empty"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "invert": bool
-        })
+        _ensure_rule_contains_keys(rule, {"target_column": int, "invert": bool})
 
     def apply(self, rule, data, sources):
         invert = rule["invert"]
@@ -347,11 +362,14 @@ class AddFilterMatchesRuleDefinition(BaseRuleDefinition):
     rule_type = "add_filter_matches"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "invert": bool,
-            "value": six.string_types,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column": int,
+                "invert": bool,
+                "value": str,
+            },
+        )
 
     def apply(self, rule, data, sources):
         invert = rule["invert"]
@@ -370,12 +388,17 @@ class AddFilterCompareRuleDefinition(BaseRuleDefinition):
     rule_type = "add_filter_compare"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "value": int,
-            "compare_type": six.string_types,
-        })
-        _ensure_key_value_in(rule, "compare_type", ["less_than", "less_than_equal", "greater_than", "greater_than_equal"])
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column": int,
+                "value": int,
+                "compare_type": str,
+            },
+        )
+        _ensure_key_value_in(
+            rule, "compare_type", ["less_than", "less_than_equal", "greater_than", "greater_than_equal"]
+        )
 
     def apply(self, rule, data, sources):
         target_column = rule["target_column"]
@@ -403,10 +426,13 @@ class SortRuleDefinition(BaseRuleDefinition):
     rule_type = "sort"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column": int,
-            "numeric": bool,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column": int,
+                "numeric": bool,
+            },
+        )
 
     def apply(self, rule, data, sources):
         target = rule["target_column"]
@@ -425,7 +451,7 @@ class SortRuleDefinition(BaseRuleDefinition):
         new_data = []
         new_sources = []
 
-        for (row, source) in sorted_data:
+        for row, source in sorted_data:
             new_data.append(row)
             new_sources.append(source)
 
@@ -436,10 +462,13 @@ class SwapColumnsRuleDefinition(BaseRuleDefinition):
     rule_type = "swap_columns"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_column_0": int,
-            "target_column_1": int,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_column_0": int,
+                "target_column_1": int,
+            },
+        )
 
     def apply(self, rule, data, sources):
         target_column_0 = rule["target_column_0"]
@@ -458,10 +487,13 @@ class SplitColumnsRuleDefinition(BaseRuleDefinition):
     rule_type = "split_columns"
 
     def validate_rule(self, rule):
-        _ensure_rule_contains_keys(rule, {
-            "target_columns_0": list,
-            "target_columns_1": list,
-        })
+        _ensure_rule_contains_keys(
+            rule,
+            {
+                "target_columns_0": list,
+                "target_columns_1": list,
+            },
+        )
 
     def apply(self, rule, data, sources):
         target_columns_0 = rule["target_columns_0"]
@@ -491,10 +523,9 @@ def flat_map(f, items):
     return list(itertools.chain.from_iterable(map(f, items)))
 
 
-class RuleSet(object):
-
+class RuleSet:
     def __init__(self, rule_set_as_dict):
-        self.raw_rules = strip_control_characters_nested(rule_set_as_dict["rules"])
+        self.raw_rules = rule_set_as_dict["rules"]
         self.raw_mapping = rule_set_as_dict.get("mapping", [])
 
     @property
@@ -547,7 +578,7 @@ class RuleSet(object):
     def collection_type(self):
         mapping_as_dict = self.mapping_as_dict
         list_columns = mapping_as_dict.get("list_identifiers", {"columns": []})["columns"]
-        collection_type = ":".join(map(lambda c: "list", list_columns))
+        collection_type = ":".join("list" for c in list_columns)
         if "paired_identifier" in mapping_as_dict:
             if collection_type:
                 collection_type += ":paired"
@@ -558,13 +589,13 @@ class RuleSet(object):
     @property
     def display(self):
         message = "Rules:\n"
-        message += "".join("- %s\n" % r for r in self.raw_rules)
+        message += "".join(f"- {r}\n" for r in self.raw_rules)
         message += "Column Definitions:\n"
-        message += "".join("- %s\n" % m for m in self.raw_mapping)
+        message += "".join(f"- {m}\n" for m in self.raw_mapping)
         return message
 
 
-RULES_DEFINITION_CLASSES = [
+RULES_DEFINITION_CLASSES: List[Type[BaseRuleDefinition]] = [
     AddColumnMetadataRuleDefinition,
     AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,

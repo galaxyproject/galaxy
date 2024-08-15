@@ -3,15 +3,22 @@
 
 <% _=n_ %>
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--base.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+
+        <!-- Set meta description -->
+        <%
+            if request.path.startswith('/login'):
+                meta_description = "Log in to Galaxy to get access to more tools and resources. Register now for a free account."
+            elif request.path.startswith('/workflows'):
+                meta_description = "Galaxy Workflows facilitate rigorous, reproducible analysis pipelines that can be shared with the community."
+            else:
+                meta_description = "Galaxy is a community-driven web-based analysis platform for life science research."
+        %>
+        <meta name="description" content="${meta_description}" />
 
         <title>
             Galaxy
@@ -43,22 +50,16 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('bootstrap-tour')}
-    ${h.css('base')}
+    ${h.dist_css('base')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
     ## TODO: remove when all libs are required directly in modules
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${h.dist_js(
+        'libs.bundled',
+        'generic.bundled'
     )}
-    ${self.javascript_entry()}
-</%def>
-
-<%def name="javascript_entry()">
-    ${h.js('bundled/generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">
@@ -67,6 +68,12 @@
     ${ galaxy_client.config_sentry( app=self.js_app ) }
     %if self.js_app and self.js_app.config and self.js_app.config.ga_code:
         ${ galaxy_client.config_google_analytics(self.js_app.config.ga_code) }
+    %endif
+    %if self.js_app and self.js_app.config and self.js_app.config.plausible_server and self.js_app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(self.js_app.config.plausible_server, self.js_app.config.plausible_domain) }
+    %endif
+    %if self.js_app and self.js_app.config and self.js_app.config.matomo_server and self.js_app.config.matomo_site_id:
+        ${ galaxy_client.config_matomo_analytics(self.js_app.config.matomo_server, self.js_app.config.matomo_site_id) }
     %endif
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:

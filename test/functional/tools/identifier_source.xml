@@ -1,11 +1,9 @@
 <tool id="identifier_source" name="identifier_source" version="0.1.0">
     <description>verifies identifier source can be specified from input</description>
-    <command>
-<![CDATA[
-    cat '$inputA' '$inputB' >'$outputA' &&
-    cat '$inputA' '$inputB' > '$outputB'
-]]>
-    </command>
+    <command><![CDATA[
+cat '$inputA' '$inputB' >'$outputA' &&
+cat '$inputA' '$inputB' > '$outputB'
+    ]]></command>
     <inputs>
         <param name="inputA" type="data"/>
         <param name="inputB" type="data"/>
@@ -14,6 +12,8 @@
         <data name="outputA" default_identifier_source="inputA"/>
         <data name="outputB" default_identifier_source="inputB"/>
     </outputs>
+    <tests>
+    </tests>
     <help>
     </help>
 </tool>

@@ -35,27 +35,17 @@ tag section of the `datatypes_conf.xml` file. Sample
 
 where
 
--  `extension` - the data type's Dataset file
-   extension (e.g., `ab1`, `bed`, `gff`, `qual`,
-   etc.) `type` - the path to the class for that
-   data type.
+- `extension` - the data type's Dataset file extension (e.g., `ab1`, `bed`,
+  `gff`, `qual`, etc.)
+- `type` - the path to the class for that data type.
+- `mimetype` - if present (it's optional), the data type's mime type
+- `display_in_upload` - if present (it's optional and defaults to False), the
+  associated file extension will be displayed in the "File Format" select list
+  in the "Upload File from your computer" tool in the "Get Data" tool section of
+  the tool panel.
 
--  `mimetype` - if present (it's optional), the data
-   type's mime type `display_in_upload` - if present
-   (it's optional and defaults to False), the
-   associated file extension will be displayed in
-   the "File Format" select list in the "Upload File
-   from your computer" tool in the "Get Data" tool
-   section of the tool panel.
-```xml
-<datatypes>
-    <registration converters_path="lib/galaxy/datatypes/converters">
-        <datatype extension="ab1" type="galaxy.datatypes.images:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
-        <datatype extension="foo" type="galaxy.datatypes.tabular:Foobar" display_in_upload="true"/>
-        ...
-```
 **Note:** If you do not wish to add extended
-functionality to for a new datatype, but simply want
+functionality to a new datatype, but simply want
 to restrict the output of a set of tools to be used
 in another set of tools, you can add the flag
 `subclass="True"` to the datatype definition line.
@@ -177,12 +167,12 @@ your new data type within your Galaxy instance.
 ## Adding a New Data Type (completely new)
 
 ### Basic Datatypes
-In this [real life example](https://github.com/bgruening/galaxytools/blob/master/datatypes/common_sequence_datatypes/csequence.py),
-we'll add a datatype named `GenBank`, to support
+In this [real life example](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/datatypes/sequence.py),
+we'll add a datatype named `Genbank`, to support
 GenBank files.
 
-First, we'll set up a file named `csequence.py` in
-`lib/galaxy/datatypes/csequence.py`. This file could
+First, we'll set up a file named `sequence.py` in
+`lib/galaxy/datatypes/sequence.py`. This file could
 contain some of the standard sequence types, though
 we'll only implement GenBank.
 
@@ -190,19 +180,14 @@ we'll only implement GenBank.
 """
 Classes for all common sequence formats
 """
+import logging
 
 from galaxy.datatypes import data
-from galaxy.datatypes.metadata import MetadataElement
-
-import os
-import logging
 
 log = logging.getLogger(__name__)
 
-class GenBank(data.Text):
-    """
-        abstract class for most of the molecule files
-    """
+class Genbank(data.Text):
+    """Class representing a Genbank sequence"""
     file_ext = "genbank"
 ```
 
@@ -211,7 +196,7 @@ Now, load it into your `datatypes_conf.xml` by adding
 the following line:
 
 ```xml
-<datatype extension="genbank" type="galaxy.datatypes.csequence:GenBank" display_in_upload="True" />
+<datatype extension="genbank" type="galaxy.datatypes.sequence:Genbank" display_in_upload="True" />
 ```
 
 and start up your server, the datatype will be available.
@@ -225,8 +210,8 @@ GenBank files that's extremely easy to do, the first
 3.4.4 of the [specification](ftp://ftp.ncbi.nih.gov/genbank/gbrel.txt).
 
 To implement this in our tool we first have to add
-the relevant sniffing code to our `GenBank` class in
-`csequence.py`.
+the relevant sniffing code to our `Genbank` class in
+`sequence.py`.
 
 ```python
     def sniff(self, filename):
@@ -238,7 +223,7 @@ and then we have to register the sniffer in
 `datatypes_conf.xml`.
 
 ```xml
-<sniffer type="galaxy.datatypes.csequence:GenBank"/>
+<sniffer type="galaxy.datatypes.sequence:Genbank"/>
 ```
 
 Once that's done, restart your server and try
@@ -253,7 +238,7 @@ provide metadata. This is done by adding metadata
 entries inside your class like this:
 
 ```python
-class GenBank(data.Text):
+class Genbank(data.Text):
     file_ext = "genbank"
 
     MetadataElement(name="number_of_sequences", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value=0)
@@ -297,7 +282,7 @@ we're setting metadata about the file.
 
 ```python
     def set_meta(self, dataset, **kwd):
-        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.file_name)
+        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.get_file_name())
 ```
 
 Now we'll need to make use of this in our `set_peek`
@@ -312,7 +297,7 @@ override:
             else:
                 dataset.blurb = "%s sequences" % dataset.metadata.number_of_sequences
             # Get standard text peek from dataset
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -325,7 +310,7 @@ simply concatenate a single file together a couple
 times and upload that.
 
 By now you should have a complete GenBank parser in
-`csequence.py` that looks about like the following:
+`sequence.py` that looks about like the following:
 
 ```python
 from galaxy.datatypes import data
@@ -334,7 +319,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class GenBank(data.Text):
+class Genbank(data.Text):
     file_ext = "genbank"
 
     MetadataElement(name="number_of_sequences", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value=0)
@@ -347,7 +332,7 @@ class GenBank(data.Text):
             else:
                 dataset.blurb = "%s sequences" % dataset.metadata.number_of_sequences
             # Get
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -363,7 +348,7 @@ class GenBank(data.Text):
         """
         Set the number of sequences in dataset.
         """
-        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.file_name)
+        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.get_file_name())
 
     def _count_genbank_sequences(self, filename):
         """
@@ -414,8 +399,8 @@ class BasicComposite(Text):
 These files can be specified on the command line in the following fashion:
 
 ```xml
-<command>someTool.sh '$input1' '${os.path.join(input1.extra_files_path, 'results.txt')}'
-'${os.path.join(input1.extra_files_path, 'results.dat')}' '$output1'</command>
+<command>someTool.sh '$input1' '${os.path.join($input1.extra_files_path, 'results.txt')}'
+'${os.path.join($input1.extra_files_path, 'results.dat')}' '$output1'</command>
 ```
 
 If a tool is aware of the file names for a datatype, then only `input1.extra_files_path` needs to be provided.
@@ -453,7 +438,7 @@ class AutoPrimaryComposite(Text):
 
 These files can be specified on the command line in the following fashion:
 ```xml
-<command>someTool.sh ${os.path.join(input1.extra_files_path, 'results.txt')} ${os.path.join(input1.extra_files_path, 'results.dat')} $output1</command>
+<command>someTool.sh ${os.path.join($input1.extra_files_path, 'results.txt')} ${os.path.join($input1.extra_files_path, 'results.dat')} $output1</command>
 ```
 
 
@@ -467,7 +452,6 @@ class Lped(Text):
 
     composite_type = 'auto_primary_file'
     file_ext="lped"
-    allow_datatype_change = False
 
 
     def __init__(self, **kwd):
@@ -487,11 +471,11 @@ class Lped(Text):
         return "\n".join(rval)
 ```
 
-The file specified as `%s.ped` is found at `os.path.join(input1.extra_files_path, '%s.ped' % input1.metadata.base_name)`.
+The file specified as `%s.ped` is found at `${os.path.join($input1.extra_files_path, '%s.ped' % input1.metadata.base_name)}`.
 
 It should be noted that changing the datatype of datasets which use this substitution method will cause an error if the metadata parameter 'base_name' does not exist in a datatype that the dataset is set to. This is because the value within 'base_name' will be lost -- if the datatype is set back to the original datatype, the default metadata value will be used and the filenames might not match the basename.
 
-To prevent this from occurring, set `allow_datatype_change` to `False`. The dataset's datatype will not be able to be changed.
+For this reason, users are not allowed to change the datatype of dataset between a composite datatype and any other datatype. This can be enforced by setting the `allow_datatype_change` attribute of a datatype class to `False`.
 
 ## Galaxy Tool Shed - Data Types
 
@@ -560,7 +544,7 @@ from galaxy.datatypes.metadata import MetadataElement
 
 The use of `<converter>` tags contained within `<datatype>` tags is supported in the same way they are supported within the `datatypes_conf.xml.sample` file in the Galaxy distribution.
 ```xml
-<datatype extension="ref.taxonomy" type="galaxy.datatypes.metagenomics:RefTaxonomy" display_in_upload="true"
+<datatype extension="ref.taxonomy" type="galaxy.datatypes.metagenomics:RefTaxonomy" display_in_upload="true">
     <converter file="ref_to_seq_taxonomy_converter.xml" target_datatype="seq.taxonomy"/>
 </datatype>
 ```

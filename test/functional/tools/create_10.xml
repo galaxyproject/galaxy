@@ -1,16 +1,16 @@
-<tool id="create_10" name="create_10">
+<tool id="create_10" name="create_10" version="1.0.0">
     <description>create 10 datasets for testing tools with many outputs</description>
     <command><![CDATA[
-        echo "1" > 1;
-        echo "2" > 2;
-        echo "3" > 3;
-        echo "4" > 4;
-        echo "5" > 5;
-        echo "6" > 6;
-        echo "7" > 7;
-        echo "8" > 8;
-        echo "9" > 9;
-        echo "10" > 10;
+echo '1' > 1 &&
+echo '2' > 2 &&
+echo '3' > 3 &&
+echo '4' > 4 &&
+echo '5' > 5 &&
+echo '6' > 6 &&
+echo '7' > 7 &&
+echo '8' > 8 &&
+echo '9' > 9 &&
+echo '10' > 10
     ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>

@@ -15,7 +15,12 @@ def check_pg(pgid):
         if e.errno == errno.ECHILD:
             log.debug("check_pg(): No process found in process group %d", pgid)
         else:
-            log.warning("check_pg(): Got errno %s when checking process group %d: %s", errno.errorcode[e.errno], pgid, e.strerror)
+            log.warning(
+                "check_pg(): Got errno %s when checking process group %d: %s",
+                errno.errorcode[e.errno],
+                pgid,
+                e.strerror,
+            )
         return False
     # Since we are passing os.WNOHANG to os.waitpid(), pid is 0 if no process
     # status is available immediately.
@@ -30,7 +35,13 @@ def kill_pg(pgid):
         except OSError as e:
             if e.errno == errno.ESRCH:
                 return
-            log.warning("Got errno %s when sending signal %d to process group %d: %s", errno.errorcode[e.errno], sig, pgid, e.strerror)
+            log.warning(
+                "Got errno %s when sending signal %d to process group %d: %s",
+                errno.errorcode[e.errno],
+                sig,
+                pgid,
+                e.strerror,
+            )
         sleep(1)
         if not check_pg(pgid):
             log.debug("Processes in process group %d successfully killed with signal %d", pgid, sig)

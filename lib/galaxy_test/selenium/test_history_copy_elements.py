@@ -1,30 +1,31 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
-class HistoryCopyElementsTestCase(SeleniumTestCase):
-
+class TestHistoryCopyElements(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
     def test_copy_hdca(self):
         history_id = self.current_history_id()
-        input_collection = self.dataset_collection_populator.create_list_in_history(history_id, contents=["0", "1", "0", "1"]).json()
+        input_collection = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"], wait=True
+        ).json()["outputs"][0]
         input_hid = input_collection["hid"]
 
         failed_response = self.dataset_populator.run_exit_code_from_file(history_id, input_collection["id"])
         failed_collection = failed_response["implicit_collections"][0]
         failed_hid = failed_collection["hid"]
 
-        self.home()
-
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
         self.history_panel_click_copy_elements()
 
         with self.main_panel():
+            axe_results = self.axe_eval()
+            axe_results.assert_no_violations_with_impact_of_at_least("serious")
             self.components.history_copy_elements.collection_checkbox(id=input_collection["id"]).wait_for_and_click()
             self.components.history_copy_elements.collection_checkbox(id=failed_collection["id"]).wait_for_and_click()
 
@@ -34,6 +35,8 @@ class HistoryCopyElementsTestCase(SeleniumTestCase):
             self.sleep_for(self.wait_types.UX_TRANSITION)
             self.components.history_copy_elements.done_link.wait_for_and_click()
 
+        # I don't know why this sleep is necessary but it seems to be
+        self.sleep_for(self.wait_types.UX_RENDER)
         # Okay copied first
         self.history_panel_wait_for_hid_state(5, "ok")
         # Then 4 datasets and then the failed collection (this was six when coming from the original history)

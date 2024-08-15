@@ -4,5 +4,5 @@ def remove_version_from_guid(guid):
     """
     if "/" not in guid:
         return None
-    last_slash = guid.rfind('/')
+    last_slash = guid.rfind("/")
     return guid[:last_slash]

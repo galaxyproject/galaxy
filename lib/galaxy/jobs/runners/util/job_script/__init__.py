@@ -1,26 +1,32 @@
-import io
 import logging
 import os
 import subprocess
 import time
+from dataclasses import dataclass
 from string import Template
-
-from pkg_resources import resource_string
-
-from galaxy.util import unicodify
-
-log = logging.getLogger(__name__)
-DEFAULT_SHELL = '/bin/bash'
-
-DEFAULT_JOB_FILE_TEMPLATE = Template(
-    unicodify(resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh'))
+from typing import (
+    Any,
+    Dict,
+    Optional,
 )
 
-SLOTS_STATEMENT_CLUSTER_DEFAULT = \
-    unicodify(resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh'))
+from typing_extensions import Protocol
 
-MEMORY_STATEMENT_DEFAULT = \
-    unicodify(resource_string(__name__, 'MEMORY_STATEMENT.sh'))
+from galaxy.util import (
+    RWXR_XR_X,
+    unicodify,
+)
+from galaxy.util.resources import resource_string
+from ..fork_safe_write import fork_safe_write
+
+log = logging.getLogger(__name__)
+DEFAULT_SHELL = "/bin/bash"
+
+DEFAULT_JOB_FILE_TEMPLATE = Template(resource_string(__name__, "DEFAULT_JOB_FILE_TEMPLATE.sh"))
+
+SLOTS_STATEMENT_CLUSTER_DEFAULT = resource_string(__name__, "CLUSTER_SLOTS_STATEMENT.sh")
+
+MEMORY_STATEMENT_DEFAULT_TEMPLATE = Template(resource_string(__name__, "MEMORY_STATEMENT_TEMPLATE.sh"))
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
@@ -38,21 +44,20 @@ fi
 INTEGRITY_SYNC_COMMAND = "/bin/sync"
 DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
-DEFAULT_INTEGRITY_SLEEP = .25
-REQUIRED_TEMPLATE_PARAMS = ['working_directory', 'command', 'exit_code_path']
-OPTIONAL_TEMPLATE_PARAMS = {
-    'galaxy_lib': None,
-    'galaxy_virtual_env': None,
-    'headers': '',
-    'env_setup_commands': [],
-    'slots_statement': SLOTS_STATEMENT_CLUSTER_DEFAULT,
-    'memory_statement': MEMORY_STATEMENT_DEFAULT,
-    'instrument_pre_commands': '',
-    'instrument_post_commands': '',
-    'integrity_injection': INTEGRITY_INJECTION,
-    'shell': DEFAULT_SHELL,
-    'preserve_python_environment': True,
-    'tmp_dir_creation_statement': '""',
+DEFAULT_INTEGRITY_SLEEP = 0.25
+REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command"]
+OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
+    "galaxy_lib": None,
+    "galaxy_virtual_env": None,
+    "headers": "",
+    "env_setup_commands": [],
+    "slots_statement": SLOTS_STATEMENT_CLUSTER_DEFAULT,
+    "instrument_pre_commands": "",
+    "instrument_post_commands": "",
+    "integrity_injection": INTEGRITY_INJECTION,
+    "shell": DEFAULT_SHELL,
+    "preserve_python_environment": True,
+    "tmp_dir_creation_statement": '""',
 }
 
 
@@ -67,8 +72,6 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec')
     >>> '\\nuptime\\n' in script
     True
-    >>> 'echo $? > ec' in script
-    True
     >>> 'GALAXY_LIB="None"' in script
     True
     >>> script.startswith('#!/bin/sh\\n#PBS -test\\n')
@@ -77,20 +80,27 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script.startswith('#!/bin/bash\\n\\n#PBS -test\\n')
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
-    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
+    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\n') > 0
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
     >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
     True
     """
-    if any([param not in kwds for param in REQUIRED_TEMPLATE_PARAMS]):
+    if any(param not in kwds for param in REQUIRED_TEMPLATE_PARAMS):
         raise Exception("Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
+    metadata_directory = kwds.get("metadata_directory", kwds["working_directory"])
     if job_instrumenter:
         del kwds["job_instrumenter"]
-        working_directory = kwds.get("metadata_directory", kwds["working_directory"])
-        kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ''
-        kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ''
+        kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(metadata_directory) or ""
+        kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(metadata_directory) or ""
+    if "memory_statement" not in kwds:
+        kwds["memory_statement"] = MEMORY_STATEMENT_DEFAULT_TEMPLATE.safe_substitute(
+            metadata_directory=metadata_directory
+        )
+
+    # Setup home directory var
+    kwds["home_directory"] = kwds.get("home_directory", os.path.join(kwds["working_directory"], "home"))
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
     template_params.update(**kwds)
@@ -103,29 +113,38 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     return template.safe_substitute(template_params)
 
 
-def check_script_integrity(config):
-    return getattr(config, "check_job_script_integrity", DEFAULT_INTEGRITY_CHECK)
+class DescribesScriptIntegrityChecks(Protocol):
+    check_job_script_integrity: bool
+    check_job_script_integrity_count: Optional[int]
+    check_job_script_integrity_sleep: Optional[float]
 
 
-def write_script(path, contents, config, mode=0o755):
+@dataclass
+class ScriptIntegrityChecks:
+    """Minimal class implementing the DescribesScriptIntegrityChecks protocol"""
+
+    check_job_script_integrity: bool
+    check_job_script_integrity_count: Optional[int] = None
+    check_job_script_integrity_sleep: Optional[float] = None
+
+
+def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mode: int = RWXR_XR_X) -> None:
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
-
-    with io.open(path, 'w', encoding='utf-8') as f:
-        f.write(unicodify(contents))
+    fork_safe_write(path, contents)
     os.chmod(path, mode)
-    _handle_script_integrity(path, config)
+    if job_io.check_job_script_integrity:
+        assert job_io.check_job_script_integrity_count is not None
+        assert job_io.check_job_script_integrity_sleep is not None
+        _handle_script_integrity(path, job_io.check_job_script_integrity_count, job_io.check_job_script_integrity_sleep)
 
 
-def _handle_script_integrity(path, config):
-    if not check_script_integrity(config):
-        return
-
+def _handle_script_integrity(
+    path: str, check_job_script_integrity_count: int, check_job_script_integrity_sleep: float
+) -> None:
     script_integrity_verified = False
-    count = getattr(config, "check_job_script_integrity_count", DEFAULT_INTEGRITY_COUNT)
-    sleep_amt = getattr(config, "check_job_script_integrity_sleep", DEFAULT_INTEGRITY_SLEEP)
-    for i in range(count):
+    for _ in range(check_job_script_integrity_count):
         try:
             returncode = subprocess.call([path], env={"ABC_TEST_JOB_SCRIPT_INTEGRITY_XYZ": "1"})
             if returncode == 42:
@@ -147,15 +166,14 @@ def _handle_script_integrity(path, config):
         except Exception as exc:
             log.debug("Script not available yet: %s", unicodify(exc))
 
-        time.sleep(sleep_amt)
+        time.sleep(check_job_script_integrity_sleep)
 
     if not script_integrity_verified:
-        raise Exception("Failed to write job script '%s', could not verify job script integrity." % path)
+        raise Exception(f"Failed to write job script '{path}', could not verify job script integrity.")
 
 
 __all__ = (
-    'check_script_integrity',
-    'job_script',
-    'write_script',
-    'INTEGRITY_INJECTION',
+    "job_script",
+    "write_script",
+    "INTEGRITY_INJECTION",
 )

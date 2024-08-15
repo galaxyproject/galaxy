@@ -1,5 +1,5 @@
 <%
-  app_root = "/static/plugins/visualizations/hyphyvision/static/"
+  app_root = h.url_for("/static/plugins/visualizations/hyphyvision/static/")
 %>
 
 <html lang="en">
@@ -9,7 +9,7 @@
     <title>HyPhy-Result</title>
 
     ${h.stylesheet_link( app_root + 'main.css' )}
-    ${h.javascript_link( app_root + 'bundle.js' )}
+    ${h.javascript_link( app_root + 'script.js' )}
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/v4-shims.css">
   </head>

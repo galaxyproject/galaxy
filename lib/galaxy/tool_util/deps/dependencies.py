@@ -1,42 +1,73 @@
-from galaxy.tool_util.deps.requirements import ToolRequirements
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
+
+from galaxy.tool_util.deps.requirements import (
+    ContainerDescription,
+    ToolRequirement,
+    ToolRequirements,
+)
 from galaxy.util import bunch
 from .mulled.mulled_build import DEFAULT_CHANNELS
 
 
-class AppInfo(object):
-
+class AppInfo:
     def __init__(
         self,
-        galaxy_root_dir=None,
-        default_file_path=None,
-        outputs_to_working_directory=False,
-        container_image_cache_path=None,
-        library_import_dir=None,
-        enable_mulled_containers=False,
-        containers_resolvers_config_file=None,
-        involucro_path=None,
-        involucro_auto_init=True,
-        mulled_channels=DEFAULT_CHANNELS,
-    ):
+        galaxy_root_dir: Optional[str] = None,
+        default_file_path: Optional[str] = None,
+        tool_data_path: Optional[str] = None,
+        galaxy_data_manager_data_path: Optional[str] = None,
+        shed_tool_data_path: Optional[str] = None,
+        outputs_to_working_directory: bool = False,
+        container_image_cache_path: Optional[str] = None,
+        library_import_dir: Optional[str] = None,
+        enable_mulled_containers: bool = False,
+        container_resolvers_config_file: Optional[str] = None,
+        container_resolvers_config_dict: Optional[Dict[str, Any]] = None,
+        involucro_path: Optional[str] = None,
+        involucro_auto_init: bool = True,
+        mulled_channels: List[str] = DEFAULT_CHANNELS,
+    ) -> None:
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
+        self.tool_data_path = tool_data_path
+        self.galaxy_data_manager_data_path = galaxy_data_manager_data_path
+        self.shed_tool_data_path = shed_tool_data_path
         # TODO: Vary default value for docker_volumes based on this...
         self.outputs_to_working_directory = outputs_to_working_directory
         self.container_image_cache_path = container_image_cache_path
         self.library_import_dir = library_import_dir
         self.enable_mulled_containers = enable_mulled_containers
-        self.containers_resolvers_config_file = containers_resolvers_config_file
+        self.container_resolvers_config_file = container_resolvers_config_file
+        self.container_resolvers_config_dict = container_resolvers_config_dict
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
         self.mulled_channels = mulled_channels
 
 
-class ToolInfo(object):
+class ToolInfo:
     # TODO: Introduce tool XML syntax to annotate the optional environment
     # variables they can consume (e.g. JVM options, license keys, etc..)
     # and add these to env_path_through
 
-    def __init__(self, container_descriptions=None, requirements=None, requires_galaxy_python_environment=False, env_pass_through=["GALAXY_SLOTS"], guest_ports=None, tool_id=None, tool_version=None):
+    def __init__(
+        self,
+        container_descriptions: Optional[List["ContainerDescription"]] = None,
+        requirements: Optional[Union["ToolRequirements", List["ToolRequirement"]]] = None,
+        requires_galaxy_python_environment: bool = False,
+        env_pass_through=None,
+        guest_ports=None,
+        tool_id: Optional[str] = None,
+        tool_version: Optional[str] = None,
+        profile: float = -1,
+    ):
+        if env_pass_through is None:
+            env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]
         if container_descriptions is None:
             container_descriptions = []
         if requirements is None:
@@ -48,12 +79,18 @@ class ToolInfo(object):
         self.guest_ports = guest_ports
         self.tool_id = tool_id
         self.tool_version = tool_version
+        self.profile = profile
 
 
-class JobInfo(object):
-
+class JobInfo:
     def __init__(
-        self, working_directory, tool_directory, job_directory, tmp_directory, home_directory, job_directory_type,
+        self,
+        working_directory,
+        tool_directory,
+        job_directory,
+        tmp_directory,
+        home_directory,
+        job_directory_type,
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -65,8 +102,8 @@ class JobInfo(object):
         self.job_directory_type = job_directory_type  # "galaxy" or "pulsar"
 
 
-class DependenciesDescription(object):
-    """ Capture (in a readily serializable way) context related a tool
+class DependenciesDescription:
+    """Capture (in a readily serializable way) context related a tool
     dependencies - both the tool's listed requirements and the tool shed
     related context required to resolve dependencies via the
     ToolShedPackageDependencyResolver.
@@ -75,7 +112,10 @@ class DependenciesDescription(object):
     other potential remote execution mechanisms.
     """
 
-    def __init__(self, requirements=[], installed_tool_dependencies=[]):
+    def __init__(self, requirements=None, installed_tool_dependencies=None):
+        requirements = requirements or ToolRequirements()
+        if installed_tool_dependencies is None:
+            installed_tool_dependencies = []
         self.requirements = requirements
         # tool shed installed tool dependencies...
         self.installed_tool_dependencies = installed_tool_dependencies
@@ -83,22 +123,23 @@ class DependenciesDescription(object):
     def to_dict(self):
         return dict(
             requirements=[r.to_dict() for r in self.requirements],
-            installed_tool_dependencies=[DependenciesDescription._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies]
+            installed_tool_dependencies=[
+                self._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies
+            ],
         )
 
-    @staticmethod
-    def from_dict(as_dict):
+    @classmethod
+    def from_dict(cls, as_dict):
         if as_dict is None:
             return None
 
-        requirements_dicts = as_dict.get('requirements', [])
+        requirements_dicts = as_dict.get("requirements", [])
         requirements = ToolRequirements.from_list(requirements_dicts)
-        installed_tool_dependencies_dicts = as_dict.get('installed_tool_dependencies', [])
-        installed_tool_dependencies = map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
-        return DependenciesDescription(
-            requirements=requirements,
-            installed_tool_dependencies=installed_tool_dependencies
+        installed_tool_dependencies_dicts = as_dict.get("installed_tool_dependencies", [])
+        installed_tool_dependencies = list(
+            map(cls._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
         )
+        return cls(requirements=requirements, installed_tool_dependencies=installed_tool_dependencies)
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):
@@ -106,14 +147,14 @@ class DependenciesDescription(object):
         # containing only properties and associations used to resolve
         # dependencies for tool execution.
         repository_object = bunch.Bunch(
-            name=as_dict['repository_name'],
-            owner=as_dict['repository_owner'],
-            installed_changeset_revision=as_dict['repository_installed_changeset'],
+            name=as_dict["repository_name"],
+            owner=as_dict["repository_owner"],
+            installed_changeset_revision=as_dict["repository_installed_changeset"],
         )
         dependency_object = bunch.Bunch(
-            name=as_dict['dependency_name'],
-            version=as_dict['dependency_version'],
-            type=as_dict['dependency_type'],
+            name=as_dict["dependency_name"],
+            version=as_dict["dependency_version"],
+            type=as_dict["dependency_type"],
             tool_shed_repository=repository_object,
         )
         return dependency_object

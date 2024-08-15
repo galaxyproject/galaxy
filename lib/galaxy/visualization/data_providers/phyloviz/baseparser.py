@@ -1,7 +1,11 @@
 import json
+from typing import (
+    Any,
+    Dict,
+)
 
 
-class Node(object):
+class Node:
     """Node class of PhyloTree, which represents a CLAUDE in a phylogenetic tree"""
 
     def __init__(self, nodeName, **kwargs):
@@ -13,6 +17,8 @@ class Node(object):
         self.isInternal = kwargs.get("isInternal", 0)
         self.length, self.bootstrap = kwargs.get("length", 0), kwargs.get("bootstrap", None)
         self.events = kwargs.get("events", "")
+
+        self.parent = None
 
         # clean up boot strap values
         if self.bootstrap == -1:
@@ -26,23 +32,18 @@ class Node(object):
             self.children += child
 
     def __str__(self):
-        return self.name + " id:" + str(self.id) + ", depth: " + str(self.depth)
+        return f"{self.name} id:{str(self.id)}, depth: {str(self.depth)}"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         """Converts the data in the node to a dict representation of json"""
-        thisJson = {
-            "name"      : self.name,
-            "id"        : self.id,
-            "depth"     : self.depth,
-            "dist"      : self.length
-        }
+        thisJson = {"name": self.name, "id": self.id, "depth": self.depth, "dist": self.length}
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)
         return thisJson
 
     def addChildrenToJson(self, jsonDict):
         """Needs a special method to addChildren, such that the key does not appear in the Jsondict when the children is empty
-        this requirement is due to the layout algorithm used by d3 layout for hiding subtree """
+        this requirement is due to the layout algorithm used by d3 layout for hiding subtree"""
         if len(self.children) > 0:
             children = [node.toJson() for node in self.children]
             jsonDict["children"] = children
@@ -57,7 +58,7 @@ class Node(object):
         return jsonDict
 
 
-class PhyloTree(object):
+class PhyloTree:
     """Standardized python based class to represent the phylogenetic tree parsed from different
     phylogenetic file formats."""
 
@@ -79,7 +80,7 @@ class PhyloTree(object):
         self.id += 1
         return Node(nodeName, **kwargs)
 
-    def addRoot(self, root):
+    def addRoot(self, root: Node):
         """Creates a root for phyloTree"""
         assert isinstance(root, Node)
         root.parent = None
@@ -88,7 +89,7 @@ class PhyloTree(object):
     def generateJsonableDict(self):
         """Changes itself into a dictonary by recurssively calling the tojson on all its nodes. Think of it
         as a dict in an array of dict in an array of dict and so on..."""
-        jsonTree = ""
+        jsonTree: Dict[str, Any]
         if self.root:
             assert isinstance(self.root, Node)
             jsonTree = self.root.toJson()
@@ -100,7 +101,7 @@ class PhyloTree(object):
         return jsonTree
 
 
-class Base_Parser(object):
+class Base_Parser:
     """Base parsers contain all the methods to handle phylogeny tree creation and
     converting the data to json that all parsers should have"""
 

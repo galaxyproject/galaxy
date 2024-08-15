@@ -1,0 +1,8 @@
+- type: googledrive
+  id: test1
+  doc: Test access to a Google drive.
+  token: ${user.preferences['googledrive|access_token']}
+  refresh_token: ${user.preferences['googledrive|refresh_token']}
+  token_uri: "https://www.googleapis.com/oauth2/v4/token"
+  client_id: ${user.preferences['googledrive|client_id']}
+  client_secret: ${user.preferences['googledrive|client_secret']}

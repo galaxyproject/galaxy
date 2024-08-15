@@ -1,40 +1,158 @@
 import re
+from typing import (
+    Optional,
+    Union,
+)
+
+from ._util import (
+    _assert_number,
+    _assert_presence_number,
+)
 
 
-def assert_has_text(output, text):
-    """ Asserts specified output contains the substring specified by
-    the argument text."""
-    assert output.find(text) >= 0, "Output file did not contain expected text '%s' (output '%s')" % (text, output)
+def assert_has_text(
+    output: str,
+    text: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
+    """Asserts specified output contains the substring specified by
+    the argument text. The exact number of occurrences can be
+    optionally specified by the argument n"""
+    assert output is not None, "Checking has_text assertion on empty output (None)"
+    _assert_presence_number(
+        output,
+        text,
+        n,
+        delta,
+        min,
+        max,
+        negate,
+        lambda o, t: o.find(t) >= 0,
+        lambda o, t: len(re.findall(re.escape(t), o)),
+        "{expected} text '{text}' in output ('{output}')",
+        "{expected} {n}+-{delta} occurences of '{text}' in output ('{output}')",
+        "{expected} that the number of occurences of '{text}' in output is in [{min}:{max}] ('{output}')",
+    )
 
 
-def assert_not_has_text(output, text):
-    """ Asserts specified output does not contain the substring
-    specified the argument text."""
-    assert output.find(text) < 0, "Output file contains unexpected text '%s'" % text
+def assert_not_has_text(output: str, text: str) -> None:
+    """Asserts specified output does not contain the substring
+    specified by the argument text"""
+    assert output is not None, "Checking not_has_text assertion on empty output (None)"
+    assert output.find(text) < 0, f"Output file contains unexpected text '{text}'"
 
 
-def assert_has_line(output, line):
-    """ Asserts the specified output contains the line specified the
-    argument line."""
-    match = re.search("^%s$" % re.escape(line), output, flags=re.MULTILINE)
-    assert match is not None, "No line of output file was '%s' (output was '%s') " % (line, output)
+def assert_has_line(
+    output: str,
+    line: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
+    """Asserts the specified output contains the line specified by the
+    argument line. The exact number of occurrences can be optionally
+    specified by the argument n"""
+    assert output is not None, "Checking has_line assertion on empty output (None)"
+    _assert_presence_number(
+        output,
+        line,
+        n,
+        delta,
+        min,
+        max,
+        negate,
+        lambda o, t: re.search(f"^{re.escape(t)}$", o, flags=re.MULTILINE) is not None,
+        lambda o, t: len(re.findall(f"^{re.escape(t)}$", o, flags=re.MULTILINE)),
+        "{expected} line '{text}' in output ('{output}')",
+        "{expected} {n}+-{delta} lines '{text}' in output ('{output}')",
+        "{expected} that the number of lines '{text}' in output is in [{min}:{max}] ('{output}')",
+    )
 
 
-def assert_has_n_lines(output, n):
-    """Asserts the specified output contains ``n`` lines."""
-    n_lines_found = len(output.splitlines())
-    assert n_lines_found == int(n), "Expected %s lines in output, found %s lines" % (n, n_lines_found)
+def assert_has_n_lines(
+    output: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
+    """Asserts the specified output contains ``n`` lines allowing
+    for a difference in the number of lines (delta)
+    or relative differebce in the number of lines"""
+    assert output is not None, "Checking has_n_lines assertion on empty output (None)"
+    count = len(output.splitlines())
+    _assert_number(
+        count,
+        n,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} {n}+-{delta} lines in the output",
+        "{expected} the number of line to be in [{min}:{max}]",
+    )
 
 
-def assert_has_text_matching(output, expression):
-    """ Asserts the specified output contains text matching the
-    regular expression specified by the argument expression."""
-    match = re.search(expression, output)
-    assert match is not None, "No text matching expression '%s' was found in output file." % expression
+def assert_has_text_matching(
+    output: str,
+    expression: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
+    """Asserts the specified output contains text matching the
+    regular expression specified by the argument expression.
+    If n is given the assertion checks for exacly n (nonoverlapping)
+    occurences.
+    """
+    _assert_presence_number(
+        output,
+        expression,
+        n,
+        delta,
+        min,
+        max,
+        negate,
+        lambda o, e: re.search(e, o) is not None,
+        lambda o, e: len(re.findall(e, o)),
+        "{expected} text matching expression '{text}' in output ('{output}')",
+        "{expected} {n}+-{delta} (non-overlapping) matches for '{text}' in output ('{output}')",
+        "{expected} that the number of (non-overlapping) matches for '{text}' in output is in [{min}:{max}] ('{output}')",
+    )
 
 
-def assert_has_line_matching(output, expression):
-    """ Asserts the specified output contains a line matching the
-    regular expression specified by the argument expression."""
-    match = re.search("^%s$" % expression, output, flags=re.MULTILINE)
-    assert match is not None, "No line matching expression '%s' was found in output file." % expression
+def assert_has_line_matching(
+    output: str,
+    expression: str,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
+    """Asserts the specified output contains a line matching the
+    regular expression specified by the argument expression. If n is given
+    the assertion checks for exactly n occurences."""
+    _assert_presence_number(
+        output,
+        expression,
+        n,
+        delta,
+        min,
+        max,
+        negate,
+        lambda o, e: re.search(f"^{e}$", o, flags=re.MULTILINE) is not None,
+        lambda o, e: len(re.findall(f"^{e}$", o, flags=re.MULTILINE)),
+        "{expected} line matching expression '{text}' in output ('{output}')",
+        "{expected} {n}+-{delta} lines matching for '{text}' in output ('{output}')",
+        "{expected} that the number of lines matching for '{text}' in output is in [{min}:{max}] ('{output}')",
+    )

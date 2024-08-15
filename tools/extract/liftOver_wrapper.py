@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from typing import Union
 
 
 def stop_err(msg):
@@ -25,20 +26,18 @@ def safe_bed_file(infile):
     https://lists.soe.ucsc.edu/pipermail/genome/2007-May/013561.html
     """
     fix_pat = re.compile("^(track|browser)")
-    (fd, fname) = tempfile.mkstemp()
-    in_handle = open(infile)
-    out_handle = open(fname, "w")
-    for line in in_handle:
-        if fix_pat.match(line):
-            line = "#" + line
-        out_handle.write(line)
-    in_handle.close()
-    out_handle.close()
-    return fname
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as out_handle, open(infile, "r") as in_handle:
+        for line in in_handle:
+            if fix_pat.match(line):
+                line = "#" + line
+            out_handle.write(line)
+    return out_handle.name
 
 
 if len(sys.argv) < 9:
-    stop_err("USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey infile_type minMatch multiple <minChainT> <minChainQ> <minSizeQ>")
+    stop_err(
+        "USAGE: prog input out_file1 out_file2 input_dbkey output_dbkey infile_type minMatch multiple <minChainT> <minChainQ> <minSizeQ>"
+    )
 
 infile = sys.argv[1]
 outfile1 = sys.argv[2]
@@ -49,7 +48,7 @@ infile_type = sys.argv[6]
 gff_option = ""
 if infile_type == "gff":
     gff_option = "-gff "
-minMatch = sys.argv[7]
+minMatch: Union[str, float] = sys.argv[7]
 multiple = int(sys.argv[8])
 multiple_option = ""
 if multiple:
@@ -67,20 +66,34 @@ if in_dbkey == "?":
     stop_err("Input dataset genome build unspecified, click the pencil icon in the history item to specify it.")
 
 if not os.path.isfile(mapfilepath):
-    stop_err("%s mapping is not currently available." % (mapfilepath.split('/')[-1].split('.')[0]))
+    stop_err("%s mapping is not currently available." % (mapfilepath.split("/")[-1].split(".")[0]))
 
 safe_infile = safe_bed_file(infile)
-cmd_line = "liftOver " + gff_option + "-minMatch=" + str(minMatch) + multiple_option + " " + safe_infile + " " + mapfilepath + " " + outfile1 + " " + outfile2 + "  > /dev/null"
+cmd_line = (
+    "liftOver "
+    + gff_option
+    + "-minMatch="
+    + str(minMatch)
+    + multiple_option
+    + " "
+    + safe_infile
+    + " "
+    + mapfilepath
+    + " "
+    + outfile1
+    + " "
+    + outfile2
+    + "  > /dev/null"
+)
 
 try:
     # have to nest try-except in try-finally to handle 2.4
     try:
         proc = subprocess.Popen(args=cmd_line, shell=True, stderr=subprocess.PIPE)
-        returncode = proc.wait()
-        stderr = proc.stderr.read()
-        if returncode != 0:
+        stderr = proc.communicate()[1]
+        if proc.returncode != 0:
             raise Exception(stderr)
     except Exception as e:
-        raise Exception('Exception caught attempting conversion: ' + str(e))
+        raise Exception("Exception caught attempting conversion: " + str(e))
 finally:
     os.remove(safe_infile)

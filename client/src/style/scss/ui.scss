@@ -1,0 +1,440 @@
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+// util class to make pointer cursor
+.cursor-pointer {
+    cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
+}
+
+// prevents highlighting i.e. text selection on double click
+.no-highlight {
+    -webkit-user-select: none; /* webkit (safari, chrome) browsers */
+    -moz-user-select: none; /* mozilla browsers */
+    -khtml-user-select: none; /* webkit (konqueror) browsers */
+    -ms-user-select: none; /* IE10+ */
+}
+
+// prevents transitions i.e. when reseting a progress bar
+.no-transition {
+    -webkit-transition: none !important;
+    -moz-transition: none !important;
+    -o-transition: none !important;
+    -ms-transition: none !important;
+    transition: none !important;
+}
+
+// rotates an element i.e. used for font-awesome icons
+.fa-rotate-45 {
+    -webkit-transform: rotate(45deg);
+    -moz-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+// utility class from: https://github.com/twbs/bootstrap/pull/27268
+.overflow-auto {
+    overflow: auto !important;
+}
+
+.overflow-y {
+    overflow-y: auto !important;
+}
+
+// utility class to set word wrap to normal
+.word-wrap-normal {
+    word-wrap: normal;
+}
+
+// utility class to set white space wrapping to normal
+.white-space-normal {
+    white-space: normal;
+}
+
+// default margins
+$ui-margin-vertical: $margin-v * 0.25;
+$ui-margin-vertical-large: $margin-v * 0.5;
+$ui-margin-horizontal: $margin-h;
+$ui-margin-horizontal-small: $margin-h * 0.5;
+$ui-margin-horizontal-large: $margin-v * 2;
+
+.ui-autocomplete {
+    max-height: 9.5rem;
+    position: fixed;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.ui-modal {
+    display: none;
+    overflow: auto;
+    .modal-header.no-separator {
+        border: none !important;
+        padding-bottom: 0px !important;
+    }
+    .modal-backdrop {
+        z-index: -1;
+        opacity: 0.5;
+    }
+    .modal-body {
+        position: static;
+    }
+    .modal-footer {
+        .buttons {
+            float: right;
+        }
+    }
+}
+
+// buttons
+.ui-button-default {
+    float: right;
+    .progress {
+        .progress-bar {
+            @extend .no-transition;
+            background: darken($state-success-bg, 30%);
+        }
+    }
+}
+
+.ui-button-icon-plain {
+    @extend .icon-btn;
+    @extend .p-0;
+    border: none !important;
+    background: none !important;
+    float: right;
+}
+
+.ui-button-check {
+    .icon {
+        font-size: 1.2em;
+        width: 1em;
+    }
+    cursor: pointer;
+}
+
+.ui-form-composite {
+    height: 100%;
+    flex-direction: column;
+    display: flex;
+    .ui-steps {
+        overflow: auto;
+    }
+}
+
+// portlets
+.ui-portlet {
+    @extend .card;
+    border: none;
+    .portlet-header:first-child {
+        @extend .card-header;
+        @extend .rounded;
+        background: $portlet-bg-color;
+        border-color: transparent;
+        .portlet-title {
+            .portlet-title-text.collapsible {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+        }
+        .portlet-operations {
+            button {
+                margin-left: 0.25rem;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+        }
+    }
+    .portlet-buttons {
+        button {
+            @extend .float-left;
+            @extend .mr-1;
+        }
+    }
+    > .portlet-content {
+        @extend .card-body;
+        @extend .p-0;
+    }
+}
+
+.portlet-backdrop {
+    display: none;
+    z-index: 10;
+    position: absolute;
+    opacity: 0;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    cursor: wait;
+}
+
+.ui-portlet-section {
+    @extend .ui-portlet;
+    @extend .mb-2;
+    border: none;
+    border-left: solid 3px $portlet-bg-color;
+    border-radius: $border-radius-large $border-radius-large $border-radius-large 0;
+    &:focus-within {
+        border-left: solid 3px $portlet-focus-color;
+    }
+
+    .portlet-header:first-child {
+        @extend .rounded-0;
+        @extend .p-2;
+        background: $portlet-bg-color;
+        border-top-right-radius: $border-radius-large !important;
+    }
+    > .portlet-content {
+        @extend .pl-2;
+    }
+}
+
+// popovers
+.popover {
+    max-width: 70%;
+    .popover-header {
+        color: $brand-light;
+        background-color: $brand-primary;
+        i {
+            @extend .float-right;
+            @extend .pl-4;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+    }
+}
+
+// input elements
+.ui-input {
+    @extend .form-control;
+    @extend .pt-1;
+    @extend .pl-2;
+    height: $input-height;
+    background: transparent;
+    &[disabled],
+    &[readonly],
+    fieldset[disabled] & {
+        cursor: not-allowed;
+        background-color: $brand-light;
+    }
+}
+
+.ui-textarea {
+    @extend .ui-input;
+    height: 100px !important;
+}
+
+.ui-switch {
+    .custom-control {
+        @extend .custom-switch;
+        @extend .b-custom-control-lg;
+        @extend .float-left;
+        @extend .no-highlight;
+        .custom-control-label:before {
+            border-color: $border-color;
+        }
+    }
+    .label {
+        line-height: 1.7rem;
+    }
+}
+
+.ui-radiobutton {
+    @extend .btn-group;
+    label {
+        @extend .btn;
+        border-color: $border-color;
+    }
+    label.active {
+        @extend .font-weight-bold;
+        background: $btn-default-bg;
+    }
+}
+
+.ui-select {
+    position: relative;
+    .icon-dropdown {
+        position: absolute;
+        top: 0.7rem;
+        right: 0.5rem;
+        cursor: pointer;
+    }
+    select {
+        @extend .ui-input;
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-border-radius: $border-radius-base;
+    }
+    .select2-container {
+        width: 100%;
+        .select2-choice {
+            @extend .ui-input;
+            background-image: none;
+            background: transparent;
+            -webkit-appearance: none;
+            -moz-border-radius: $border-radius-base;
+            line-height: 1.5rem;
+            .select2-arrow {
+                display: none;
+            }
+        }
+    }
+    .select2-container-multi {
+        .select2-choices {
+            @extend .ui-input;
+        }
+    }
+}
+
+.ui-select-multiple {
+    .icon-resize {
+        position: absolute;
+        right: 0rem;
+        cursor: row-resize;
+        i {
+            position: absolute;
+            right: 0.2rem;
+            bottom: 0.2rem;
+        }
+    }
+    select {
+        min-height: 8rem;
+    }
+}
+
+.ui-select-content {
+    .btn-group {
+        @extend .d-flex;
+    }
+}
+
+.ui-dragover-warning {
+    @extend .rounded;
+    @extend .p-1;
+    background: lighten($state-warning-bg, 10%);
+    border: 2px solid $state-warning-bg;
+}
+
+.ui-dragover-danger {
+    @extend .rounded;
+    @extend .p-1;
+    background: lighten($state-danger-bg, 10%);
+    border: 2px solid $state-danger-bg;
+}
+
+.ui-dragover-success {
+    @extend .rounded;
+    @extend .p-1;
+    background: lighten($state-success-bg, 10%);
+    border: 2px solid $state-success-bg;
+}
+
+/* Used for tree in tool recommendations */
+.ui-tool-recommendation {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: $brand-primary;
+            stroke: $brand-primary;
+        }
+        text {
+            font-size: 0.4rem;
+        }
+    }
+
+    .tree-size {
+        width: 100%;
+    }
+
+    .link {
+        fill: none;
+        stroke: $brand-primary;
+        stroke-width: 1;
+    }
+}
+
+/* Gap utility for flexbox. Bootstrap Gap ony works for grid */
+.flex-gapx-1 {
+    column-gap: 0.25rem;
+}
+
+.flex-gapy-1 {
+    row-gap: 0.25rem;
+}
+
+/* Heading Sizes */
+.h-xl {
+    font-size: $h1-font-size;
+}
+
+.h-lg {
+    font-size: $h2-font-size;
+}
+
+.h-md {
+    font-size: $h3-font-size;
+}
+
+.h-sm {
+    font-size: $h4-font-size;
+}
+
+.h-text {
+    font-size: $font-size-base;
+}
+
+// makes a button element look like a link
+.ui-link {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    color: $brand-primary;
+    display: inline;
+    line-height: unset;
+    vertical-align: unset;
+    user-select: text;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.overflow-x-hidden {
+    overflow-x: hidden !important;
+}
+
+// TODO: move this to component library, once that exists
+.inline-icon-button {
+    border: none;
+    background-color: transparent;
+    color: $brand-primary;
+    display: inline;
+
+    padding: 0 0.1rem;
+
+    &:hover {
+        background-color: $brand-primary;
+        color: $brand-light;
+    }
+}
+
+.outline-badge {
+    border: 1px solid $brand-primary;
+    color: $brand-primary;
+    background-color: transparent;
+
+    &:hover {
+        background-color: $brand-primary !important;
+        color: white !important;
+    }
+}
+
+.card-container {
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid $brand-secondary;
+}

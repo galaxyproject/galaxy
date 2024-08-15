@@ -1,0 +1,22 @@
+<tool id="implicit_conversion_format_input" name="implicit_conversion with input format">
+  <command>
+    cut -f 1 '$input1' > '$output1'
+  </command>
+  <inputs>
+    <param type="data" format="fasta" name="input1" label="Input 1" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="input" />
+  </outputs>
+  <tests>
+    <!-- Test implicit conversion. -->
+    <test>
+      <param name="input1" value="1.fasta.gz" ftype="fasta.gz" />
+      <output name="output1" ftype="fasta">
+        <assert_contents>
+          <has_line line=">hg17" />
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

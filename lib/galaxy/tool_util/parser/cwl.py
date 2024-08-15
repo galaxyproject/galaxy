@@ -1,8 +1,14 @@
+import json
 import logging
-import os
-from collections import OrderedDict
+import math
+from typing import Optional
 
-from galaxy.tool_util.cwl.parser import tool_proxy
+import packaging.version
+
+from galaxy.tool_util.cwl.parser import (
+    tool_proxy,
+    ToolProxy,
+)
 from galaxy.tool_util.deps import requirements
 from .interface import (
     PageSource,
@@ -21,25 +27,29 @@ log = logging.getLogger(__name__)
 
 
 class CwlToolSource(ToolSource):
+    language = "yaml"
 
-    def __init__(self, tool_file, strict_cwl_validation=True):
+    def __init__(self, tool_file=None, strict_cwl_validation=True, tool_proxy: Optional[ToolProxy] = None):
         self._cwl_tool_file = tool_file
-        self._id, _ = os.path.splitext(os.path.basename(tool_file))
-        self._tool_proxy = None
+        self._tool_proxy = tool_proxy
         self._source_path = tool_file
         self._strict_cwl_validation = strict_cwl_validation
 
     @property
-    def tool_proxy(self):
+    def source_path(self):
+        return self._source_path
+
+    @property
+    def tool_proxy(self) -> ToolProxy:
         if self._tool_proxy is None:
             self._tool_proxy = tool_proxy(self._source_path, strict_cwl_validation=self._strict_cwl_validation)
         return self._tool_proxy
 
     def parse_tool_type(self):
-        return 'cwl'
+        return "cwl"
 
     def parse_id(self):
-        return self._id
+        return self.tool_proxy.galaxy_id()
 
     def parse_name(self):
         return self.tool_proxy.label() or self.parse_id()
@@ -82,12 +92,12 @@ class CwlToolSource(ToolSource):
         # TODO: remove duplication with YAML
         # New format - starting out just using exit code.
         exit_code_lower = ToolStdioExitCode()
-        exit_code_lower.range_start = float("-inf")
+        exit_code_lower.range_start = -math.inf
         exit_code_lower.range_end = -1
         exit_code_lower.error_level = StdioErrorLevel.FATAL
         exit_code_high = ToolStdioExitCode()
         exit_code_high.range_start = 1
-        exit_code_high.range_end = float("inf")
+        exit_code_high.range_end = math.inf
         exit_code_lower.error_level = StdioErrorLevel.FATAL
         return [exit_code_lower, exit_code_high], []
 
@@ -103,20 +113,20 @@ class CwlToolSource(ToolSource):
     def parse_interactivetool(self):
         return []
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         page_source = CwlPageSource(self.tool_proxy)
         return PagesSource([page_source])
 
     def parse_outputs(self, tool):
         output_instances = self.tool_proxy.output_instances()
-        outputs = OrderedDict()
+        outputs = {}
         output_defs = []
         for output_instance in output_instances:
             output_defs.append(self._parse_output(tool, output_instance))
         # TODO: parse outputs collections
         for output_def in output_defs:
             outputs[output_def.name] = output_def
-        return outputs, OrderedDict()
+        return outputs, {}
 
     def _parse_output(self, tool, output_instance):
         name = output_instance.name
@@ -143,31 +153,69 @@ class CwlToolSource(ToolSource):
         containers = []
         docker_identifier = self.tool_proxy.docker_identifier()
         if docker_identifier:
-            containers.append({"type": "docker",
-                               "identifier": docker_identifier})
+            containers.append({"type": "docker", "identifier": docker_identifier})
 
         software_requirements = self.tool_proxy.software_requirements()
-        return requirements.parse_requirements_from_dict(dict(
-            requirements=list(map(lambda r: {"name": r[0], "version": r[1], "type": "package"}, software_requirements)),
+        resource_requirements = self.tool_proxy.resource_requirements()
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[{"name": r[0], "version": r[1], "type": "package"} for r in software_requirements],
             containers=containers,
-        ))
+            resource_requirements=resource_requirements,
+        )
 
     def parse_profile(self):
-        return "16.04"
+        return "17.09"
+
+    def parse_xrefs(self):
+        return []
+
+    def parse_license(self):
+        return None
 
     def parse_python_template_version(self):
-        return '3.5'
+        return packaging.version.Version("3.5")
+
+    def to_string(self):
+        return json.dumps(self.tool_proxy.to_persistent_representation())
+
+
+class CwlInputSource(YamlInputSource):
+    def __init__(self, as_dict, as_field):
+        super().__init__(as_dict)
+        self._field = as_field
+
+    @property
+    def field(self):
+        return self._field
 
 
 class CwlPageSource(PageSource):
-
     def __init__(self, tool_proxy):
         cwl_instances = tool_proxy.input_instances()
-        self._input_list = map(self._to_input_source, cwl_instances)
+        input_fields = tool_proxy.input_fields()
+        input_list = []
+        for cwl_instance in cwl_instances:
+            name = cwl_instance.name
+            input_field = None
+            for field in input_fields:
+                if field["name"] == name:
+                    input_field = field
+            input_list.append(CwlInputSource(cwl_instance.to_dict(), input_field))
+
+        self._input_list = input_list
 
     def _to_input_source(self, input_instance):
         as_dict = input_instance.to_dict()
-        return YamlInputSource(as_dict)
+        return CwlInputSource(as_dict)
 
     def parse_input_sources(self):
         return self._input_list
+
+    def input_fields(self):
+        return self._input_fields
+
+
+__all__ = (
+    "CwlToolSource",
+    "tool_proxy",
+)

@@ -1,18 +1,20 @@
 <tool id="__FLATTEN__"
-      name="Flatten Collection"
+      name="Flatten collection"
       version="1.0.0"
       tool_type="filter_collection">
-    <description>into a flat list of datasets</description>
+    <description></description>
     <type class="FlattenTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_2409</edam_operation>
+    </edam_operations>
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" />
-        <param type="select" name="join_identifier" label="Join collection identifiers using" help="">
-            <option value="_">underscore ( _ )</option>
-            <option value=":">colon ( : )</option>
-            <option value="-">dash ( - )</option>
-        </param>
+        <expand macro="join_identifier" />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type="list" label="${on_string} (flattened)" >
@@ -32,21 +34,33 @@
             </param>
             <output_collection name="output" type="list">
               <element name="i1_forward">
-                <assert_contents>
-                  <has_text_matching expression="^This is a line of text.\n$" />
-                </assert_contents>
+                <expand macro="assert_is_simple_line" />
               </element>
               <element name="i1_reverse">
-                <assert_contents>
-                  <has_text_matching expression="^This is a different line of text.\n$" />
-                </assert_contents>
+                <expand macro="assert_is_simple_line_alt" />
               </element>
             </output_collection>
         </test>
     </tests>
     <help><![CDATA[
 
-This tool takes nested collections such as a list of lists or a list of dataset pairs - and produces a flat list from the inputs. The collection identifiers are merged together to create new collection identifiers in the flattened result.
+========
+Synopsis
+========
+
+Flattens nested collection into a simple list.
+
+===========
+Description
+===========
+
+This tool takes nested collections such as a list of lists or a list of dataset pairs and produces a flat list from the inputs. It effectively "flattens" the hierarchy. The collection identifiers are merged together (using "_" as default) to create new collection identifiers in the flattened result:
+
+.. image:: ${static_path}/images/tools/collection_ops/flatten.svg
+  :width: 500
+  :alt: Flattening operation
+
+----
 
 .. class:: infomark
 

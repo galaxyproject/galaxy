@@ -53,16 +53,10 @@ def test_render():
         [{"name": "di1"}],
     )
     workflow_canvas.populate_data_for_step(
-        step_2,
-        "cat wrapper",
-        [{"name": "input1", "label": "i1"}],
-        [{"name": "out1"}]
+        step_2, "cat wrapper", [{"name": "input1", "label": "i1"}], [{"name": "out1"}]
     )
     workflow_canvas.populate_data_for_step(
-        step_3,
-        "cat wrapper",
-        [{"name": "input1", "label": "i1"}],
-        [{"name": "out1"}]
+        step_3, "cat wrapper", [{"name": "input1", "label": "i1"}], [{"name": "out1"}]
     )
     workflow_canvas.add_steps()
     workflow_canvas.finish()

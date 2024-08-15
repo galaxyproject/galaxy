@@ -1,0 +1,19 @@
+{
+    "name": "visualization",
+    "version": "0.1.0",
+    "keywords": [
+        "galaxy",
+        "visualization"
+    ],
+    "license": "AFL-3.0",
+    "dependencies": {
+        "aladin-lite-galaxy": "^1.0.0",
+        "cpy-cli": "^5.0.0"
+    },
+    "scripts": {
+        "build": "cpy --flat node_modules/aladin-lite-galaxy static/dist/aladin-lite-galaxy && parcel build src/script.js --dist-dir static"
+    },
+    "devDependencies": {
+        "parcel": "^2.12.0"
+    }
+}

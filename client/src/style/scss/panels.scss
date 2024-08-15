@@ -1,0 +1,65 @@
+.unified-panel {
+    display: flex;
+    flex-flow: column;
+    background: $panel-bg-color;
+    height: 100%;
+    overflow: auto;
+}
+.unified-panel-header {
+    @extend .unselectable;
+    @extend .px-3;
+    @extend .d-flex;
+    height: $panel_header_height;
+    font-size: 1rem;
+    font-weight: bold;
+    align-items: center;
+    color: $panel-header-text-color;
+    background: $panel-bg-header-color;
+    a {
+        color: $panel-header-text-color;
+    }
+    .unified-panel-header-inner {
+        @extend .w-100;
+        min-width: max-content;
+        align-items: center;
+        justify-content: space-between;
+        display: flex;
+    }
+    .panel-header-buttons {
+        order: 9999;
+        @extend .d-flex;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
+        }
+        .panel-header-button-toolbox {
+            color: $brand-dark;
+            flex: 1;
+            @extend .p-1;
+            text-align: center;
+            font-size: $h4-font-size;
+            align-items: center;
+            &:hover {
+                color: $brand-info;
+                background-color: $brand-light;
+                text-decoration: none !important;
+                border-color: $brand-light;
+            }
+        }
+    }
+}
+.unified-panel-controls {
+    @extend .px-3;
+}
+.unified-panel-body {
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-auto;
+    flex: 1;
+}

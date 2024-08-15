@@ -1,0 +1,2 @@
+include *.rst *.txt LICENSE */py.typed
+graft tool_shed/webapp/templates/

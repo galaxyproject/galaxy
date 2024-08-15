@@ -1,11 +1,11 @@
 import logging
 import os
 
-from galaxy.tool_util.deps import commands
 from galaxy.tool_util.deps import docker_util
 from galaxy.tool_util.deps.container_classes import docker_cache_path
 from galaxy.tool_util.deps.requirements import parse_requirements_from_xml
 from galaxy.tool_util.loader_directory import load_tool_elements_from_path
+from galaxy.util import commands
 
 log = logging.getLogger(__name__)
 
@@ -15,14 +15,14 @@ def docker_host_args(**kwds):
         docker_cmd=kwds["docker_cmd"],
         sudo=kwds["docker_sudo"],
         sudo_cmd=kwds["docker_sudo_cmd"],
-        host=kwds["docker_host"]
+        host=kwds["docker_host"],
     )
 
 
 def dockerfile_build(path, dockerfile=None, error=log.error, **kwds):
     expected_container_names = set()
     tool_directories = set()
-    for (tool_path, tool_xml) in load_tool_elements_from_path(path):
+    for tool_path, tool_xml in load_tool_elements_from_path(path):
         requirements, containers = parse_requirements_from_xml(tool_xml)
         for container in containers:
             if container.type == "docker":
@@ -40,23 +40,17 @@ def dockerfile_build(path, dockerfile=None, error=log.error, **kwds):
 
     dockerfile = __find_dockerfile(dockerfile, tool_directories)
     if dockerfile is not None:
-        docker_command_parts = docker_util.build_command(
-            image_identifier,
-            dockerfile,
-            **docker_host_args(**kwds)
-        )
+        docker_command_parts = docker_util.build_command(image_identifier, dockerfile, **docker_host_args(**kwds))
     else:
         docker_command_parts = docker_util.build_pull_command(image_identifier, **docker_host_args(**kwds))
         commands.execute(docker_command_parts)
 
     commands.execute(docker_command_parts)
-    docker_image_cache = kwds['docker_image_cache']
+    docker_image_cache = kwds["docker_image_cache"]
     if docker_image_cache:
         destination = docker_cache_path(docker_image_cache, image_identifier)
         save_image_command_parts = docker_util.build_save_image_command(
-            image_identifier,
-            destination,
-            **docker_host_args(**kwds)
+            image_identifier, destination, **docker_host_args(**kwds)
         )
         commands.execute(save_image_command_parts)
 

@@ -109,6 +109,7 @@
         else:
             disabled_str = ''
         html = ''
+        rating = rating or 0
         for index in range( 1, 6 ):
             html += '<input name="%s" type="radio" class="star" value="%s" %s' % ( str( name ), str( index ), disabled_str )
             if rating > ( index - 0.5 ) and rating < ( index + 0.5 ):
@@ -150,20 +151,4 @@
         this repository has the following multiple heads which must be merged.<br/>
         ${heads_str}
     </div>
-</%def>
-
-<%def name="render_review_comment( comment_text )">
-    <style type="text/css">
-        #reviews_table{ table-layout:fixed;
-                        width:100%;
-                        overflow-wrap:normal;
-                        overflow:hidden;
-                        border:0px; 
-                        word-break:keep-all;
-                        word-wrap:break-word;
-                        line-break:strict; }
-    </style>
-    <table id="reviews_table">
-        <tr><td>${comment_text}</td></tr>
-    </table>
 </%def>

@@ -22,7 +22,6 @@
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
     self.active_view=active_view
     self.message_box_visible=False
 %>
@@ -63,5 +62,5 @@
         if status not in ("danger", "info", "success", "warning"):
             status = "info"
     %>
-    <div class="message mt-2 alert alert-${status}">${_(sanitize_html(msg))}</div>
+    <div class="message mt-2 alert alert-${status}">${sanitize_html(msg)}</div>
 </%def>

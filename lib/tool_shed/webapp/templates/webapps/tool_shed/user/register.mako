@@ -4,7 +4,6 @@
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
     self.active_view="user"
     self.message_box_visible=False
 %>
@@ -77,14 +76,6 @@
                 $(".errormessage").html(message);
             }
 
-            $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){
-                var progressBar = $('.progress-bar');
-                var color = valid ? 'lightgreen' : 'red';
-
-                progressBar.css('background-color', color);
-                progressBar.css({'width': complexity + '%'});
-            });
-
             $('#registration').bind('submit', function(e) {
                 $('#send').attr('disabled', 'disabled');
 
@@ -129,11 +120,6 @@
             <div class="form-row">
                 <label>Password:</label>
                 <input id="password_input" type="password" name="password" value="" size="40"/>
-            </div>
-            <div class="progress">
-                <div id="complexity-bar" class="progress-bar" role="progressbar">
-                    Strength
-                </div>
             </div>
             <div class="form-row">
                 <label>Confirm password:</label>

@@ -3,9 +3,10 @@ import logging
 import galaxy.exceptions
 from galaxy import (
     model,
-    security
+    security,
 )
 from galaxy.managers import users
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -14,14 +15,14 @@ class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsExc
     pass
 
 
-class RBACPermission(object):
+class RBACPermission:
     """
-    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """
 
-    permissions_class = None
+    permissions_class: type
     permission_failed_error_class = RBACPermissionFailedException
 
     def __init__(self, app):
@@ -38,13 +39,13 @@ class RBACPermission(object):
 
     def error_unless_permitted(self, item, user, trans=None):
         if not self.is_permitted(item, user, trans=trans):
-            error_info = dict(model_class=item.__class__, id=getattr(item, 'id', None))
+            error_info = dict(model_class=item.__class__, id=getattr(item, "id", None))
             raise self.permission_failed_error_class(**error_info)
 
-    def grant(self, item, user, flush=True):
+    def grant(self, item, user, flush: bool = True):
         raise NotImplementedError("abstract parent class")
 
-    def revoke(self, item, user, flush=True):
+    def revoke(self, item, user, flush: bool = True):
         raise NotImplementedError("abstract parent class")
 
     def _role_is_permitted(self, item, role):
@@ -52,7 +53,7 @@ class RBACPermission(object):
 
     def _error_unless_role_permitted(self, item, role):
         if not self._role_is_permitted(item, role):
-            error_info = dict(model_class=item.__class__, id=getattr(item, 'id', None))
+            error_info = dict(model_class=item.__class__, id=getattr(item, "id", None))
             raise self.permission_failed_error_class(**error_info)
 
     def _grant_role(self, item, role, flush=True):
@@ -75,13 +76,14 @@ class DatasetRBACPermission(RBACPermission):
     - manage permissions : can a role manage the permissions on a dataset
     - access : can a role read/look at/copy a dataset
     """
+
     permissions_class = model.DatasetPermissions
     action_name = None
 
     # ---- double secrect probation
     def __assert_action(self):
         if not self.action_name:
-            raise NotImplementedError("abstract parent class" + " needs action_name")
+            raise NotImplementedError("abstract parent class needs action_name")
 
     # ---- interface
     def by_dataset(self, dataset):
@@ -109,7 +111,9 @@ class DatasetRBACPermission(RBACPermission):
         for role in roles:
             permissions.append(self._create(dataset, role, flush=False))
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return permissions
 
     def clear(self, dataset, flush=True):
@@ -121,7 +125,9 @@ class DatasetRBACPermission(RBACPermission):
         permission = self.permissions_class(self.action_name, dataset, role)
         self.session().add(permission)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return permission
 
     def _roles(self, dataset):
@@ -141,7 +147,9 @@ class DatasetRBACPermission(RBACPermission):
             else:
                 self.session().delete(permission)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
 
     def _revoke_role(self, dataset, role, flush=True):
         role_permissions = self.by_roles(dataset, [role])
@@ -167,8 +175,9 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
     When checking permissions for a user, if any of the user's roles
     have permission on the dataset
     """
+
     # TODO: We may also be able to infer/record the dataset 'owner' as well.
-    action_name = security.RBACAgent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
+    action_name = security.RBACAgent.permitted_actions.get("DATASET_MANAGE_PERMISSIONS").action
     permission_failed_error_class = DatasetManagePermissionFailedException
 
     # ---- interface
@@ -188,13 +197,13 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
                 return True
         return False
 
-    def grant(self, dataset, user, flush=True):
+    def grant(self, item, user, flush: bool = True):
         private_role = self._user_private_role(user)
-        return self._grant_role(dataset, private_role, flush=flush)
+        return self._grant_role(item, private_role, flush=flush)
 
-    def revoke(self, dataset, user, flush=True):
+    def revoke(self, item, user, flush: bool = True):
         private_role = self._user_private_role(user)
-        return self._revoke_role(dataset, private_role, flush=flush)
+        return self._revoke_role(item, private_role, flush=flush)
 
     # ---- private
     def _role_is_permitted(self, dataset, role):
@@ -206,8 +215,7 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
         return self.user_manager.private_role(user)
 
     def _grant_role(self, dataset, role, flush=True):
-        existing = self.by_role(dataset, role)
-        if existing:
+        if existing := self.by_role(dataset, role):
             return existing
         return self._create(dataset, role, flush=flush)
 
@@ -227,7 +235,8 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
     An user must have all the Roles of all the access permissions associated
     with a dataset in order to access it.
     """
-    action_name = security.RBACAgent.permitted_actions.DATASET_ACCESS.action
+
+    action_name = security.RBACAgent.permitted_actions.get("DATASET_ACCESS").action
     permission_failed_error_class = DatasetAccessPermissionFailedException
 
     # ---- interface
@@ -238,18 +247,19 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         current_roles = self._roles(dataset)
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
-        return (self._is_public_based_on_roles(current_roles) or
-                # admin is always permitted
-                self.user_manager.is_admin(user) or
-                self._user_has_all_roles(user, current_roles))
+        return (
+            self._is_public_based_on_roles(current_roles)
+            or self.user_manager.is_admin(user)  # admin is always permitted
+            or self._user_has_all_roles(user, current_roles)
+        )
 
-    def grant(self, item, user):
+    def grant(self, item, user, flush: bool = True):
         pass
         # not so easy
         # need to check for a sharing role
         # then add the new user to it
 
-    def revoke(self, item, user):
+    def revoke(self, item, user, flush: bool = True):
         pass
         # not so easy
 
@@ -274,6 +284,8 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
 
     def _role_is_permitted(self, dataset, role):
         current_roles = self._roles(dataset)
-        return (self._is_public_based_on_roles(current_roles) or
-                # if there's only one role and this is it, let em in
-                ((len(current_roles) == 1) and (role == current_roles[0])))
+        return (
+            self._is_public_based_on_roles(current_roles)
+            # if there's only one role and this is it, let em in
+            or ((len(current_roles) == 1) and (role == current_roles[0]))
+        )

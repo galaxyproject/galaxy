@@ -10,5 +10,5 @@ def the_destination(resource_params):
     object_store_id = "dynamic_ebs"
     if how_store == "slow":
         object_store_id = "dynamic_s3"
-    job_destination.params['object_store_id'] = object_store_id
+    job_destination.params["object_store_id"] = object_store_id
     return job_destination

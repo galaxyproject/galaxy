@@ -1,0 +1,261 @@
+// Bootstrap variables and core framework
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+@import "~bootstrap/scss/bootstrap.scss";
+@import "~bootstrap-vue/src/index.scss";
+
+// Bootstrap-related style overrides
+@import "overrides.scss";
+@import "mixins.scss";
+
+// Fontawesome configuration.
+//$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+//@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+
+$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/regular";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/v4-shims";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+@import "select2.scss";
+@import "jquery.rating.scss";
+
+// galaxy sub-components
+@import "reports";
+@import "windows.scss";
+@import "upload.scss";
+@import "ui.scss";
+@import "library.scss";
+@import "trackster.scss";
+@import "toastr.scss";
+@import "jstree.scss";
+@import "tour.scss";
+@import "flex.scss";
+@import "charts.scss";
+@import "message.scss";
+@import "markdown.scss";
+@import "multiselect.scss";
+@import "icon-btn.scss";
+@import "peek-columns.scss";
+@import "dataset.scss";
+@import "list-item.scss";
+@import "panels.scss";
+
+// ==== Select2 ====
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
+    border: $border-default;
+    .select2-search {
+        @extend .pt-1;
+    }
+}
+.select2-drop {
+    background: $body-bg;
+    color: $text-color;
+}
+
+// ==== Basic styles ====
+body {
+    @extend .m-2;
+}
+
+.unselectable {
+    @include user-select(none);
+}
+
+.parent-width {
+    @extend .w-100;
+}
+
+.clear {
+    @include clearfix();
+}
+
+// ==== Page layout styles ====
+.full-content {
+    @extend .m-0;
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .position-absolute;
+    background: $body-bg;
+    color: $text-color;
+}
+
+.full-message {
+    @extend .w-100;
+    @extend .overflow-hidden;
+    height: $panel-message-height !important;
+    border-bottom: solid $border-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+#everything {
+    @extend .d-flex;
+    @extend .flex-column;
+    @extend .full-content;
+    top: 0px;
+    left: 0px;
+}
+
+#columns {
+    @extend .position-relative;
+    flex: 1;
+    overflow: hidden;
+}
+
+#background {
+    @extend .full-content;
+    z-index: -1;
+}
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#dd-helper {
+    @extend .full-content;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    display: none;
+}
+
+// State colors
+$galaxy-state-border: (
+    "new": $state-default-border,
+    "upload": $state-info-border,
+    "waiting": $state-default-border,
+    "queued": $state-default-border,
+    "running": $state-running-border,
+    "ok": $state-success-border,
+    "error": $state-danger-border,
+    "deleted": darken($state-default-border, 30%),
+    "hidden": $state-default-border,
+    "setting_metadata": $state-warning-border,
+    "inaccessible": darken($state-default-border, 10%),
+);
+
+$galaxy-state-bg: (
+    "new": $state-default-bg,
+    "upload": $state-info-bg,
+    "waiting": $state-default-bg,
+    "queued": $state-default-bg,
+    "running": $state-running-bg,
+    "ok": $state-success-bg,
+    "error": $state-danger-bg,
+    "deleted": darken($state-default-bg, 30%),
+    "hidden": $state-default-bg,
+    "setting_metadata": $state-warning-bg,
+    "inaccessible": darken($state-default-bg, 10%),
+);
+
+@each $state in map-keys($galaxy-state-border) {
+    .state-color-#{$state},
+    [data-state="#{$state}"] {
+        border-color: map-get($galaxy-state-border, $state);
+        background-color: map-get($galaxy-state-bg, $state);
+
+        &:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: +10%);
+        }
+
+        &:focus,
+        &:focus-within {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &:focus:hover,
+        &:focus-within:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -7%);
+        }
+
+        &.selected {
+            background-color: $state-info-bg;
+            &:focus,
+            &:focus-within {
+                background-color: scale-color($state-info-bg, $lightness: -10%);
+            }
+        }
+    }
+}
+
+.state-color-deleted,
+.state-color-hidden,
+[data-state="deleted"],
+[data-state="hidden"] {
+    border-style: dotted;
+}
+
+.node-header-invocation {
+    color: $text-color;
+    @each $state in map-keys($galaxy-state-bg) {
+        &.header-#{$state} {
+            background-color: map-get($galaxy-state-bg, $state) !important;
+        }
+    }
+    &.header-paused {
+        background-color: $state-info-bg !important;
+    }
+    &.header-skipped {
+        background-color: map-get($galaxy-state-bg, "hidden") !important;
+    }
+}
+
+// Extra label colors
+.badge-beta {
+    @extend .badge-warning;
+}
+
+.badge-new {
+    @extend .badge-info;
+}
+
+// Button styles
+button {
+    @extend .btn;
+    @extend .btn-secondary;
+}
+a.btn {
+    text-decoration: none;
+}
+
+.btn-xs {
+    // The 'new' bootstrap 4 btn-sm is about the same size as the old btn-xs,
+    // should serve as a replacement for anything expecting this.
+    @extend .btn-sm;
+}
+
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
+}
+
+.btn-transparent-background {
+    // A wrapper for buttons with transparent background when hovering over it.
+    .btn {
+        background-color: transparent !important;
+        border-color: transparent !important;
+    }
+
+    .btn:hover {
+        color: $brand-info;
+    }
+
+    .btn:active {
+        color: $brand-dark;
+    }
+}
+
+/* For Vue */
+[v-cloak] {
+    display: none;
+}
+
+@import "unsorted.scss";

@@ -20,57 +20,32 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    <!--- base/base_panels.mako stylesheets() -->
-    ${h.css(
-        'bootstrap-tour',
-        'base'
-    )}
+    ${h.dist_css('base')}
 </%def>
 
 ## Default javascripts
 ## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
-    <!--- base/base_panels.mako javascripts() -->
-    ${h.js(
-        'bundled/libs.chunk',
-        'bundled/base.chunk'
+    ${ h.dist_js(
+        'libs.bundled',
+        'generic.bundled'
     )}
-    ${ javascript_entry() }
-</%def>
-
-<%def name="javascript_entry()">
-    <!-- base/base_panels.mako javascript_entry -->
-    ${ h.js('bundled/generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">
-    <!--- base/base_panels.mako javascript_app() -->
     ${ galaxy_client.load() }
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
-    <!--- base/base_panels.mako late_javascripts() -->
-
-    <script type="text/javascript">
-
-        var panelConfig = {
-            left_panel: ${h.to_js_bool(self.has_left_panel)},
-            right_panel: ${h.to_js_bool(self.has_right_panel)},
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        };
-
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
-        });
-
-    </script>
-
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
+    %endif
+    %if t.webapp.name == 'galaxy' and app.config.plausible_server and app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(app.config.plausible_server, app.config.plausible_domain) }
+    %endif
+    %if t.webapp.name == 'galaxy' and app.config.matomo_server and app.config.matomo_site_id:
+        ${ galaxy_client.config_matomo_analytics(app.config.matomo_server, app.config.matomo_site_id) }
     %endif
 
 </%def>
@@ -114,14 +89,9 @@
 
 ## Document
 <html>
-    <!--base_panels.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy
@@ -172,48 +142,38 @@
             <div id="background"></div>
             
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
-                ${self.masthead()}
-            </div>
-            
+            ${self.masthead()}
+
             %if self.message_box_visible:
-                <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
+                <div id="messagebox" class="alert alert-${app.config.message_box_class} rounded-0 m-0 p-2">
                     ${app.config.message_box_content}
                 </div>
             %endif
             
             %if self.show_inactivity_warning:
-                <div id="inactivebox" class="panel-warning-message">
+                <div id="inactivebox" class="alert alert-warning rounded-0 m-0 p-2">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif
             
             ${self.overlay(visible=self.overlay_visible)}
             
-            <div id="columns">
+            <div id="columns" class="d-flex">
                 %if self.has_left_panel:
-                    <div id="left">
+                    <div id="left" style="overflow: auto;">
                         ${self.left_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse left"></div>
-                            <div id="left-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end left-->
+                    </div>
                 %endif
                 <div id="center" class="inbound">
                     ${self.center_panel()}
-                </div><!--end center-->
+                </div>
                 %if self.has_right_panel:
                     <div id="right">
                         ${self.right_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="right-panel-collapse" class="panel-collapse right"></div>
-                            <div id="right-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end right-->
+                    </div>
                 %endif
-            </div><!--end columns-->
-        </div><!--end everything-->
+            </div>
+        </div>
 
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

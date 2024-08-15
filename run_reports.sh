@@ -35,10 +35,13 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
     export GALAXY_REPORTS_CONFIG
 fi
 
-if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
-    python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
+find_server ${GALAXY_REPORTS_CONFIG:-none} reports
+
+if [ "$run_server" = "gunicorn" -a -z "$GALAXY_REPORTS_CONFIG" ]; then
+    GALAXY_REPORTS_CONFIG="config/reports.yml.sample"
+    export GALAXY_REPORTS_CONFIG
+    echo 'WARNING: Using default reports config at config/reports.yml.sample, copy to config/reports.yml or set $GALAXY_REPORTS_CONFIG if this is not intentional'
 fi
 
-find_server ${GALAXY_REPORTS_CONFIG:-none} reports
 echo "Executing: $run_server $server_args"
 eval $run_server $server_args

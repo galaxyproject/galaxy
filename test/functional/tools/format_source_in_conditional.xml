@@ -1,0 +1,45 @@
+<tool id="format_source_in_conditional" name="format source in conditional" version="0.1.0">
+    <command>cp '$input1' '$output1'</command>
+    <inputs>
+        <conditional name="cond">
+            <param name="select" type="select">
+                <option value="no_extra_nesting">No extra nesting</option>
+                <option value="extra_nesting">One more conditional</option>
+            </param>
+            <when value="no_extra_nesting">
+                <param name="input1" type="data" format="tabular"/>
+            </when>
+            <when value="extra_nesting">
+                <conditional name="inner_cond">
+                    <param name="inner_select" type="select">
+                        <option value="value">the only option</option>
+                    </param>
+                    <when value="value">
+                        <param name="input1" type="data" format="txt"/>
+                    </when>
+                </conditional>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="cond|input1"/>
+    </outputs>
+    <tests>
+        <test>
+            <conditional name="cond">
+                <param name="select" value="no_extra_nesting"/>
+                <param name="input1" value="1.tabular" ftype="tabular"/>
+            </conditional>
+            <output name="output1" value="1.tabular" ftype="tabular" lines_diff="2"/>
+        </test>
+        <test>
+            <conditional name="cond">
+                <param name="select" value="extra_nesting"/>
+                <conditional name="inner_cond">
+                    <param name="input1" value="1.txt" ftype="txt"/>
+                </conditional>
+            </conditional>
+            <output name="output1" value="1.txt" ftype="txt"/>
+        </test>
+    </tests>
+</tool>

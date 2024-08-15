@@ -1,30 +1,74 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.8.4
+psycopg2-binary==2.9.9
 mysqlclient
 fluent-logger
-raven
+sentry-sdk[fastapi]
 pbs_python
 drmaa
 statsd
-docker
-azure-storage==0.32.0
-# PyRods not in PyPI
-python-ldap==3.2.0
+azure-storage-blob==12.19.1
+python-irodsclient==2.0.0
+python-ldap==3.4.0
+ldap3==2.9.1
 python-pam
 galaxycloudrunner
+pkce
+total-perspective-vortex>=2.3.2,<3
+
+# For file sources plugins
+fs.webdavfs>=0.4.2  # type: webdav
+fs.dropboxfs>=1.0  # type: dropbox
+fs.sshfs  # type: ssh
+fs.anvilfs # type: anvil
+fs.googledrivefs # type: googledrive
+fs-gcsfs # type: googlecloudstorage
+# fs-gcsfs doesn't pin google-cloud-storage, and old versions log noisy exceptions and break test discovery
+google-cloud-storage>=2.8.0  # type: googlecloudstorage
+fs.onedatarestfs==21.2.5.1 # type: onedata, depends on onedatafilerestclient
+fs-basespace # type: basespace
+fs-azureblob # type: azure
+
+# Vault backend
+hvac
+custos-sdk
 
 # Chronos client
-chronos-python==0.38.0
+chronos-python==1.2.1
 
 # Kubernetes job runner
-pykube==0.15.0
+pykube-ng==21.3.0
 
 # Synnefo / Pithos+ object store client
 kamaki
 
+# Onedata REST-based client for data access, required by the Onedata object store
+onedatafilerestclient
+
 watchdog
 
 # Error reporters optional modules
-python-gitlab
+python-gitlab>=2.10.0
 pygithub
 influxdb
+
+# Deep learning packages for tool recommendation
+tensorflow==2.9.3
+
+# weasyprint has problematic requirements (cairo, Pango, see:
+# https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux)
+# so make it optional
+# xref https://github.com/galaxyproject/galaxy/pull/9651
+# Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
+# to install weasyprint as part of Galaxy's conditonal dependency instalation process.
+weasyprint>=61.2
+# We pin the transitive weasyprint dependency pydyf here because newer versions are
+# not compatible with the last weasyprint version that still supports python 3.8.
+# This dependency is ignored on python >= 3.9 and should be removed when deprecating
+# support for python 3.8.
+pydyf<0.11; python_version<"3.9"
+
+# AWS Batch runner
+boto3
+
+# For Rucio storage plugin
+rucio-clients>=33.6.0

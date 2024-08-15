@@ -1,0 +1,3 @@
+Beaker
+pytest
+pytest-mock

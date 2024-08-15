@@ -1,0 +1,11 @@
+#video-container {
+    width: 90%;
+    margin-left: 5%;
+    margin-top: 2%;
+}
+
+#audio-container {
+    width: 80%;
+    margin-left: 10%;
+    margin-top: 5%;
+}

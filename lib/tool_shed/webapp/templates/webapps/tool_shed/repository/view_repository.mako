@@ -8,14 +8,14 @@
     from galaxy.web.framework.helpers import time_ago
     from tool_shed.util.basic_util import to_html_string
 
-    is_new = repository.is_new( trans.app )
+    is_new = repository.is_new()
     is_deprecated = repository.deprecated
 
     can_browse_contents = trans.webapp.name == 'tool_shed' and not is_new
     can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
-    changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
+    changeset_revision_is_repository_tip = changeset_revision == repository.tip()
 
     if changeset_revision_is_repository_tip:
         tip_str = 'repository tip'
@@ -228,48 +228,6 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=False, re
                 ${render_star_rating( 'avg_rating', avg_rating, disabled=True )}
                 <div style="clear: both"></div>
             </div>
-        </div>
-    </div>
-    <p/>
-    <div class="toolForm">
-        <div class="toolFormBody">
-            %if display_reviews:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False )}"><label>Hide Reviews</label></a>
-                </div>
-                <div style="clear: both"></div>
-                <div class="form-row">
-                    <table class="grid">
-                        <thead>
-                            <tr>
-                                <th>Rating</th>
-                                <th>Comments</th>
-                                <th>Reviewed</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <% count = 0 %>
-                        %for review in repository.ratings:
-                            <%
-                                count += 1
-                                name = 'rating%d' % count
-                            %>
-                            <tr>
-                                <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
-                                <td>${time_ago( review.update_time )}</td>
-                                <td>${review.user.username}</td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <div style="clear: both"></div>
-            %else:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
-                </div>
-                <div style="clear: both"></div>
-            %endif
         </div>
     </div>
 %endif

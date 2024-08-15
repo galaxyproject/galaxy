@@ -5,6 +5,7 @@ log = logging.getLogger(__name__)
 
 SPECIAL_TOOLS = {
     "history export": "imp_exp/exp_history_to_archive.xml",
+    "history export to uri": "imp_exp/exp_history_to_uri.xml",
     "history import": "imp_exp/imp_history_from_archive.xml",
     "data fetch": "data_fetch.xml",
 }

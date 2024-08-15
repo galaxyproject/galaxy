@@ -1,4 +1,3 @@
-
 # TODO: ---- This is a work in progress ----
 """
 Dataproviders are iterators with context managers that provide data to some
@@ -25,7 +24,7 @@ from . import (
     exceptions,
     external,
     hierarchy,
-    line
+    line,
 )
 
-__all__ = ('decorators', 'exceptions', 'base', 'chunk', 'line', 'hierarchy', 'column', 'external', 'dataset')
+__all__ = ("decorators", "exceptions", "base", "chunk", "line", "hierarchy", "column", "external", "dataset")

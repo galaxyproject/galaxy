@@ -1,26 +1,15 @@
 <%!
-    import six
     from galaxy.util import unicodify
-    from galaxy.webapps.reports.framework.grids import TextColumn
+    from galaxy.web.legacy_framework.grids import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-        if context.get('use_panels'):
-            if context.get('webapp'):
-                app_name = context.get('webapp')
-            elif context.get('app'):
-                app_name = context.get('app').name
-            else:
-                app_name = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % app_name
-        else:
-            return '/base.mako'
+        return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="/display_common.mako" import="get_class_plural" />
 
 ##
 ## Override methods from base.mako and base_panels.mako
@@ -39,11 +28,6 @@
 ## render title
 <%def name="title()">${grid.title}</%def>
 
-## render in center panel
-<%def name="center_panel()">
-    ${self.load()}
-</%def>
-
 ## render in body
 <%def name="body()">
     ${self.load()}
@@ -59,7 +43,7 @@
         config.addInitialization(function() {
             var legacyGridViewConfig = ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) };
             console.log("grid_base.mako, javascript_app", legacyGridViewConfig);
-            new window.bundleEntries.LegacyGridView(legacyGridViewConfig);
+            new window.bundleToolshed.LegacyGridView(legacyGridViewConfig);
         });
     </script>
 </%def>
@@ -80,6 +64,7 @@
         'cur_page_num'                  : cur_page_num,
         'num_pages'                     : num_pages,
         'num_page_links'                : num_page_links,
+        'allow_fetching_all_results'    : grid.allow_fetching_all_results,
         'status'                        : status,
         'message'                       : util.restore_text(message),
         'global_actions'                : [],
@@ -210,7 +195,7 @@
                 value = column.get_value( trans, grid, item )
 
                 # Handle non-ascii chars.
-                if isinstance(value, six.binary_type):
+                if isinstance(value, bytes):
                     value = unicodify(value, 'utf-8')
                     value = value.replace('/', '//')
                 endif

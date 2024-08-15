@@ -1,0 +1,246 @@
+<tool id="interactive_tool_higlass" tool_type="interactive" name="HiGlass" version="1.8.0">
+    <description>an interactive Hi-C data visualizer.</description>
+    <requirements>
+        <container type="docker">galaxy/higlass-it:1.0</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="HiGlass Visualisation" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key" />
+    </environment_variables>
+    <macros>
+        <xml name="chromimport">
+            <param name="files" label="Chromosome size files" type="data" format="txt,tsv,tabular" help="If you are analyzing data not from one of the species/assemblies listed in the help section, please upload a 2-column file of chromosome names and sizes."/>
+        </xml>
+    </macros>
+    <command><![CDATA[
+
+        cd /home/higlass/projects &&
+        mkdir -p data/log/ &&
+        supervisord &&
+       	sleep 5 &&
+        mkdir -p /import/ &&
+
+
+        ## Generate coordSystems ahead of time from build in files
+
+        #set $existing_genomes = ['GCA_000001215.4_Release_6_plus_ISO1_MT_genomic', 'GCF_000005845.2_ASM584v2_genomic', 'canFam3', 'danRer10', 'dm6', 'galGal6', 'grch37', 'h37rv', 'hg19', 'hs37d5', 'mm9', 'panTro5', 'rn6', 'GCA_000001405.15_GRCh38_genomic', 'b37', 'ce11', 'dm3', 'galGal5', 'gorGor5', 'grch37-lite', 'hg18', 'hg38', 'mm10', 'mm9b', 'rheMac8', 'sacCer3', 'test3chroms']
+        #set $uploaded_genomes = ""
+        
+
+        ##Allows users to upload their own chromsize files and overrwrite the negspy ones
+
+        ## Generate coodSystems from uploaded files
+        #for $i, $chromsizefile in enumerate($chromfiles):
+            #if $chromsizefile.labeled.islabeled == "Yes":
+                python higlass-server/manage.py ingest_tileset --filename $chromsizefile.labeled.files --filetype chromsizes-tsv --datatype chromsizes --coordSystem $chromsizefile.labeled.files.element_identifier &&
+                #if $chromsizefile.labeled.files.element_identifier in $existing_genomes:
+                    #set $label = $chromsizefile.labeled.files.element_identifier
+                    #set $uploaded_genomes[str($label)] = str($chromsizefile.labeled.files)
+                    #set $_ = $existing_genomes.remove($chromsizefile.labeled.files.element_identifier)
+                #end if
+            #else
+                python higlass-server/manage.py ingest_tileset --filename $chromsizefile.labeled.files --filetype chromsizes-tsv --datatype chromsizes --coordSystem $chromsizefile.labeled.speciesname &&
+                #if $chromsizefile.labeled.files.element_identifier in $existing_genomes:
+                    #set $label = $chromsizefile.labeled.speciesname
+                    #set $uploaded_genomes[str($label)] = str($chromsizefile.labeled.files)
+                    #set $_ = $existing_genomes.remove($chromsizefile.labeled.speciesname)
+                #end if
+            #end if
+        #end for
+        touch uploaded.txt &&
+        echo $uploaded_genomes >> uploaded.txt &&
+
+        ## Lists all genomes being used that haven't been uploaded, checks if they are in the negspy directory, creates chromsize info if so
+
+        #for $count, $input in enumerate($inputs):
+            #for $file in $input.fileselect.inputfiles:
+                #if $file.metadata.dbkey in $existing_genomes:
+                    echo $file.metadata.dbkey >> datatypes.txt &&
+                #end if
+            #end for
+        #end for
+        sort datatypes.txt | uniq | sed 's/^?//' > types.txt &&
+        cat types.txt | while read datatypes; do genome="negspy/negspy/data/"\$datatypes"/chromInfo.txt"; python higlass-server/manage.py ingest_tileset --filename \$genome --filetype chromsizes-tsv --datatype chromsizes --coordSystem \$datatypes; done;
+
+        ## Full dataset uploads
+        
+        #for $count, $input in enumerate($inputs):
+            #if $input.fileselect.typeselect == "bed":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    cp $file $filename &&
+                    clodius aggregate bedfile --assembly $file.metadata.dbkey $filename &&
+                    mv ${filename}.beddb data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
+                #end for
+            #elif $input.fileselect.typeselect == "bigwig":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier
+                    cp $file $filename &&
+                    python higlass-server/manage.py ingest_tileset --filename ${filename} --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
+                #end for
+            #elif $input.fileselect.typeselect == "bedgraph":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    cp $file $filename &&
+                    cat $filename | sort -k1,1 -k2,2n | awk '{ if (NF >= 4) print $${file.metadata.chromCol} "\t" $${file.metadata.startCol} "\t" $${file.metadata.endCol} "\t" $${input.fileselect.valuecol}}' > ${filename}.presort;
+                    #if $file.metadata.dbkey in $existing_genomes:
+                        bedGraphToBigWig ${filename}.presort negspy/negspy/data/${file.metadata.dbkey}/chromInfo.txt ${filename}.bigwig &&
+                    #else
+                        bedGraphToBigWig ${filename}.presort $uploaded_genomes[str($file.metadata.dbkey)] ${filename}.bigwig &&
+                    #end if
+                    mv ${filename}.bigwig data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype bigwig --datatype vector --coordSystem ${file.metadata.dbkey} &&
+                #end for
+            #elif $input.fileselect.typeselect == "bigbed":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    cp $file $filename &&
+                    bigBedToBed ${filename} ${file.element_identifier} &&
+                    clodius aggregate bedfile --assembly $file.metadata.dbkey ${file.element_identifier} &&
+                    mv ${file.element_identifier}.beddb data/${file.element_identifier} &&
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype beddb --datatype bedlike --coordSystem $file.metadata.dbkey &&
+                #end for
+            #elif $input.fileselect.typeselect == "mcool":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier
+                    cp $file $filename &&
+                    python higlass-server/manage.py ingest_tileset --filename $filename --filetype cooler --datatype matrix &&
+                #end for
+            #elif $input.fileselect.typeselect == "cool":
+                #for $file in $input.fileselect.inputfiles:
+                    #set $filename = "data/" + $file.element_identifier + "." + str($file.ext)
+                    cp $file $filename &&
+                    cooler zoomify -r $input.fileselect.zoomval -o data/${file.element_identifier} $filename &&
+
+
+                    ###if $input.fileselect.granularity == "Yes":
+                    ##    cooler zoomify -r $input.fileselect.granularity.zoomval -o data/${file.element_identifier}.mcool $filename &&
+                    ###else:
+                    ##    cooler coarsen -k $input.fileselect.granularity.binsize -o data/${file.element_identifier}.mcool $filename
+                    ###end if
+
+
+                    python higlass-server/manage.py ingest_tileset --filename data/${file.element_identifier} --filetype cooler --datatype matrix &&
+                #end for
+            #end if
+        #end for
+        tail -f /var/log/supervisor/*
+    ]]>
+    </command>
+    <inputs>
+        <repeat name="inputs" title="Data to import">
+            <conditional name="fileselect">
+                <param name="typeselect" type="select" label="Select input datatype(s)">
+                    <option value="bed"/>
+                    <option value="bedgraph"/>
+                    <option value="bigbed"/>
+                    <option value="bigwig"/>
+                    <option value="cool"/>
+                    <option value="mcool"/>
+                </param>
+                <when value="bed">
+                    <param name="inputfiles" type="data" format="bed" multiple="true" label="Input file"/>
+                </when>
+                <when value="bedgraph">
+                    <param name="inputfiles" type="data" format="bedgraph" multiple="true" label="Input file"/>
+                    <param name="valuecol" type="data_column" data_ref="inputfiles" label="Bedgraph value column" value="5" help="For chromosome column and position columns, please check the metadata of your input file."/>
+                    <param name="na_val" type="text" value="NA" label="NaN value"/>
+                </when>
+                <when value="bigbed">
+                    <param name="inputfiles" type="data" format="bigbed" multiple="true" label="Input file"/>
+                </when>
+                <when value="bigwig">
+                    <param name="inputfiles" type="data" format="bigwig" multiple="true" label="Input file"/>
+                </when>
+                <when value="mcool">
+                    <param name="inputfiles" type="data" format="mcool" multiple="true" label="Input file"/>
+                </when>
+                <when value="cool">
+                    <param name="inputfiles" type="data" format="cool" multiple="true" label="Input file" help="Currently only supporting evenly-sized bins"/>
+                    <param name="zoomval" type='text' value="10000" label="Comma-separated list of target resolutions"/>
+                </when>
+
+                <!-- for when it's expanded to uneven bins -->
+                <!-- <when value="cool">
+                    <param name="inputfiles" type="data" format="cool" multiple="true" label="Input file"/>
+                    <conditional name="granularity">
+                        <param name="even" type="boolean" label="Are the size bins of this cool file even?" truevalue="Yes" falsevalue="No" checked="true"/>
+                        <when value="Yes">
+                            <param name="zoomval" type='text' value="10000" label="Comma-separated list of target resolutions"/>
+                        </when>
+                        <when value="No">
+                            <param name="binsize" type='text' value="10000" label="Number of bins into which the data will be divided"/>
+                        </when>
+                    </conditional>
+                </when> -->
+            </conditional>
+        </repeat>
+        <repeat name="chromfiles" title="Chromosome size files">
+            <conditional name="labeled">
+                <param name="islabeled" type="boolean" label="Is the data's filename the species/assembly being uploaded?" truevalue="Yes" falsevalue="No" checked="false"/>
+                <when value="No">
+                    <param name="speciesname" label="Species/assembly abbreviation" type="text"/>
+                    <expand macro="chromimport"/>
+                </when>
+                <when value="Yes">
+                    <expand macro="chromimport"/>
+                </when>
+            </conditional> 
+        </repeat>
+    </inputs>
+    <outputs>
+	    <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        **Note: This interactive tool is in alpha. There is a known bug in the source tool that fails to render the image of the viewport on uploaded data. Further, uploaded coordinate file loaded in will have the same name in the in-app file select.**
+
+        Interactive tool for visualising Hi-C data, works only for multi-cooler files which store multiple resolutions.
+        For a detailed documentaition please visit https://docs.higlass.io/.
+
+        **All files must have an associated genome assembly**
+
+        **Please be patient during startup, files will become available in higlass as they finish loading.**
+
+==================================================================================================================
+
+        Available genonmes/assemblies: 
+
+        GCA_000001215.4_Release_6_plus_ISO1_MT_genomic,	GCF_000005845.2_ASM584v2_genomic, canFam3, danRer10, 
+
+        dm6, galGal6, grch37, h37rv, hg19, hs37d5, mm9, panTro5, rn6, GCA_000001405.15_GRCh38_genomic, 
+
+        b37, ce11, dm3, galGal5, gorGor5, grch37-lite, hg18, hg38, mm10, mm9b, rheMac8, sacCer3, test3chroms
+
+==================================================================================================================
+
+        **If your genome/assembly is not listed, please upload a chromosome size file in the following format:**
+
+==============================
+
+
+        chr1    chr1_size
+
+        chr2    chr2_size
+
+        ...
+
+==============================
+                
+    </help>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1186/s13059-018-1486-1</citation>
+        </citations>
+    </xml>
+</tool>

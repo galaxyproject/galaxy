@@ -1,0 +1,15 @@
+type: database
+path_prefix: /my_galaxy_instance
+# Encryption keys must be valid fernet keys
+# To generate a valid key:
+# >>> from cryptography.fernet import Fernet
+# >>> Fernet.generate_key()
+# b'pZDP8_baVs3oWT4597HJWCysm49j-XELONQ-EdoU0DE='
+#
+# Use the ascii string value as a key
+# For more details, see: https://cryptography.io/en/latest/fernet/#
+encryption_keys:
+  - 5peww5oT8NMpxE31LpTiEE8qhccy_pPl4GW8iYu9gzU=
+  - 5RrT94ji178vQwha7TAmEix7DojtsLlxVz8Ef17KWgg=
+  - iNdXd7tRjLnSqRHxuhqQ98GTLU8HUbd5_Xx38iF8nZ0=
+  - IK83IXhE4_7W7xCFEtD9op0BAs11pJqYN236Spppp7g=

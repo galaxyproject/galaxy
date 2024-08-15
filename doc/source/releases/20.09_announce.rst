@@ -1,0 +1,95 @@
+
+===========================================================
+September 2020 Galaxy Release (v 20.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Plugin framework for uploading datasets**
+  Galaxy administrators can now configure different sources
+  from which users may upload files. These include global or
+  user-specifc webdav servers, dropbox accounts as well as
+  FTP and regular filesystem locations. Developers can add
+  new types of sources by adding `PyFileSystem2 <https://docs.pyfilesystem.org/en/latest/introduction.html>`__ compatible
+  plugins. (`Pull Request 9888`_)
+
+**Workflow import from GA4GH TRS servers**
+  Galaxy can now search and import workflows from GA4GH TRS servers,
+  such as `Dockstore <https://dockstore.org/>`__ and `WorkflowHub <https://workflowhub.eu/>`__.
+  We hope that sharing workflows on these platforms will facilitate re-use and collaboration.
+  (`Pull Request 9999`_, `Pull Request 10158`_)
+
+**Simplified workflow submission form**
+  Galaxy now presents a simpler and cleaner interface for submitting workflows
+  that focuses on the parameters to set and datasets to choose.
+  (`Pull Request 9151`_).
+
+**Accelerate batch job creation and workflow step scheduling**
+  Galaxy now batches database interactions for the creation of batch jobs.
+  For large batches of jobs this can speed up job creation by 100 fold or more.
+  (`Pull Request 9926`_, `Pull Request 9980`_, `Pull Request 9985`_, `Pull Request 10008`_, `Pull Request 10019`_)
+
+Also check out the `20.09 user release notes <20.09_announce_user.html>`__
+
+Configuration Changes
+=====================
+
+The following configuration options have been changed
+
+**config/tool_shed.yml.sample:**
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+**config/galaxy.yml.sample:**
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+**config/reports.yml.sample:**
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+New Configuration Files
+-----------------------
+
+The following configuration file is new:
+
+-  ``config/trs_servers_conf.yml.sample``
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_20.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_20.09 && git pull --ff-only origin release_20.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+- `Jayadev Joshi <https://github.com/jaidevjoshi83>`_
+- `Luke Sargent <https://github.com/luke-c-sargent>`_
+- `Marius van den Beek <https://github.com/mvdbeek>`_
+- `John Davis <https://github.com/jdavcs>`_
+
+Release Notes
+===========================================================
+
+.. include:: 20.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

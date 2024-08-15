@@ -1,9 +1,14 @@
 import logging
 
-from galaxy import util, web
+from galaxy import (
+    util,
+    web,
+)
 from galaxy.exceptions import ObjectNotFound
-from galaxy.web import expose_api
-from galaxy.web import expose_api_anonymous_and_sessionless
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+)
 from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -17,9 +22,6 @@ class DynamicToolsController(BaseAPIController):
     to run these tools and view functional information.
     """
 
-    def __init__(self, app):
-        super(DynamicToolsController, self).__init__(app)
-
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """
@@ -31,16 +33,14 @@ class DynamicToolsController(BaseAPIController):
         ID (and optionally version) returned from this endpoint.
         """
         manager = self.app.dynamic_tools_manager
-        return list(
-            map(lambda t: t.to_dict(), manager.list_tools())
-        )
+        return [t.to_dict() for t in manager.list_tools()]
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         GET /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
         """
-        self._get_dynamic_tool(trans, id).to_dict()
+        return self._get_dynamic_tool(trans, id).to_dict()
 
     @web.require_admin
     @expose_api

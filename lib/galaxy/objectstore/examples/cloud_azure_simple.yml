@@ -1,0 +1,21 @@
+type: cloud
+provider: azure
+auth:
+  subscription_id: a_sub_id
+  client_id: and_a_client_id
+  secret: and_a_secret_key
+  tenant: and_some_tenant_info
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud

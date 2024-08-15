@@ -1,0 +1,782 @@
+{
+  "name": "Cool Test Workflow",
+  "history_id": "8f7a155755f10e73",
+  "step_version_changes": [],
+  "version": 9,
+  "steps": [
+    {
+      "inputs": [
+        {
+          "multiple": false,
+          "help": "",
+          "optional": false,
+          "argument": null,
+          "value": null,
+          "label": "",
+          "is_dynamic": false,
+          "extensions": [
+            "data"
+          ],
+          "model_class": "DataCollectionToolParameter",
+          "hidden": false,
+          "refresh_on_change": true,
+          "type": "data_collection",
+          "options": {
+            "hdca": [],
+            "hda": []
+          },
+          "name": "input"
+        }
+      ],
+      "step_index": 0,
+      "replacement_parameters": [],
+      "step_type": "data_collection_input",
+      "output_connections": [
+        {
+          "input_step_index": 2,
+          "input_name": "inputs",
+          "output_step_index": 0,
+          "output_name": "output"
+        },
+        {
+          "input_step_index": 1,
+          "input_name": "inputs_0|input",
+          "output_step_index": 0,
+          "output_name": "output"
+        }
+      ],
+      "step_name": "Input dataset collection",
+      "step_label": null,
+      "step_version": null
+    },
+    {
+      "help": "<p>This tool takes two lists and creates a single unified list.</p>\n<p class=\"infomark\">This tool will create new history datasets for your collection but your quota usage will not increase.</p>\n",
+      "labels": [],
+      "panel_section_id": "collection_operations",
+      "sharable_url": null,
+      "id": "__MERGE_COLLECTION__",
+      "step_label": "",
+      "job_remap": false,
+      "errors": {},
+      "requirements": [],
+      "job_id": null,
+      "citations": false,
+      "post_job_actions": [],
+      "form_style": "regular",
+      "output_connections": [],
+      "step_index": 1,
+      "version": "1.0.0",
+      "state_inputs": {
+        "inputs": "[{\"__index__\": 0, \"input\": {\"__class__\": \"ConnectedValue\"}}, {\"__index__\": 1, \"input\": {\"__class__\": \"RuntimeValue\"}}]",
+        "advanced": "{\"conflict\": {\"__current_case__\": 3, \"duplicate_options\": \"keep_first\"}}"
+      },
+      "step_version": "1.0.0",
+      "inputs": [
+        {
+          "inputs": [
+            {
+              "multiple": false,
+              "help": "",
+              "optional": false,
+              "argument": null,
+              "value": null,
+              "label": "Input Collection",
+              "is_dynamic": false,
+              "extensions": [
+                "data"
+              ],
+              "model_class": "DataCollectionToolParameter",
+              "hidden": false,
+              "refresh_on_change": true,
+              "type": "data_collection",
+              "options": {
+                "hdca": [],
+                "hda": []
+              },
+              "name": "input"
+            }
+          ],
+          "help": null,
+          "title": "Input Collections",
+          "default": 2,
+          "max": "__Infinity__",
+          "cache": {
+            "0": [
+              {
+                "default_value": null,
+                "multiple": false,
+                "help": "",
+                "text_value": "Not available.",
+                "optional": false,
+                "argument": null,
+                "value": {
+                  "__class__": "ConnectedValue"
+                },
+                "label": "Input Collection",
+                "is_dynamic": false,
+                "extensions": [
+                  "data"
+                ],
+                "model_class": "DataCollectionToolParameter",
+                "hidden": false,
+                "refresh_on_change": true,
+                "type": "data_collection",
+                "options": {
+                  "hdca": [],
+                  "hda": []
+                },
+                "name": "input"
+              }
+            ],
+            "1": [
+              {
+                "default_value": null,
+                "multiple": false,
+                "help": "",
+                "text_value": "Not available.",
+                "optional": false,
+                "argument": null,
+                "value": {
+                  "__class__": "RuntimeValue"
+                },
+                "label": "Input Collection",
+                "is_dynamic": false,
+                "extensions": [
+                  "data"
+                ],
+                "model_class": "DataCollectionToolParameter",
+                "hidden": false,
+                "refresh_on_change": true,
+                "type": "data_collection",
+                "options": {
+                  "hdca": [],
+                  "hda": []
+                },
+                "name": "input"
+              }
+            ]
+          },
+          "min": 2,
+          "model_class": "Repeat",
+          "type": "repeat",
+          "name": "inputs"
+        },
+        {
+          "inputs": [
+            {
+              "test_param": {
+                "multiple": false,
+                "help": "Collection elements must have unique element identifiers, when appending how should unique identifiers be assured.",
+                "display": null,
+                "text_value": "Keep first instance",
+                "argument": null,
+                "value": "keep_first",
+                "label": "How should conflicts (or potential conflicts) be handled?",
+                "is_dynamic": false,
+                "optional": false,
+                "textable": true,
+                "model_class": "SelectToolParameter",
+                "hidden": false,
+                "refresh_on_change": true,
+                "type": "select",
+                "options": [
+                  [
+                    "Append suffix to conflicted element identifers",
+                    "suffix_conflict",
+                    false
+                  ],
+                  [
+                    "Append suffix to conflicted element identifers after first one encountered",
+                    "suffix_conflict_rest",
+                    false
+                  ],
+                  [
+                    "Append suffix to every element identifer",
+                    "suffix_every",
+                    false
+                  ],
+                  [
+                    "Keep first instance",
+                    "keep_first",
+                    true
+                  ],
+                  [
+                    "Keep last instance",
+                    "keep_last",
+                    false
+                  ],
+                  [
+                    "Fail collection creation",
+                    "fail",
+                    false
+                  ]
+                ],
+                "name": "duplicate_options"
+              },
+              "model_class": "Conditional",
+              "cases": [
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "suffix_conflict",
+                  "inputs": [
+                    {
+                      "default_value": "_#",
+                      "help": "Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used.",
+                      "area": false,
+                      "datalist": [],
+                      "text_value": "_#",
+                      "argument": null,
+                      "value": "_#",
+                      "label": "Use the follow suffix pattern:",
+                      "is_dynamic": false,
+                      "optional": false,
+                      "model_class": "TextToolParameter",
+                      "hidden": false,
+                      "refresh_on_change": false,
+                      "type": "text",
+                      "name": "suffix_pattern"
+                    }
+                  ]
+                },
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "suffix_conflict_rest",
+                  "inputs": [
+                    {
+                      "default_value": "_#",
+                      "help": "Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used.",
+                      "area": false,
+                      "datalist": [],
+                      "text_value": "_#",
+                      "argument": null,
+                      "value": "_#",
+                      "label": "Use the follow suffix pattern:",
+                      "is_dynamic": false,
+                      "optional": false,
+                      "model_class": "TextToolParameter",
+                      "hidden": false,
+                      "refresh_on_change": false,
+                      "type": "text",
+                      "name": "suffix_pattern"
+                    }
+                  ]
+                },
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "suffix_every",
+                  "inputs": [
+                    {
+                      "default_value": "_#",
+                      "help": "Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used.",
+                      "area": false,
+                      "datalist": [],
+                      "text_value": "_#",
+                      "argument": null,
+                      "value": "_#",
+                      "label": "Use the follow suffix pattern:",
+                      "is_dynamic": false,
+                      "optional": false,
+                      "model_class": "TextToolParameter",
+                      "hidden": false,
+                      "refresh_on_change": false,
+                      "type": "text",
+                      "name": "suffix_pattern"
+                    }
+                  ]
+                },
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "keep_first",
+                  "inputs": []
+                },
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "keep_last",
+                  "inputs": []
+                },
+                {
+                  "model_class": "ConditionalWhen",
+                  "value": "fail",
+                  "inputs": []
+                }
+              ],
+              "type": "conditional",
+              "name": "conflict"
+            }
+          ],
+          "help": null,
+          "title": "Advanced Options",
+          "expanded": false,
+          "model_class": "Section",
+          "type": "section",
+          "name": "advanced"
+        }
+      ],
+      "xrefs": [],
+      "description": "into single list of datasets",
+      "warnings": "",
+      "replacement_parameters": [],
+      "history_id": "8f7a155755f10e73",
+      "panel_section_name": "Collection Operations",
+      "edam_topics": [],
+      "tool_errors": null,
+      "enctype": "application/x-www-form-urlencoded",
+      "name": "Merge Collections",
+      "versions": [
+        "1.0.0"
+      ],
+      "message": "",
+      "step_type": "tool",
+      "edam_operations": [],
+      "method": "post",
+      "step_name": "Merge Collections",
+      "action": "/tool_runner/index",
+      "model_class": "MergeCollectionTool",
+      "display": true
+    },
+    {
+      "help": "<p class=\"warningmark\"><strong>WARNING:</strong> Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format.</p>\n<hr class=\"docutils\" />\n<p><strong>What it does</strong></p>\n<p>Concatenates datasets</p>\n<hr class=\"docutils\" />\n<p><strong>Example</strong></p>\n<p>Concatenating Dataset:</p>\n<pre class=\"literal-block\">\nchrX  151087187  151087355  A  0  -\nchrX  151572400  151572481  B  0  +\n</pre>\n<p>with Dataset1:</p>\n<pre class=\"literal-block\">\nchr1  151242630  151242955  X  0  +\nchr1  151271715  151271999  Y  0  +\nchr1  151278832  151279227  Z  0  -\n</pre>\n<p>and with Dataset2:</p>\n<pre class=\"literal-block\">\nchr2  100000030  200000955  P  0  +\nchr2  100000015  200000999  Q  0  +\n</pre>\n<p>will result in the following:</p>\n<pre class=\"literal-block\">\nchrX  151087187  151087355  A  0  -\nchrX  151572400  151572481  B  0  +\nchr1  151242630  151242955  X  0  +\nchr1  151271715  151271999  Y  0  +\nchr1  151278832  151279227  Z  0  -\nchr2  100000030  200000955  P  0  +\nchr2  100000015  200000999  Q  0  +\n</pre>\n<hr class=\"docutils\" />\n<p><strong>Citation</strong></p>\n<p>If you use this tool in Galaxy, please cite:</p>\n<p>Bjoern A. Gruening (2014), <a class=\"reference external\" href=\"https://github.com/bgruening/galaxytools\">Galaxy wrapper</a></p>\n<p>Assaf Gordon (gordon &lt;at&gt; cshl dot edu)</p>\n",
+      "labels": [],
+      "panel_section_id": "text_manipulation",
+      "sharable_url": "https://toolshed.g2.bx.psu.edu/view/bgruening/text_processing",
+      "message": "",
+      "id": "toolshed.g2.bx.psu.edu/repos/bgruening/text_processing/tp_cat/0.1.0",
+      "tool_shed_repository": {
+        "owner": "bgruening",
+        "changeset_revision": "0a8c6b61f0f4",
+        "name": "text_processing",
+        "tool_shed": "toolshed.g2.bx.psu.edu"
+      },
+      "step_label": "",
+      "panel_section_name": "Text Manipulation",
+      "errors": {},
+      "requirements": [
+        {
+          "version": "8.25",
+          "name": "coreutils"
+        }
+      ],
+      "job_id": null,
+      "post_job_actions": [],
+      "form_style": "regular",
+      "citations": false,
+      "step_index": 2,
+      "version": "0.1.0",
+      "state_inputs": {
+        "inputs": "{\"__class__\": \"ConnectedValue\"}",
+        "queries": "[{\"__index__\": 0, \"inputs2\": {\"values\": [{\"id\": 48563346, \"src\": \"hda\"}]}}]"
+      },
+      "step_version": "0.1.0",
+      "inputs": [
+        {
+          "default_value": {
+            "values": [
+              {
+                "src": "hda",
+                "id": "bbd44e69cb8906b50467c46e02ff909c"
+              }
+            ]
+          },
+          "max": null,
+          "multiple": true,
+          "help": "",
+          "min": null,
+          "text_value": "Not available.",
+          "optional": false,
+          "argument": null,
+          "value": {
+            "__class__": "ConnectedValue"
+          },
+          "label": "Datasets to concatenate",
+          "is_dynamic": false,
+          "extensions": [
+            "txt"
+          ],
+          "edam": {
+            "edam_data": [
+              "data_0006"
+            ],
+            "edam_formats": [
+              "format_2330"
+            ]
+          },
+          "model_class": "DataToolParameter",
+          "hidden": false,
+          "refresh_on_change": true,
+          "type": "data",
+          "options": {
+            "hdca": [],
+            "hda": [
+              {
+                "src": "hda",
+                "name": "SRR5363633_1.fastq.gz (as fqtoc)",
+                "tags": [],
+                "keep": false,
+                "hid": 1,
+                "id": "bbd44e69cb8906b50467c46e02ff909c"
+              }
+            ]
+          },
+          "name": "inputs"
+        },
+        {
+          "inputs": [
+            {
+              "multiple": true,
+              "help": "",
+              "min": null,
+              "max": null,
+              "optional": false,
+              "argument": null,
+              "value": {
+                "values": [
+                  {
+                    "src": "hda",
+                    "id": "bbd44e69cb8906b50467c46e02ff909c"
+                  }
+                ]
+              },
+              "label": "Select",
+              "is_dynamic": false,
+              "extensions": [
+                "txt"
+              ],
+              "edam": {
+                "edam_data": [
+                  "data_0006"
+                ],
+                "edam_formats": [
+                  "format_2330"
+                ]
+              },
+              "model_class": "DataToolParameter",
+              "hidden": false,
+              "refresh_on_change": true,
+              "type": "data",
+              "options": {
+                "hdca": [],
+                "hda": [
+                  {
+                    "src": "hda",
+                    "name": "SRR5363633_1.fastq.gz (as fqtoc)",
+                    "tags": [],
+                    "keep": false,
+                    "hid": 1,
+                    "id": "bbd44e69cb8906b50467c46e02ff909c"
+                  }
+                ]
+              },
+              "name": "inputs2"
+            }
+          ],
+          "help": null,
+          "title": "Dataset",
+          "default": 0,
+          "max": "__Infinity__",
+          "cache": {
+            "0": [
+              {
+                "default_value": {
+                  "values": [
+                    {
+                      "src": "hda",
+                      "id": "bbd44e69cb8906b50467c46e02ff909c"
+                    }
+                  ]
+                },
+                "max": null,
+                "multiple": true,
+                "help": "",
+                "min": null,
+                "text_value": "No dataset.",
+                "optional": false,
+                "argument": null,
+                "value": {
+                  "values": [
+                    {
+                      "src": "hda",
+                      "id": "bbd44e69cb8906b50467c46e02ff909c"
+                    }
+                  ]
+                },
+                "label": "Select",
+                "is_dynamic": false,
+                "extensions": [
+                  "txt"
+                ],
+                "edam": {
+                  "edam_data": [
+                    "data_0006"
+                  ],
+                  "edam_formats": [
+                    "format_2330"
+                  ]
+                },
+                "model_class": "DataToolParameter",
+                "hidden": false,
+                "refresh_on_change": true,
+                "type": "data",
+                "options": {
+                  "hdca": [],
+                  "hda": [
+                    {
+                      "src": "hda",
+                      "name": "SRR5363633_1.fastq.gz (as fqtoc)",
+                      "tags": [],
+                      "keep": false,
+                      "hid": 1,
+                      "id": "bbd44e69cb8906b50467c46e02ff909c"
+                    }
+                  ]
+                },
+                "name": "inputs2"
+              }
+            ]
+          },
+          "min": 0,
+          "model_class": "Repeat",
+          "type": "repeat",
+          "name": "queries"
+        }
+      ],
+      "xrefs": [],
+      "description": "tail-to-head (cat)",
+      "warnings": "",
+      "replacement_parameters": [],
+      "history_id": "8f7a155755f10e73",
+      "job_remap": false,
+      "edam_topics": [],
+      "output_connections": [
+        {
+          "input_step_index": 3,
+          "input_name": "input",
+          "output_step_index": 2,
+          "output_name": "out_file1"
+        }
+      ],
+      "tool_errors": null,
+      "enctype": "application/x-www-form-urlencoded",
+      "name": "Concatenate datasets",
+      "versions": [
+        "0.1.0"
+      ],
+      "step_type": "tool",
+      "edam_operations": [],
+      "method": "post",
+      "step_name": "Concatenate datasets",
+      "action": "/tool_runner/index",
+      "model_class": "Tool",
+      "display": true
+    },
+    {
+      "help": "<p><strong>What it does</strong></p>\n<p>This tool selects N random lines from a file, with no repeats, and preserving ordering.</p>\n<hr class=\"docutils\" />\n<p><strong>Example</strong></p>\n<p>Input File:</p>\n<pre class=\"literal-block\">\nchr7  56632  56652   D17003_CTCF_R6  310  +\nchr7  56736  56756   D17003_CTCF_R7  354  +\nchr7  56761  56781   D17003_CTCF_R4  220  +\nchr7  56772  56792   D17003_CTCF_R7  372  +\nchr7  56775  56795   D17003_CTCF_R4  207  +\n</pre>\n<p>Selecting 2 random lines might return this:</p>\n<pre class=\"literal-block\">\nchr7  56736  56756   D17003_CTCF_R7  354  +\nchr7  56775  56795   D17003_CTCF_R4  207  +\n</pre>\n",
+      "labels": [],
+      "panel_section_id": "text_manipulation",
+      "sharable_url": null,
+      "id": "random_lines1",
+      "step_label": "",
+      "job_remap": false,
+      "errors": {},
+      "requirements": [],
+      "job_id": null,
+      "citations": false,
+      "post_job_actions": [],
+      "form_style": "regular",
+      "output_connections": [],
+      "step_index": 3,
+      "version": "2.0.2",
+      "state_inputs": {
+        "input": "{\"__class__\": \"ConnectedValue\"}",
+        "seed_source": "{\"__current_case__\": 1, \"seed\": \"${wf_param}\", \"seed_source_selector\": \"set_seed\"}",
+        "num_lines": "{\"__class__\": \"RuntimeValue\"}"
+      },
+      "step_version": "2.0.2",
+      "inputs": [
+        {
+          "default_value": "1",
+          "help": "lines",
+          "area": false,
+          "datalist": [],
+          "max": null,
+          "min": null,
+          "argument": null,
+          "value": {
+            "__class__": "RuntimeValue"
+          },
+          "label": "Randomly select",
+          "is_dynamic": false,
+          "optional": false,
+          "text_value": "Not available.",
+          "model_class": "IntegerToolParameter",
+          "hidden": false,
+          "refresh_on_change": false,
+          "type": "integer",
+          "name": "num_lines"
+        },
+        {
+          "default_value": {
+            "values": [
+              {
+                "src": "hda",
+                "id": "bbd44e69cb8906b50467c46e02ff909c"
+              }
+            ]
+          },
+          "multiple": false,
+          "help": "",
+          "text_value": "Not available.",
+          "optional": false,
+          "argument": null,
+          "value": {
+            "__class__": "ConnectedValue"
+          },
+          "label": "from",
+          "is_dynamic": false,
+          "extensions": [
+            "txt"
+          ],
+          "edam": {
+            "edam_data": [
+              "data_0006"
+            ],
+            "edam_formats": [
+              "format_2330"
+            ]
+          },
+          "model_class": "DataToolParameter",
+          "hidden": false,
+          "refresh_on_change": true,
+          "type": "data",
+          "options": {
+            "hdca": [],
+            "hda": [
+              {
+                "src": "hda",
+                "name": "SRR5363633_1.fastq.gz (as fqtoc)",
+                "tags": [],
+                "keep": false,
+                "hid": 1,
+                "id": "bbd44e69cb8906b50467c46e02ff909c"
+              }
+            ]
+          },
+          "name": "input"
+        },
+        {
+          "test_param": {
+            "multiple": false,
+            "help": "",
+            "display": null,
+            "text_value": "Set seed",
+            "argument": null,
+            "value": "set_seed",
+            "label": "Set a random seed",
+            "is_dynamic": false,
+            "optional": false,
+            "textable": true,
+            "model_class": "SelectToolParameter",
+            "hidden": false,
+            "refresh_on_change": true,
+            "type": "select",
+            "options": [
+              [
+                "Don't set seed",
+                "no_seed",
+                true
+              ],
+              [
+                "Set seed",
+                "set_seed",
+                false
+              ]
+            ],
+            "name": "seed_source_selector"
+          },
+          "model_class": "Conditional",
+          "cases": [
+            {
+              "model_class": "ConditionalWhen",
+              "value": "no_seed",
+              "inputs": []
+            },
+            {
+              "model_class": "ConditionalWhen",
+              "value": "set_seed",
+              "inputs": [
+                {
+                  "default_value": "",
+                  "help": "",
+                  "area": false,
+                  "datalist": [],
+                  "text_value": "${wf_param}",
+                  "argument": null,
+                  "value": "${wf_param}",
+                  "label": "Random seed",
+                  "is_dynamic": false,
+                  "optional": false,
+                  "model_class": "TextToolParameter",
+                  "hidden": false,
+                  "refresh_on_change": false,
+                  "type": "text",
+                  "name": "seed"
+                }
+              ]
+            }
+          ],
+          "type": "conditional",
+          "name": "seed_source"
+        }
+      ],
+      "xrefs": [],
+      "description": "from a file",
+      "warnings": "",
+      "replacement_parameters": [],
+      "history_id": "8f7a155755f10e73",
+      "panel_section_name": "Text Manipulation",
+      "edam_topics": [],
+      "tool_errors": null,
+      "enctype": "application/x-www-form-urlencoded",
+      "name": "Select random lines",
+      "versions": [
+        "2.0.2"
+      ],
+      "message": "",
+      "step_type": "tool",
+      "edam_operations": [],
+      "method": "post",
+      "step_name": "Select random lines",
+      "action": "/tool_runner/index",
+      "model_class": "Tool",
+      "display": true
+    },
+    {
+      "inputs":[
+        {
+          "area":false,
+          "argument":null,
+          "datalist":[],
+          "help":null,
+          "hidden":false,
+          "is_dynamic":false,
+          "label":"",
+          "model_class":"TextToolParameter",
+          "name":"input",
+          "optional":false,
+          "refresh_on_change":false,
+          "type":"text",
+          "value":null
+        }
+      ],
+      "output_connections":[],
+      "replacement_parameters":[],
+      "step_index":4,
+      "step_label":"",
+      "step_name":"Input parameter",
+      "step_type":"parameter_input",
+      "step_version":null
+    }
+  ],
+  "has_upgrade_messages": false,
+  "id": "ebab00128497f9d7",
+  "workflow_resource_parameters": null
+}

@@ -25,17 +25,22 @@ from .mulled_build import (
     mull_targets,
     target_str_to_targets,
 )
+
 KNOWN_FIELDS = ["targets", "image_build", "name_override", "base_image"]
-FALLBACK_LINE_TUPLE = collections.namedtuple("_Line", " ".join(KNOWN_FIELDS))
+FALLBACK_LINE_TUPLE = collections.namedtuple("FALLBACK_LINE_TUPLE", "targets image_build name_override base_image")
 
 
 def main(argv=None):
     """Main entry-point for the CLI tool."""
     parser = arg_parser(argv, globals())
     add_build_arguments(parser)
-    parser.add_argument('command', metavar='COMMAND', help='Command (build-and-test, build, all)')
-    parser.add_argument('files', metavar="FILES", default=".",
-                        help="Path to directory (or single file) of TSV files describing composite recipes.")
+    parser.add_argument("command", metavar="COMMAND", help="Command (build-and-test, build, all)")
+    parser.add_argument(
+        "files",
+        metavar="FILES",
+        default=".",
+        help="Path to directory (or single file) of TSV files describing composite recipes.",
+    )
     args = parser.parse_args()
     for target in generate_targets(args.files):
         try:
@@ -45,7 +50,7 @@ def main(argv=None):
                 name_override=target.name_override,
                 base_image=target.base_image,
                 determine_base_image=False,
-                **args_to_mull_targets_kwds(args)
+                **args_to_mull_targets_kwds(args),
             )
         except BuildExistsException:
             continue
@@ -57,7 +62,7 @@ def generate_targets(target_source):
     """Generate all targets from TSV files in specified file or directory."""
     target_source = os.path.abspath(target_source)
     if os.path.isdir(target_source):
-        target_source_files = glob.glob(target_source + "/*.tsv")
+        target_source_files = glob.glob(f"{target_source}/*.tsv")
     else:
         target_source_files = [target_source]
 
@@ -65,11 +70,11 @@ def generate_targets(target_source):
         # If no headers are defined we use the 4 default fields in the order
         # that has been used in galaxy-tool-util / galaxy-lib < 20.01
         line_tuple = FALLBACK_LINE_TUPLE
-        with open(target_source_file, "r") as f:
+        with open(target_source_file) as f:
             for line in f.readlines():
                 if line:
                     line = line.strip()
-                    if line.startswith('#'):
+                    if line.startswith("#"):
                         # headers can define a different column order
                         line_tuple = tuple_from_header(line)
                     else:
@@ -77,29 +82,31 @@ def generate_targets(target_source):
 
 
 def tuple_from_header(header):
-    fields = header[1:].split('\t')
+    fields = header[1:].split("\t")
     for field in fields:
-        assert field in KNOWN_FIELDS, "'%s' is not one of %s" % (field, KNOWN_FIELDS)
+        assert field in KNOWN_FIELDS, f"'{field}' is not one of {KNOWN_FIELDS}"
     # Make sure tuple contains all fields
     for field in KNOWN_FIELDS:
         if field not in fields:
             fields.append(field)
-    return collections.namedtuple("_Line", "%s" % " ".join(fields))
+    return collections.namedtuple("_Line", f"{' '.join(fields)}")
 
 
 def line_to_targets(line_str, line_tuple):
     """Parse a line so that some columns can remain unspecified."""
     line_parts = line_str.split("\t")
     n_fields = len(line_tuple._fields)
-    targets_column = line_tuple._fields.index('targets')
-    assert len(line_parts) <= n_fields, "Too many fields in line [%s], expect at most %s - targets, image build number, and name override." % (line_str, n_fields)
+    targets_column = line_tuple._fields.index("targets")
+    assert (
+        len(line_parts) <= n_fields
+    ), f"Too many fields in line [{line_str}], expect at most {n_fields} - targets, image build number, and name override."
     line_parts += [None] * (n_fields - len(line_parts))
     line_parts[targets_column] = target_str_to_targets(line_parts[targets_column])
     return line_tuple(*line_parts)
 
 
-__all__ = ("main", )
+__all__ = ("main",)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,11 +1,14 @@
 <tool id="__FILTER_FAILED_DATASETS__"
-      name="Filter failed"
+      name="Filter failed datasets"
       version="1.0.0"
       tool_type="filter_failed_datasets_collection">
-    <description>datasets from a collection</description>
+    <description></description>
     <type class="FilterFailedDatasetsTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3695</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
     </inputs>
@@ -36,7 +39,23 @@
     </tests>
     <help><![CDATA[
 
-This tool takes a dataset collection and filters out datasets in the failed state. This is useful for continuing a multi-sample analysis when one of more of the samples fails at some point.
+========
+Synopsis
+========
+
+Removes datasets in error (red) from a collection.
+
+===========
+Description
+===========
+
+This tool takes a dataset collection and filters out (removes) datasets in the failed (red) state. This is useful for continuing a multi-sample analysis when one or more of the samples fails at some point.
+
+.. image:: ${static_path}/images/tools/collection_ops/filter_error.svg
+  :width: 500
+  :alt: Filter failed datasets
+
+-----
 
 .. class:: infomark
 

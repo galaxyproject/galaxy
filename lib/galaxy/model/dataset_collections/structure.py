@@ -1,14 +1,12 @@
 """ Module for reasoning about structure of and matching hierarchical collections of data.
 """
-import logging
 
-import six
+import logging
 
 log = logging.getLogger(__name__)
 
 
-@six.python_2_unicode_compatible
-class Leaf(object):
+class Leaf:
     children_known = True
 
     def __len__(self):
@@ -34,13 +32,11 @@ class Leaf(object):
 leaf = Leaf()
 
 
-class BaseTree(object):
-
+class BaseTree:
     def __init__(self, collection_type_description):
         self.collection_type_description = collection_type_description
 
 
-@six.python_2_unicode_compatible
 class UninitializedTree(BaseTree):
     children_known = False
 
@@ -62,16 +58,16 @@ class UninitializedTree(BaseTree):
         return UninitializedTree(new_collection_type)
 
     def __str__(self):
-        return "UninitializedTree[collection_type=%s]" % self.collection_type_description
+        return f"UninitializedTree[collection_type={self.collection_type_description}]"
 
 
-@six.python_2_unicode_compatible
 class Tree(BaseTree):
     children_known = True
 
-    def __init__(self, children, collection_type_description):
-        super(Tree, self).__init__(collection_type_description)
+    def __init__(self, children, collection_type_description, when_values=None):
+        super().__init__(collection_type_description)
         self.children = children
+        self.when_values = when_values
 
     @staticmethod
     def for_dataset_collection(dataset_collection, collection_type_description):
@@ -79,8 +75,12 @@ class Tree(BaseTree):
         for element in dataset_collection.elements:
             if collection_type_description.has_subcollections():
                 child_collection = element.child_collection
-                subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
-                tree = Tree.for_dataset_collection(child_collection, collection_type_description=subcollection_type_description)
+                subcollection_type_description = (
+                    collection_type_description.subcollection_type_description()
+                )  # Type description of children
+                tree = Tree.for_dataset_collection(
+                    child_collection, collection_type_description=subcollection_type_description
+                )
                 children.append((element.element_identifier, tree))
             else:
                 children.append((element.element_identifier, leaf))
@@ -90,16 +90,24 @@ class Tree(BaseTree):
         return self._walk_collections(dict_map(lambda hdca: hdca.collection, hdca_dict))
 
     def _walk_collections(self, collection_dict):
-        for index, (identifier, substructure) in enumerate(self.children):
-            def element(collection):
-                return collection[index]
+        for index, (_identifier, substructure) in enumerate(self.children):
+
+            def get_element(collection):
+                return collection[index]  # noqa: B023
+
+            when_value = None
+            if self.when_values:
+                if len(self.when_values) == 1:
+                    when_value = self.when_values[0]
+                else:
+                    when_value = self.when_values[index]
 
             if substructure.is_leaf:
-                yield dict_map(element, collection_dict)
+                yield dict_map(get_element, collection_dict), when_value
             else:
-                sub_collections = dict_map(lambda collection: element(collection).child_collection, collection_dict)
-                for element in substructure._walk_collections(sub_collections):
-                    yield element
+                sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
+                for element, _when_value in substructure._walk_collections(sub_collections):
+                    yield element, when_value
 
     @property
     def is_leaf(self):
@@ -123,7 +131,7 @@ class Tree(BaseTree):
         return True
 
     def __len__(self):
-        return sum([len(c[1]) for c in self.children])
+        return sum(len(c[1]) for c in self.children)
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:
@@ -131,7 +139,7 @@ class Tree(BaseTree):
 
         new_collection_type = self.collection_type_description.multiply(other_structure.collection_type_description)
         new_children = []
-        for (identifier, structure) in self.children:
+        for identifier, structure in self.children:
             new_children.append((identifier, structure.multiply(other_structure)))
 
         return Tree(new_children, new_collection_type)
@@ -141,7 +149,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return "Tree[collection_type=%s,children=%s]" % (self.collection_type_description, ",".join(map(lambda identifier_and_element: "%s=%s" % (identifier_and_element[0], identifier_and_element[1]), self.children)))
+        return f"Tree[collection_type={self.collection_type_description},children={','.join(f'{identifier_and_element[0]}={identifier_and_element[1]}' for identifier_and_element in self.children)}]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
@@ -162,10 +170,12 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
         else:
             # Can't pre-compute the structure in this case, see if we can find a collection type.
             if collection_type is None and tool_output.structure.collection_type_source:
-                collection_type = get_sliced_input_collection_structure(tool_output.structure.collection_type_source).collection_type_description.collection_type
+                collection_type = get_sliced_input_collection_structure(
+                    tool_output.structure.collection_type_source
+                ).collection_type_description.collection_type
 
             if not collection_type:
-                raise Exception("Failed to determine collection type for mapping over output %s" % tool_output.name)
+                raise Exception(f"Failed to determine collection type for mapping over output {tool_output.name}")
 
             tree = UninitializedTree(collection_type_descriptions.for_collection_type(collection_type))
 
@@ -177,14 +187,20 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
 
 
 def dict_map(func, input_dict):
-    return dict((k, func(v)) for k, v in input_dict.items())
+    return {k: func(v) for k, v in input_dict.items()}
 
 
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):
     if leaf_subcollection_type:
-        collection_type_description = collection_type_description.effective_collection_type_description(leaf_subcollection_type)
-        if hasattr(dataset_collection_instance, 'child_collection'):
-            collection_type_description = collection_type_description.collection_type_description_factory.for_collection_type(leaf_subcollection_type)
+        collection_type_description = collection_type_description.effective_collection_type_description(
+            leaf_subcollection_type
+        )
+        if hasattr(dataset_collection_instance, "child_collection"):
+            collection_type_description = (
+                collection_type_description.collection_type_description_factory.for_collection_type(
+                    leaf_subcollection_type
+                )
+            )
             return UninitializedTree(collection_type_description)
 
     collection = dataset_collection_instance.collection

@@ -1,7 +1,7 @@
 <tool id="validation_hdf5" name="Validation (hdf5)" version="1.0">
-    <command>
-        cp '$input' '$output'
-    </command>
+    <command><![CDATA[
+cp '$input' '$output'
+    ]]></command>
     <inputs>
         <param name="input" type="data" format="cool" />
     </inputs>

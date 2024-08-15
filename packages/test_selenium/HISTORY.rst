@@ -1,12 +1,16 @@
-.. :changelog:
-
 History
 -------
 
 .. to_doc
 
+---------
+23.2.dev0
+---------
+
+
+
 ---------------------
-20.1.0.dev0
+20.9.0 (2020-10-15)
 ---------------------
 
-* Initial import from dev branch of Galaxy during 20.01 development cycle.
+* First release from the 20.09 branch of Galaxy.

@@ -1,6 +1,7 @@
 """
 Job runner plugin for executing jobs on the local system via the command line.
 """
+
 import datetime
 import logging
 import os
@@ -8,24 +9,30 @@ import subprocess
 import tempfile
 import threading
 from time import sleep
+from typing import (
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
-from galaxy.util import (
-    asbool,
-)
+from galaxy.util import asbool
+from galaxy.util.commands import new_clean_env
 from . import (
     BaseJobRunner,
-    JobState
+    JobState,
 )
 from .util.process_groups import (
     check_pg,
-    kill_pg
+    kill_pg,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
-__all__ = ('LocalJobRunner', )
+__all__ = ("LocalJobRunner",)
 
 DEFAULT_POOL_SLEEP_TIME = 1
 # TODO: Set to false and just get rid of this option. It would simplify this
@@ -37,33 +44,28 @@ class LocalJobRunner(BaseJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
+
     runner_name = "LocalRunner"
 
     def __init__(self, app, nworkers):
-        """Start the job runner """
+        """Start the job runner"""
 
-        # create a local copy of os.environ to use as env for subprocess.Popen
-        self._environ = os.environ.copy()
         self._proc_lock = threading.Lock()
         self._procs = []
 
-        # Set TEMP if a valid temp value is not already set
-        if not ('TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ):
-            self._environ['TEMP'] = os.path.abspath(tempfile.gettempdir())
+        self._environ = new_clean_env()
 
-        super(LocalJobRunner, self).__init__(app, nworkers)
-        self._init_worker_threads()
+        super().__init__(app, nworkers)
 
-    def __command_line(self, job_wrapper):
-        """
-        """
+    def __command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
+        """ """
         command_line = job_wrapper.runner_command_line
 
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
-        slots = job_wrapper.job_destination.params.get("local_slots", None) or os.environ.get("GALAXY_SLOTS", None)
+        slots = job_wrapper.job_destination.params.get("local_slots") or os.environ.get("GALAXY_SLOTS")
         if slots:
-            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
+            slots_statement = f'GALAXY_SLOTS="{int(slots)}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
             slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
@@ -71,50 +73,52 @@ class LocalJobRunner(BaseJobRunner):
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
         exit_code_path = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_script_props = {
-            'slots_statement': slots_statement,
-            'command': command_line,
-            'exit_code_path': exit_code_path,
-            'working_directory': job_wrapper.working_directory,
-            'shell': job_wrapper.shell,
+            "slots_statement": slots_statement,
+            "command": command_line,
+            "exit_code_path": exit_code_path,
+            "working_directory": job_wrapper.working_directory,
+            "shell": job_wrapper.shell,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
-        self.write_executable_script(job_file, job_file_contents)
+        self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)
         return job_file, exit_code_path
 
     def queue_job(self, job_wrapper):
         if not self._prepare_job_local(job_wrapper):
             return
 
-        stderr = stdout = ''
+        stderr = stdout = ""
 
         # command line has been added to the wrapper by prepare_job()
-        command_line, exit_code_path = self.__command_line(job_wrapper)
+        job_file, exit_code_path = self.__command_line(job_wrapper)
         job_id = job_wrapper.get_id_tag()
 
         try:
-            stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
-            stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
-            log.debug('(%s) executing job script: %s' % (job_id, command_line))
+            stdout_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stdout", dir=job_wrapper.working_directory)
+            stderr_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stderr", dir=job_wrapper.working_directory)
+            log.debug(f"({job_id}) executing job script: {job_file}")
             # The preexec_fn argument of Popen() is used to call os.setpgrp() in
             # the child process just before the child is executed. This will set
             # the PGID of the child process to its PID (i.e. ensures that it is
             # the root of its own process group instead of Galaxy's one).
-            proc = subprocess.Popen(args=command_line,
-                                    shell=True,
-                                    cwd=job_wrapper.working_directory,
-                                    stdout=stdout_file,
-                                    stderr=stderr_file,
-                                    env=self._environ,
-                                    preexec_fn=os.setpgrp)
+            proc = subprocess.Popen(
+                args=[job_file],
+                cwd=job_wrapper.working_directory,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                env=self._environ,
+                preexec_fn=os.setpgrp,
+            )
 
             proc.terminated_by_shutdown = False
             with self._proc_lock:
                 self._procs.append(proc)
 
             try:
-                job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
-                job_wrapper.change_state(model.Job.states.RUNNING)
-
+                job = job_wrapper.get_job()
+                # Flush job with change_state.
+                job_wrapper.set_external_id(proc.pid, job=job, flush=False)
+                job_wrapper.change_state(model.Job.states.RUNNING, job=job)
                 self._handle_container(job_wrapper, proc)
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
@@ -137,7 +141,7 @@ class LocalJobRunner(BaseJobRunner):
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
-            log.debug('execution finished: %s' % command_line)
+            log.debug(f"execution finished: {job_file}")
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")
@@ -147,7 +151,6 @@ class LocalJobRunner(BaseJobRunner):
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
-        job_state.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
         self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
 
@@ -156,27 +159,31 @@ class LocalJobRunner(BaseJobRunner):
         job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
-            pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
-            assert pid not in [None, '']
+            pid = job_ext_output_metadata[
+                0
+            ].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+            assert pid not in [None, ""]
         except Exception:
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
-        if pid in [None, '']:
-            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
+        if pid in [None, ""]:
+            log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
             return
         pid = int(pid)
         if not check_pg(pid):
             log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
             return
-        log.debug('stop_job(): %s: Terminating process group %d', job.id, pid)
+        log.debug("stop_job(): %s: Terminating process group %d", job.id, pid)
         kill_pg(pid)
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
-        job_wrapper.change_state(model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job.")
+        job_wrapper.change_state(
+            model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job."
+        )
 
     def shutdown(self):
-        super(LocalJobRunner, self).shutdown()
+        super().shutdown()
         with self._proc_lock:
             for proc in self._procs:
                 proc.terminated_by_shutdown = True
@@ -196,6 +203,8 @@ class LocalJobRunner(BaseJobRunner):
 
     def _embed_metadata(self, job_wrapper):
         job_destination = job_wrapper.job_destination
+        if "celery" in job_wrapper.metadata_strategy:
+            return False
         embed_metadata = asbool(job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
         return embed_metadata
 
@@ -227,7 +236,7 @@ class LocalJobRunner(BaseJobRunner):
                 limit_state = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
                 if limit_state is not None:
                     job_wrapper.fail(limit_state[1])
-                    log.debug('(%s) Terminating process group %d', job_id, pgid)
+                    log.debug("(%s) Terminating process group %d", job_id, pgid)
                     kill_pg(pgid)
                     return True
             else:

@@ -66,7 +66,7 @@
         %if truncated:
             <div class="warningmessagelarge">
                  This dataset is large and only the first megabyte is shown below. |
-                 <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.history.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
+                 <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
             </div>
         %endif
         ## TODO: why is the default font size so small?
@@ -82,10 +82,6 @@
     %if data.deleted:
         <div class="errormessagelarge" id="deleted-data-message">
             You are viewing a deleted dataset.
-            %if data.history and data.history.user == trans.get_user():
-                <br />
-                <a href="javascript:void(0)" role="button" onclick="$.ajax( {type: 'GET', cache: false, url: '${h.url_for( controller='dataset', action='undelete_async', dataset_id=trans.security.encode_id( data.id ) )}', dataType: 'text', contentType: 'text/html', success: function( data, textStatus, jqXHR ){ if (data == 'OK' ){ $( '#deleted-data-message' ).slideUp( 'slow' ) } else { alert( 'Undelete failed.' ) } }, error: function( data, textStatus, jqXHR ){ alert( 'Undelete failed.' ); } } );">Undelete</a>
-            %endif
         </div>
     %endif
 </%def>
@@ -100,7 +96,7 @@
 
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
-            <div class="page-body">
+            <div class="page-body p-3">
                 <div style="float: right">
                     ${self.render_item_links( item )}
                 </div>
@@ -126,9 +122,9 @@
             <div style="padding: 10px;">
                 <h4>Author</h4>
 
-                <p>${item.history.user.username | h}</p>
+                <p>${item.user.username | h}</p>
 
-                <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.history.user.email)}?d=identicon&s=150"></div>
+                <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon&s=150"></div>
 
                 ## Page meta.
 

@@ -1,0 +1,28 @@
+type: hierarchical
+backends:
+   - id: files1
+     name: Newer Cool Storage
+     description: |
+      This is our new storage cluster, check out the storage
+      on our institute's system page for [Fancy New Storage](http://computecenter.example.com/systems/fancystorage).
+     type: disk
+     weight: 1
+     files_dir: "${temp_directory}/files1"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp1"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory1"
+   - id: files2
+     name: Older Legacy Storage
+     description: |
+      This is our older legacy storage cluster, check out the storage
+      on our institute's system page for [Legacy Storage](http://computecenter.example.com/systems/legacystorage).
+     type: disk
+     weight: 1
+     files_dir: "${temp_directory}/files2"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp2"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory2"

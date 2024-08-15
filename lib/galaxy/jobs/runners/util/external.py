@@ -3,9 +3,9 @@ from re import search
 EXTERNAL_ID_TYPE_ANY = None
 
 EXTERNAL_ID_PATTERNS = [
-    ('condor', r'submitted to cluster (\d+)\.'),
-    ('slurm', r'Submitted batch job (\w+)'),
-    ('torque', r'(.+)'),  # Default 'pattern' assumed by Galaxy code circa August 2013.
+    ("condor", r"submitted to cluster (\d+)\."),
+    ("slurm", r"Submitted batch job (\w+)"),
+    ("torque", r"(.+)"),  # Default 'pattern' assumed by Galaxy code circa August 2013.
 ]
 
 

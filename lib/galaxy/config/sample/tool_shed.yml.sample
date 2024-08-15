@@ -1,99 +1,3 @@
-uwsgi:
-
-  # The address and port on which to listen.  By default, only listen to
-  # localhost (tool_shed will not be accessible over the network).  Use
-  # ':9009' to listen on all available network interfaces.
-  http: 127.0.0.1:9009
-
-  # By default uWSGI allocates a very small buffer (4096 bytes) for the
-  # headers of each request. If you start receiving "invalid request
-  # block size" in your logs, it could mean you need a bigger buffer. We
-  # recommend at least 16384.
-  buffer-size: 16384
-
-  # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1,
-  # thunder-lock likely should be enabled below.
-  processes: 1
-
-  # Number of threads for each web server process.
-  threads: 4
-
-  # Number of threads for serving static content and handling internal
-  # routing requests.
-  offload-threads: 2
-
-  # Mapping to serve style content.
-  static-map: /static/style=static/style/blue
-
-  # Mapping to serve the remainder of the static content.
-  static-map: /static=static
-
-  # Mapping to serve the favicon.
-  static-map: /favicon.ico=static/favicon.ico
-
-  # Allow serving images out of `client`.  Most modern Galaxy interfaces
-  # bundle all of this, but some older pages still serve these via
-  # symlink, requiring this rule.
-  static-safe: client/galaxy/images
-
-  # Enable the master process manager. Disabled by default for maximum
-  # compatibility with CTRL+C, but should be enabled for use with
-  # --daemon and/or production deployments.
-  master: false
-
-  # Path to the application's Python virtual environment. If using Conda
-  # for Galaxy's framework dependencies (not tools!), do not set this.
-  virtualenv: .venv
-
-  # Path to the application's Python library.
-  pythonpath: lib
-
-  # The entry point which returns the web application (e.g. Galaxy,
-  # Reports, etc.) that you are loading.
-  module: tool_shed.webapp.buildapp:uwsgi_app()
-
-  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
-  # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
-
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
-  # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
-
-  # It is usually a good idea to set this to ``true`` if processes is
-  # greater than 1.
-  thunder-lock: false
-
-  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
-  # (its default is to brutally reload workers)
-  die-on-term: true
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGINT (its default is to brutally kill workers)
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGTERM (its default is to brutally kill workers)
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
-
-  # Ensure application threads will run if `threads` is unset.
-  enable-threads: true
-
-  # uWSGI default umask. On some systems uWSGI has a default umask of
-  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
-  # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the the umask needs to be '022' or the Galaxy users
-  # need to be in the same group as the Galaxy system user
-  umask: 027
-
-  # Task for rebuilding Toolshed search indexes using the uWSGI
-  # cron-like interface.
-  cron: 0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed
-
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found
@@ -110,6 +14,14 @@ tool_shed:
   # Where the hgweb.config file is stored. The default is the Galaxy
   # installation directory.
   #hgweb_config_dir: null
+
+  # Default URL prefix for repositories served via hgweb. If running an
+  # external hgweb server you should set this to an empty string.
+  #hgweb_repo_prefix: repos/
+
+  # Allow pushing directly to mercurial repositories directly and
+  # without authentication.
+  #config_hg_for_dev: null
 
   # Where Tool Shed repositories are stored.
   #file_path: database/community_files
@@ -179,6 +91,23 @@ tool_shed:
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
   #ga_code: null
 
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
+
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
   # should set a key to be used by the algorithm that encodes and
@@ -223,15 +152,6 @@ tool_shed:
   # log your users out.
   #remote_user_logout_href: null
 
-  # Configuration for debugging middleware
-  #debug: false
-
-  # Check for WSGI compliance.
-  #use_lint: false
-
-  # Intercept print statements and show them on the returned page.
-  #use_printdebug: true
-
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
@@ -249,10 +169,12 @@ tool_shed:
   #allow_user_deletion: false
 
   # For use by email messages sent from the Tool Shed.
-  #smtp_server: smtp.your_tool_shed_server
+  # (smtp.your_tool_shed_server)
+  #smtp_server: null
 
   # For use by email messages sent from the Tool Shed.
-  #email_from: your_tool_shed_email@server
+  # (your_tool_shed_email@server)
+  #email_from: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
@@ -274,12 +196,53 @@ tool_shed:
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
 
+  # Service ID for GA4GH services.
+  # If unset, one will be generated using the URL the target API
+  # requests are made against.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  # This value should likely reflect your service's URL. For instance
+  # for usegalaxy.org this value should be org.usegalaxy. Particular
+  # Galaxy implementations will treat this value as a prefix and append
+  # the service type to this ID. For instance for the DRS service "id"
+  # (available via the DRS API) for the above configuration value would
+  # be org.usegalaxy.drs.
+  #ga4gh_service_id: null
+
+  # The name of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "Not Evil Corporation".
+  # For GA4GH APIs, this is exposed via the service-info endpoint for
+  # the Galaxy DRS API. If unset, one will be generated using
+  # ga4gh_service_id (but only in the context of GA4GH APIs).
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_name: null
+
+  # The URL of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "notevilcorp.com".
+  # For GA4GH APIs, this is exposed via the service-info endpoint.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_url: null
+
+  # Service environment (exposed via the service-info endpoint for the
+  # Galaxy DRS API) for implemented GA4GH services.
+  # Suggested values are prod, test, dev, staging.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #ga4gh_service_environment: null
+
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)
   #use_heartbeat: true
-
-  # Profiling middleware (cProfile based)
-  #use_profile: true
 
   # Enable creation of Galaxy flavor Docker Image
   #enable_galaxy_flavor_docker_image: false
@@ -313,7 +276,7 @@ tool_shed:
   #static_scripts_dir: static/scripts/
 
   # Serving static files (needed if running standalone)
-  #static_style_dir: static/style/blue
+  #static_style_dir: static/style
 
   # Enables GDPR Compliance mode. This makes several changes to the way
   # Galaxy logs and exposes data externally such as removing
@@ -341,11 +304,20 @@ tool_shed:
   # intercept upload requests.
   #nginx_upload_path: null
 
-  # E-mail domains blacklist is used for filtering out users that are
-  # using disposable email address during the registration.  If their
-  # address domain matches any domain in the blacklist, they are refused
-  # the registration.
-  #blacklist_file: config/disposable_email_blacklist.conf
+  # E-mail domains blocklist is used for filtering out users that are
+  # using disposable email addresses at registration.  If their address
+  # domain matches any domain on the list, they are refused
+  # registration.
+  #email_domain_blocklist_file: null
+
+  # E-mail domains allowlist is used to specify allowed email address
+  # domains. If the list is non-empty and a user attempts registration
+  # using an email address belonging to a domain that is not on the
+  # list, registration will be denied. This is a more restrictive option
+  # than <email_domain_blocklist_file>, and therefore, in case
+  # <email_domain_allowlist_file> is set and is not empty,
+  # <email_domain_blocklist_file> will be ignored.
+  #email_domain_allowlist_file: null
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
   #brand: null
@@ -368,11 +340,21 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
+  # Url to database used by beaker for citation related caching.
+  #citation_cache_url: null
+
+  # Database table used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # Schema of database table used by beaker for citation related
+  # caching.
+  #citation_cache_schema_name: null
+
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will
   # eventually be merged.
-  #log_actions: true
+  #log_actions: false
 
   # Password expiration period (in days). Users are required to change
   # their password every x days. Users will be redirected to the change
@@ -387,6 +369,20 @@ tool_shed:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
+
+  # Set to a number between 0 and 1. With this option set, every
+  # transaction created will have that percentage chance of being sent
+  # to Sentry. A value higher than 0 is required to analyze performance.
+  #sentry_traces_sample_rate: 0.0
+
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
@@ -396,4 +392,38 @@ tool_shed:
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
   #terms_url: null
+
+  # XML config file that allows the use of different authentication
+  # providers (e.g. LDAP) instead or in addition to local authentication
+  # (.sample is used if default does not exist).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #auth_config_file: auth_conf.xml
+
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
+  #bootstrap_admin_api_key: null
+
+  # XML config file that contains additional data table entries for the
+  # ToolDataTableManager.  This file is automatically generated based on
+  # the current installed tool shed repositories that contain valid
+  # tool_data_table_conf.xml.sample files.  At the time of installation,
+  # these entries are automatically added to the following file, which
+  # is parsed and applied to the ToolDataTableManager at server start
+  # up.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
+  #shed_tool_data_table_config: shed_tool_data_table_conf.xml
+
+  # Datatypes config file(s), defines what data (file) types are
+  # available in Galaxy (.sample is used if default does not exist).  If
+  # a datatype appears in multiple files, the last definition is used
+  # (though the first sniffer is used so limit sniffer definitions to
+  # one file).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #datatypes_config_file: datatypes_conf.xml
 

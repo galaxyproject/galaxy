@@ -17,5 +17,5 @@ if [ "$1" = "--include" ];
 then
     flake8 $args $(paste -sd' ' .ci/flake8_docstrings_include_list.txt)
 else
-    flake8 $args --exclude $(paste -sd, .ci/flake8_blacklist.txt) .
+    flake8 $args --exclude $(paste -sd, .ci/flake8_ignorelist.txt) .
 fi

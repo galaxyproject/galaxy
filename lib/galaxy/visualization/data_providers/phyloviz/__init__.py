@@ -1,5 +1,9 @@
-
 """ Data providers code for PhyloViz """
+
+from typing import (
+    Any,
+    Dict,
+)
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser
@@ -8,11 +12,10 @@ from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml
 
 
 class PhylovizDataProvider(BaseDataProvider):
-
     dataset_type = "phylo"
 
     def __init__(self, original_dataset=None):
-        super(PhylovizDataProvider, self).__init__(original_dataset=original_dataset)
+        super().__init__(original_dataset=original_dataset)
 
     def get_data(self, tree_index=0):
         """
@@ -21,10 +24,10 @@ class PhylovizDataProvider(BaseDataProvider):
         """
 
         file_ext = self.original_dataset.datatype.file_ext
-        file_name = self.original_dataset.file_name
+        file_name = self.original_dataset.get_file_name()
         parseMsg = None
         jsonDicts = []
-        rval = {'dataset_type': self.dataset_type}
+        rval: Dict[str, Any] = {"dataset_type": self.dataset_type}
 
         if file_ext in ["newick", "nhx"]:  # parses newick files
             newickParser = Newick_Parser()

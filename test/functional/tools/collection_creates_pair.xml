@@ -19,14 +19,14 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="simple_lines_interleaved.txt" />
+      <param name="input1" ftype="bed" value="simple_lines_interleaved.txt" />
       <output_collection name="paired_output" type="paired">
-        <element name="forward">
+        <element name="forward" ftype="txt">
           <assert_contents>
             <has_text_matching expression="^This is a line of text.\nThis is a line of text.\n$" />
           </assert_contents>
         </element>
-        <element name="reverse">
+        <element name="reverse" ftype="bed">
           <assert_contents>
             <has_text_matching expression="^This is a different line of text.\nThis is a different line of text.\n$" />
           </assert_contents>

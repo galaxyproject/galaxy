@@ -1,0 +1,58 @@
+<tool id="EMBOSS: antigenic1" name="antigenic" version="5.0.0">
+  <description>Predicts potentially antigenic regions of a protein sequence, using the method of Kolaskar and Tongaonkar.</description>
+  <requirements><requirement type="package" version="5.0.0">emboss</requirement></requirements>
+  <command>antigenic -sequence $input1 -outfile $out_file1 -minlen $minlen -rformat2 $out_format1 -auto</command>
+  <inputs>
+    <param format="data" name="input1" type="data">
+      <label>On query</label>
+    </param>
+    <param name="minlen" size="4" type="text" value="6">
+      <label>Minimum Length of region</label>
+    </param>
+    <param name="out_format1" type="select">
+      <label>Output format</label>
+      <option value="gff">GFF</option>
+      <option value="pir">PIR</option>
+      <option value="swiss">SwissProt</option>
+      <option value="dbmotif">DbMotif</option>
+      <option value="diffseq">diffseq</option>
+      <option value="excel">Excel (TAB Delimited)</option>
+      <option value="feattable">FeatTable</option>
+      <option value="motif">Motif</option>
+      <option value="nametable">NameTable</option>
+      <option value="regions">Regions</option>
+      <option value="seqtable">SeqTable</option>
+      <option value="simple">SRS simple</option>
+      <option value="srs">SRS</option>
+      <option value="table">Table</option>
+      <option value="tagseq">Tagseq</option>
+      <option value="antigenic">Antigenic Output File</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="antigenic" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="2.fasta"/>
+      <param name="minlen" value="6"/>
+      <param name="out_format1" value="excel"/>
+      <output name="out_file1" file="emboss_antigenic_out.tabular"/>
+    </test>
+  </tests>
+  <code file="emboss_format_corrector.py" />
+  <help>
+    You can view the original documentation here_.
+    
+    .. _here: http://emboss.sourceforge.net/apps/release/5.0/emboss/apps/antigenic.html
+
+------
+
+**Citation**
+
+For the underlying tool, please cite `Rice P, Longden I, Bleasby A. EMBOSS: the European Molecular Biology Open Software Suite. Trends Genet. 2000 Jun;16(6):276-7. &lt;http://www.ncbi.nlm.nih.gov/pubmed/10827456&gt;`_
+
+If you use this tool in Galaxy, please cite `Blankenberg D, Taylor J, Schenck I, He J, Zhang Y, Ghent M, Veeraraghavan N, Albert I, Miller W, Makova KD, Hardison RC, Nekrutenko A. A framework for collaborative analysis of ENCODE data: making large-scale analyses biologist-friendly. Genome Res. 2007 Jun;17(6):960-4. &lt;http://www.ncbi.nlm.nih.gov/pubmed/17568012&gt;`_
+    
+  </help>
+</tool>

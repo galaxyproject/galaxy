@@ -19,13 +19,13 @@ local repo = VAR.REPO
 local channel_args = ''
 local channels = VAR.CHANNELS:split(",")
 for i = 1, #channels do
-    channel_args = channel_args .. " -c " .. channels[i]
+    channel_args = channel_args .. " -c '" .. channels[i] .. "'"
 end
 
 local target_args = ''
 local targets = VAR.TARGETS:split(",")
 for i = 1, #targets do
-    target_args = target_args .. " " .. targets[i]
+    target_args = target_args .. " '" .. targets[i] .. "'"
 end
 
 local bind_args = {}
@@ -42,13 +42,14 @@ end
 
 local conda_image = VAR.CONDA_IMAGE
 if conda_image == '' then
-    conda_image = 'continuumio/miniconda3:latest'
+    conda_image = 'quay.io/condaforge/mambaforge:latest'
 end
 
+local conda_bin = VAR.CONDA_BIN
 
 local singularity_image = VAR.SINGULARITY_IMAGE
 if singularity_image == '' then
-    singularity_image = 'quay.io/biocontainers/singularity:2.4.6--0'
+    singularity_image = 'quay.io/singularity/singularity:v3.10.4'
 end
 
 local singularity_image_dir = VAR.SINGULARITY_IMAGE_DIR
@@ -60,7 +61,7 @@ end
 
 local destination_base_image = VAR.DEST_BASE_IMAGE
 if destination_base_image == '' then
-    destination_base_image = 'bgruening/busybox-bash:0.1'
+    destination_base_image = 'quay.io/bioconda/base-glibc-busybox-bash:latest'
 end
 
 local verbose = VAR.VERBOSE
@@ -87,10 +88,10 @@ inv.task('build')
     .using(conda_image)
         .withHostConfig({binds = bind_args})
         .run('/bin/sh', '-c', preinstall
-            .. 'conda install '
+            .. conda_bin .. ' install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes '
+            .. ' --strict-channel-priority -p /usr/local --copy --yes '
             .. verbose
             .. postinstall)
     .wrap('build/dist')
@@ -101,10 +102,11 @@ inv.task('build')
 if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
-        .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
+        .withHostConfig({binds = {"build:/data", singularity_image_dir .. ":/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
-        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def')
-        .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && '
+            .. 'singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def && '
+            .. 'chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
 
 inv.task('cleanup')

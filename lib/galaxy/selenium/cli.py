@@ -5,7 +5,7 @@ REMOTE_PORT_DESCRIPTION = "Selenium hub remote port to use (if remote driver in 
 GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
 HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 
-from six.moves.urllib.parse import urljoin
+from urllib.parse import urljoin
 
 from .driver_factory import (
     get_local_driver,
@@ -19,34 +19,34 @@ def add_selenium_arguments(parser):
     """Add common selenium arguments for argparse driver utility."""
 
     parser.add_argument(
-        '--selenium-browser',
+        "--selenium-browser",
         default="auto",
         help=BROWSER_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-headless',
+        "--selenium-headless",
         default=False,
         action="store_true",
         help=HEADLESS_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote',
+        "--selenium-remote",
         default=False,
         action="store_true",
         help=REMOTE_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote-host',
+        "--selenium-remote-host",
         default="127.0.0.1",
         help=REMOTE_HOST_DESCRIPTION,
     )
     parser.add_argument(
-        '--selenium-remote-port',
+        "--selenium-remote-port",
         default="4444",
         help=REMOTE_PORT_DESCRIPTION,
     )
     parser.add_argument(
-        '--galaxy_url',
+        "--galaxy_url",
         default="http://127.0.0.1:8080/",
         help=GALAXY_URL_DESCRIPTION,
     )
@@ -55,7 +55,6 @@ def add_selenium_arguments(parser):
 
 
 class DriverWrapper(NavigatesGalaxy):
-
     """Adapt argparse command-line options to a concrete Selenium driver."""
 
     def __init__(self, args):
@@ -74,8 +73,14 @@ class DriverWrapper(NavigatesGalaxy):
         self.driver = driver
         self.target_url = args.galaxy_url
 
-    def build_url(self, url=""):
+    def build_url(self, url="", for_selenium: bool = True):
         return urljoin(self.target_url, url)
+
+    def screenshot(self, label: str) -> None:
+        """No-op in this context, not saving debugging/testing screenshots.
+
+        Consider a verbose or debug option for saving these.
+        """
 
     @property
     def default_timeout(self):

@@ -1,93 +1,79 @@
 """
 API operations on Role objects.
 """
+
 import logging
 
-from sqlalchemy import false
+from fastapi import Body
 
-from galaxy import web
-from galaxy.webapps.base.controller import BaseAPIController, url_for
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.roles import RoleManager
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
+from galaxy.schema.schema import (
+    RoleDefinitionModel,
+    RoleListResponse,
+    RoleModelResponse,
+)
+from galaxy.webapps.base.controller import url_for
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
 
-class RoleAPIController(BaseAPIController):
+# Empty paths (e.g. /api/roles) only work if a prefix is defined right here.
+# https://github.com/tiangolo/fastapi/pull/415/files
+router = Router(tags=["roles"])
 
-    @web.legacy_expose_api
-    def index(self, trans, **kwd):
-        """
-        GET /api/roles
-        Displays a collection (list) of roles.
-        """
-        rval = []
-        for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()):
-            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
-                item = role.to_dict(value_mapper={'id': trans.security.encode_id})
-                encoded_id = trans.security.encode_id(role.id)
-                item['url'] = url_for('role', id=encoded_id)
-                rval.append(item)
-        return rval
 
-    @web.legacy_expose_api
-    def show(self, trans, id, **kwd):
-        """
-        GET /api/roles/{encoded_role_id}
-        Displays information about a role.
-        """
-        role_id = id
-        try:
-            decoded_role_id = trans.security.decode_id(role_id)
-        except Exception:
-            trans.response.status = 400
-            return "Malformed role id ( %s ) specified, unable to decode." % str(role_id)
-        try:
-            role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
-        except Exception:
-            role = None
-        if not role or not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            trans.response.status = 400
-            return "Invalid role id ( %s ) specified." % str(role_id)
-        item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('role', id=role_id)
-        return item
+def role_to_model(role):
+    item = role.to_dict(view="element")
+    role_id = Security.security.encode_id(role.id)
+    item["url"] = url_for("role", id=role_id)
+    return RoleModelResponse(**item)
 
-    @web.legacy_expose_api
-    def create(self, trans, payload, **kwd):
-        """
-        POST /api/roles
-        Creates a new role.
-        """
-        if not trans.user_is_admin:
-            trans.response.status = 403
-            return "You are not authorized to create a new role."
-        name = payload.get('name', None)
-        description = payload.get('description', None)
-        if not name or not description:
-            trans.response.status = 400
-            return "Enter a valid name and a description"
-        if trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.name == name).first():
-            trans.response.status = 400
-            return "A role with that name already exists"
 
-        role_type = trans.app.model.Role.types.ADMIN  # TODO: allow non-admins to create roles
+@router.cbv
+class FastAPIRoles:
+    role_manager: RoleManager = depends(RoleManager)
 
-        role = trans.app.model.Role(name=name, description=description, type=role_type)
-        trans.sa_session.add(role)
-        user_ids = payload.get('user_ids', [])
-        users = [trans.sa_session.query(trans.model.User).get(trans.security.decode_id(i)) for i in user_ids]
-        group_ids = payload.get('group_ids', [])
-        groups = [trans.sa_session.query(trans.model.Group).get(trans.security.decode_id(i)) for i in group_ids]
+    @router.get("/api/roles")
+    def index(self, trans: ProvidesUserContext = DependsOnTrans) -> RoleListResponse:
+        roles = self.role_manager.list_displayable_roles(trans)
+        return RoleListResponse(root=[role_to_model(r) for r in roles])
 
-        # Create the UserRoleAssociations
-        for user in users:
-            trans.app.security_agent.associate_user_role(user, role)
+    @router.get("/api/roles/{id}")
+    def show(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+        role = self.role_manager.get(trans, id)
+        return role_to_model(role)
 
-        # Create the GroupRoleAssociations
-        for group in groups:
-            trans.app.security_agent.associate_group_role(group, role)
+    @router.post("/api/roles", require_admin=True)
+    def create(
+        self, trans: ProvidesUserContext = DependsOnTrans, role_definition_model: RoleDefinitionModel = Body(...)
+    ) -> RoleModelResponse:
+        role = self.role_manager.create_role(trans, role_definition_model)
+        return role_to_model(role)
 
-        trans.sa_session.flush()
-        encoded_id = trans.security.encode_id(role.id)
-        item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('role', id=encoded_id)
-        return [item]
+    @router.delete("/api/roles/{id}", require_admin=True)
+    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+        role = self.role_manager.get(trans, id)
+        role = self.role_manager.delete(trans, role)
+        return role_to_model(role)
+
+    @router.post("/api/roles/{id}/purge", require_admin=True)
+    def purge(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+        role = self.role_manager.get(trans, id)
+        role = self.role_manager.purge(trans, role)
+        return role_to_model(role)
+
+    @router.post("/api/roles/{id}/undelete", require_admin=True)
+    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
+        role = self.role_manager.get(trans, id)
+        role = self.role_manager.undelete(trans, role)
+        return role_to_model(role)

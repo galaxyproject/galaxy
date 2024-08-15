@@ -1,0 +1,39 @@
+name: Update dependencies
+on:
+  schedule:
+    - cron: '0 3 * * 6'  # Run every saturday at 3 am.
+  workflow_dispatch:
+jobs:
+  update_dependencies:
+    name: Update dependencies
+    if: github.repository_owner == 'galaxyproject'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Update dependencies
+        run: | 
+          python -m venv .venv
+          make update-dependencies
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          author: galaxybot <galaxybot@users.noreply.github.com>
+          token: ${{ secrets.GALAXYBOT_PAT }}
+          commit-message: |
+            Update Python dependencies
+
+            by running `make update-dependencies`.
+          branch: dev_auto_update_dependencies
+          delete-branch: true
+          push-to-fork: galaxybot/galaxy
+          title: Update Python dependencies
+          body: by running `make update-dependencies`.
+          labels: |
+            area/dependencies
+            kind/enhancement

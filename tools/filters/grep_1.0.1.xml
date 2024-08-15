@@ -1,0 +1,85 @@
+<tool id="Grep1" name="Select" version="1.0.1">
+  <description>lines that match an expression</description>
+  <edam_operations>
+    <edam_operation>operation_3695</edam_operation>
+  </edam_operations>
+  <command interpreter="python">grep.py -i $input -o $out_file1 -pattern '$pattern' -v $invert</command>
+  <inputs>
+    <param format="txt" name="input" type="data" label="Select lines from"/>
+    <param name="invert" type="select" label="that">
+      <option value="false">Matching</option>
+      <option value="true">NOT Matching</option>
+    </param>
+    <param name="pattern" type="text" value="^chr([0-9A-Za-z])+" label="the pattern" help="here you can enter text or regular expression (for syntax check lower part of this frame)">
+      <sanitizer>
+        <valid initial="string.printable">
+         <remove value="&apos;"/>
+        </valid>
+        <mapping initial="none">
+          <add source="&apos;" target="__sq__"/>
+        </mapping>
+      </sanitizer>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.bed"/>
+      <param name="invert" value="false"/>
+      <param name="pattern" value="^chr[0-9]*"/>
+      <output name="out_file1" file="fs-grep.dat"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
+**Syntax**
+
+The select tool searches the data for lines containing or not containing a match to the given pattern. Regular Expression is introduced in this tool. A Regular Expression is a pattern describing a certain amount of text.
+
+- **( ) { } [ ] . * ? + \ ^ $** are all special characters. **\\** can be used to "escape" a special character, allowing that special character to be searched for.
+- **\\A** matches the beginning of a string(but not an internal line).
+- **\\d** matches a digit, same as [0-9].
+- **\\D** matches a non-digit.
+- **\\s** matches a whitespace character.
+- **\\S** matches anything BUT a whitespace.
+- **\\t** matches a tab.
+- **\\w** matches an alphanumeric character.
+- **\\W** matches anything but an alphanumeric character.
+- **(** .. **)** groups a particular pattern.
+- **\\Z** matches the end of a string(but not a internal line).
+- **{** n or n, or n,m **}** specifies an expected number of repetitions of the preceding pattern.
+
+  - **{n}** The preceding item is matched exactly n times.
+  - **{n,}** The preceding item is matched n or more times.
+  - **{n,m}** The preceding item is matched at least n times but not more than m times.
+
+- **[** ... **]** creates a character class. Within the brackets, single characters can be placed. A dash (-) may be used to indicate a range such as **a-z**.
+- **.** Matches any single character except a newline.
+- ***** The preceding item will be matched zero or more times.
+- **?** The preceding item is optional and matched at most once.
+- **+** The preceding item will be matched one or more times.
+- **^** has two meaning:
+  - matches the beginning of a line or string.
+  - indicates negation in a character class. For example, [^...] matches every character except the ones inside brackets.
+- **$** matches the end of a line or string.
+- **\|** Separates alternate possibilities.
+
+-----
+
+**Example**
+
+- **^chr([0-9A-Za-z])+** would match lines that begin with chromosomes, such as lines in a BED format file.
+- **(ACGT){1,5}** would match at least 1 "ACGT" and at most 5 "ACGT" consecutively.
+- **([^,][0-9]{1,3})(,[0-9]{3})\*** would match a large integer that is properly separated with commas such as 23,078,651.
+- **(abc)|(def)** would match either "abc" or "def".
+- **^\\W+#** would match any line that is a comment.
+</help>
+</tool>

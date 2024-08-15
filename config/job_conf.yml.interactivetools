@@ -1,0 +1,58 @@
+## A sample job config for InteractiveTools using local runner. ##
+
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 4
+
+# Uncomment if dynamic handlers are defined in "gravity:handlers" section in galaxy.yml
+#
+#handling:
+#  assign:
+#    - db-skip-locked
+
+execution:
+  default: docker_dispatch
+  environments:
+    local:
+      runner: local
+
+    docker_local:
+      runner: local
+      docker_enabled: true
+      #docker_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
+      #docker_volumes_from: parent_container_name
+      #docker_memory: 24G
+      #docker_sudo: false
+      #docker_sudo_cmd: /usr/bin/sudo -extra_param
+      #docker_net: bridge
+      #docker_auto_rm: true
+      #docker_set_user: $UID
+      docker_set_user:
+
+      # InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
+      # If you develop interactive tools on your 'localhost' and don't have a proper domain name
+      # you need to tell all Docker containers a hostname where Galaxy is running.
+      # This can be done via the add-host parameter during the `docker run` command.
+      # 'localhost' here is an arbitrary hostname that matches the IP address of your
+      # Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
+      # `galaxy_infrastructure_url: http://localhost:8080`.
+      #docker_run_extra_arguments: add-host localhost:host-gateway
+
+      #docker_cmd: /usr/local/custom_docker/docker
+      #docker_host:
+      #docker_container_id_override: busybox:1.36.1-glibc
+      #docker_default_container_id: busybox:1.36.1-glibc
+      #require_container: true
+      #container_monitor: true
+      #container_monitor_result: file
+      #container_monitor_command: python /path/to/galaxy/lib/galaxy_ext/container_monitor/monitor.py
+      #container_monitor_get_ip_method: null
+      #container_resolvers_config_file: null
+      #container_resolvers:
+
+    docker_dispatch:
+      runner: dynamic
+      type: docker_dispatch
+      docker_destination_id: docker_local
+      default_destination_id: local

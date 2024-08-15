@@ -1,15 +1,15 @@
 #!/bin/sh
 
 #######
-# NOTE: To downgrade to a specific version, use something like:
-# sh manage_db.sh downgrade --version=3 <tool_shed if using that webapp - galaxy is the default>
+# Use this script to manage Galaxy database schema migrations.
+# For help, run `sh manage_db.sh -h`. 
+# For detailed help, see documentation at https://docs.galaxyproject.org/en/master/admin/db_migration.html
 #######
 
-cd `dirname $0`
+cd "$(dirname "$0")" || exit
 
 . ./scripts/common_startup_functions.sh
 
 setup_python
 
-find lib/galaxy/model/migrate/versions -name '*.pyc' -delete
-python ./scripts/manage_db.py $@
+python ./scripts/db.py "$@"

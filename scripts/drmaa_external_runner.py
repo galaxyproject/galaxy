@@ -5,7 +5,6 @@ Submit a DRMAA job given a user id and a job template file (in JSON format)
 defining any or all of the following: args, remoteCommand, outputPath,
 errorPath, nativeSpecification, name, email, project
 """
-from __future__ import print_function
 
 import errno
 import json
@@ -15,8 +14,17 @@ import sys
 
 import drmaa
 
-DRMAA_jobTemplate_attributes = ['args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                                'workingDirectory', 'jobName', 'email', 'project']
+DRMAA_jobTemplate_attributes = [
+    "args",
+    "remoteCommand",
+    "outputPath",
+    "errorPath",
+    "nativeSpecification",
+    "workingDirectory",
+    "jobName",
+    "email",
+    "project",
+]
 
 
 def load_job_template(jt, data):
@@ -42,14 +50,14 @@ def get_user_id_by_name(username):
     try:
         pw = pwd.getpwnam(username)
     except KeyError:
-        sys.stderr.write("error: User name (%s) is not valid.\n" % username)
+        sys.stderr.write(f"error: User name ({username}) is not valid.\n")
         exit(1)
     return pw.pw_uid
 
 
 def json_file_exists(json_filename):
     if not os.path.exists(json_filename):
-        sys.stderr.write("error: JobTemplate file (%s) doesn't exist\n" % (json_filename))
+        sys.stderr.write(f"error: JobTemplate file ({json_filename}) doesn't exist\n")
         exit(1)
 
     return True
@@ -62,7 +70,7 @@ def validate_paramters():
         sys.argv.remove("--assign_all_groups")
 
     if len(sys.argv) < 3:
-        sys.stderr.write("usage: %s [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n" % sys.argv[0])
+        sys.stderr.write(f"usage: {sys.argv[0]} [USER-ID] [JSON-JOB-TEMPLATE-FILE]\n")
         exit(1)
 
     userid = sys.argv[1]
@@ -87,6 +95,7 @@ def set_user(uid, assign_all_groups):
         # Solves issue with permission denied for JSON files
         gid = pwd.getpwuid(uid).pw_gid
         import grp
+
         os.setgid(gid)
         if assign_all_groups:
             # Added lines to assure read/write permission for groups
@@ -98,32 +107,36 @@ def set_user(uid, assign_all_groups):
 
     except OSError as e:
         if e.errno == errno.EPERM:
-            sys.stderr.write("error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid)
+            sys.stderr.write(
+                "error: setuid(%d) failed: permission denied. Did you setup 'sudo' correctly for this script?\n" % uid
+            )
             exit(1)
         else:
             pass
 
     if os.getuid() == 0:
-        sys.stderr.write("error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
+        sys.stderr.write(
+            "error: UID is 0 (root) after changing user. This script should not be run as root. aborting.\n"
+        )
         exit(1)
 
     if os.geteuid() == 0:
-        sys.stderr.write("error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n")
+        sys.stderr.write(
+            "error: EUID is 0 (root) after changing user. This script should not be run as root. aborting.\n"
+        )
         exit(1)
 
 
 def main():
     userid, json_filename, assign_all_groups = validate_paramters()
-    # load JSON job template data before changing the user
-    # then the pbs cluster_files_directory does not need to
-    # be readable by all users
+    # load JSON job template data
     json_file_exists(json_filename)
-    with open(json_filename, 'r') as f:
+    with open(json_filename) as f:
         data = json.load(f)
     set_user(userid, assign_all_groups)
     # Added to disable LSF generated messages that would interfer with this
     # script. Fix thank to Chong Chen at IBM.
-    os.environ['BSUB_QUIET'] = 'Y'
+    os.environ["BSUB_QUIET"] = "Y"
     s = drmaa.Session()
     s.initialize()
     jt = s.createJobTemplate()

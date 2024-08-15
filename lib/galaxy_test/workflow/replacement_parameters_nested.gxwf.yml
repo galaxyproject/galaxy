@@ -1,0 +1,31 @@
+class: GalaxyWorkflow
+inputs:
+  replacemeouter: text
+outputs:
+  out1:
+    outputSource: nested_workflow/workflow_output_1
+  out2: 
+    outputSource: nested_workflow/workflow_output_2
+steps:
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        replacemeinner: text
+      outputs:
+        workflow_output_1:
+          outputSource: create_2/out_file1
+        workflow_output_2:
+          outputSource: create_2/out_file2
+      steps:
+        create_2:
+          tool_id: create_2
+          state:
+            sleep_time: 0
+          outputs:
+            out_file1:
+              rename: "${replacemeinner} name"
+            out_file2:
+              rename: "${replacemeinner} name 2"
+    in:
+      replacemeinner: replacemeouter

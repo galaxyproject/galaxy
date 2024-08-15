@@ -1,4 +1,3 @@
-
 import os
 import shutil
 import tempfile
@@ -21,10 +20,7 @@ def test_reports_conversion_1607_sample():
         assert "reports" in config
         reports_config = config["reports"] or {}
         assert "use_beaker_session" not in reports_config
-
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert uwsgi_config["module"] == "galaxy.webapps.reports.buildapp:uwsgi_app()"
+        assert "uwsgi" not in config
 
 
 def test_reports_build_sample():
@@ -57,10 +53,7 @@ def test_shed_conversion_1607_prefix():
         config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
         with config_dir.open("config/tool_shed.yml") as f:
             config = yaml.safe_load(f)
-        assert "uwsgi" in config
-        uwsgi_config = config["uwsgi"]
-        assert "module" not in uwsgi_config
-        assert uwsgi_config["mount"].startswith("/shed=tool_shed.webapp")
+        assert "uwsgi" not in config
 
 
 def test_allow_library_path_paste_conversion():
@@ -76,11 +69,6 @@ def test_allow_library_path_paste_conversion():
         assert galaxy_config["allow_path_paste"] is True
 
 
-def test_build_uwsgi_yaml():
-    with _config_directory("1607_root_samples") as config_dir:
-        config_dir.manage_cli(["build_uwsgi_yaml"])
-
-
 def test_validate_simple_config():
     with _config_directory("simple") as config_dir:
         config_dir.manage_cli(["validate", "galaxy"])
@@ -91,8 +79,7 @@ def test_validate_embedded_config():
         config_dir.manage_cli(["validate", "galaxy"])
 
 
-class _TestConfigDirectory(object):
-
+class _TestConfigDirectory:
     def __init__(self, base_name):
         temp_directory = tempfile.mkdtemp()
         os.removedirs(temp_directory)
@@ -122,7 +109,7 @@ class _TestConfigDirectory(object):
         return open(os.path.join(self.temp_directory, path), *args)
 
     def assert_moved(self, from_path, to_path):
-        with open(os.path.join(self.source_dir, from_path), "r") as f:
+        with open(os.path.join(self.source_dir, from_path)) as f:
             source_contents = f.read()
 
         with self.open(to_path, "r") as f:

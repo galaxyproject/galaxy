@@ -1,46 +1,57 @@
 import logging
 import sys
+from inspect import (
+    getfullargspec,
+    getmembers,
+)
+from tempfile import NamedTemporaryFile
 
 from galaxy.util import unicodify
-from galaxy.util.getargspec import getfullargspec
+from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
+assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size", "image"]
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
 # <MODULE_NAME> to the list of assertion module names defined above.
-assertion_modules = []
+assertion_functions = {}
 for assertion_module_name in assertion_module_names:
-    full_assertion_module_name = 'galaxy.tool_util.verify.asserts.' + assertion_module_name
+    full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
     try:
         # Dynamically import module
         __import__(full_assertion_module_name)
         assertion_module = sys.modules[full_assertion_module_name]
-        assertion_modules.append(assertion_module)
     except Exception:
-        log.exception('Failed to load assertion module: %s', assertion_module_name)
+        log.exception("Failed to load assertion module: %s", assertion_module_name)
+        continue
+    for member, value in getmembers(assertion_module):
+        if member.startswith("assert_"):
+            assertion_functions[member] = value
 
 
-def verify_assertions(data, assertion_description_list):
-    """ This function takes a list of assertions and a string to check
-    these assertions against. """
+def verify_assertions(data: bytes, assertion_description_list, decompress: bool = False):
+    """This function takes a list of assertions and a string to check
+    these assertions against."""
+    if decompress:
+        with NamedTemporaryFile() as tmpfh:
+            tmpfh.write(data)
+            tmpfh.flush()
+            with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+                data = fh.read()
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 
 
-def verify_assertion(data, assertion_description):
+def verify_assertion(data: bytes, assertion_description):
     tag = assertion_description["tag"]
     assert_function_name = "assert_" + tag
-    assert_function = None
-    for assertion_module in assertion_modules:
-        if hasattr(assertion_module, assert_function_name):
-            assert_function = getattr(assertion_module, assert_function_name)
+    assert_function = assertion_functions.get(assert_function_name)
 
     if assert_function is None:
-        errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
+        errmsg = f"Unable to find test function associated with XML tag {tag}. Check your tool file syntax."
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args
@@ -57,7 +68,7 @@ def verify_assertion(data, assertion_description):
     # output. children is the parsed version of the child elements of
     # the XML element describing this assertion. See
     # assert_element_text in test/base/asserts/xml.py as an example of
-    # how to use verify_assertions_function and children in conjuction
+    # how to use verify_assertions_function and children in conjunction
     # to apply assertion checking to a subset of the input. The parsed
     # version of an elements child elements do not need to just define
     # assertions, developers of assertion functions can also use the

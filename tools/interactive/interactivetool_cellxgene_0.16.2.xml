@@ -1,0 +1,29 @@
+<tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.16.2">
+    <requirements>
+        <container type="docker">quay.io/biocontainers/cellxgene:0.16.2--py_0</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Cellxgene Single Cell Visualisation on $infile.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+        #import re
+        #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $infile.element_identifier) + '.h5ad'
+        cp '${infile}' '${fancy_name}'
+        &&
+        cellxgene launch --host 0.0.0.0 --port 80 '${fancy_name}'
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="h5ad" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    Interactive tool for visualising AnnData.
+    </help>
+</tool>

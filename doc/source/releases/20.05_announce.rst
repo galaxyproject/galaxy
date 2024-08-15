@@ -1,0 +1,63 @@
+
+===========================================================
+May 2020 Galaxy Release (v 20.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Many new Interactive Tools**
+Galaxy interactive tools allow a greater depth of analysis via access to GUI-based tools inside an instance. 10 new interactive tools (some previously available only on the UseGalaxy.eu server) join the standard base toolset. Improvements to the Higlass interactive tool now also allow for a more in-depth visualization of multiple datasets in various formats simultaneously (`Pull Request 9559`_).
+
+**Data Tables can now be backed by refgenie**
+`Refgenie <http://refgenie.databio.org/>`__ manages storage, access, and transfer of reference genome resources. Galaxy can now fill data tables that were received from a refgenie installation (`Pull Request 9600`_).
+
+**Tool Shed is now Python3 ready**
+As the last component in the Galaxy Codebase the Tool Shed has been ported to Python 3. This concludes a 4 year effort to port the Galaxy codebase to Python 3 (`Pull Request 9528`_).
+
+**Workflow Editor and Workflow Run Form in Vue.js**
+The Workflow Editor and Workflow Run Form have been re-written in Vue.js. While the functionality has been preserved this lays the groundwork for creating beautiful and reactive custom variants of these components in the future (`Pull Request 9346`_, `Pull Request 9332`_, `Pull Request 9324`_, `Pull Request 9249`_, `Pull Request 9201`_, `Pull Request 9147`_, `Pull Request 9138`_, `Pull Request 9471`_).
+
+**Accelerated Galaxy Startup**
+Galaxy now caches expanded tool documents, delays creating the tool search index until after startup and creates search indexes incrementally (`Pull Request 9610`_).
+
+Also check out the `20.05 user release notes <20.05_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_20.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_20.05 && git pull --ff-only origin release_20.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Upgrade Warning for Admins
+==========================
+
+We have been simplifying the organization of our static and client content. As a result, the ``/static`` directory now
+only requires a single rule in your proxy (nginx, Apache, etc.) configuration. Previously, additional rules for
+``/static/scripts`` and ``/static/style`` were required. Both of these additional rules should be removed from your
+proxy server configuration when upgrading your Galaxy server to release 20.05.
+
+More information about proxy server configuration for Galaxy can be found in  `Proxying Galaxy with NGINX
+<https://docs.galaxyproject.org/en/release_20.05/admin/nginx.html>`__ and `Proxying Galaxy with Apache
+<https://docs.galaxyproject.org/en/release_20.05/admin/apache.html>`__.
+
+Release Notes
+===========================================================
+
+.. include:: 20.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

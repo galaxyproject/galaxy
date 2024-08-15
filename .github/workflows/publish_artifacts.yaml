@@ -1,0 +1,26 @@
+name: Publish release artifacts
+on:
+    release:
+      types: [released, prereleased]
+jobs:
+  build-and-publish:
+    if: github.repository_owner == 'galaxyproject'
+    name: build-and-publish
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            python-version: ['3.8']
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/checkout@v4
+      - name: Install script dependencies
+        run: pip install galaxy-release-util
+      - name: Build and publish
+        run: |
+          galaxy-release-util build-and-upload --no-confirm
+        env:
+            TWINE_USERNAME: __token__
+            TWINE_PASSWORD: ${{ github.event.release.prerelease && secrets.PYPI_TEST_TOKEN || secrets.PYPI_MAIN_TOKEN }}
+            TWINE_REPOSITORY_URL: ${{ github.event.release.prerelease && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}

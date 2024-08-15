@@ -1,0 +1,138 @@
+
+===========================================================
+January 2020 Galaxy Release (v 20.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Workflow Executions Menu**
+  This menu can be reached from the User menu -> Workflow Invocations
+  and lists your recent Workflow executions, their status and links
+  to the Workflow Editor and the History with the results of the
+  Workflow run.
+
+.. figure:: https://user-images.githubusercontent.com/216771/65520097-0a041f80-deb5-11e9-80ac-2557b36c252f.png
+   :alt: Workflow invocation menu
+   :width: 400px
+
+.. figure:: https://user-images.githubusercontent.com/6804901/73737075-345ac900-4742-11ea-9f50-0f0e4c3d9271.png
+   :alt: Workflow invocatios
+
+**Galay Markdown Pages and Workflow Reports as PDF**
+  An additional link has been added to Galaxy Markdown Pages and Workflow reports
+  that exports your document as a standalone PDF.
+
+.. figure:: https://user-images.githubusercontent.com/6804901/73776256-b7524280-4787-11ea-821f-d9a8c6339ee9.png
+   :alt: Example PDF export
+
+**Screenreader-friendly Navigation**
+  The top menu and the Workflow Editor have been improved for easier navigation
+  using Screenreaders and the Keyboard.
+  Thanks goes to `@WilliamHolden  <https://github.com/WilliamHolden>`__
+
+**Email-notification for completed jobs**
+  You can now select to be notified by email when a tool run has finished.
+  Thanks goes to `@astrovsky01 <https://github.com/astrovsky01>`__
+
+.. figure:: https://user-images.githubusercontent.com/6804901/73779180-a2c47900-478c-11ea-98ab-7355276b6f6d.png
+   :alt: Example of email button
+   :width: 300px
+
+New Visualizations
+===========================================================
+
+.. visualizations
+
+* Add data dialog input element to client form parameter list
+  `Pull Request 8774`_
+* Wrap SQL statement in a text() function as required by sqlalchemy
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9216`_
+* Ensure visible overflow on navbar container
+  (thanks to `@kaukrise <https://github.com/kaukrise>`__).
+  `Pull Request 9217`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+
+* Datatypes for MassSpec DIA dlib,elib
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 8657`_
+* Add bus as binary, remove extra datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8705`_
+* remove dada2_derep data type
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8902`_
+* Add new GROMACS datatypes: ndx, xvg, edr
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 8964`_
+* add gff3.gz and gff3.bz2 datatypes
+  (thanks to `@FredericBGA <https://github.com/FredericBGA>`__).
+  `Pull Request 8967`_
+* Make mol2 visible
+  (thanks to `@galaxyproject <https://github.com/galaxyproject>`__).
+  `Pull Request 8995`_
+* Add a datatype subclass for CAT (Contig Annotation Tool)
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 9087`_
+* Fix cool sniffing on python3
+  `Pull Request 9153`_
+* Allow tabular.gz / add embl to uploadable formats
+  `Pull Request 9293`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+
+* Upgrade askomics interactive tool
+  (thanks to `@xgaia <https://github.com/xgaia>`__).
+  `Pull Request 8517`_
+* Remove collection ID character restriction from 'Relabel collection from file' tool
+  (thanks to `@brinkmanlab <https://github.com/brinkmanlab>`__).
+  `Pull Request 8571`_
+* Allow space, dot and comma in relabel identifier tool
+  `Pull Request 8757`_
+* Fix script shebangs
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8888`_
+* grouping: strip newlines
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8953`_
+* Allow admins to import tools/workflows from paths.
+  `Pull Request 9003`_
+* Add requirements to interval_to_bed_converter.xml
+  `Pull Request 9041`_
+* Move sam_pileup to GALAXY_LIB_TOOLS_VERSIONED
+  `Pull Request 9320`_
+* Add requirements, fix legacy tools and move them out of GALAXY_LIB_TOOLS_UNVERSIONED
+  `Pull Request 9336`_
+* Add requirements to (almost) all converters, profile and minor fixes
+  `Pull Request 9345`_
+* Fix version in which ``sam_pileup`` was fixed
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9350`_
+* Expunge tool shed repository objects, prevents ParentInstanceDetachedError
+  `Pull Request 9354`_
+* Remove GenomeSpace tools, OpenID, UI and requirements
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 9363`_
+* Fix maf tools
+  `Pull Request 9393`_
+* XML fix for joiner.xml.
+  `Pull Request 9399`_
+
+Release Notes
+===========================================================
+
+Please see the :doc:`full release notes <20.01_announce>` for more details.
+
+.. include:: 20.01_prs.rst
+
+.. include:: _thanks.rst

@@ -1,7 +1,6 @@
 # Dan Blankenberg
 # This script checks maf_index.loc file for inconsistencies between what is listed as available and what is really available.
 # Make sure that required dependencies (e.g. galaxy_root/lib) are included in your PYTHONPATH
-from __future__ import print_function
 
 import sys
 
@@ -16,12 +15,12 @@ def __main__():
     index_location_file = sys.argv[1]
     for i, line in enumerate(open(index_location_file)):
         try:
-            if line.startswith('#'):
+            if line.startswith("#"):
                 continue
-            display_name, uid, indexed_for_species, species_exist, maf_files = line.rstrip().split('\t')
-            indexed_for_species = indexed_for_species.split(',')
-            species_exist = species_exist.split(',')
-            maf_files = maf_files.split(',')
+            display_name, uid, indexed_for_species, species_exist, maf_files = line.rstrip().split("\t")
+            indexed_for_species = indexed_for_species.split(",")
+            species_exist = species_exist.split(",")
+            maf_files = maf_files.split(",")
             species_indexed_in_maf = []
             species_found_in_maf = []
             for maf_file in maf_files:

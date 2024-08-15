@@ -1,0 +1,151 @@
+.upload-button {
+    @extend .w-100;
+    @extend .mb-2;
+    @extend .position-relative;
+    border-radius: $border-radius;
+    cursor: pointer;
+    .progress {
+        @extend .position-absolute;
+        @extend .w-100;
+        @extend .h-100;
+        top: 0;
+        left: 0;
+        background-color: transparent;
+        .progress-bar-danger {
+            background: $state-danger-bg;
+        }
+        .progress-bar-success {
+            background: $state-success-bg;
+        }
+        .progress-bar-info {
+            background: $state-running-bg;
+        }
+        .progress-bar-notransition {
+            -webkit-transition: none;
+            -moz-transition: none;
+            -ms-transition: none;
+            -o-transition: none;
+            transition: none;
+        }
+    }
+}
+
+.upload-wrapper {
+    .upload-box.highlight {
+        border-color: $border-color;
+        border-width: 2px;
+        padding: 7px !important;
+        .upload-helper {
+            color: $border-color;
+        }
+    }
+    .upload-box {
+        @extend .mt-2;
+        @extend .p-2;
+        width: 100%;
+        height: 300px;
+        overflow: scroll;
+        font-size: $font-size-base;
+        -moz-border-radius: $border-radius-large;
+        border-radius: $border-radius-large;
+        border: 1px dashed $border-color;
+        overflow-x: hidden;
+        -ms-overflow-style: none;
+        input[type="file"] {
+            display: none;
+        }
+        .upload-error {
+            background: $state-danger-bg;
+        }
+        .upload-success {
+            background: $state-success-bg;
+        }
+        .upload-running {
+            background: $state-running-bg;
+        }
+        .upload-helper {
+            @extend h3;
+            padding: 120px;
+            color: $border-color;
+            text-align: center;
+            i {
+                @extend .mr-2;
+                font-size: inherit;
+            }
+        }
+        .upload-text-message {
+            @extend .my-1;
+            @extend .text-primary;
+            text-align: center;
+        }
+        .upload-row {
+            button.dropdown-toggle {
+                @extend .px-2;
+                @extend .py-0;
+            }
+            input {
+                font-size: $font-size-base;
+                color: $text-color;
+                height: 22px;
+            }
+            .upload-progress {
+                width: 130px;
+                line-height: $font-size-base;
+                .progress {
+                    height: 22px;
+                    font-size: $font-size-base;
+                    background-color: $gray-400;
+                    width: 100%;
+                    position: relative;
+                    line-height: 22px;
+                    .progress-bar {
+                        border-radius: inherit;
+                        -moz-border-radius: inherit;
+                    }
+                    .upload-percentage {
+                        position: absolute;
+                        text-align: center;
+                        width: 100%;
+                        color: $white;
+                    }
+                }
+            }
+            .upload-size {
+                width: 60px;
+                white-space: nowrap;
+            }
+            .upload-title {
+                width: 130px;
+                word-wrap: break-word;
+                background: inherit;
+            }
+            .upload-text-content {
+                background: inherit;
+                color: $text-color;
+                height: 80px;
+                overflow: auto;
+                white-space: pre;
+                width: 100%;
+            }
+        }
+    }
+    .upload-buttons {
+        padding-top: 30px;
+        button {
+            @extend .ml-1;
+        }
+    }
+    .upload-footer {
+        @extend .mt-2;
+        height: 20px;
+        text-align: center;
+        .upload-footer-title {
+            @extend .ml-2;
+            font-weight: bold;
+        }
+    }
+    .upload-header {
+        font-weight: $font-size-base;
+        text-align: center;
+    }
+}

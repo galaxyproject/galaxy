@@ -1,8 +1,10 @@
+from pathlib import Path
+
 import pytest
 
-from galaxy.config import GalaxyAppConfiguration
+from galaxy.config import BaseAppConfiguration
+from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
-
 
 # When a config property 'foo' has an attribute 'path_resolves_to', that attribute is a reference to
 # another property 'bar'. Together, these two properties form a graph where 'foo' and 'bar are
@@ -15,176 +17,151 @@ from galaxy.exceptions import ConfigurationError
 # whereas an invalid configuration raises an error.
 
 
-@pytest.fixture
-def mock_config(monkeypatch):
-    def mock_process_config(self, kwargs):
-        pass
-    monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
+def get_schema(app_mapping):
+    return {"mapping": {"_": {"mapping": app_mapping}}}
 
 
-def test_basecase(mock_config, monkeypatch):
+def test_basecase(monkeypatch):
     # Check that a valid graph is loaded correctly (this graph has 2 components)
     mock_schema = {
-        'component1_path0': {
-            'type': 'str',
-            'default': 'value0',
+        "component1_path0": {
+            "type": "str",
+            "default": "value0",
         },
-        'component1_path1': {
-            'type': 'str',
-            'default': 'value1',
-            'path_resolves_to': 'component1_path0',
+        "component1_path1": {
+            "type": "str",
+            "default": "value1",
+            "path_resolves_to": "component1_path0",
         },
-        'component1_path2': {
-            'type': 'str',
-            'default': 'value2',
-            'path_resolves_to': 'component1_path1',
+        "component1_path2": {
+            "type": "str",
+            "default": "value2",
+            "path_resolves_to": "component1_path1",
         },
-        'component2_path0': {
-            'type': 'str',
-            'default': 'value3',
+        "component2_path0": {
+            "type": "str",
+            "default": "value3",
         },
-        'component2_path1': {
-            'type': 'str',
-            'default': 'value4',
-            'path_resolves_to': 'component2_path0',
+        "component2_path1": {
+            "type": "str",
+            "default": "value4",
+            "path_resolves_to": "component2_path0",
         },
-
     }
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(Path("no path"), "_"))
 
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
-
-    config = GalaxyAppConfiguration()
-    assert config.component1_path0 == 'value0'
-    assert config.component1_path1 == 'value0/value1'
-    assert config.component1_path2 == 'value0/value1/value2'
-    assert config.component2_path0 == 'value3'
-    assert config.component2_path1 == 'value3/value4'
+    config = BaseAppConfiguration()
+    assert config.component1_path0 == "value0"
+    assert config.component1_path1 == "value0/value1"
+    assert config.component1_path2 == "value0/value1/value2"
+    assert config.component2_path0 == "value3"
+    assert config.component2_path1 == "value3/value4"
 
 
-def test_resolves_to_invalid_property(mock_config, monkeypatch):
+def test_resolves_to_invalid_property(monkeypatch):
     # 'path_resolves_to' should point to an existing property in the schema
     mock_schema = {
-        'path0': {
-            'type': 'str',
-            'default': 'value0',
+        "path0": {
+            "type": "str",
+            "default": "value0",
         },
-        'path1': {
-            'type': 'str',
-            'default': 'value1',
-            'path_resolves_to': 'invalid',  # invalid
+        "path1": {
+            "type": "str",
+            "default": "value1",
+            "path_resolves_to": "invalid",  # invalid
         },
     }
-
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        GalaxyAppConfiguration()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
-def test_path_resolution_cycle(mock_config, monkeypatch):
+def test_path_resolution_cycle(monkeypatch):
     # Must be a DAG, but this one has a cycle
     mock_schema = {
-        'path0': {
-            'type': 'str',
-            'default': 'value0',
-            'path_resolves_to': 'path2',
+        "path0": {
+            "type": "str",
+            "default": "value0",
+            "path_resolves_to": "path2",
         },
-        'path1': {
-            'type': 'str',
-            'default': 'value1',
-            'path_resolves_to': 'path0',
+        "path1": {
+            "type": "str",
+            "default": "value1",
+            "path_resolves_to": "path0",
         },
-        'path2': {
-            'type': 'str',
-            'default': 'value2',
-            'path_resolves_to': 'path1',
+        "path2": {
+            "type": "str",
+            "default": "value2",
+            "path_resolves_to": "path1",
         },
     }
-
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        GalaxyAppConfiguration()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
-def test_path_invalid_type(mock_config, monkeypatch):
+def test_path_invalid_type(monkeypatch):
     # Paths should be strings
     mock_schema = {
-        'path0': {
-            'type': 'str',
-            'default': 'value0',
+        "path0": {
+            "type": "str",
+            "default": "value0",
         },
-        'path1': {
-            'type': 'float',  # invalid
-            'default': 'value1',
-            'path_resolves_to': 'path0',
+        "path1": {
+            "type": "float",  # invalid
+            "default": "value1",
+            "path_resolves_to": "path0",
         },
     }
-
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        GalaxyAppConfiguration()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
-def test_resolves_to_invalid_type(mock_config, monkeypatch):
+def test_resolves_to_invalid_type(monkeypatch):
     # Paths should be strings
     mock_schema = {
-        'path0': {
-            'type': 'int',  # invalid
-            'default': 'value0',
+        "path0": {
+            "type": "int",  # invalid
+            "default": "value0",
         },
-        'path1': {
-            'type': 'str',
-            'default': 'value1',
-            'path_resolves_to': 'path0',
+        "path1": {
+            "type": "str",
+            "default": "value1",
+            "path_resolves_to": "path0",
         },
     }
-
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
 
     with pytest.raises(ConfigurationError):
-        GalaxyAppConfiguration()
+        AppSchema(Path("no path"), "_").validate_path_resolution_graph()
 
 
-def test_resolves_with_empty_component(mock_config, monkeypatch):
+def test_resolves_with_empty_component(monkeypatch):
     # A path can be None (root path is never None; may be asigned elsewhere)
     mock_schema = {
-        'path0': {
-            'type': 'str',
-            'default': 'value0',
+        "path0": {
+            "type": "str",
+            "default": "value0",
         },
-        'path1': {
-            'type': 'str',
-            'path_resolves_to': 'path0',
+        "path1": {
+            "type": "str",
+            "path_resolves_to": "path0",
         },
-        'path2': {
-            'type': 'str',
-            'default': 'value2',
-            'path_resolves_to': 'path1',
+        "path2": {
+            "type": "str",
+            "default": "value2",
+            "path_resolves_to": "path1",
         },
     }
+    monkeypatch.setattr(AppSchema, "_read_schema", lambda a, b: get_schema(mock_schema))
+    monkeypatch.setattr(BaseAppConfiguration, "_load_schema", lambda a: AppSchema(Path("no path"), "_"))
 
-    def mock_load_schema(self):
-        self.appschema = mock_schema
-
-    monkeypatch.setattr(GalaxyAppConfiguration, '_load_schema', mock_load_schema)
-
-    config = GalaxyAppConfiguration()
-    assert config.path0 == 'value0'
-    assert config.path1 == 'value0'
-    assert config.path2 == 'value0/value2'
+    config = BaseAppConfiguration()
+    assert config.path0 == "value0"
+    assert config.path1 == "value0"
+    assert config.path2 == "value0/value2"

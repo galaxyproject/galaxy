@@ -1,0 +1,38 @@
+name: Build client for selenium tests
+on:
+  workflow_call:
+    outputs:
+      commit-id:
+        description: Commit ID
+        value: ${{ jobs.build-client.outputs.commit-id }}
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+    outputs:
+      commit-id: ${{ steps.client-commit.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - name: get client commit
+        id: client-commit
+        shell: bash
+        run: echo "commit=$(git rev-parse HEAD 2>/dev/null)" >> $GITHUB_OUTPUT
+        working-directory: 'galaxy root'
+      - name: cache client build
+        uses: actions/cache@v4
+        id: cache
+        with:
+          key: galaxy-static-${{ steps.client-commit.outputs.commit }}
+          path: 'galaxy root/static'
+      - name: Build client
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR: 1
+        run: make client
+        working-directory: 'galaxy root'

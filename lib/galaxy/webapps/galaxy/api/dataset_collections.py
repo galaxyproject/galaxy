@@ -1,86 +1,155 @@
 from logging import getLogger
+from typing import Optional
 
-from galaxy import managers
-from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
-from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    UsesLibraryMixinItems
+from fastapi import (
+    Body,
+    Path,
+    Query,
+    Response,
+    status,
+)
+from typing_extensions import Annotated
+
+from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    AnyHDCA,
+    CreateNewCollectionPayload,
+    DatasetCollectionInstanceType,
+    DCESummary,
+    HDCADetailed,
+)
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
+from galaxy.webapps.galaxy.api.common import (
+    DatasetCollectionElementIdPathParam,
+    HistoryHDCAIDPathParam,
+)
+from galaxy.webapps.galaxy.services.dataset_collections import (
+    DatasetCollectionAttributesResult,
+    DatasetCollectionContentElements,
+    DatasetCollectionsService,
+    SuitableConverters,
+    UpdateCollectionAttributePayload,
 )
 
 log = getLogger(__name__)
 
+router = Router(tags=["dataset collections"])
 
-class DatasetCollectionsController(
-    BaseAPIController,
-    UsesLibraryMixinItems,
-):
 
-    def __init__(self, app):
-        super(DatasetCollectionsController, self).__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
+InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
+    default="history",
+    description="The type of collection instance. Either `history` (default) or `library`.",
+)
 
-    @expose_api
-    def index(self, trans, **kwd):
-        trans.response.status = 501
-        return 'not implemented'
+ViewTypeQueryParam: str = Query(
+    default="element",
+    description="The view of collection instance to return.",
+)
 
-    @expose_api
-    def create(self, trans, payload, **kwd):
-        """
-        * POST /api/dataset_collections:
-            create a new dataset collection instance.
 
-        :type   payload: dict
-        :param  payload: (optional) dictionary structure containing:
-            * collection_type: dataset colltion type to create.
-            * instance_type:   Instance type - 'history' or 'library'.
-            * name:            the new dataset collections's name
-            * datasets:        object describing datasets for collection
-        :rtype:     dict
-        :returns:   element view of new dataset collection
-        """
-        # TODO: Error handling...
-        create_params = api_payload_to_create_params(payload)
-        instance_type = payload.pop("instance_type", "history")
-        if instance_type == "history":
-            history_id = payload.get('history_id')
-            history_id = self.decode_id(history_id)
-            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
-            create_params["parent"] = history
-        elif instance_type == "library":
-            folder_id = payload.get('folder_id')
-            library_folder = self.get_library_folder(trans, folder_id, check_accessible=True)
-            self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
-            create_params["parent"] = library_folder
-        else:
-            trans.status = 501
-            return
-        dataset_collection_instance = self.__service(trans).create(trans=trans, **create_params)
-        return dictify_dataset_collection_instance(dataset_collection_instance,
-                                                   security=trans.security, parent=create_params["parent"])
+@router.cbv
+class FastAPIDatasetCollections:
+    service: DatasetCollectionsService = depends(DatasetCollectionsService)
 
-    @expose_api
-    def show(self, trans, instance_type, id, **kwds):
-        dataset_collection_instance = self.__service(trans).get_dataset_collection_instance(
-            trans,
-            id=id,
-            instance_type=instance_type,
-        )
-        if instance_type == 'history':
-            parent = dataset_collection_instance.history
-        elif instance_type == 'library':
-            parent = dataset_collection_instance.folder
-        else:
-            trans.status = 501
-            return
-        return dictify_dataset_collection_instance(
-            dataset_collection_instance,
-            security=trans.security,
-            parent=parent,
-            view='element'
-        )
+    @router.post(
+        "/api/dataset_collections",
+        summary="Create a new dataset collection instance.",
+    )
+    def create(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: CreateNewCollectionPayload = Body(...),
+    ) -> HDCADetailed:
+        return self.service.create(trans, payload)
 
-    def __service(self, trans):
-        service = trans.app.dataset_collections_service
-        return service
+    @router.post(
+        "/api/dataset_collections/{id}/copy",
+        summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def copy(
+        self,
+        id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        payload: UpdateCollectionAttributePayload = Body(...),
+    ):
+        self.service.copy(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/dataset_collections/{id}/attributes",
+        summary="Returns `dbkey`/`extension` attributes for all the collection elements.",
+    )
+    def attributes(
+        self,
+        id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+    ) -> DatasetCollectionAttributesResult:
+        return self.service.attributes(trans, id, instance_type)
+
+    @router.get(
+        "/api/dataset_collections/{id}/suitable_converters",
+        summary="Returns a list of applicable converters for all datatypes in the given collection.",
+    )
+    def suitable_converters(
+        self,
+        id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+    ) -> SuitableConverters:
+        return self.service.suitable_converters(trans, id, instance_type)
+
+    @router.get(
+        "/api/dataset_collections/{id}",
+        summary="Returns detailed information about the given collection.",
+    )
+    def show(
+        self,
+        id: HistoryHDCAIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+        view: str = ViewTypeQueryParam,
+    ) -> AnyHDCA:
+        return self.service.show(trans, id, instance_type, view=view)
+
+    @router.get(
+        "/api/dataset_collections/{hdca_id}/contents/{parent_id}",
+        name="contents_dataset_collection",
+        summary="Returns direct child contents of indicated dataset collection parent ID.",
+    )
+    def contents(
+        self,
+        hdca_id: HistoryHDCAIDPathParam,
+        parent_id: Annotated[
+            DecodedDatabaseIdField,
+            Path(
+                ...,
+                description="Parent collection ID describing what collection the contents belongs to.",
+            ),
+        ],
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
+        limit: Optional[int] = Query(
+            default=None,
+            description="The maximum number of content elements to return.",
+        ),
+        offset: Optional[int] = Query(
+            default=None,
+            description="The number of content elements that will be skipped before returning.",
+        ),
+    ) -> DatasetCollectionContentElements:
+        return self.service.contents(trans, hdca_id, parent_id, instance_type, limit, offset)
+
+    @router.get("/api/dataset_collection_element/{dce_id}")
+    def content(
+        self,
+        dce_id: DatasetCollectionElementIdPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> DCESummary:
+        return self.service.dce_content(trans, dce_id)

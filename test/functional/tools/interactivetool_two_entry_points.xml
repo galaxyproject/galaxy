@@ -13,6 +13,7 @@
         </entry_point>
     </entry_points>
     <command detect_errors="exit_code"><![CDATA[
+        echo "hello from IT" > '$test_output' &&
         cd /;
         python -m SimpleHTTPServer 7000 &
         python -m SimpleHTTPServer 7001
@@ -21,6 +22,7 @@
     <inputs>
     </inputs>
     <outputs>
+        <data name="test_output" format="txt"/>
     </outputs>
     <tests>
     </tests>

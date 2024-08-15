@@ -1,8 +1,7 @@
-galaxy.webapps.tool\_shed.security package
-==========================================
+tool\_shed.webapp.security package
+==================================
 
-.. automodule:: galaxy.webapps.tool_shed.security
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
+.. automodule:: tool_shed.webapp.security
+   :members:
+   :undoc-members:
+   :show-inheritance:

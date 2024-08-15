@@ -6,19 +6,28 @@ This documentation is in the midst of being ported and unified based on resource
 .. toctree::
    :maxdepth: 2
 
+   python
+   framework_dependencies
    config
    config_logging
    production
-   scaling
+   data
+   security
    nginx
    apache
+   scaling
    cluster
    jobs
-   tool_panel
+   job_metrics
    authentication
+   tool_panel
+   data_tables
+   mq
    dependency_resolvers
+   container_resolvers
    conda_faq
-   framework_dependencies
-   options
+   db_migration
    reports
    useful_scripts
+   options
+   migrating_to_gunicorn

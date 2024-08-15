@@ -3,15 +3,15 @@ from functools import partial
 import yaml
 
 from galaxy import model
-from galaxy.model import mapping
-from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import bunch
+from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model.base import transaction
+from galaxy.workflow.modules import module_factory
 
 
-class MockTrans(object):
-
+class MockTrans:
     def __init__(self):
-        self.app = TestApp()
+        self.app = MockApp()
         self.sa_session = self.app.model.context
         self._user = None
 
@@ -21,37 +21,25 @@ class MockTrans(object):
         workflow.stored_workflow = stored_workflow
         stored_workflow.user = self.user
         self.sa_session.add(stored_workflow)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
         return stored_workflow
 
     @property
     def user(self):
         if self._user is None:
-            self._user = model.User(
-                email="testworkflows@bx.psu.edu",
-                password="password"
-            )
+            self._user = model.User(email="testworkflows@bx.psu.edu", password="password")
         return self._user
 
 
-class TestApp(object):
-
+class MockApp(galaxy_mock.MockApp):
     def __init__(self):
-        self.config = bunch.Bunch(
-            tool_secret="awesome_secret",
-        )
-        self.model = mapping.init(
-            "/tmp",
-            "sqlite:///:memory:",
-            create_tables=True
-        )
-        self.toolbox = TestToolbox()
-        self.datatypes_registry = TestDatatypesRegistry()
-        self.security = IdEncodingHelper(id_secret="testing")
+        super().__init__()
+        self._toolbox = MockToolbox()
+        self.workflow_manager = WorkflowsManager(self)
 
 
-class TestDatatypesRegistry(object):
-
+class MockDatatypesRegistry:
     def __init__(self):
         pass
 
@@ -63,8 +51,7 @@ class TestDatatypesRegistry(object):
         return {"fasta": object(), "fastqsanger": object(), "txt": object()}
 
 
-class TestToolbox(object):
-
+class MockToolbox:
     def __init__(self):
         self.tools = {}
 
@@ -72,14 +59,12 @@ class TestToolbox(object):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
 
-    def get_tool_id(self, tool_id):
-        tool = self.get_tool(tool_id)
-        return tool and tool.id
-
 
 def yaml_to_model(has_dict, id_offset=100):
     if isinstance(has_dict, str):
         has_dict = yaml.safe_load(has_dict)
+
+    trans = MockTrans()
 
     workflow = model.Workflow()
     workflow.steps = []
@@ -127,10 +112,13 @@ def yaml_to_model(has_dict, id_offset=100):
                 value = inputs
             if key == "workflow_outputs":
                 value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
-            if key == 'collection_type':
-                key = 'tool_inputs'
-                value = {'collection_type': value}
+            if key == "collection_type":
+                key = "tool_inputs"
+                value = {"collection_type": value}
             setattr(workflow_step, key, value)
+        if workflow_step.type != "tool":
+            module = module_factory.from_workflow_step(trans, workflow_step)
+            module.save_to_step(workflow_step)
         workflow.steps.append(workflow_step)
 
     return workflow

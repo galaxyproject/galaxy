@@ -1,0 +1,23 @@
+preferences:
+    vaulttestsection:
+        description: A dummy extra prefs section
+        inputs:
+            - name: client_id
+              label: Client ID
+              type: text
+              required: True
+            - name: client_secret
+              label: Client Secret
+              type: password
+              store: vault
+              required: True
+            - name: access_token
+              label: Access token
+              type: password
+              store: vault
+              required: True
+            - name: refresh_token
+              label: Refresh Token
+              type: secret
+              store: vault
+              required: True

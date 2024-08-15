@@ -23,12 +23,9 @@ assert sys.version_info[:2] >= (2, 6)
 
 def main():
     parser = optparse.OptionParser(usage="%prog [options] ")
-    parser.add_option("-s", "--strand", action="store_true", dest="strand",
-                      help="Print strand after interval")
-    parser.add_option("-i", "--input", dest="input", default=None,
-                      help="Input file")
-    parser.add_option("-o", "--output", dest="output", default=None,
-                      help="Output file")
+    parser.add_option("-s", "--strand", action="store_true", dest="strand", help="Print strand after interval")
+    parser.add_option("-i", "--input", dest="input", default=None, help="Input file")
+    parser.add_option("-o", "--output", dest="output", default=None, help="Output file")
     options, args = parser.parse_args()
 
     try:
@@ -50,7 +47,7 @@ def main():
                 continue
 
             # Parse fields from gene tabls
-            fields = line.split('\t')
+            fields = line.split("\t")
             chrom = fields[0]
             tx_start = int(fields[1])
             int(fields[2])
@@ -59,8 +56,8 @@ def main():
             int(fields[6])
             int(fields[7])
 
-            exon_starts = [int(_) + tx_start for _ in fields[11].rstrip(',\n').split(',')]
-            exon_ends = [int(_) for _ in fields[10].rstrip(',\n').split(',')]
+            exon_starts = [int(_) + tx_start for _ in fields[11].rstrip(",\n").split(",")]
+            exon_ends = [int(_) for _ in fields[10].rstrip(",\n").split(",")]
             exon_ends = [x + y for x, y in zip(exon_starts, exon_ends)]
 
             i = 0
@@ -78,7 +75,7 @@ def main():
 
 def print_tab_sep(out_file, *args):
     """Print items in `l` to stdout separated by tabs"""
-    print('\t'.join(str(f) for f in args), file=out_file)
+    print("\t".join(str(f) for f in args), file=out_file)
 
 
 if __name__ == "__main__":

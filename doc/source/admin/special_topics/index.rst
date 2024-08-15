@@ -6,12 +6,13 @@ Special Topics
    :maxdepth: 2
 
    ftp
-   interactive_environments
+   interactivetools
    mulled_containers
    grt
+   gtn
    job_metrics
-   chat
    webhooks
+   vault
    performance_tracking
    bug_reports
    gdpr_compliance

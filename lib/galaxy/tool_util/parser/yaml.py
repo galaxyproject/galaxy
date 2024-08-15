@@ -1,13 +1,31 @@
-from collections import OrderedDict
+import json
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.parser.util import (
+    DEFAULT_DECOMPRESS,
+    DEFAULT_DELTA,
+    DEFAULT_DELTA_FRAC,
+    DEFAULT_SORT,
+)
 from .interface import (
+    AssertionDict,
+    AssertionList,
     InputSource,
     PageSource,
     PagesSource,
     ToolSource,
+    ToolSourceTest,
+    ToolSourceTests,
+    XrefDict,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
@@ -20,45 +38,53 @@ from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
+    language = "yaml"
 
-    def __init__(self, root_dict, source_path=None):
+    def __init__(self, root_dict: Dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
-        self._macro_paths = []
+        self._macro_paths: List[str] = []
+
+    @property
+    def source_path(self):
+        return self._source_path
+
+    def parse_tool_type(self):
+        return self.root_dict.get("tool_type")
 
     def parse_id(self):
         return self.root_dict.get("id")
 
-    def parse_version(self):
-        return self.root_dict.get("version")
+    def parse_version(self) -> Optional[str]:
+        version_raw = self.root_dict.get("version")
+        return str(version_raw) if version_raw is not None else None
 
-    def parse_name(self):
-        return self.root_dict.get("name")
+    def parse_name(self) -> str:
+        rval = self.root_dict.get("name") or self.parse_id()
+        assert rval
+        return str(rval)
 
-    def parse_description(self):
+    def parse_description(self) -> str:
         return self.root_dict.get("description", "")
 
-    def parse_edam_operations(self):
+    def parse_edam_operations(self) -> List[str]:
         return self.root_dict.get("edam_operations", [])
 
-    def parse_edam_topics(self):
+    def parse_edam_topics(self) -> List[str]:
         return self.root_dict.get("edam_topics", [])
 
-    def parse_xrefs(self):
+    def parse_xrefs(self) -> List[XrefDict]:
         xrefs = self.root_dict.get("xrefs", [])
-        return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
-
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
+        return [XrefDict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
 
     def parse_display_interface(self, default):
-        return self.root_dict.get('display_interface', default)
+        return self.root_dict.get("display_interface", default)
 
     def parse_require_login(self, default):
-        return self.root_dict.get('require_login', default)
+        return self.root_dict.get("require_login", default)
 
     def parse_command(self):
         return self.root_dict.get("command")
@@ -79,9 +105,14 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_dict(self.root_dict)
+        mixed_requirements = self.root_dict.get("requirements", [])
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            containers=self.root_dict.get("containers", []),
+            resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+        )
 
-    def parse_input_pages(self):
+    def parse_input_pages(self) -> PagesSource:
         # All YAML tools have only one page (feature is deprecated)
         page_source = YamlPageSource(self.root_dict.get("inputs", {}))
         return PagesSource([page_source])
@@ -107,12 +138,12 @@ class YamlToolSource(ToolSource):
             elif output_type == "collection":
                 output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
-                message = "Unknown output_type [%s] encountered." % output_type
+                message = f"Unknown output_type [{output_type}] encountered."
                 raise Exception(message)
-        outputs = OrderedDict()
+        outputs = {}
         for output in output_defs:
             outputs[output.name] = output
-        output_collections = OrderedDict()
+        output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
 
@@ -158,31 +189,36 @@ class YamlToolSource(ToolSource):
         )
         return output_collection
 
-    def parse_tests_to_dict(self):
-        tests = []
-        rval = dict(
-            tests=tests
-        )
+    def parse_tests_to_dict(self) -> ToolSourceTests:
+        tests: List[ToolSourceTest] = []
+        rval: ToolSourceTests = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
 
         return rval
 
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         return self.root_dict.get("profile", "16.04")
+
+    def parse_license(self) -> Optional[str]:
+        return self.root_dict.get("license")
 
     def parse_interactivetool(self):
         return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
-        python_template_version = self.root_dict.get("python_template_version", None)
+        python_template_version = self.root_dict.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
 
-def _parse_test(i, test_dict):
+
+def _parse_test(i, test_dict) -> ToolSourceTest:
     inputs = test_dict["inputs"]
     if is_dict(inputs):
         new_inputs = []
@@ -201,32 +237,28 @@ def _parse_test(i, test_dict):
             else:
                 file = value
                 attributes = {}
-            new_outputs.append({
-                "name": key,
-                "value": file,
-                "attributes": attributes
-            })
+            new_outputs.append({"name": key, "value": file, "attributes": attributes})
     else:
         for output in outputs:
             name = output["name"]
             value = output.get("file", None)
             attributes = output
-            new_outputs.append((name, value, attributes))
+            new_outputs.append({"name": name, "value": value, "attributes": attributes})
 
     for output in new_outputs:
         attributes = output["attributes"]
         defaults = {
-            'compare': 'diff',
-            'lines_diff': 0,
-            'delta': 1000,
-            'sort': False,
+            "compare": "diff",
+            "lines_diff": 0,
+            "delta": DEFAULT_DELTA,
+            "delta_frac": DEFAULT_DELTA_FRAC,
+            "sort": DEFAULT_SORT,
+            "decompress": DEFAULT_DECOMPRESS,
         }
         # TODO
         attributes["extra_files"] = []
         # TODO
         attributes["metadata"] = {}
-        # TODO
-        assert_list = []
         assert_list = __to_test_assert_list(attributes.get("asserts", []))
         attributes["assert_list"] = assert_list
         _ensure_has(attributes, defaults)
@@ -238,11 +270,12 @@ def _parse_test(i, test_dict):
     test_dict["stdout"] = __to_test_assert_list(test_dict.get("stdout", []))
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
-    test_dict["expect_failure"] = test_dict.get("expect_exit_code", False)
+    test_dict["expect_failure"] = test_dict.get("expect_failure", False)
+    test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     return test_dict
 
 
-def __to_test_assert_list(assertions):
+def to_test_assert_list(assertions) -> AssertionList:
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()
@@ -252,15 +285,22 @@ def __to_test_assert_list(assertions):
     if is_dict(assertions):
         assertions = map(expand_dict_form, assertions.items())
 
-    assert_list = []
+    assert_list: List[AssertionDict] = []
     for assertion in assertions:
         # TODO: not handling nested assertions correctly,
         # not sure these are used though.
-        children = []
-        if "children" in assertion:
-            children = assertion["children"]
-            del assertion["children"]
-        assert_dict = dict(
+        if "that" not in assertion:
+            new_assertion = {}
+            for assertion_key, assertion_value in assertion.items():
+                new_assertion["that"] = assertion_key
+                new_assertion.update(assertion_value)
+            assertion = new_assertion
+        children = assertion.pop("asserts", assertion.pop("children", []))
+        # if there are no nested assertions then children should be []
+        # but to_test_assert_list would return None
+        if children:
+            children = to_test_assert_list(children)
+        assert_dict: AssertionDict = dict(
             tag=assertion["that"],
             attributes=assertion,
             children=children,
@@ -270,17 +310,20 @@ def __to_test_assert_list(assertions):
     return assert_list or None  # XML variant is None if no assertions made
 
 
-class YamlPageSource(PageSource):
+# Planemo depends on this and was never updated unfortunately.
+# https://github.com/galaxyproject/planemo/blob/master/planemo/test/_check_output.py
+__to_test_assert_list = to_test_assert_list
 
+
+class YamlPageSource(PageSource):
     def __init__(self, inputs_list):
         self.inputs_list = inputs_list
 
     def parse_input_sources(self):
-        return map(YamlInputSource, self.inputs_list)
+        return list(map(YamlInputSource, self.inputs_list))
 
 
 class YamlInputSource(InputSource):
-
     def __init__(self, input_dict):
         self.input_dict = input_dict
 
@@ -327,15 +370,20 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
-    def parse_static_options(self):
-        static_options = list()
+    def parse_static_options(self) -> List[Tuple[str, str, bool]]:
+        static_options = []
         input_dict = self.input_dict
-        for index, option in enumerate(input_dict.get("options", {})):
+        for option in input_dict.get("options", {}):
             value = option.get("value")
             label = option.get("label", value)
             selected = option.get("selected", False)
             static_options.append((label, value, selected))
         return static_options
+
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        input_dict = self.input_dict
+        default_def = input_dict.get("default", None)
+        return default_def
 
 
 def _ensure_has(dict, defaults):

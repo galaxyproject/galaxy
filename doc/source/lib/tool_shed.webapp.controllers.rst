@@ -1,68 +1,66 @@
-galaxy.webapps.tool\_shed.controllers package
-=============================================
+tool\_shed.webapp.controllers package
+=====================================
 
-.. automodule:: galaxy.webapps.tool_shed.controllers
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Submodules
 ----------
 
-galaxy.webapps.tool\_shed.controllers.admin module
---------------------------------------------------
+tool\_shed.webapp.controllers.admin module
+------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.admin
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers.admin
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-galaxy.webapps.tool\_shed.controllers.groups module
----------------------------------------------------
+tool\_shed.webapp.controllers.groups module
+-------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.groups
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers.groups
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-galaxy.webapps.tool\_shed.controllers.hg module
+tool\_shed.webapp.controllers.hg module
+---------------------------------------
+
+.. automodule:: tool_shed.webapp.controllers.hg
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+tool\_shed.webapp.controllers.repository module
 -----------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.hg
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers.repository
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-galaxy.webapps.tool\_shed.controllers.repository module
+tool\_shed.webapp.controllers.repository\_review module
 -------------------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.repository
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers.repository_review
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-galaxy.webapps.tool\_shed.controllers.repository\_review module
----------------------------------------------------------------
+tool\_shed.webapp.controllers.upload module
+-------------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.repository_review
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. automodule:: tool_shed.webapp.controllers.upload
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-galaxy.webapps.tool\_shed.controllers.upload module
----------------------------------------------------
+tool\_shed.webapp.controllers.user module
+-----------------------------------------
 
-.. automodule:: galaxy.webapps.tool_shed.controllers.upload
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.webapps.tool\_shed.controllers.user module
--------------------------------------------------
-
-.. automodule:: galaxy.webapps.tool_shed.controllers.user
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
+.. automodule:: tool_shed.webapp.controllers.user
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,152 @@
+<!-- test if profile version of inputs json generation works, i.e.
+     - multiple selects get comma separated string (lists >= 20.05)
+     - empty optional selects get "None" ([] >= 20.05) -->
+<tool id="inputs_as_json_profile" name="inputs_as_json_profile" profile="20.05" version="1.0.0">
+    <command detect_errors="exit_code"><![CDATA[
+        cat inputs.json &&
+        python $check_inputs inputs.json $test_case
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+        <!-- Can specify with fixed path in working directory instead:
+        <inputs name="inputs" filename="input.json" />
+        -->
+        <configfile name="check_inputs"><![CDATA[
+import json
+import sys
+
+input_json_path = sys.argv[1]
+test_case = sys.argv[2]
+as_dict = json.load(open(input_json_path, "r"))
+
+def assert_equals(x, y):
+    assert x == y, "%s[%s] != %s[%s] " % (x, type(x), y, type(y))
+
+if test_case == "1":
+    assert_equals(as_dict["test_case"], 1)
+    assert_equals(as_dict["text_test"], "foo")
+    assert_equals(as_dict["booltest"], True)
+    assert_equals(as_dict["booltest2"], True)
+    assert_equals(as_dict["inttest"], 12456)
+    assert_equals(as_dict["floattest"], 6.789)
+    assert_equals(as_dict["radio_select"], "a_radio")
+    assert_equals(as_dict["optional_select"], None)
+    assert_equals(as_dict["optional_multiple_select"], [])
+    assert_equals(as_dict["repeat"][0]["r"], "000000")
+    assert_equals(as_dict["repeat"][1]["r"], "FFFFFF")
+    assert_equals(as_dict["cond"]["more_text"], "fdefault")
+    assert_equals(as_dict["section_example"]["section_text"], "section_default")
+    assert "data_input" not in as_dict
+elif test_case == "2":
+    assert_equals(as_dict["test_case"], 2)
+    assert_equals(as_dict["text_test"], "bar")
+    assert_equals(as_dict["booltest"], False)
+    assert_equals(as_dict["booltest2"], False)
+    assert_equals(as_dict["inttest"], None)
+    assert_equals(as_dict["floattest"], 1.0)
+    assert_equals(as_dict["radio_select"], "a_radio")
+    assert_equals(as_dict["optional_select"], "a")
+    assert_equals(as_dict["optional_multiple_select"], ['a', 'b'])
+    assert_equals(as_dict["repeat"][0]["r"], "000000")
+    assert_equals(as_dict["cond"]["cond_test"], "second")
+    assert_equals(as_dict["cond"]["more_text"], "sdefault")
+    assert_equals(as_dict["section_example"]["section_text"], "section_default")
+    assert "data_input" not in as_dict
+
+with open("output", "w") as f:
+    f.write("okay\n")
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="test_case" type="integer" value="0" />
+        <param name="text_test" type="text" />
+        <param name="booltest" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
+        <param name="booltest2" truevalue="booltrue" falsevalue="boolfalse" checked="false" type="boolean" />
+        <param name="inttest" type="integer" optional="true" />
+        <param name="floattest" value="1.0" type="float" />
+        <param name="radio_select" type="select" display="radio">
+            <option value="a_radio" selected="true">A Radio</option>
+            <option value="b_radio">B Radio</option>
+            <option value="c_radio">C Radio</option>
+        </param>
+        <param name="data_input" type="data" optional="true" />
+        <param name="optional_select" type="select" optional="true">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+        </param>
+        <param name="optional_multiple_select" type="select" optional="true" multiple="true">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+        </param>
+        <repeat name="repeat" title="Repeat" min="1">
+            <param name="r" type="color" />
+        </repeat>
+        <conditional name="cond">
+            <param name="cond_test" type="select">
+                <option value="first" selected="true">First</option>
+                <option value="second">Second</option>
+            </param>
+            <when value="first">
+                <param name="more_text" type="text" value="fdefault" />
+            </when>
+            <when value="second">
+                <param name="more_text" type="text" value="sdefault" />
+            </when> 
+        </conditional>
+        <section name="section_example" title="Section Example">
+            <param name="section_text" type="text" value="section_default" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="out_file1" from_work_dir="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="test_case" value="1" />
+            <param name="text_test" value="foo" />
+            <param name="booltest" value="true" />
+            <param name="booltest2" value="booltrue" />
+            <param name="inttest" value="12456" />
+            <param name="floattest" value="6.789" />
+            <repeat name="repeat">
+                <param name="r" value="000000"/>
+            </repeat>
+            <repeat name="repeat">
+                <param name="r" value="FFFFFF"/>
+            </repeat>
+            <conditional name="cond">
+                <param name="cond_test" value="first" />
+            </conditional>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="okay" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="test_case" value="2" />
+            <param name="text_test" value="bar" />
+            <param name="booltest" value="false" />
+            <param name="booltest2" value="boolfalse" />
+            <param name="data_input" value="simple_line.txt" />
+            <param name="optional_select" value="a"/>
+            <param name="optional_multiple_select" value="a,b"/>
+            <!-- Testing null integers -->
+            <!-- <param name="inttest" value="12456" /> -->
+            <param name="r" value="000000" />
+            <conditional name="cond">
+                <param name="cond_test" value="second" />
+            </conditional>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="okay" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+        Test tool demonstrating the special inputs config file.
+    </help>
+</tool>

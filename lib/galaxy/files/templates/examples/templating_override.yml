@@ -1,0 +1,14 @@
+- id: project_disk
+  version: 0
+  name: Project Disk
+  description: |
+    Disk in our institutional ``/data`` directory for you user's project.""
+  configuration:
+    type: posix
+    root: '/data/projects/@= user.username | ensure_path_component =@/@= variables.project_name | ensure_path_component =@'
+    template_start: '@='
+    template_end: '=@'
+  variables:
+    project_name:
+      type: path_component
+      help: Project name used in path.

@@ -7,9 +7,14 @@
     TODO: Hack to get biomart to work - the 'add_to_URL' param can be eliminated when the Biomart team encodes URL prior to sending, meanwhile
     everything including and beyond the first '&' is truncated from URL.  They said they'll let us know when this is fixed at their end.
 -->
-<tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1">
+<tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1" profile="20.09">
     <description> Central server</description>
-    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
+    <command><![CDATA[
+python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
+    ]]></command>
     <inputs action="http://www.gramene.org/biomart/martview" check_values="false" method="get" target="_top">
         <display>go to GrameneMart Central $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner/biomart" />
@@ -24,7 +29,7 @@
         <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular">
             <value_translation>
                 <value galaxy_value="tabular" remote_value="TSV" />
-            </value_translation> 
+            </value_translation>
         </request_param>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />

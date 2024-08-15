@@ -10,7 +10,7 @@ parse_common_args() {
     while :
     do
         case "$1" in
-            --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip|--skip-client-build)
+            --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--skip-client-build)
                 common_startup_args="$common_startup_args $1"
                 shift
                 ;;
@@ -25,39 +25,40 @@ parse_common_args() {
                 ;;
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
+                gravity_args="stop"
                 paster_args="$paster_args --stop-daemon"
                 add_pid_arg=1
-                uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
                 stop_daemon_arg_set=1
                 shift
                 ;;
             --restart|restart)
+                gravity_args="restart"
                 paster_args="$paster_args restart"
                 add_pid_arg=1
                 add_log_arg=1
-                uwsgi_args="$uwsgi_args --reload \"$PID_FILE\""
                 restart_arg_set=1
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
             --daemon|start)
+                gravity_args="start"
                 paster_args="$paster_args --daemon"
-                gunicorn_args="$gunicorn_args --daemon"
+                gunicorn_args="$gunicorn_args --daemon --capture-output"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
-                uwsgi_args="--master --daemonize2 \"$LOG_FILE\" --pidfile2 \"$PID_FILE\" $uwsgi_args"
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
             --status|status)
+                gravity_args="status"
                 paster_args="$paster_args $1"
                 add_pid_arg=1
                 shift
                 ;;
-            --wait)
-                wait_arg_set=1
+            --no-replace-pip|--replace-pip)
+                # Deprecated options
                 shift
                 ;;
             "")
@@ -65,7 +66,6 @@ parse_common_args() {
                 ;;
             *)
                 paster_args="$paster_args $1"
-                uwsgi_args="$uwsgi_args $1"
                 shift
                 ;;
         esac
@@ -88,9 +88,19 @@ conda_activate() {
         echo "         starting Galaxy."
         PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
         CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
-        CONDA_PREFIX="$(get_conda_root_path)"
+        CONDA_PREFIX="$(get_conda_active_prefix)"
     else
-        source activate "$GALAXY_CONDA_ENV"
+        source "$(get_conda_root_prefix)"/bin/activate "$GALAXY_CONDA_ENV"
+    fi
+}
+
+find_python_command() {
+    if [ -z "$GALAXY_PYTHON" ]; then
+        if command -v python3 >/dev/null; then
+            GALAXY_PYTHON=python3
+        else
+            GALAXY_PYTHON=python
+        fi
     fi
 }
 
@@ -99,16 +109,12 @@ setup_python() {
     # should run this instance in.
     : ${GALAXY_VIRTUAL_ENV:=.venv}
     # $GALAXY_CONDA_ENV isn't set here to avoid running the version check if not using Conda
-    if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ]; then
-        [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-        echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
-        . "$GALAXY_VIRTUAL_ENV/bin/activate"
-    elif [ -z "$skip_venv" ]; then
+
+    # if conda and the galaxy conda environment (_galaxy_) are available then init it
+    if [ -z "$skip_venv" ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ] && \
                 check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_"}; then
-            # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
-            REPLACE_PIP=0
             [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 conda_activate
@@ -120,11 +126,18 @@ setup_python() {
         fi
     fi
 
+    if [ -d "$GALAXY_VIRTUAL_ENV" ] && [ -z "$skip_venv" ]; then
+        [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
+        echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
+        . "$GALAXY_VIRTUAL_ENV/bin/activate"
+    fi
+
     # If you are using --skip-venv we assume you know what you are doing but warn
     # in case you don't.
     [ -n "$PYTHONPATH" ] && echo 'WARNING: $PYTHONPATH is set, this can cause problems importing Galaxy dependencies'
 
-    python ./scripts/check_python.py || exit 1
+    find_python_command
+    "$GALAXY_PYTHON" ./scripts/check_python.py || exit 1
 }
 
 set_galaxy_config_file_var() {
@@ -138,35 +151,31 @@ find_server() {
     server_config=$1
     server_app=$2
     arg_getter_args=
-    default_webserver="paste"
-    case "$server_config" in
-        *.y*ml|''|none)
-            default_webserver="uwsgi"  # paste incapable of this
+    default_webserver="gunicorn"
+    default_gunicorn_worker="uvicorn.workers.UvicornWorker"
+
+    case "$server_app" in
+        galaxy)
+            default_webserver="gravity"
+            gunicorn_worker="galaxy.webapps.galaxy.workers.Worker"
             ;;
+        reports)
+            # TODO: is this really the only way to configure the port?
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9001 --config lib/galaxy/web_stack/gunicorn_config.py"}
+            ;;
+        tool_shed)
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9009 --config lib/galaxy/web_stack/gunicorn_config.py"}
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
-    if [ "$APP_WEBSERVER" = "uwsgi" ]; then
-        # Look for uwsgi
-        if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
-            UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
-        elif command -v uwsgi >/dev/null 2>&1; then
-            UWSGI=uwsgi
+    if [ "$APP_WEBSERVER" = "gunicorn" ]; then
+        run_server="gunicorn"
+        export GUNICORN_CMD_ARGS
+        if [ "$server_app" = "tool_shed" ]; then
+            server_args="'${server_app}.webapp.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         else
-            echo 'ERROR: Could not find uwsgi executable'
-            exit 1
+            server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         fi
-        [ "$server_config" != "none" ] && arg_getter_args="-c \"$server_config\""
-        [ -n "$server_app" ] && arg_getter_args="$arg_getter_args --app $server_app"
-        run_server="$UWSGI"
-        server_args=
-        if [ -z "$stop_daemon_arg_set" -a -z "$restart_arg_set" ]; then
-            server_args="$(eval python ./scripts/get_uwsgi_args.py $arg_getter_args)"
-        fi
-        server_args="$server_args $uwsgi_args"
-    elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
-        export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\" $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
@@ -174,13 +183,17 @@ find_server() {
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
     else
-        run_server="python"
-        server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
-        if [ "$add_pid_arg" -eq 1 ]; then
-            server_args="$server_args --pid-file \"$PID_FILE\""
-        fi
         if [ "$add_log_arg" -eq 1 ]; then
-            server_args="$server_args --log-file \"$LOG_FILE\""
+            GALAXY_DAEMON_LOG="${GALAXY_LOG:-galaxy.log}"
+            export GALAXY_DAEMON_LOG
+        fi
+        if [ -n "$gravity_args" ]; then
+            run_server="galaxyctl"
+            server_args="$gravity_args"
+        else
+            galaxyctl update --force
+            run_server="galaxy"
+            server_args=
         fi
     fi
 }
@@ -193,13 +206,13 @@ find_server() {
 # to the `conda` script in the base environment. Thus in Conda 4.4, it may not be possible to locate `conda` even if you
 # are using Conda.
 set_conda_exe() {
-    [ -z "$_CONDA_EXE_SET" ] || return 0
+    [ -n "$CONDA_EXE" ] || [ -n "$_CONDA_EXE_SET" ] && return 0
     if python -V 2>&1 | grep -q -e 'Anaconda' -e 'Continuum Analytics' || \
-            python -c 'import sys; print(sys.version.replace("\n", " "))' | grep -q -e 'packaged by conda-forge' ; then
-        : ${CONDA_EXE:=$(command -v conda)}
+            python -c 'import sys; print(sys.version.replace("\n", " "))' 2>/dev/null | grep -q -e 'packaged by conda-forge' ; then
+        CONDA_EXE=$(command -v conda)
         if [ -z "$CONDA_EXE" ]; then
             echo "WARNING: \`python\` is from conda, but the \`conda\` command cannot be found."
-            pydir="$(dirname $(command -v python))"
+            pydir="$(dirname "$(command -v python)")"
             for CONDA_EXE in $pydir/conda $pydir/../../../bin/conda; do
                 [ -x "$CONDA_EXE" ] && break || unset CONDA_EXE
             done
@@ -209,7 +222,7 @@ set_conda_exe() {
                 echo "         $ conda activate base"
             else
                 echo "Guessed conda location: $CONDA_EXE"
-                PATH="$(dirname $CONDA_EXE):$PATH"
+                PATH="$(dirname "$CONDA_EXE"):$PATH"
             fi
         else
             echo "Found conda at: $CONDA_EXE"
@@ -220,12 +233,18 @@ set_conda_exe() {
 
 set_conda_info() {
     # cache conda info to avoid the cost of running it multiple times
-    if [ -z "$__CONDA_INFO" -o "$1" = "reset" ]; then
+    if [ -z "$__CONDA_INFO" ]; then
         __CONDA_INFO="$(${CONDA_EXE:-conda} info --json)"
     fi
 }
 
-get_conda_root_path() {
+get_conda_active_prefix() {
+    set_conda_info
+    printf "%s" "$__CONDA_INFO" \
+        | python -c "import json, sys; print(json.load(sys.stdin)['active_prefix'])"
+}
+
+get_conda_root_prefix() {
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
         | python -c "import json, sys; print(json.load(sys.stdin)['root_prefix'])"

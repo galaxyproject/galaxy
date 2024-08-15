@@ -1,0 +1,5 @@
+config_version: 0.4
+genome_folder: /tmp/refgenie
+genome_servers:
+ - http://refgenomes.databio.org
+genomes: null

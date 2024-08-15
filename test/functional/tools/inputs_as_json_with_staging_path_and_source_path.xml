@@ -1,0 +1,69 @@
+<tool id="inputs_as_json_with_staging_paths" name="inputs_as_json_with_staging_paths" version="1.0.0" profile="21.09">
+    <command detect_errors="exit_code">
+        python '$check_inputs' '$inputs'
+    </command>
+    <configfiles>
+        <inputs name="inputs" data_style="staging_path_and_source_path" />
+        <configfile name="check_inputs"><![CDATA[
+import json
+import sys
+
+input_json_path = sys.argv[1]
+as_dict = json.load(open(input_json_path, "r"))
+
+data_input_with_staging_details = as_dict["data_input"]
+assert data_input_with_staging_details['element_identifier'] == ["1.tabular"]
+assert data_input_with_staging_details['ext'] == "tabular"
+assert data_input_with_staging_details['staging_path'] == "1.tabular.tabular"
+assert len(data_input_with_staging_details['metadata_files']) == 0
+
+multiple_data_input_with_staging_details = as_dict["multiple_data_input"]
+assert len(multiple_data_input_with_staging_details) == 2
+assert multiple_data_input_with_staging_details[0]['element_identifier'] == ["simple_line.txt"]
+assert multiple_data_input_with_staging_details[0]['ext'] == "txt"
+assert multiple_data_input_with_staging_details[0]['staging_path'] == "simple_line.txt.txt"
+assert len(multiple_data_input_with_staging_details[0]['metadata_files']) == 0
+
+collection_input_with_staging_details = as_dict["collection_input"]
+## element identifier and ext are available since 24.x
+assert collection_input_with_staging_details[0]['element_identifier'] == ["list", "element1"]
+assert collection_input_with_staging_details[0]['ext'] == "bam"
+assert collection_input_with_staging_details[0]['staging_path'] == "list/element1.bam"
+assert collection_input_with_staging_details[0]['metadata_files'][0]['staging_path'] == "list/element1.bam.bai"
+
+with open("output", "w") as f:
+    f.write("okay\n")
+]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="data_input" type="data" optional="true" />
+        <param name="multiple_data_input" type="data" optional="true" multiple="true" />
+        <param name="collection_input" type="data_collection" collection_type="list:list" optional="true"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" from_work_dir="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="data_input" value="1.tabular" ftype="tabular"/>
+            <param name="multiple_data_input" value="simple_line.txt,simple_line_alternative.txt" ftype="txt"/>
+            <param name="collection_input">
+                <collection type="list:list">
+                    <element name="list">
+                        <collection type="list">
+                            <element name="element1" value="1.bam" ftype="bam" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_text text="okay"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+        Test tool demonstrating the special inputs config file.
+    </help>
+</tool>

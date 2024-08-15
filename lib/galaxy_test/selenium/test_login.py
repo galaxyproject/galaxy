@@ -1,10 +1,16 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
-class LoginTestCase(SeleniumTestCase):
+class TestLogin(SeleniumTestCase):
+    @selenium_test
+    def test_login_accessibility(self):
+        self.home()
+        self.components.masthead.register_or_login.wait_for_and_click()
+        login = self.components.login
+        login.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
 
     @selenium_test
     def test_logging_in(self):
@@ -18,7 +24,7 @@ class LoginTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_invalid_logins(self):
-        bad_emails = ['test2@test.org', 'test', '', "'; SELECT * FROM galaxy_user WHERE 'u' = 'u';"]
+        bad_emails = ["test2@test.org", "test", "'; SELECT * FROM galaxy_user WHERE 'u' = 'u';"]
         for bad_email in bad_emails:
             self.home()
             self.submit_login(bad_email, assert_valid=False)
@@ -26,7 +32,7 @@ class LoginTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_invalid_passwords(self):
-        bad_passwords = ['1234', '', '; SELECT * FROM galaxy_user']
+        bad_passwords = ["1234", "; SELECT * FROM galaxy_user"]
         for bad_password in bad_passwords:
             self.home()
             self.submit_login(self._get_random_email(), password=bad_password, assert_valid=False)

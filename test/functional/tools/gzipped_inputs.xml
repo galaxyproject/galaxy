@@ -1,7 +1,7 @@
-<tool id="gzipped_inputs" name="Echo Dataset">
-    <command>
-        cat $input1 > $out_file1
-    </command>
+<tool id="gzipped_inputs" name="Echo Dataset" version="1.0.0">
+    <command><![CDATA[
+cat '$input1' > '$out_file1'
+    ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>
     </inputs>

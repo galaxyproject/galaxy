@@ -1,0 +1,198 @@
+
+===========================================================
+23.0 Galaxy Release (April 2023)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+Themes!
+-------
+
+Show off your colours in Galaxy 23.0 with the ability to choose your own theme! As as a user you will be able to select between a number of built-in themes. Server administrators may choose to provide additional themes for their users. If your admin has enabled this feature, you will find it under User → Preferences, just look for the bright red "New!"
+
+.. figure:: images/23.0-themes.png
+   :alt: The top bar of Galaxy is shown across four different themes in a single image, diagonal cuts joining the images so it looks like a continuous Galaxy screenshot. The four themes shown are the progress pride flag in the masthead, the classic Galaxy dark blue, a black theme with pink highlights, and then a lighter blue theme.
+
+New Font
+--------
+
+You might have noticed Galaxy looking a wee bit different. The 0s and Os are now more distinctive, as well as a host of other characters, thanks to us switching to `Atkinson Hyperlegible <https://brailleinstitute.org/freefont>`__, a font that should be a *lot* friendlier for folks with visual impairments. In general this font is much easier to read for everyone and we're excited for it!
+
+New History Multi-view
+----------------------
+
+The old history multi-view which loaded every history and every dataset is now gone. In its place is a much faster and easier to navigate history multi-view which lets you select just the histories you want to look at, without the distraction of your other analyses! Now you can focus on the relevant data.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/EeIlGO1kfbo" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video steps through the new multi-view history, working through several different operations like switching, adding and removing histories, and moving datasets between them."></iframe>
+
+New Tool Search
+---------------
+
+Many of us over the years have struggled to find just the tool we were looking for. This latest release has a number of improvements specifically to make tool search better, and on top of that a whole new advanced tool search!
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/04HHLVcjrO0" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user using the new search interface to find collection operations tools, and then a Filter tool."></iframe>
+
+
+Power User Features
+===========================================================
+
+Are you a long time Galaxy user looking to up-skill into a real power user? Check out these new features to take your skills to the next level.
+
+Conditional Workflow Steps
+--------------------------
+
+You can now dynamically decide if steps of your workflow should be skipped. Simply select a tool or subworkflow step that you want to conditionally skip and switch the "Conditionally skip step?" toggle. A new boolean input named "when" appears. You can now connect a boolean parameter to this input, and if the value of the boolean parameter is `true` the step will run, otherwise it will be skipped. Outputs from conditional steps are marked as optional and can only be connected to optional inputs. If you want to build an "or" switch you can connect the two branches of a conditional to the "Pick parameter value" expression tool. Boolean parameters can be specified by a user or computed within your workflow. For more details check out the `Galaxy Training Network tutorial on workflow parameters <https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/workflow-parameters/tutorial.html>`__.
+
+.. figure:: images/23.0-conditional-workflow.png
+   :alt: Screenshot of a workflow with 2 conditional steps. Step 1 is a data input, Step 2 is a text parameter with 2 possible pre-specified values, bowtie2 and bwa-mem2. Step 3 and Step 4 use "Map parameter value" expression tool to generate a boolean value based on the user selection in Step 2. Step 3 is connected to the conditional `when` parameter in Step 5 (Bowtie2), Step 4 is connected to the conditional `when` parameter in Step 6. The outputs of Bowtie2 and bwa-mem2 are connected to the "Pick parameter value" tool, which selects the first non-null dataset. The output of the "Pick parameter value" tool is a normal dataset output and is connected to "Samtools view".
+
+Faster Upload
+-------------
+
+Simply drag files from your desktop into Galaxy and they'll start uploading immediately! It's faster than ever to start analysing your data.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/KjVl4g0gyS8" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user using the new search interface to find collection operations tools, and then a Filter tool."></iframe>
+
+Drag and Drop Between Histories
+-------------------------------
+
+With the new advent of the new Multi-History mentioned above, we now also can drag and drop between histories! And no longer are you restricted from dragging into the current history, instead you can drag files back and forth between all histories as well.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/8xzSzd2TOMY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user using the new search interface to find collection operations tools, and then a Filter tool."></iframe>
+
+
+Change the Datatype of a Collection
+-----------------------------------
+
+It's easier than ever to change the datatype of every dataset in a collection using the pencil icon. Previously this could be achieved through the Apply Rules tool, however now it can be done just like with individual datasets.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/SNvne6GdKzs" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="Video of a user changing the datatype for a dataset collection."></iframe>
+
+
+RO-Crate / Biocompute Workflow Invocation Export
+----------------------------
+
+Galaxy now offers two options for packaging and publishing workflow artifacts: RO-Crate and BioCompute Object. These standard-based formats provide a way to bundle research data and metadata in a structured way. To learn more about these formats, check out `RO-Crate <https://www.researchobject.org/ro-crate/>`__ and `BioCompute Objects <https://biocomputeobject.org/>`__. You can directly export these files to any writeable remote file sources that have been configured (e.g., FTP or Dropbox).
+
+
+History Export Tracking
+----------------------------
+
+A new History export user interface is now available that makes it easier to download your histories. You can export your history in a variety of formats, and either download it directly, or save it to a remote file source for more permanent storage. Plus, every time you export your history to one of these remote sources, a new tracking record is created with a button that lets you re-import that history snapshot with ease.
+
+
+Workflow Report - Collapsible Boxes
+-----------------------------------
+
+Based on user feedback of what features were missing from workflow reports, support for collapsing large boxes has been added to the Workflow Reports editor. Simply add ``collapse="Your Box Title"`` and large elements will be hidden with just a clickable box titled "Your Box Title". Great for including large graphs or tables that may be important, but not relevant to show initially.
+
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Avoid passing headers argument twice in datatypes display - take 2
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 15766`_
+* Account for charge and spin in den_fmt sniffer
+  (thanks to `@muon-spectroscopy-computational-project <https://github.com/muon-spectroscopy-computational-project>`__).
+  `Pull Request 15797`_
+* Fix den fmt test
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 15820`_
+* Do not pass dataset keyword parameter into datatype.display_data
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15695`_
+* Add "Datatypes" Page
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 14464`_
+* Add datatypes for Sybila tools
+  (thanks to `@xtrojak <https://github.com/xtrojak>`__).
+  `Pull Request 14362`_
+* Add CASTEP datatypes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 14504`_
+* Add support for the PSL data format
+  (thanks to `@gregvonkuster <https://github.com/gregvonkuster>`__).
+  `Pull Request 14813`_
+* Add ludwig report datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 14903`_
+* Display model diagram for h5mlm datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 14992`_
+* Enable Tabix download + New datatype JuicerMediumTabix in 22.05
+  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
+  `Pull Request 15024`_
+* Add wiff2 composite/tar datatypes
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 15249`_
+* Add ecology type section + hdr and bil datatypes
+  (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
+  `Pull Request 15337`_
+* add xsd datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 15344`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Update interactivetool_ml_jupyter_notebook.xml
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 15297`_
+* Fix wrong tool converter names
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15579`_
+* Fix unbound local error in sort collection tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 15583`_
+* Simplify head wrapper - same functionality, no pipe
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 14895`_
+* Update interactivetool_ml_jupyter_notebook.xml
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 14910`_
+* Add interactive tool for Mgnify Jupyter lab
+  (thanks to `@bebatut <https://github.com/bebatut>`__).
+  `Pull Request 14950`_
+* Add interactive tool for Pavian
+  (thanks to `@bebatut <https://github.com/bebatut>`__).
+  `Pull Request 15068`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+* `Alireza Heidari <https://github.com/itisAliRH>`__
+* `Bryan Raubenolt <https://github.com/thepineapplepirate>`__
+* `Cameron Hyde <https://github.com/neoformit>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `John Chilton <https://github.com/jmchilton>`__
+* `John Davis <https://github.com/jdavcs>`__
+* `Laila Los <https://github.com/ElectronicBlueberry>`__
+
+Release Notes
+===========================================================
+
+User facing release notes compiled and written by `Helena Rasche <https://github.com/hexylena>`_.
+
+Please see the :doc:`full release notes <23.0_announce>` for more details.
+
+.. include:: 23.0_prs.rst
+
+.. include:: _thanks.rst

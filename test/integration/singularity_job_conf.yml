@@ -1,0 +1,21 @@
+---
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+
+execution:
+  default: local_singularity
+  environments:
+    local_singularity:
+      runner: local
+      singularity_enabled: true
+      # Since tests run in /tmp/ , we apparently need to forbid the default mounting of /tmp
+      singularity_run_extra_arguments: '--no-mount tmp'
+      require_container: true
+    local_upload:
+      runner: local
+
+tools:
+  - id: upload1
+    environment: local_upload

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Dan Blankenberg
-from __future__ import print_function
 
 import sys
 
@@ -10,8 +9,7 @@ assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):
-    sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def __main__():
@@ -20,15 +18,21 @@ def __main__():
     try:
         chromCol = int(sys.argv[3]) - 1
     except Exception:
-        stop_err("'%s' is an invalid chrom column, correct the column settings before attempting to convert the data format." % str(sys.argv[3]))
+        stop_err(
+            f"'{str(sys.argv[3])}' is an invalid chrom column, correct the column settings before attempting to convert the data format."
+        )
     try:
         startCol = int(sys.argv[4]) - 1
     except Exception:
-        stop_err("'%s' is an invalid start column, correct the column settings before attempting to convert the data format." % str(sys.argv[4]))
+        stop_err(
+            f"'{str(sys.argv[4])}' is an invalid start column, correct the column settings before attempting to convert the data format."
+        )
     try:
         endCol = int(sys.argv[5]) - 1
     except Exception:
-        stop_err("'%s' is an invalid end column, correct the column settings before attempting to convert the data format." % str(sys.argv[5]))
+        stop_err(
+            f"'{str(sys.argv[5])}' is an invalid end column, correct the column settings before attempting to convert the data format."
+        )
     try:
         strandCol = int(sys.argv[6]) - 1
     except Exception:
@@ -40,8 +44,19 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     count = 0
-    with open(input_name, 'r') as fh, open(output_name, 'w') as out:
-        for count, region in enumerate(bx.intervals.io.NiceReaderWrapper(fh, chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):
+    with open(input_name) as fh, open(output_name, "w") as out:
+        for count, region in enumerate(
+            bx.intervals.io.NiceReaderWrapper(
+                fh,
+                chrom_col=chromCol,
+                start_col=startCol,
+                end_col=endCol,
+                strand_col=strandCol,
+                fix_strand=True,
+                return_header=False,
+                return_comments=False,
+            )
+        ):
             try:
                 if nameCol >= 0:
                     name = region.fields[nameCol]
@@ -50,7 +65,6 @@ def __main__():
             except Exception:
                 name = "region_%i" % count
             try:
-
                 out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
             except Exception:
                 skipped_lines += 1
