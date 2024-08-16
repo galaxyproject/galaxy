@@ -27,8 +27,8 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.visualization import (
     VisualizationIndexQueryPayload,
-    VisualizationSortByEnum,
     VisualizationShow,
+    VisualizationSortByEnum,
     VisualizationSummaryList,
 )
 from galaxy.webapps.galaxy.api import (
@@ -245,21 +245,27 @@ class FastAPIVisualizations:
     )
     def create(
         self,
+        import_id: Optional[VisualizationIdPathParam] = None,
+        type: str = Body(...),
+        title: str = Body(...),
+        dbkey: Optional[str] = Body(None),
+        slug: Optional[str] = Body(None),
+        annotation: Optional[str] = Body(None),
+        config: Optional[dict] = Body(None),
+        save: bool = Body(True),
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationShow:
-        payload = {}
+        payload = {
+            "import_id": import_id,
+            "type": type,
+            "title": title,
+            "dbkey": dbkey,
+            "slug": slug,
+            "annotation": annotation,
+            "config": config,
+            "save": save,
+        }
         return self.service.create(trans, payload)
-
-    @router.post(
-        "/api/visualizations?import_id={id}",
-        summary="Import a visualization.",
-    )
-    def create_import(
-        self,
-        id: VisualizationIdPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationShow:
-        return self.service.create(trans, id)
 
     @router.put(
         "/api/visualizations/{id}",
@@ -268,10 +274,16 @@ class FastAPIVisualizations:
     def update(
         self,
         id: VisualizationIdPathParam,
+        title: Optional[str] = Body(None),
+        dbkey: Optional[str] = Body(None),
+        deleted: Optional[bool] = Body(None),
+        config: Optional[dict] = Body(None),
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationShow:
-        payload = {}
+        payload = {
+            "type": type,
+            "title": title,
+            "dbkey": dbkey,
+            "config": config,
+        }
         return self.service.update(trans, id, payload)
-
-# schema and payloads needs to be configured right
-# check for the correct fields and types

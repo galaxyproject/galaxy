@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import (
+    Dict,
     List,
     Optional,
 )
@@ -101,7 +102,104 @@ class VisualizationSummaryList(RootModel):
         title="List with detailed information of Visualizations.",
     )
 
-class VisualizationShow(RootModel):
+
+class VisualizationRevision(Model):
+    model_class: str = Field(
+        "VisualizationRevision",
+        title="Model Class",
+        description="The model class name for this object.",
+    )
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the Visualization Revision.",
+    )
+    visualization_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Visualization ID",
+        description="Encoded ID of the Visualization.",
+    )
+    title: str = Field(
+        ...,
+        title="Title",
+        description="The name of the visualization revision.",
+    )
+    dbkey: Optional[str] = Field(
+        default=None,
+        title="DbKey",
+        description="The database key of the visualization.",
+    )
+    config: Dict = Field(
+        ...,
+        title="Config",
+        description="The config of the visualization revision.",
+    )
+
+
+class VisualizationPlugin(Model):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the plugin.",
+    )
+    html: str = Field(
+        ...,
+        title="HTML",
+        description="The HTML of the plugin.",
+    )
+    description: str = Field(
+        ...,
+        title="Description",
+        description="The description of the plugin.",
+    )
+    logo: str = Field(
+        ...,
+        title="Logo",
+        description="The logo of the plugin.",
+    )
+    title: Optional[str] = Field(
+        default=None,
+        title="Title",
+        description="The title of the plugin.",
+    )
+    target: str = Field(
+        ...,
+        title="Target",
+        description="The target of the plugin.",
+    )
+    embeddable: bool = Field(
+        ...,
+        title="Embeddable",
+        description="Whether the plugin is embeddable.",
+    )
+    entry_point: Dict = Field(
+        ...,
+        title="Entry Point",
+        description="The entry point of the plugin.",
+    )
+    settings: List[Dict] = Field(
+        ...,
+        title="Settings",
+        description="The settings of the plugin.",
+    )
+    groups: List[Dict] = Field(
+        ...,
+        title="Groups",
+        description="The groups of the plugin.",
+    )
+    specs: Dict = Field(
+        ...,
+        title="Specs",
+        description="The specs of the plugin.",
+    )
+    href: str = Field(
+        ...,
+        title="Href",
+        description="The href of the plugin.",
+    )
+
+
+class VisualizationShow(Model):
     model_class: str = Field(
         "Visualization",
         title="Model Class",
@@ -137,8 +235,7 @@ class VisualizationShow(RootModel):
         title="Slug",
         description="The slug of the visualization.",
     )
-    # should be a VisualizationRevision Model
-    latest_revision: Model = Field(
+    latest_revision: VisualizationRevision = Field(
         ...,
         title="Latest Revision",
         description="The latest revision of this Visualization.",
@@ -173,8 +270,7 @@ class VisualizationShow(RootModel):
         title="Annotation",
         description="The annotation of this Visualization.",
     )
-    # should be a Plugin Model
-    plugin: Model = Field(
+    plugin: VisualizationPlugin = Field(
         ...,
         title="Plugin",
         description="The plugin of this Visualization.",

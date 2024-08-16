@@ -16,7 +16,10 @@ from galaxy.managers.visualizations import (
     VisualizationManager,
     VisualizationSerializer,
 )
-from galaxy.model import Visualization, VisualizationRevision
+from galaxy.model import (
+    Visualization,
+    VisualizationRevision,
+)
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     add_item_annotation,
@@ -128,84 +131,45 @@ class VisualizationsService(ServiceBase):
         :rtype:     dictionary
         :returns:   dictionary containing Visualization details
         """
-        payload = self._validate_and_parse_payload(payload)
-        # must have a type (I've taken this to be the visualization name)
-        if "type" not in payload:
-            raise exceptions.RequestParameterMissingException("key/value 'type' is required")
-        type = payload.pop("type", False)
+        rval = None
 
-        payload["save"] = True
-        title = payload.get("title", "Untitled Visualization")
-        slug = payload.get("slug", None)
-        dbkey = payload.get("dbkey", None)
-        annotation = payload.get("annotation", None)
-        config = payload.get("config", {})
-        save = payload.get("save", True)
+        if "import_id" in payload:
+            import_id = payload["import_id"]
+            visualization = self._import_visualization(trans, import_id, user=trans.user)
+        else:
+            payload = self._validate_and_parse_payload(payload)
+            # must have a type (I've taken this to be the visualization name)
+            if "type" not in payload:
+                raise exceptions.RequestParameterMissingException("key/value 'type' is required")
+            type = payload.pop("type", False)
+            title = payload.get("title", "Untitled Visualization")
+            slug = payload.get("slug", None)
+            dbkey = payload.get("dbkey", None)
+            annotation = payload.get("annotation", None)
+            config = payload.get("config", {})
+            save = payload.get("save", True)
 
-        # generate defaults - this will err if given a weird key?
-        visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
-        # TODO: handle this error structure better either in _create or here
-        if isinstance(visualization, dict):
-            err_dict = visualization
-            val_err = str(err_dict["title_err"] or err_dict["slug_err"])
-            raise exceptions.RequestParameterMissingException(val_err)
+            # generate defaults - this will err if given a weird key?
+            visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
+            # TODO: handle this error structure better either in _create or here
+            if isinstance(visualization, dict):
+                err_dict = visualization
+                val_err = str(err_dict["title_err"] or err_dict["slug_err"])
+                raise exceptions.RequestParameterMissingException(val_err)
 
-        # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, config=config, dbkey=dbkey
-        )
-        visualization.latest_revision = revision
+            # Create and save first visualization revision
+            revision = trans.model.VisualizationRevision(
+                visualization=visualization, title=title, config=config, dbkey=dbkey
+            )
+            visualization.latest_revision = revision
 
-        if save:
-            session = trans.sa_session
-            session.add(revision)
-            with transaction(session):
-                session.commit()
+            if save:
+                session = trans.sa_session
+                session.add(revision)
+                with transaction(session):
+                    session.commit()
 
         rval = {"id": trans.security.encode_id(visualization.id)}
-
-        return rval
-
-    def import_visualization(
-        self,
-        trans: ProvidesAppContext,
-        visualization_id: DecodedDatabaseIdField,
-    ) -> VisualizationShow:
-        """
-        Returns a dictionary of the created visualization
-
-        :rtype:     dictionary
-        :returns:   dictionary containing Visualization details
-
-        Copy the visualization with the given id and associate the copy
-        with the given user (defaults to trans.user).
-
-        Raises `ItemAccessibilityException` if `user` is not passed and
-        the current user is anonymous, and if the visualization is not `importable`.
-        Raises `ItemDeletionException` if the visualization has been deleted.
-        """
-        # default to trans.user, error if anon
-        if not trans.user:
-            raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
-        user = trans.user
-
-        # check accessibility
-        visualization = self._get_visualization(trans, visualization_id, check_ownership=False)
-        if not visualization.importable:
-            raise exceptions.ItemAccessibilityException(
-                "The owner of this visualization has disabled imports via this link."
-            )
-        if visualization.deleted:
-            raise exceptions.ItemDeletionException("You can't import this visualization because it has been deleted.")
-
-        # copy vis and alter title
-        # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
-        trans.sa_session.add(imported_visualization)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-
-        rval = {"id": trans.security.encode_id(imported_visualization.id)}
 
         return rval
 
@@ -449,3 +413,35 @@ class VisualizationsService(ServiceBase):
                 session.commit()
 
         return visualization
+
+    def _import_visualization(self, trans, id, user=None):
+        """
+        Copy the visualization with the given id and associate the copy
+        with the given user (defaults to trans.user).
+
+        Raises `ItemAccessibilityException` if `user` is not passed and
+        the current user is anonymous, and if the visualization is not `importable`.
+        Raises `ItemDeletionException` if the visualization has been deleted.
+        """
+        # default to trans.user, error if anon
+        if not user:
+            if not trans.user:
+                raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
+            user = trans.user
+
+        # check accessibility
+        visualization = self.get_visualization(trans, id, check_ownership=False)
+        if not visualization.importable:
+            raise exceptions.ItemAccessibilityException(
+                "The owner of this visualization has disabled imports via this link."
+            )
+        if visualization.deleted:
+            raise exceptions.ItemDeletionException("You can't import this visualization because it has been deleted.")
+
+        # copy vis and alter title
+        # TODO: need to handle custom db keys.
+        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
+        trans.sa_session.add(imported_visualization)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return imported_visualization
