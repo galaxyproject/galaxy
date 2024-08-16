@@ -3,7 +3,7 @@ description: 'Sets up Node.js and installs dependencies'
 inputs:
     node-version:
         description: 'The Node.js version to use'
-        required: true
+        required: false
         default: '20.16.0'
     cache:
         description: 'Whether to cache dependencies'
