@@ -281,9 +281,9 @@ class FastAPIVisualizations:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationShow:
         payload = {
-            "type": type,
             "title": title,
             "dbkey": dbkey,
+            "deleted": deleted,
             "config": config,
         }
         return self.service.update(trans, id, payload)
