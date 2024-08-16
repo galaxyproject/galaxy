@@ -1,0 +1,24 @@
+name: 'Setup Node.js'
+description: 'Sets up Node.js and installs dependencies'
+inputs:
+    node-version:
+        description: 'The Node.js version to use'
+        required: true
+        default: '20.16.0'
+    cache:
+        description: 'Whether to cache dependencies'
+        required: false
+        default: 'yarn'
+    cache-dependency-path:
+        description: 'The path to the dependency file to cache'
+        required: false
+        default: 'client/yarn.lock'
+runs:
+    using: "composite"
+    steps:
+        - name: Set up Node.js
+          uses: actions/setup-node@v4
+          with:
+              node-version: ${{ inputs.node-version }}
+              cache: ${{ inputs.cache }}
+              cache-dependency-path: ${{ inputs.cache-dependency-path }}
