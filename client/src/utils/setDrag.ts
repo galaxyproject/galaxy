@@ -1,7 +1,7 @@
 /**
  * Helper to configure datatransfer for drag & drop operations
  */
-import { type DCESummary, isCollectionItem } from "@/api";
+import { type DCESummary, isDCE } from "@/api";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 
 type NamedDCESummary = DCESummary & { name: string };
@@ -50,7 +50,7 @@ export function setItemDragstart<T>(
 }
 
 function setCollectionElementName<T extends NamedDCESummary>(obj: T) {
-    if (isCollectionItem(obj as object)) {
+    if (isDCE(obj as object)) {
         obj["name"] = obj.element_identifier;
     }
 }

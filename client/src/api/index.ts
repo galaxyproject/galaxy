@@ -232,7 +232,7 @@ export function isHistoryItem(item: object): item is HistoryItemSummary {
     return item && "history_content_type" in item;
 }
 
-export function isCollectionItem(item: object): item is DCESummary {
+export function isDCE(item: object): item is DCESummary {
     return item && "element_type" in item;
 }
 

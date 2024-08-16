@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
 import {
-    type HDAObject,
+    type DCEDataset,
     type HistoryItemSummary,
     type HistorySummaryExtended,
     isDatasetElement,
@@ -61,7 +61,7 @@ interface Props {
     isMultiViewItem?: boolean;
 }
 
-type DraggableHistoryItem = HistoryItemSummary | HDAObject;
+type DraggableHistoryItem = HistoryItemSummary | DCEDataset; // TODO: DCESummary instead of DCEDataset
 
 type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
 
@@ -236,14 +236,17 @@ function getDragData() {
     const eventStore = useEventStore();
     const dragItems = eventStore.getDragItems();
     // Filter out any non-history items
-    const historyItems = dragItems?.map((item: any) => {
-        if (isHistoryItem(item)) {
-            return item;
-        } else if (isDatasetElement(item)) {
-            return item.object;
-        }
-    }) as DraggableHistoryItem[];
-    const historyId = historyItems?.[0]?.history_id;
+    // TODO: `isDCE` instead of `isDatasetElement`
+    const historyItems = dragItems?.filter(
+        (item: any) => isHistoryItem(item) || isDatasetElement(item)
+    ) as DraggableHistoryItem[];
+
+    // TODO: handle historyId === null || historyItems.length === 0
+    const historyId = historyItems[0]
+        ? isHistoryItem(historyItems[0])
+            ? historyItems[0].history_id
+            : historyItems[0].object?.history_id
+        : null;
     return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
 }
 
@@ -397,15 +400,32 @@ async function onDrop() {
         // iterate over the data array and copy each item to the current history
         for (const item of data) {
             let dataSource: HistoryContentsArgs["source"];
-            const type = item.history_content_type as "dataset" | "dataset_collection" | undefined;
-            if (type) {
-                // it's a `HistoryItemSummary`
-                dataSource = type === "dataset" ? "hda" : "hdca";
-            } else {
-                // it's a `HDAObject` from a collection
-                dataSource = "hda";
+            let type: HistoryContentsArgs["type"];
+            let id: string;
+            if (isHistoryItem(item)) {
+                dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
+                type = item.history_content_type;
+                id = item.id;
             }
-            await copyDataset(item.id, props.history.id, type, dataSource);
+            // TEMPORARY: fix this when DCEs are handled correctly, unify like commented out code below
+            else if (isDatasetElement(item) && item.object) {
+                dataSource = "hda";
+                type = "dataset";
+                id = item.object.id;
+            }
+            /** TODO: Handle DCE, `DCEDataset`s work fine as they are HDAs,
+             *        `DCECollection`s are `dataset_collection`s and need to be HDCAs...
+             */
+            // else if (isDCE(item) && (item as DCESummary).object) {
+            //     const collectionElement = item as DCESummary;
+            //     dataSource = collectionElement.element_type === "dataset_collection" ? "hdca" : "hda"; // incorrect...
+            //     type = collectionElement.element_type === "dataset_collection" ? "dataset_collection" : "dataset";
+            //     id = collectionElement.object.id as string;
+            // }
+            else {
+                throw new Error(`Invalid item type${item.element_type ? `: ${item.element_type}` : ""}`);
+            }
+            await copyDataset(id, props.history.id, type, dataSource);
 
             if (dataSource === "hda") {
                 datasetCount++;
