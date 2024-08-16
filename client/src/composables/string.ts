@@ -1,5 +1,5 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
-import { customRef, type Ref } from "vue";
+import { computed, type Ref } from "vue";
 
 import { ensureDefined } from "@/utils/assertions";
 
@@ -12,9 +12,8 @@ export function useInSet(stringRef: Ref<string>, set: MaybeRefOrGetter<string[]>
         return allowedValues.has(value);
     };
 
-    const restrictedRef = customRef<string>((track, trigger) => ({
+    const restrictedRef = computed<string>({
         get() {
-            track();
             if (isInSet(stringRef.value)) {
                 return stringRef.value;
             } else {
@@ -24,10 +23,9 @@ export function useInSet(stringRef: Ref<string>, set: MaybeRefOrGetter<string[]>
         set(value) {
             if (isInSet(value)) {
                 stringRef.value = value;
-                trigger();
             }
         },
-    }));
+    });
 
     return restrictedRef;
 }
