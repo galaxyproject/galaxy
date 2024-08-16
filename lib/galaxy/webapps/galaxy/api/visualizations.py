@@ -245,7 +245,7 @@ class FastAPIVisualizations:
     )
     def create(
         self,
-        import_id: Optional[VisualizationIdPathParam] = None,
+        import_id: Optional[VisualizationIdPathParam] = Body(None),
         type: str = Body(...),
         title: str = Body(...),
         dbkey: Optional[str] = Body(None),
