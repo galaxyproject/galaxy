@@ -2,15 +2,14 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { FileSourceTemplateSummary, UserFileSourceModel } from "@/api/fileSources";
 import {
     createFormDataToPayload,
     createTemplateForm,
     pluginStatusToErrorMessage,
 } from "@/components/ConfigTemplates/formUtil";
-import { errorMessageAsString } from "@/utils/simple-error";
-
-import { create, test } from "./services";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
 
@@ -29,19 +28,30 @@ const inputs = computed(() => {
 
 async function onSubmit(formData: any) {
     const payload = createFormDataToPayload(props.template, formData);
-    const { data: pluginStatus } = await test(payload);
+    const { data: pluginStatus, error: testRequestError } = await GalaxyApi().POST("/api/file_source_instances/test", {
+        body: payload,
+    });
+
+    if (testRequestError) {
+        rethrowSimple(testRequestError);
+    }
+
     const testError = pluginStatusToErrorMessage(pluginStatus);
     if (testError) {
         error.value = testError;
         return;
     }
-    try {
-        const { data: fileSource } = await create(payload);
-        emit("created", fileSource);
-    } catch (e) {
-        error.value = errorMessageAsString(e);
+
+    const { data: fileSource, error: requestError } = await GalaxyApi().POST("/api/file_source_instances", {
+        body: payload,
+    });
+
+    if (requestError) {
+        error.value = errorMessageAsString(requestError);
         return;
     }
+
+    emit("created", fileSource);
 }
 
 const emit = defineEmits<{

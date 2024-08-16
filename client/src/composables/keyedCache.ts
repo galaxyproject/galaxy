@@ -1,21 +1,19 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed, del, type Ref, ref, set, unref } from "vue";
 
-import { type ApiResponse } from "@/api/schema";
-
 /**
  * Parameters for fetching an item from the server.
  *
  * Minimally, this should include an id for indexing the item.
  */
-interface FetchParams {
+export interface FetchParams {
     id: string;
 }
 
 /**
  * A function that fetches an item from the server.
  */
-type FetchHandler<T> = (params: FetchParams) => Promise<ApiResponse<T>>;
+type FetchHandler<T> = (params: FetchParams) => Promise<T>;
 
 /**
  * A function that returns true if the item should be fetched.
@@ -78,9 +76,9 @@ export function useKeyedCache<T>(
         set(loadingItem.value, itemId, true);
         try {
             const fetchItem = unref(fetchItemHandler);
-            const { data } = await fetchItem({ id: itemId });
-            set(storedItems.value, itemId, data);
-            return data;
+            const item = await fetchItem({ id: itemId });
+            set(storedItems.value, itemId, item);
+            return item;
         } finally {
             del(loadingItem.value, itemId);
         }

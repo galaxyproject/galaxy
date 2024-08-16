@@ -10,12 +10,8 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref, set } from "vue";
 
-import {
-    type InvocationStep,
-    stepJobsSummaryFetcher,
-    type StepJobSummary,
-    type WorkflowInvocationElementView,
-} from "@/api/invocations";
+import { GalaxyApi } from "@/api";
+import { type InvocationStep, type StepJobSummary, type WorkflowInvocationElementView } from "@/api/invocations";
 import { isWorkflowInput } from "@/components/Workflow/constants";
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
@@ -113,7 +109,16 @@ export function useInvocationGraph(
             }
 
             // get the job summary for each step in the invocation
-            const { data: stepsJobsSummary } = await stepJobsSummaryFetcher({ invocation_id: invocation.value.id });
+            const { data: stepsJobsSummary, error } = await GalaxyApi().GET(
+                "/api/invocations/{invocation_id}/step_jobs_summary",
+                {
+                    params: { path: { invocation_id: invocation.value.id } },
+                }
+            );
+
+            if (error) {
+                rethrowSimple(error);
+            }
 
             // if the steps have not been populated or the job states have changed, update the steps
             // TODO: What if the state of something not in the stepsJobsSummary has changed? (e.g.: subworkflows...)

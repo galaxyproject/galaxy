@@ -1,29 +1,43 @@
-import { type components, fetcher } from "@/api/schema";
+import { GalaxyApi, type GalaxyApiPaths } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
-type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
+// TODO: Move these functions to broadcastStore and refactor other calls to go through the store
 
-const broadcastFetcher = fetcher.path("/api/notifications/broadcast/{notification_id}").method("get").create();
-export async function fetchBroadcast(id: string): Promise<BroadcastNotificationResponse> {
-    const { data } = await broadcastFetcher({ notification_id: id });
+export async function fetchAllBroadcasts() {
+    const { data, error } = await GalaxyApi().GET("/api/notifications/broadcast");
+    if (error) {
+        rethrowSimple(error);
+    }
     return data;
 }
 
-const broadcastsFetcher = fetcher.path("/api/notifications/broadcast").method("get").create();
-export async function fetchAllBroadcasts(): Promise<BroadcastNotificationResponse[]> {
-    const { data } = await broadcastsFetcher({});
+type CreateBroadcastNotificationRequestBody =
+    GalaxyApiPaths["/api/notifications/broadcast"]["post"]["requestBody"]["content"]["application/json"];
+export async function createBroadcast(broadcast: CreateBroadcastNotificationRequestBody) {
+    const { data, error } = await GalaxyApi().POST("/api/notifications/broadcast", {
+        body: broadcast,
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     return data;
 }
 
-const postBroadcast = fetcher.path("/api/notifications/broadcast").method("post").create();
-type BroadcastNotificationCreateRequest = components["schemas"]["BroadcastNotificationCreateRequest"];
-export async function createBroadcast(broadcast: BroadcastNotificationCreateRequest) {
-    const { data } = await postBroadcast(broadcast);
-    return data;
-}
+type UpdateBroadcastNotificationRequestBody =
+    GalaxyApiPaths["/api/notifications/broadcast/{notification_id}"]["put"]["requestBody"]["content"]["application/json"];
+export async function updateBroadcast(id: string, broadcast: UpdateBroadcastNotificationRequestBody) {
+    const { data, error } = await GalaxyApi().PUT("/api/notifications/broadcast/{notification_id}", {
+        params: {
+            path: { notification_id: id },
+        },
+        body: broadcast,
+    });
 
-const putBroadcast = fetcher.path("/api/notifications/broadcast/{notification_id}").method("put").create();
-type NotificationBroadcastUpdateRequest = components["schemas"]["NotificationBroadcastUpdateRequest"];
-export async function updateBroadcast(id: string, broadcast: NotificationBroadcastUpdateRequest) {
-    const { data } = await putBroadcast({ notification_id: id, ...broadcast });
+    if (error) {
+        rethrowSimple(error);
+    }
+
     return data;
 }

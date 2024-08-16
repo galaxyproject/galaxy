@@ -1,14 +1,19 @@
-import { fetchDatatypesAndMappings } from "@/api/datatypes";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import { getDatatypesMapper } from "./index";
 import { typesAndMappingResponse } from "./test_fixtures";
 
-jest.mock("@/api/datatypes");
+const { server, http } = useServerMock();
+
+server.use(
+    http.get("/api/datatypes/types_and_mapping", ({ response }) => {
+        return response(200).json(typesAndMappingResponse);
+    })
+);
 
 describe("Datatypes/index.js", () => {
     describe("getDatatypesMapper", () => {
         it("should fetch logic from API for comparing datatypes in a hierarchy", async () => {
-            fetchDatatypesAndMappings.mockResolvedValue(typesAndMappingResponse);
             await getDatatypesMapper().then((mapper) => {
                 expect(mapper.isSubType("txt", "data")).toBe(true);
                 expect(mapper.isSubType("txt", "txt")).toBe(true);

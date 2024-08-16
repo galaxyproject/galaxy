@@ -2,7 +2,9 @@
 import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 
-import { type StoredWorkflowDetailed, workflowFetcher } from "@/api/workflows";
+import { GalaxyApi } from "@/api";
+import { type StoredWorkflowDetailed } from "@/api/workflows";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import GridInvocation from "../Grid/GridInvocation.vue";
 import LoadingSpan from "../LoadingSpan.vue";
@@ -13,14 +15,19 @@ interface Props {
 const props = defineProps<Props>();
 
 const loading = ref(true);
-const workflow = ref<StoredWorkflowDetailed | undefined>(undefined);
+const workflow = ref<StoredWorkflowDetailed>();
 
 onMounted(async () => {
     try {
-        const { data } = await workflowFetcher({ workflow_id: props.storedWorkflowId });
+        const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}", {
+            params: { path: { workflow_id: props.storedWorkflowId } },
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         workflow.value = data;
-    } catch (error) {
-        console.error(error);
     } finally {
         loading.value = false;
     }

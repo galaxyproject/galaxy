@@ -2,7 +2,7 @@ import { faEdit, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteForm, undeleteForm } from "@/api/forms";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -69,18 +69,19 @@ const fields: FieldArray = [
                 condition: (data: FormEntry) => !data.deleted,
                 handler: async (data: FormEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this form?"))) {
-                        try {
-                            await deleteForm({ id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been deleted.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().DELETE("/api/forms/{id}", {
+                            params: { path: { id: String(data.id) } },
+                        });
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been deleted.`,
+                        };
                     }
                 },
             },
@@ -89,18 +90,19 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: FormEntry) => !!data.deleted,
                 handler: async (data: FormEntry) => {
-                    try {
-                        await undeleteForm({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been restored.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/forms/{id}/undelete", {
+                        params: { path: { id: String(data.id) } },
+                    });
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.name}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.name}': ${errorMessageAsString(error)}`,
                         };
                     }
+                    return {
+                        status: "success",
+                        message: `'${data.name}' has been restored.`,
+                    };
                 },
             },
         ],

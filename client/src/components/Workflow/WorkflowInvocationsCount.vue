@@ -4,8 +4,9 @@ import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
 
-import { invocationCountsFetcher } from "@/api/workflows";
+import { GalaxyApi } from "@/api";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 library.add(faList);
 
@@ -18,7 +19,14 @@ const props = defineProps<Props>();
 const count = ref<number | undefined>(undefined);
 
 async function initCounts() {
-    const { data } = await invocationCountsFetcher({ workflow_id: props.workflow.id });
+    const { data, error } = await GalaxyApi().GET("/api/workflows/{workflow_id}/counts", {
+        params: { path: { workflow_id: props.workflow.id } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
     let allCounts = 0;
     for (const stateCount of Object.values(data)) {
         if (stateCount) {

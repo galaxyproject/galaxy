@@ -4,7 +4,7 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/api/schema/__mocks__";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
@@ -13,41 +13,49 @@ const localVue = getLocalVue();
 
 const DATASET_ID = "dataset_id";
 
+const { server, http } = useServerMock();
+
 async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
 
-    mockFetcher
-        .path("/api/datasets/{dataset_id}")
-        .method("get")
-        .mock({
-            data: {
-                id: DATASET_ID,
-                creating_job: "creating_job",
-            },
-        });
+    server.use(
+        http.get("/api/datasets/{dataset_id}", ({ response }) => {
+            // We need to use untyped here because this endpoint is not
+            // described in the OpenAPI spec due to its complexity for now.
+            return response.untyped(
+                HttpResponse.json({
+                    id: DATASET_ID,
+                    creating_job: "creating_job",
+                })
+            );
+        }),
 
-    mockFetcher
-        .path("/api/jobs/{job_id}")
-        .method("get")
-        .mock({
-            data: {
+        http.get("/api/jobs/{job_id}", ({ response }) => {
+            return response(200).json({
                 tool_id: "tool_id",
                 tool_stderr: "tool_stderr",
                 job_stderr: "job_stderr",
                 job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
-                user_email: user_email,
-            },
-        });
+                user_email,
+                create_time: "2021-01-01T00:00:00",
+                update_time: "2021-01-01T00:00:00",
+                id: "job_id",
+                model_class: "Job",
+                state: "ok",
+                inputs: {},
+                outputs: {},
+                params: {},
+                output_collections: {},
+            });
+        }),
 
-    mockFetcher
-        .path("/api/jobs/{job_id}/common_problems")
-        .method("get")
-        .mock({
-            data: {
+        http.get("/api/jobs/{job_id}/common_problems", ({ response }) => {
+            return response(200).json({
                 has_duplicate_inputs: has_duplicate_inputs,
                 has_empty_inputs: has_empty_inputs,
-            },
-        });
+            });
+        })
+    );
 
     const wrapper = mount(DatasetError as object, {
         propsData: {
@@ -96,14 +104,13 @@ describe("DatasetError", () => {
     it("hides form fields and button on success", async () => {
         const wrapper = await montDatasetError();
 
-        mockFetcher
-            .path("/api/jobs/{job_id}/error")
-            .method("post")
-            .mock({
-                data: {
-                    messages: ["message", "success"],
-                },
-            });
+        server.use(
+            http.post("/api/jobs/{job_id}/error", ({ response }) => {
+                return response(200).json({
+                    messages: [["message"], ["success"]],
+                });
+            })
+        );
 
         const FormAndSubmitButton = "#dataset-error-form";
         expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);

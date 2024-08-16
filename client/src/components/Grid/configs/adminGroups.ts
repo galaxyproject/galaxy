@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteGroup, purgeGroup, undeleteGroup } from "@/api/groups";
+import { GalaxyApi } from "@/api";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -77,18 +77,23 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: async (data: GroupEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this group?"))) {
-                        try {
-                            await deleteGroup({ group_id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been deleted.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().DELETE("/api/groups/{group_id}", {
+                            params: {
+                                path: { group_id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been deleted.`,
+                        };
                     }
                 },
             },
@@ -98,18 +103,23 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
                     if (confirm(_l("Are you sure that you want to purge this group?"))) {
-                        try {
-                            await purgeGroup({ group_id: String(data.id) });
-                            return {
-                                status: "success",
-                                message: `'${data.name}' has been purged.`,
-                            };
-                        } catch (e) {
+                        const { error } = await GalaxyApi().POST("/api/groups/{group_id}/purge", {
+                            params: {
+                                path: { group_id: String(data.id) },
+                            },
+                        });
+
+                        if (error) {
                             return {
                                 status: "danger",
-                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to purge '${data.name}': ${errorMessageAsString(error)}`,
                             };
                         }
+
+                        return {
+                            status: "success",
+                            message: `'${data.name}' has been purged.`,
+                        };
                     }
                 },
             },
@@ -118,18 +128,23 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
-                    try {
-                        await undeleteGroup({ group_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been restored.`,
-                        };
-                    } catch (e) {
+                    const { error } = await GalaxyApi().POST("/api/groups/{group_id}/undelete", {
+                        params: {
+                            path: { group_id: String(data.id) },
+                        },
+                    });
+
+                    if (error) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.name}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.name}': ${errorMessageAsString(error)}`,
                         };
                     }
+
+                    return {
+                        status: "success",
+                        message: `'${data.name}' has been restored.`,
+                    };
                 },
             },
         ],

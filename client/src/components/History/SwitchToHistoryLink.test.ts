@@ -1,15 +1,16 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 
 import { type HistorySummary } from "@/api";
+import { useServerMock } from "@/api/client/__mocks__";
 
 import SwitchToHistoryLink from "./SwitchToHistoryLink.vue";
 
 const localVue = getLocalVue(true);
+
+const { server, http } = useServerMock();
 
 const selectors = {
     historyLink: ".history-link",
@@ -18,8 +19,11 @@ const selectors = {
 function mountSwitchToHistoryLinkForHistory(history: HistorySummary) {
     const pinia = createTestingPinia();
 
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onGet(`/api/histories/${history.id}`).reply(200, history);
+    server.use(
+        http.get("/api/histories/{history_id}", ({ response }) => {
+            return response(200).json(history);
+        })
+    );
 
     const wrapper = shallowMount(SwitchToHistoryLink as object, {
         propsData: {

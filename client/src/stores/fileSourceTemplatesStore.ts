@@ -1,12 +1,9 @@
 import { defineStore } from "pinia";
 
-import { fetcher } from "@/api/schema/fetcher";
-import { type components } from "@/api/schema/schema";
+import { type components, GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { canUpgrade, findTemplate, getLatestVersion, getLatestVersionMap } from "./configTemplatesUtil";
-
-const getFileSourceTemplates = fetcher.path("/api/file_source_templates").method("get").create();
 
 type FileSourceTemplateSummary = components["schemas"]["FileSourceTemplateSummary"];
 type FileSourceTemplateSummaries = FileSourceTemplateSummary[];
@@ -54,12 +51,14 @@ export const useFileSourceTemplatesStore = defineStore("fileSourceTemplatesStore
             this.error = errorMessageAsString(err);
         },
         async fetchTemplates() {
-            try {
-                const { data: templates } = await getFileSourceTemplates({});
-                this.handleInit(templates);
-            } catch (err) {
-                this.handleError(err);
+            const { data: templates, error } = await GalaxyApi().GET("/api/file_source_templates");
+
+            if (error) {
+                this.handleError(error);
+                return;
             }
+
+            this.handleInit(templates);
         },
         async ensureTemplates() {
             if (!this.fetched || this.error != null) {

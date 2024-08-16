@@ -2,12 +2,13 @@
 import { BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { GalaxyApi } from "@/api";
 import type { UserFileSourceModel } from "@/api/fileSources";
 import { editFormDataToPayload, editTemplateForm, type FormEntry } from "@/components/ConfigTemplates/formUtil";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import { useInstanceAndTemplate } from "./instance";
 import { useInstanceRouting } from "./routing";
-import { update } from "./services";
 
 import EditSecrets from "./EditSecrets.vue";
 import InstanceForm from "@/components/ConfigTemplates/InstanceForm.vue";
@@ -20,8 +21,6 @@ const props = defineProps<Props>();
 const { instance, template } = useInstanceAndTemplate(ref(props.instanceId));
 
 const inputs = computed<Array<FormEntry> | undefined>(() => {
-    template.value;
-    instance.value;
     if (template.value && instance.value) {
         return editTemplateForm(template.value, "storage location", instance.value);
     }
@@ -34,10 +33,19 @@ const submitTitle = "Update Settings";
 const loadingMessage = "Loading file source template and instance information";
 
 async function onSubmit(formData: any) {
-    if (template.value) {
+    if (template.value && instance.value) {
         const payload = editFormDataToPayload(template.value, formData);
-        const args = { user_file_source_id: String(instance?.value?.uuid) };
-        const { data: fileSource } = await update({ ...args, ...payload });
+        const user_file_source_id = instance.value.uuid;
+
+        const { data: fileSource, error } = await GalaxyApi().PUT("/api/file_source_instances/{user_file_source_id}", {
+            params: { path: { user_file_source_id } },
+            body: payload,
+        });
+
+        if (error) {
+            rethrowSimple(error);
+        }
+
         await onUpdate(fileSource);
     }
 }

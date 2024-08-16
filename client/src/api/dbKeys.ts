@@ -3,6 +3,13 @@
  * but now it is used to get the list of more generic "dbkeys".
  */
 
-import { fetcher } from "@/api/schema";
+import { GalaxyApi } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
 
-export const dbKeysFetcher = fetcher.path("/api/genomes").method("get").create();
+export async function getDbKeys() {
+    const { data, error } = await GalaxyApi().GET("/api/genomes");
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data;
+}
