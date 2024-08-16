@@ -103,7 +103,7 @@ class VisualizationSummaryList(RootModel):
     )
 
 
-class VisualizationRevision(Model):
+class VisualizationRevisionResponse(Model):
     model_class: str = Field(
         "VisualizationRevision",
         title="Model Class",
@@ -136,7 +136,7 @@ class VisualizationRevision(Model):
     )
 
 
-class VisualizationPlugin(Model):
+class VisualizationPluginResponse(Model):
     name: str = Field(
         ...,
         title="Name",
@@ -199,7 +199,7 @@ class VisualizationPlugin(Model):
     )
 
 
-class VisualizationShow(Model):
+class VisualizationShowResponse(Model):
     model_class: str = Field(
         "Visualization",
         title="Model Class",
@@ -226,6 +226,95 @@ class VisualizationShow(Model):
         description="The ID of the user owning this Visualization.",
     )
     dbkey: Optional[str] = Field(
+        None,
+        title="DbKey",
+        description="The database key of the visualization.",
+    )
+    slug: Optional[str] = Field(
+        None,
+        title="Slug",
+        description="The slug of the visualization.",
+    )
+    latest_revision: VisualizationRevisionResponse = Field(
+        ...,
+        title="Latest Revision",
+        description="The latest revision of this Visualization.",
+    )
+    revisions: List[EncodedDatabaseIdField] = Field(
+        ...,
+        title="Revisions",
+        description="A list of encoded IDs of the revisions of this Visualization.",
+    )
+    url: str = Field(
+        ...,
+        title="URL",
+        description="The URL of the visualization.",
+    )
+    username: str = Field(
+        ...,
+        title="Username",
+        description="The name of the user owning this Visualization.",
+    )
+    email_hash: str = Field(
+        ...,
+        title="Email Hash",
+        description="The hash of the email of the user owning this Visualization.",
+    )
+    tags: Optional[TagCollection] = Field(
+        [],
+        title="Tags",
+        description="A list of tags to add to this item.",
+    )
+    annotation: Optional[str] = Field(
+        None,
+        title="Annotation",
+        description="The annotation of this Visualization.",
+    )
+    plugin: VisualizationPluginResponse = Field(
+        ...,
+        title="Plugin",
+        description="The plugin of this Visualization.",
+    )
+
+
+class VisualizationCreateResponse(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the Visualization.",
+    )
+
+
+class VisualizationUpdateResponse(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the Visualization.",
+    )
+    revision: EncodedDatabaseIdField = Field(
+        ...,
+        title="Revision",
+        description="Encoded ID of the Visualization Revision.",
+    )
+
+
+class VisualizationCreatePayload(Model):
+    import_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Import ID",
+        description="The ID of the imported visualization.",
+    )
+    type: Optional[str] = Field(
+        default=None,
+        title="Type",
+        description="The type of the visualization.",
+    )
+    title: Optional[str] = Field(
+        default=None,
+        title="Title",
+        description="The name of the visualization.",
+    )
+    dbkey: Optional[str] = Field(
         default=None,
         title="DbKey",
         description="The database key of the visualization.",
@@ -235,43 +324,41 @@ class VisualizationShow(Model):
         title="Slug",
         description="The slug of the visualization.",
     )
-    latest_revision: VisualizationRevision = Field(
-        ...,
-        title="Latest Revision",
-        description="The latest revision of this Visualization.",
-    )
-    revisions: List[EncodedDatabaseIdField] = Field(
-        default=[],
-        title="Revisions",
-        description="A list of encoded IDs of the revisions of this Visualization.",
-    )
-    url: Optional[str] = Field(
-        default=None,
-        title="URL",
-        description="The URL of the visualization.",
-    )
-    username: str = Field(
-        ...,
-        title="Username",
-        description="The name of the user owning this Visualization.",
-    )
-    email_hash: Optional[str] = Field(
-        default=None,
-        title="Email Hash",
-        description="The hash of the email of the user owning this Visualization.",
-    )
-    tags: TagCollection = Field(
-        default=[],
-        title="Tags",
-        description="A list of tags to add to this item.",
-    )
     annotation: Optional[str] = Field(
         default=None,
         title="Annotation",
-        description="The annotation of this Visualization.",
+        description="The annotation of the visualization.",
     )
-    plugin: VisualizationPlugin = Field(
-        ...,
-        title="Plugin",
-        description="The plugin of this Visualization.",
+    config: Optional[dict] = Field(
+        default={},
+        title="Config",
+        description="The config of the visualization.",
+    )
+    save: Optional[bool] = Field(
+        default=True,
+        title="Save",
+        description="Whether to save the visualization.",
+    )
+
+
+class VisualizationUpdatePayload(Model):
+    title: Optional[str] = Field(
+        default=None,
+        title="Title",
+        description="The name of the visualization.",
+    )
+    dbkey: Optional[str] = Field(
+        default=None,
+        title="DbKey",
+        description="The database key of the visualization.",
+    )
+    deleted: Optional[bool] = Field(
+        default=False,
+        title="Deleted",
+        description="Whether this Visualization has been deleted.",
+    )
+    config: Optional[dict] = Field(
+        default={},
+        title="Config",
+        description="The config of the visualization.",
     )

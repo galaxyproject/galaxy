@@ -26,10 +26,14 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.visualization import (
+    VisualizationCreatePayload,
+    VisualizationCreateResponse,
     VisualizationIndexQueryPayload,
-    VisualizationShow,
+    VisualizationShowResponse,
     VisualizationSortByEnum,
     VisualizationSummaryList,
+    VisualizationUpdatePayload,
+    VisualizationUpdateResponse,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -235,7 +239,7 @@ class FastAPIVisualizations:
         self,
         id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationShow:
+    ) -> VisualizationShowResponse:
         """Return the visualization."""
         return self.service.show(trans, id)
 
@@ -245,33 +249,16 @@ class FastAPIVisualizations:
     )
     def create(
         self,
-        import_id: Optional[VisualizationIdPathParam] = Body(None),
-        type: str = Body(...),
-        title: str = Body(...),
-        dbkey: Optional[str] = Body(None),
-        slug: Optional[str] = Body(None),
-        annotation: Optional[str] = Body(None),
-        config: Optional[dict] = Body(None),
-        save: bool = Body(True),
+        payload: VisualizationCreatePayload = Body(...),
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationShow:
+    ) -> VisualizationCreateResponse:
         """
         POST /api/visualizations
-        creates a new visualization using the given payload
+        creates a new visualization using the given payload and does not require the import_id field
 
         POST /api/visualizations?import_id={encoded_visualization_id}
-        imports a copy of an existing visualization into the user's workspace
+        imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
         """
-        payload = {
-            "import_id": import_id,
-            "type": type,
-            "title": title,
-            "dbkey": dbkey,
-            "slug": slug,
-            "annotation": annotation,
-            "config": config,
-            "save": save,
-        }
         return self.service.create(trans, payload)
 
     @router.put(
@@ -281,16 +268,7 @@ class FastAPIVisualizations:
     def update(
         self,
         id: VisualizationIdPathParam,
-        title: Optional[str] = Body(None),
-        dbkey: Optional[str] = Body(None),
-        deleted: Optional[bool] = Body(None),
-        config: Optional[dict] = Body(None),
+        payload: VisualizationUpdatePayload = Body(...),
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationShow:
-        payload = {
-            "title": title,
-            "dbkey": dbkey,
-            "deleted": deleted,
-            "config": config,
-        }
+    ) -> VisualizationUpdateResponse:
         return self.service.update(trans, id, payload)

@@ -27,9 +27,12 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.visualization import (
+    VisualizationCreateResponse,
     VisualizationIndexQueryPayload,
-    VisualizationShow,
+    VisualizationRevisionResponse,
+    VisualizationShowResponse,
     VisualizationSummaryList,
+    VisualizationUpdateResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.hash_util import md5_hash_str
@@ -88,7 +91,7 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesAppContext,
         visualization_id: DecodedDatabaseIdField,
-    ) -> VisualizationShow:
+    ) -> VisualizationShowResponse:
         """Return a dictionary containing the Visualization's details
 
         :rtype:     dictionary
@@ -98,7 +101,19 @@ class VisualizationsService(ServiceBase):
         # the important thing is the config
         # TODO:?? /api/visualizations/registry -> json of registry.listings?
         visualization = self._get_visualization(trans, visualization_id, check_ownership=False, check_accessible=True)
-        dictionary = trans.security.encode_dict_ids(self._get_visualization_dict(visualization))
+        visualization_dict = {
+            "model_class": "Visualization",
+            "id": visualization.id,
+            "title": visualization.title,
+            "type": visualization.type,
+            "user_id": visualization.user.id,
+            "dbkey": visualization.dbkey,
+            "slug": visualization.slug,
+            # to_dict only the latest revision (allow older to be fetched elsewhere)
+            "latest_revision": self._get_visualization_revision_dict(visualization.latest_revision),
+            "revisions": [r.id for r in visualization.revisions],
+        }
+        dictionary = trans.security.encode_dict_ids(visualization_dict)
         dictionary["url"] = trans.url_builder(
             controller="show_group",
             action="display_by_username_and_slug",
@@ -125,7 +140,7 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesAppContext,
         payload: VisualizationIndexQueryPayload,
-    ) -> VisualizationShow:
+    ) -> VisualizationCreateResponse:
         """Returns a dictionary of the created visualization
 
         :rtype:     dictionary
@@ -178,7 +193,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesAppContext,
         visualization_id: DecodedDatabaseIdField,
         payload: VisualizationIndexQueryPayload,
-    ) -> VisualizationShow:
+    ) -> VisualizationUpdateResponse:
         """
         Update a visualization
 
@@ -222,7 +237,7 @@ class VisualizationsService(ServiceBase):
     def _validate_and_parse_payload(
         self,
         payload: VisualizationIndexQueryPayload,
-    ) -> VisualizationShow:
+    ) -> VisualizationIndexQueryPayload:
         """
         Validate and parse incomming data payload for a visualization.
         """
@@ -303,32 +318,10 @@ class VisualizationsService(ServiceBase):
         else:
             return security_check(trans, visualization, check_ownership, check_accessible)
 
-    def _get_visualization_dict(
-        self,
-        visualization: Visualization,
-    ) -> dict:
-        """
-        Return a set of detailed attributes for a visualization in dictionary form.
-        The visualization's latest_revision is returned in its own sub-dictionary.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        return {
-            "model_class": "Visualization",
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "user_id": visualization.user.id,
-            "dbkey": visualization.dbkey,
-            "slug": visualization.slug,
-            # to_dict only the latest revision (allow older to be fetched elsewhere)
-            "latest_revision": self._get_visualization_revision_dict(visualization.latest_revision),
-            "revisions": [r.id for r in visualization.revisions],
-        }
-
     def _get_visualization_revision_dict(
         self,
         revision: VisualizationRevision,
-    ) -> dict:
+    ) -> VisualizationRevisionResponse:
         """
         Return a set of detailed attributes for a visualization in dictionary form.
         NOTE: that encoding ids isn't done here should happen at the caller level.
