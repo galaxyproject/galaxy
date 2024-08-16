@@ -255,6 +255,13 @@ class FastAPIVisualizations:
         save: bool = Body(True),
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationShow:
+        """
+        POST /api/visualizations
+        creates a new visualization using the given payload
+
+        POST /api/visualizations?import_id={encoded_visualization_id}
+        imports a copy of an existing visualization into the user's workspace
+        """
         payload = {
             "import_id": import_id,
             "type": type,
