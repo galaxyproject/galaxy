@@ -195,8 +195,9 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag_from_filename, flush=False)
 
     if tags_list := uploaded_dataset.get("tags", False):
-        for tag in tags_list:
-            tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag, flush=False)
+        new_tags = tag_handler.parse_tags_list(tags_list)
+        for tag in new_tags:
+            tag_handler.apply_item_tag(item=ldda, user=trans.user, name=tag[0], value=tag[1], flush=False)
 
     trans.sa_session.add(ldda)
     if state:
