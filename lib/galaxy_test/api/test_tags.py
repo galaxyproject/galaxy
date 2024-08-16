@@ -112,6 +112,11 @@ class TestLibraryDatasetTags(TagsApiTests):
         item = item_response.json()
         return item
 
+    def test_upload_file_contents_with_tags(self):
+        initial_tags = ["name:foobar", "barfoo"]
+        ld = self.library_populator.new_library_dataset(name=f"test-library-dataset-{uuid4()}", tags=initial_tags)
+        assert ld["tags"] == initial_tags
+
 
 class TestPageTags(TagsApiTests):
     api_name = "pages"
