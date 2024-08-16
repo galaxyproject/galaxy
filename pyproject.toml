@@ -183,10 +183,10 @@ types-dataclasses = "*"
 types-docutils = "*"
 types-Markdown = "*"
 types-paramiko = "*"
-types-pkg-resources = "*"
 types-python-dateutil = "*"
 types-PyYAML = "*"
 types-requests = "*"
+types-setuptools = "*"
 types-six = "*"
 
 [tool.ruff]
