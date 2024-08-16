@@ -125,7 +125,7 @@ class VisualizationRevisionResponse(Model):
         description="The name of the visualization revision.",
     )
     dbkey: Optional[str] = Field(
-        default=None,
+        None,
         title="DbKey",
         description="The database key of the visualization.",
     )
@@ -158,7 +158,7 @@ class VisualizationPluginResponse(Model):
         description="The logo of the plugin.",
     )
     title: Optional[str] = Field(
-        default=None,
+        None,
         title="Title",
         description="The title of the plugin.",
     )
@@ -299,43 +299,43 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    import_id: Optional[DecodedDatabaseIdField] = Field(
-        default=None,
+    import_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
         title="Import ID",
         description="The ID of the imported visualization.",
     )
     type: Optional[str] = Field(
-        default=None,
+        None,
         title="Type",
         description="The type of the visualization.",
     )
     title: Optional[str] = Field(
-        default=None,
+        "Untitled Visualization",
         title="Title",
         description="The name of the visualization.",
     )
     dbkey: Optional[str] = Field(
-        default=None,
+        None,
         title="DbKey",
         description="The database key of the visualization.",
     )
     slug: Optional[str] = Field(
-        default=None,
+        None,
         title="Slug",
         description="The slug of the visualization.",
     )
     annotation: Optional[str] = Field(
-        default=None,
+        None,
         title="Annotation",
         description="The annotation of the visualization.",
     )
     config: Optional[dict] = Field(
-        default={},
+        {},
         title="Config",
         description="The config of the visualization.",
     )
     save: Optional[bool] = Field(
-        default=True,
+        True,
         title="Save",
         description="Whether to save the visualization.",
     )
@@ -343,22 +343,22 @@ class VisualizationCreatePayload(Model):
 
 class VisualizationUpdatePayload(Model):
     title: Optional[str] = Field(
-        default=None,
+        None,
         title="Title",
         description="The name of the visualization.",
     )
     dbkey: Optional[str] = Field(
-        default=None,
+        None,
         title="DbKey",
         description="The database key of the visualization.",
     )
     deleted: Optional[bool] = Field(
-        default=False,
+        False,
         title="Deleted",
         description="Whether this Visualization has been deleted.",
     )
     config: Optional[dict] = Field(
-        default={},
+        {},
         title="Config",
         description="The config of the visualization.",
     )

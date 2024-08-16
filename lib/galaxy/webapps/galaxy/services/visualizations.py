@@ -1,6 +1,9 @@
 import json
 import logging
-from typing import Tuple
+from typing import (
+    Tuple,
+    Union,
+)
 
 from galaxy import exceptions
 from galaxy.managers.base import (
@@ -27,11 +30,13 @@ from galaxy.model.item_attrs import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.visualization import (
+    VisualizationCreatePayload,
     VisualizationCreateResponse,
     VisualizationIndexQueryPayload,
     VisualizationRevisionResponse,
     VisualizationShowResponse,
     VisualizationSummaryList,
+    VisualizationUpdatePayload,
     VisualizationUpdateResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -115,7 +120,8 @@ class VisualizationsService(ServiceBase):
         }
         dictionary = trans.security.encode_dict_ids(visualization_dict)
         dictionary["url"] = trans.url_builder(
-            controller="show_group",
+            name="visualization",
+            controller="visualization",
             action="display_by_username_and_slug",
             username=visualization.user.username,
             slug=visualization.slug,
@@ -139,7 +145,7 @@ class VisualizationsService(ServiceBase):
     def create(
         self,
         trans: ProvidesAppContext,
-        payload: VisualizationIndexQueryPayload,
+        payload: VisualizationCreatePayload,
     ) -> VisualizationCreateResponse:
         """Returns a dictionary of the created visualization
 
@@ -148,21 +154,20 @@ class VisualizationsService(ServiceBase):
         """
         rval = None
 
-        if "import_id" in payload:
-            import_id = payload["import_id"]
-            visualization = self._import_visualization(trans, import_id, user=trans.user)
+        if payload.import_id:
+            visualization = self._import_visualization(trans, payload.import_id)
         else:
             payload = self._validate_and_parse_payload(payload)
             # must have a type (I've taken this to be the visualization name)
-            if "type" not in payload:
+            if not payload.type:
                 raise exceptions.RequestParameterMissingException("key/value 'type' is required")
-            type = payload.pop("type", False)
-            title = payload.get("title", "Untitled Visualization")
-            slug = payload.get("slug", None)
-            dbkey = payload.get("dbkey", None)
-            annotation = payload.get("annotation", None)
-            config = payload.get("config", {})
-            save = payload.get("save", True)
+            type = payload.type
+            title = payload.title
+            slug = payload.slug
+            dbkey = payload.dbkey
+            annotation = payload.annotation
+            config = payload.config
+            save = payload.save or True
 
             # generate defaults - this will err if given a weird key?
             visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
@@ -186,13 +191,13 @@ class VisualizationsService(ServiceBase):
 
         rval = {"id": trans.security.encode_id(visualization.id)}
 
-        return rval
+        return VisualizationCreateResponse(**rval)
 
     def update(
         self,
         trans: ProvidesAppContext,
         visualization_id: DecodedDatabaseIdField,
-        payload: VisualizationIndexQueryPayload,
+        payload: VisualizationUpdatePayload,
     ) -> VisualizationUpdateResponse:
         """
         Update a visualization
@@ -212,10 +217,10 @@ class VisualizationsService(ServiceBase):
 
         # only update owned visualizations
         visualization = self._get_visualization(trans, visualization_id, check_ownership=True)
-        title = payload.get("title", visualization.latest_revision.title)
-        dbkey = payload.get("dbkey", visualization.latest_revision.dbkey)
-        deleted = payload.get("deleted", visualization.deleted)
-        config = payload.get("config", visualization.latest_revision.config)
+        title = payload.title or visualization.latest_revision.title
+        dbkey = payload.dbkey or visualization.latest_revision.dbkey
+        deleted = payload.deleted or visualization.deleted
+        config = payload.config or visualization.latest_revision.config
 
         latest_config = visualization.latest_revision.config
         if (
@@ -232,12 +237,12 @@ class VisualizationsService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
-        return rval
+        return VisualizationUpdateResponse(**rval)
 
     def _validate_and_parse_payload(
         self,
-        payload: VisualizationIndexQueryPayload,
-    ) -> VisualizationIndexQueryPayload:
+        payload: Union[VisualizationCreatePayload, VisualizationUpdatePayload],
+    ) -> Union[VisualizationCreatePayload, VisualizationUpdatePayload]:
         """
         Validate and parse incomming data payload for a visualization.
         """
@@ -259,7 +264,7 @@ class VisualizationsService(ServiceBase):
         ValidationError = exceptions.RequestParameterInvalidException
 
         validated_payload = {}
-        for key, val in payload.items():
+        for key, val in payload.model_dump().items():
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == "type":
                 if not isinstance(val, str):
@@ -296,7 +301,10 @@ class VisualizationsService(ServiceBase):
                 # raise AttributeError( 'unknown key: %s' %( str( key ) ) )
 
             validated_payload[key] = val
-        return validated_payload
+        try:
+            return VisualizationCreatePayload(**validated_payload)
+        except TypeError:
+            return VisualizationUpdatePayload(**validated_payload)
 
     def _get_visualization(
         self,
@@ -310,7 +318,7 @@ class VisualizationsService(ServiceBase):
         """
         # Load workflow from database
         try:
-            visualization = trans.sa_session.get(Visualization, trans.security.decode_id(visualization_id))
+            visualization = trans.sa_session.get(Visualization, visualization_id)
         except TypeError:
             visualization = None
         if not visualization:
@@ -407,7 +415,11 @@ class VisualizationsService(ServiceBase):
 
         return visualization
 
-    def _import_visualization(self, trans, id, user=None):
+    def _import_visualization(
+        self,
+        trans: ProvidesAppContext,
+        id: DecodedDatabaseIdField,
+    ) -> Visualization:
         """
         Copy the visualization with the given id and associate the copy
         with the given user (defaults to trans.user).
@@ -417,10 +429,9 @@ class VisualizationsService(ServiceBase):
         Raises `ItemDeletionException` if the visualization has been deleted.
         """
         # default to trans.user, error if anon
-        if not user:
-            if not trans.user:
-                raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
-            user = trans.user
+        if not trans.user:
+            raise exceptions.ItemAccessibilityException("You must be logged in to import Galaxy visualizations")
+        user = trans.user
 
         # check accessibility
         visualization = self.get_visualization(trans, id, check_ownership=False)
@@ -438,3 +449,7 @@ class VisualizationsService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return imported_visualization
+
+
+# ToDo check for the encode-decode conflicts in the code
+# ToDo check for name problem in url_builder

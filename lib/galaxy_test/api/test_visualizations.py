@@ -101,7 +101,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         return viz["id"], viz
 
     def _index(self, params):
-        index_response = self._get("visualizations", data=params or {})
+        index_response = self._get("visualizations", json=params or {})
         return index_response.json()
 
     def _index_ids(self, params=None):
@@ -129,7 +129,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
             "annotation": "this is a test of the emergency visualization system",
             "config": config,
         }
-        response = self._post("visualizations", data=create_payload)
+        response = self._post("visualizations", json=create_payload)
         return response
 
     def _publish_viz(self, id):
