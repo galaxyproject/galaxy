@@ -1539,6 +1539,7 @@ class InputParameterModule(WorkflowModule):
                 label=self.label,
                 type=parameter_def.get("parameter_type"),
                 optional=parameter_def["optional"],
+                multiple=parameter_def.get("multiple", False),
                 parameter=True,
             )
         ]
