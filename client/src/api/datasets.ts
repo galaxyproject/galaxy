@@ -67,7 +67,7 @@ export async function purgeDataset(datasetId: string) {
 }
 
 const datasetCopy = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
-export type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
+type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
 export async function copyDataset(
     datasetId: HistoryContentsArgs["content"],
     historyId: HistoryContentsArgs["history_id"],
@@ -95,3 +95,6 @@ export async function fetchDatasetAttributes(datasetId: string) {
 
     return data;
 }
+
+export type HistoryContentType = components["schemas"]["HistoryContentType"];
+export type HistoryContentSource = components["schemas"]["HistoryContentSource"];

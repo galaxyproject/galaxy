@@ -11,7 +11,7 @@ import {
     isHistoryItem,
     userOwnsHistory,
 } from "@/api";
-import { copyDataset, HistoryContentsArgs } from "@/api/datasets";
+import { copyDataset, type HistoryContentSource, type HistoryContentType } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -399,8 +399,8 @@ async function onDrop() {
     try {
         // iterate over the data array and copy each item to the current history
         for (const item of data) {
-            let dataSource: HistoryContentsArgs["source"];
-            let type: HistoryContentsArgs["type"];
+            let dataSource: HistoryContentSource;
+            let type: HistoryContentType;
             let id: string;
             if (isHistoryItem(item)) {
                 dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
