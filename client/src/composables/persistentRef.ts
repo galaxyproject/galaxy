@@ -33,25 +33,25 @@ export function usePersistentRef<T extends string | number | boolean | object | 
 ): Ref<T> {
     const storageSyncedRef = ref(defaultValue) as Ref<T>;
 
-    const stored = localStorage.getItem(key);
+    const stored = window?.localStorage?.getItem(key);
 
     if (stored) {
         try {
             storageSyncedRef.value = parse(stored, typeof defaultValue as "string" | "number" | "boolean" | "object");
         } catch (e) {
             console.error(`Failed to parse value "${stored}" from local storage key "${key}". Resetting key`);
-            localStorage.removeItem(key);
+            window?.localStorage?.removeItem(key);
         }
     } else {
         const stringified = stringify(storageSyncedRef.value);
-        localStorage.setItem(key, stringified);
+        window?.localStorage?.setItem(key, stringified);
     }
 
     watch(
         () => storageSyncedRef.value,
         () => {
             const stringified = stringify(storageSyncedRef.value);
-            localStorage.setItem(key, stringified);
+            window?.localStorage?.setItem(key, stringified);
         }
     );
 
