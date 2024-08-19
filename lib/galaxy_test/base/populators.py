@@ -2687,6 +2687,7 @@ class LibraryPopulator:
             "upload_option": upload_option,
             "file_type": kwds.get("file_type", "auto"),
             "db_key": kwds.get("db_key", "?"),
+            "tags": kwds.get("tags", []),
         }
         if kwds.get("link_data"):
             create_data["link_data_only"] = "link_to_files"
