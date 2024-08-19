@@ -7,7 +7,7 @@ import { type Ref, ref, watch } from "vue";
 
 import { match } from "@/utils/utils";
 
-function serialize(value: unknown): string {
+function stringify(value: unknown): string {
     if (typeof value !== "object") {
         return `${value}`;
     } else {
@@ -15,20 +15,19 @@ function serialize(value: unknown): string {
     }
 }
 
-function deserialize<T>(value: string, type: "string" | "number" | "boolean" | "object"): T {
+function parse<T>(value: string, type: "string" | "number" | "boolean" | "object"): T {
     return match(type, {
         string: () => value as T,
         number: () => parseFloat(value) as T,
-        boolean: () => (value.toLocaleLowerCase().trim() === "true" ? true : false) as T,
+        boolean: () => (value.toLowerCase().trim() === "true" ? true : false) as T,
         object: () => JSON.parse(value),
     });
 }
 
-export function useLocalStorage(key: string, defaultValue: string): Ref<string>;
-export function useLocalStorage(key: string, defaultValue: boolean): Ref<boolean>;
-export function useLocalStorage(key: string, defaultValue: number): Ref<number>;
-export function useLocalStorage<T>(key: string, defaultValue: T): Ref<T>;
-export function useLocalStorage<T extends string | number | boolean | object | null>(
+export function usePersistentRef(key: string, defaultValue: string): Ref<string>;
+export function usePersistentRef(key: string, defaultValue: number): Ref<number>;
+export function usePersistentRef<T>(key: string, defaultValue: T): Ref<T>;
+export function usePersistentRef<T extends string | number | boolean | object | null>(
     key: string,
     defaultValue: T
 ): Ref<T> {
@@ -38,23 +37,20 @@ export function useLocalStorage<T extends string | number | boolean | object | n
 
     if (stored) {
         try {
-            storageSyncedRef.value = deserialize(
-                stored,
-                typeof defaultValue as "string" | "number" | "boolean" | "object"
-            );
+            storageSyncedRef.value = parse(stored, typeof defaultValue as "string" | "number" | "boolean" | "object");
         } catch (e) {
             console.error(`Failed to parse value "${stored}" from local storage key "${key}". Resetting key`);
             localStorage.removeItem(key);
         }
     } else {
-        const stringified = serialize(storageSyncedRef.value);
+        const stringified = stringify(storageSyncedRef.value);
         localStorage.setItem(key, stringified);
     }
 
     watch(
         () => storageSyncedRef.value,
         () => {
-            const stringified = serialize(storageSyncedRef.value);
+            const stringified = stringify(storageSyncedRef.value);
             localStorage.setItem(key, stringified);
         }
     );
