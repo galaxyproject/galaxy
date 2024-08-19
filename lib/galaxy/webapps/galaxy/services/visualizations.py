@@ -42,6 +42,7 @@ from galaxy.schema.visualization import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -106,7 +107,7 @@ class VisualizationsService(ServiceBase):
         # the important thing is the config
         # TODO:?? /api/visualizations/registry -> json of registry.listings?
         visualization = self._get_visualization(trans, visualization_id, check_ownership=False, check_accessible=True)
-        visualization_dict = {
+        dictionary = {
             "model_class": "Visualization",
             "id": visualization.id,
             "title": visualization.title,
@@ -116,11 +117,12 @@ class VisualizationsService(ServiceBase):
             "slug": visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
             "latest_revision": self._get_visualization_revision_dict(visualization.latest_revision),
+            # need to encode ids in revisions as well
+            # NOTE: does not encode ids inside the configs
             "revisions": [r.id for r in visualization.revisions],
         }
-        dictionary = trans.security.encode_dict_ids(visualization_dict)
-        dictionary["url"] = trans.url_builder(
-            name="visualization",
+        # replace with trans.url_builder if possible
+        dictionary["url"] = url_for(
             controller="visualization",
             action="display_by_username_and_slug",
             username=visualization.user.username,
@@ -130,17 +132,9 @@ class VisualizationsService(ServiceBase):
         dictionary["email_hash"] = md5_hash_str(visualization.user.email)
         dictionary["tags"] = visualization.make_tag_string_list()
         dictionary["annotation"] = get_item_annotation_str(trans.sa_session, trans.user, visualization)
-        # need to encode ids in revisions as well
-        encoded_revisions = []
-        for revision in dictionary["revisions"]:
-            # NOTE: does not encode ids inside the configs
-            encoded_revisions.append(trans.security.encode_id(revision))
-        dictionary["revisions"] = encoded_revisions
-        dictionary["latest_revision"] = trans.security.encode_dict_ids(dictionary["latest_revision"])
         if trans.app.visualizations_registry:
-            visualization = trans.app.visualizations_registry.get_plugin(dictionary["type"])
-            dictionary["plugin"] = visualization.to_dict()
-        return dictionary
+            dictionary["plugin"] = trans.app.visualizations_registry.get_plugin(dictionary["type"]).to_dict()
+        return VisualizationShowResponse(**dictionary)
 
     def create(
         self,
@@ -152,7 +146,6 @@ class VisualizationsService(ServiceBase):
         :rtype:     dictionary
         :returns:   dictionary containing Visualization details
         """
-        rval = None
 
         if payload.import_id:
             visualization = self._import_visualization(trans, payload.import_id)
@@ -167,15 +160,10 @@ class VisualizationsService(ServiceBase):
             dbkey = payload.dbkey
             annotation = payload.annotation
             config = payload.config
-            save = payload.save or True
+            save = payload.save
 
             # generate defaults - this will err if given a weird key?
             visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
-            # TODO: handle this error structure better either in _create or here
-            if isinstance(visualization, dict):
-                err_dict = visualization
-                val_err = str(err_dict["title_err"] or err_dict["slug_err"])
-                raise exceptions.RequestParameterMissingException(val_err)
 
             # Create and save first visualization revision
             revision = trans.model.VisualizationRevision(
@@ -189,7 +177,7 @@ class VisualizationsService(ServiceBase):
                 with transaction(session):
                     session.commit()
 
-        rval = {"id": trans.security.encode_id(visualization.id)}
+        rval = {"id": visualization.id}
 
         return VisualizationCreateResponse(**rval)
 
@@ -198,7 +186,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesAppContext,
         visualization_id: DecodedDatabaseIdField,
         payload: VisualizationUpdatePayload,
-    ) -> VisualizationUpdateResponse:
+    ) -> Union[VisualizationUpdateResponse, None]:
         """
         Update a visualization
 
@@ -237,7 +225,7 @@ class VisualizationsService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
-        return VisualizationUpdateResponse(**rval)
+        return VisualizationUpdateResponse(**rval) if rval else None
 
     def _validate_and_parse_payload(
         self,
@@ -265,6 +253,9 @@ class VisualizationsService(ServiceBase):
 
         validated_payload = {}
         for key, val in payload.model_dump().items():
+            # By adding the pydatnic model there will be some variables that are not set and should be ignored in the validation
+            if val is None:
+                continue
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == "type":
                 if not isinstance(val, str):
@@ -301,9 +292,9 @@ class VisualizationsService(ServiceBase):
                 # raise AttributeError( 'unknown key: %s' %( str( key ) ) )
 
             validated_payload[key] = val
-        try:
+        if isinstance(payload, VisualizationCreatePayload):
             return VisualizationCreatePayload(**validated_payload)
-        except TypeError:
+        elif isinstance(payload, VisualizationUpdatePayload):
             return VisualizationUpdatePayload(**validated_payload)
 
     def _get_visualization(
@@ -334,7 +325,7 @@ class VisualizationsService(ServiceBase):
         Return a set of detailed attributes for a visualization in dictionary form.
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
-        return {
+        revision_dict = {
             "model_class": "VisualizationRevision",
             "id": revision.id,
             "visualization_id": revision.visualization.id,
@@ -342,6 +333,7 @@ class VisualizationsService(ServiceBase):
             "dbkey": revision.dbkey,
             "config": revision.config,
         }
+        return VisualizationRevisionResponse(**revision_dict)
 
     def _add_visualization_revision(
         self,
@@ -392,7 +384,9 @@ class VisualizationsService(ServiceBase):
             slug_err = "visualization identifier must be unique"
 
         if title_err or slug_err:
-            return {"title_err": title_err, "slug_err": slug_err}
+            # TODO: handle this error structure better
+            val_err = str(title_err or slug_err)
+            raise exceptions.RequestParameterMissingException(val_err)
 
         # Create visualization
         visualization = trans.model.Visualization(user=user, title=title, dbkey=dbkey, type=type)
@@ -418,7 +412,7 @@ class VisualizationsService(ServiceBase):
     def _import_visualization(
         self,
         trans: ProvidesAppContext,
-        id: DecodedDatabaseIdField,
+        visualization_id: DecodedDatabaseIdField,
     ) -> Visualization:
         """
         Copy the visualization with the given id and associate the copy
@@ -434,7 +428,7 @@ class VisualizationsService(ServiceBase):
         user = trans.user
 
         # check accessibility
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self._get_visualization(trans, visualization_id, check_ownership=False)
         if not visualization.importable:
             raise exceptions.ItemAccessibilityException(
                 "The owner of this visualization has disabled imports via this link."
@@ -449,7 +443,3 @@ class VisualizationsService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return imported_visualization
-
-
-# ToDo check for the encode-decode conflicts in the code
-# ToDo check for name problem in url_builder

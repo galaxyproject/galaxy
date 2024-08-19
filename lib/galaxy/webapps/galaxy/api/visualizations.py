@@ -6,7 +6,10 @@ may change often.
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from fastapi import (
     Body,
@@ -270,5 +273,5 @@ class FastAPIVisualizations:
         id: VisualizationIdPathParam,
         payload: VisualizationUpdatePayload = Body(...),
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> VisualizationUpdateResponse:
+    ) -> Union[VisualizationUpdateResponse, None]:
         return self.service.update(trans, id, payload)

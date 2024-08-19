@@ -187,8 +187,8 @@ class VisualizationPluginResponse(Model):
         title="Groups",
         description="The groups of the plugin.",
     )
-    specs: Dict = Field(
-        ...,
+    specs: Optional[Dict] = Field(
+        None,
         title="Specs",
         description="The specs of the plugin.",
     )
@@ -220,7 +220,7 @@ class VisualizationShowResponse(Model):
         title="Type",
         description="The type of the visualization.",
     )
-    user_id: DecodedDatabaseIdField = Field(
+    user_id: EncodedDatabaseIdField = Field(
         ...,
         title="User ID",
         description="The ID of the user owning this Visualization.",
@@ -270,8 +270,8 @@ class VisualizationShowResponse(Model):
         title="Annotation",
         description="The annotation of this Visualization.",
     )
-    plugin: VisualizationPluginResponse = Field(
-        ...,
+    plugin: Optional[VisualizationPluginResponse] = Field(
+        {},
         title="Plugin",
         description="The plugin of this Visualization.",
     )
