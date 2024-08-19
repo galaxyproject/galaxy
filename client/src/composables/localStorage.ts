@@ -46,6 +46,9 @@ export function useLocalStorage<T extends string | number | boolean | object | n
             console.error(`Failed to parse value "${stored}" from local storage key "${key}". Resetting key`);
             localStorage.removeItem(key);
         }
+    } else {
+        const stringified = serialize(storageSyncedRef.value);
+        localStorage.setItem(key, stringified);
     }
 
     watch(
