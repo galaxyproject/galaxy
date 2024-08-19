@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import ToolHelp from "./ToolHelp";
+import ToolHelpRst from "./ToolHelpRst";
 
 const localVue = getLocalVue();
 
@@ -25,9 +25,9 @@ const expectedHelpText = `
 <h6>h4 Heading</h6>
 <a target="_blank">empty link</a>`;
 
-describe("ToolHelp", () => {
+describe("ToolHelp RST", () => {
     it("modifies help text", () => {
-        const wrapper = mount(ToolHelp, {
+        const wrapper = mount(ToolHelpRst, {
             propsData: {
                 content: inputHelpText,
             },

@@ -41,6 +41,7 @@ from .interface import (
     DrillDownDynamicOptions,
     DrillDownOptionsDict,
     DynamicOptions,
+    HelpContent,
     InputSource,
     PageSource,
     PagesSource,
@@ -649,9 +650,14 @@ class XmlToolSource(ToolSource):
         else:
             return string_as_bool(default)
 
-    def parse_help(self):
+    def parse_help(self) -> Optional[HelpContent]:
         help_elem = self.root.find("help")
-        return help_elem.text if help_elem is not None else None
+        if help_elem is None:
+            return None
+
+        help_format = help_elem.get("format", "restructuredtext")
+        content = help_elem.text or ""
+        return HelpContent(format=help_format, content=content)
 
     @property
     def macro_paths(self):

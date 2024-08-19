@@ -222,6 +222,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
     webapp.add_client_route("/carbon_emissions_calculations")
+    webapp.add_client_route("/help/terms/{term_id}")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/tools/list")
