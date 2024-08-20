@@ -75,9 +75,9 @@ type CopyContentBodyType = components["schemas"]["CreateHistoryContentPayload"];
 export async function copyContent(
     contentId: CopyContentBodyType["content"],
     historyId: CopyContentParamsType["path"]["history_id"],
-    type: CopyContentParamsType["path"]["type"] = "dataset",
-    source: CopyContentBodyType["source"] = "hda"
+    type: CopyContentParamsType["path"]["type"] = "dataset"
 ) {
+    const source = type === "dataset" ? "hda" : "hdca";
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
             path: { history_id: historyId, type },
