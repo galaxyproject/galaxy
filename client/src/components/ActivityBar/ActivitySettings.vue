@@ -19,10 +19,11 @@ library.add({
 });
 
 const props = defineProps<{
+    activityBarScope: string;
     query: string;
 }>();
 
-const activityStore = useActivityStore();
+const activityStore = useActivityStore(props.activityBarScope);
 const { activities } = storeToRefs(activityStore);
 const activityAction = useActivityAction();
 

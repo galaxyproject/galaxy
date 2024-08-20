@@ -10,7 +10,11 @@ import ActivitySettings from "@/components/ActivityBar/ActivitySettings.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
-const activityStore = useActivityStore();
+const props = defineProps<{
+    activityBarScope: string;
+}>();
+
+const activityStore = useActivityStore(props.activityBarScope);
 
 const confirmRestore = ref(false);
 const query = ref("");
@@ -37,7 +41,7 @@ function onQuery(newQuery: string) {
                 <FontAwesomeIcon :icon="faUndo" fixed-width />
             </BButton>
         </template>
-        <ActivitySettings :query="query" />
+        <ActivitySettings :query="query" :activity-bar-scope="props.activityBarScope" />
         <BModal
             v-model="confirmRestore"
             title="Restore Activity Bar Defaults"

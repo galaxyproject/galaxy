@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref, watch } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
-import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
@@ -24,6 +23,19 @@ import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 
+const props = withDefaults(
+    defineProps<{
+        defaultActivities?: Activity[];
+        activityBarId?: string;
+        specialActivities?: Activity[];
+    }>(),
+    {
+        defaultActivities: undefined,
+        activityBarId: "default",
+        specialActivities: () => [],
+    }
+);
+
 // require user to long click before dragging
 const DRAG_DELAY = 50;
 
@@ -32,10 +44,8 @@ const { config, isConfigLoaded } = useConfig();
 const route = useRoute();
 const userStore = useUserStore();
 
-const { hashedUserId } = useHashedUserId();
-
 const eventStore = useEventStore();
-const activityStore = useActivityStore();
+const activityStore = useActivityStore(props.activityBarId);
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
@@ -49,9 +59,6 @@ const dragItem: Ref<Activity | null> = ref(null);
 
 // drag state
 const isDragging = ref(false);
-
-// sync built-in activities with cached activities
-activityStore.sync();
 
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
@@ -132,12 +139,9 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
     userStore.toggleSideBar(toggle);
 }
 
-watch(
-    () => hashedUserId.value,
-    () => {
-        activityStore.sync();
-    }
-);
+defineExpose({
+    isActiveSideBar,
+});
 </script>
 
 <template>
@@ -226,6 +230,28 @@ watch(
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="onToggleSidebar('admin')" />
+                <template v-for="activity in props.specialActivities">
+                    <ActivityItem
+                        v-if="activity.panel"
+                        :id="`activity-${activity.id}`"
+                        :key="activity.id"
+                        :icon="activity.icon"
+                        :is-active="panelActivityIsActive(activity)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to || ''"
+                        @click="onToggleSidebar(activity.id, activity.to)" />
+                    <ActivityItem
+                        v-else-if="activity.to"
+                        :id="`activity-${activity.id}`"
+                        :key="activity.id"
+                        :icon="activity.icon"
+                        :is-active="isActiveRoute(activity.to)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to"
+                        @click="onToggleSidebar()" />
+                </template>
             </b-nav>
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
@@ -234,8 +260,9 @@ watch(
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <SettingsPanel v-else-if="isActiveSideBar('settings')" />
+            <SettingsPanel v-else-if="isActiveSideBar('settings')" :activity-bar-scope="props.activityBarId" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
+            <slot name="side-panel"></slot>
         </FlexPanel>
     </div>
 </template>

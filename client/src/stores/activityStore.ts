@@ -1,13 +1,14 @@
 /**
  * Stores the Activity Bar state
  */
+import { watchImmediate } from "@vueuse/core";
+import { computed, type Ref, ref } from "vue";
 
-import { defineStore } from "pinia";
-import { type Ref } from "vue";
-
+import { useHashedUserId } from "@/composables/hashedUserId";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
-import { Activities } from "./activitySetup";
+import { defaultActivities } from "./activitySetup";
+import { defineScopedStore } from "./scopedStore";
 
 export interface Activity {
     // determine wether an anonymous user can access this activity
@@ -34,14 +35,36 @@ export interface Activity {
     visible: boolean;
 }
 
-export const useActivityStore = defineStore("activityStore", () => {
-    const activities: Ref<Array<Activity>> = useUserLocalStorage("activity-store-activities", []);
+export const useActivityStore = defineScopedStore("activityStore", (scope) => {
+    const activities: Ref<Array<Activity>> = useUserLocalStorage(`activity-store-activities-${scope}`, []);
+
+    const { hashedUserId } = useHashedUserId();
+
+    watchImmediate(
+        () => hashedUserId.value,
+        () => {
+            sync();
+        }
+    );
+
+    const customDefaultActivities = ref<Activity[] | null>(null);
+    const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
+
+    function overrideDefaultActivities(activities: Activity[]) {
+        customDefaultActivities.value = activities;
+        sync();
+    }
+
+    function resetDefaultActivities() {
+        customDefaultActivities.value = null;
+        sync();
+    }
 
     /**
      * Restores the default activity bar items
      */
     function restore() {
-        activities.value = Activities.slice();
+        activities.value = currentDefaultActivities.value.slice();
     }
 
     /**
@@ -52,12 +75,15 @@ export const useActivityStore = defineStore("activityStore", () => {
     function sync() {
         // create a map of built-in activities
         const activitiesMap: Record<string, Activity> = {};
-        Activities.forEach((a) => {
+
+        currentDefaultActivities.value.forEach((a) => {
             activitiesMap[a.id] = a;
         });
+
         // create an updated array of activities
         const newActivities: Array<Activity> = [];
         const foundActivity = new Set();
+
         activities.value.forEach((a: Activity) => {
             if (a.mutable) {
                 // existing custom activity
@@ -66,6 +92,7 @@ export const useActivityStore = defineStore("activityStore", () => {
                 // update existing built-in activity attributes
                 // skip legacy built-in activities
                 const sourceActivity = activitiesMap[a.id];
+
                 if (sourceActivity) {
                     foundActivity.add(a.id);
                     newActivities.push({
@@ -75,12 +102,14 @@ export const useActivityStore = defineStore("activityStore", () => {
                 }
             }
         });
+
         // add new built-in activities
-        Activities.forEach((a) => {
+        currentDefaultActivities.value.forEach((a) => {
             if (!foundActivity.has(a.id)) {
                 newActivities.push({ ...a });
             }
         });
+
         // update activities stored in local cache only if changes were applied
         if (JSON.stringify(activities.value) !== JSON.stringify(newActivities)) {
             activities.value = newActivities;
@@ -97,6 +126,7 @@ export const useActivityStore = defineStore("activityStore", () => {
 
     function remove(activityId: string) {
         const findIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+
         if (findIndex !== -1) {
             activities.value.splice(findIndex, 1);
         }
@@ -109,5 +139,9 @@ export const useActivityStore = defineStore("activityStore", () => {
         setAll,
         restore,
         sync,
+        customDefaultActivities,
+        currentDefaultActivities,
+        overrideDefaultActivities,
+        resetDefaultActivities,
     };
 });
