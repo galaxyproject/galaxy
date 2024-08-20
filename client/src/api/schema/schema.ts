@@ -16754,7 +16754,7 @@ export interface components {
              * Groups
              * @description The groups of the plugin.
              */
-            groups: Record<string, never>[];
+            groups?: Record<string, never>[] | null;
             /**
              * Href
              * @description The href of the plugin.
@@ -16769,7 +16769,7 @@ export interface components {
              * Logo
              * @description The logo of the plugin.
              */
-            logo: string;
+            logo?: string | null;
             /**
              * Name
              * @description The name of the plugin.

@@ -153,8 +153,8 @@ class VisualizationPluginResponse(Model):
         title="Description",
         description="The description of the plugin.",
     )
-    logo: str = Field(
-        ...,
+    logo: Optional[str] = Field(
+        None,
         title="Logo",
         description="The logo of the plugin.",
     )
@@ -183,8 +183,8 @@ class VisualizationPluginResponse(Model):
         title="Settings",
         description="The settings of the plugin.",
     )
-    groups: List[Dict] = Field(
-        ...,
+    groups: Optional[List[Dict]] = Field(
+        None,
         title="Groups",
         description="The groups of the plugin.",
     )
