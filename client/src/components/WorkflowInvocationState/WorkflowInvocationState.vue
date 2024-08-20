@@ -11,6 +11,7 @@ import { useAnimationFrameResizeObserver } from "@/composables/sensors/animation
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { cancelWorkflowScheduling } from "./services";
 import { isTerminal, jobCount, runningCount } from "./util";
@@ -49,6 +50,8 @@ const invocationStore = useInvocationStore();
 
 const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
+const initialLoading = ref(true);
+const errorMessage = ref<string | null>(null);
 
 // after the report tab is first activated, no longer lazy-render it from then on
 const reportActive = ref(false);
@@ -69,8 +72,10 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.height >= clientSize.height + 1;
 });
 
-const invocation = computed(
-    () => invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView
+const invocation = computed(() =>
+    !initialLoading.value
+        ? (invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView)
+        : null
 );
 const invocationState = computed(() => invocation.value?.state || "new");
 const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
@@ -105,9 +110,17 @@ const workflowStore = useWorkflowStore();
 const isDeletedWorkflow = computed(() => getWorkflow()?.deleted === true);
 const workflowVersion = computed(() => getWorkflow()?.version);
 
-onMounted(() => {
-    pollStepStatesUntilTerminal();
-    pollJobStatesUntilTerminal();
+onMounted(async () => {
+    try {
+        await invocationStore.fetchInvocationForId({ id: props.invocationId });
+        initialLoading.value = false;
+        if (invocation.value) {
+            await pollStepStatesUntilTerminal();
+            await pollJobStatesUntilTerminal();
+        }
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    }
 });
 
 onUnmounted(() => {
@@ -116,7 +129,7 @@ onUnmounted(() => {
 });
 
 async function pollStepStatesUntilTerminal() {
-    if (!invocation.value || !invocationSchedulingTerminal.value) {
+    if (!invocationSchedulingTerminal.value) {
         await invocationStore.fetchInvocationForId({ id: props.invocationId });
         stepStatesInterval.value = setTimeout(pollStepStatesUntilTerminal, 3000);
     }
@@ -152,7 +165,7 @@ function getWorkflowId() {
 }
 
 function getWorkflowName() {
-    return workflowStore.getStoredWorkflowNameByInstanceId(invocation.value?.workflow_id);
+    return workflowStore.getStoredWorkflowNameByInstanceId(invocation.value?.workflow_id || "");
 }
 </script>
 
@@ -261,6 +274,9 @@ function getWorkflowName() {
             </BTab>
         </BTabs>
     </div>
+    <BAlert v-else-if="errorMessage" variant="danger" show>
+        {{ errorMessage }}
+    </BAlert>
     <BAlert v-else variant="info" show>
         <LoadingSpan message="Loading invocation" />
     </BAlert>
