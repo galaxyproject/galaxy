@@ -4,7 +4,7 @@
 import { type Activity } from "@/stores/activityStore";
 import { type EventData } from "@/stores/eventStore";
 
-export const Activities = [
+export const defaultActivities = [
     {
         anonymous: false,
         description: "Displays currently running interactive tools (ITs), if these are enabled by the administrator.",
@@ -148,7 +148,7 @@ export const Activities = [
         to: "/libraries",
         visible: true,
     },
-];
+] as const;
 
 export function convertDropData(data: EventData): Activity | null {
     if (data.history_content_type === "dataset") {
