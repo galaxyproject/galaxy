@@ -67,19 +67,16 @@ watch(
     () => propShowModal.value,
     (show: boolean) => {
         let helpModeId;
-        let helpModeIcon;
         if (props.multiple) {
             if (show) {
                 selectedHistories.value = [...pinnedHistories.value];
             }
             helpModeId = "selector_modal_multiview";
-            helpModeIcon = faCheckSquare;
         } else {
             helpModeId = "selector_modal_switch";
-            helpModeIcon = faExchangeAlt;
         }
         if (show) {
-            helpModeStore.storeHelpModeText(helpModeId, helpModeIcon);
+            helpModeStore.storeHelpModeText(helpModeId);
         } else {
             helpModeStore.clearHelpModeText(helpModeId);
         }

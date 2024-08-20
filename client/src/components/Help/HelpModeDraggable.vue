@@ -98,7 +98,7 @@ function resetPosition() {
                 <FontAwesomeIcon :icon="faTimes" />
             </BButton>
         </div>
-        <HelpModeText />
+        <HelpModeText tabbed />
     </div>
 </template>
 

@@ -2,7 +2,6 @@
  * A pinia store for the Galaxy Help Mode.
  */
 
-import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -14,7 +13,7 @@ import config from "./helpTextConfig.yml";
 interface HelpContent {
     title: string;
     content: string;
-    icon?: IconDefinition;
+    icon?: string;
 }
 interface HelpModeStyle {
     width: string;
@@ -22,6 +21,10 @@ interface HelpModeStyle {
     top?: string;
     left?: string;
 }
+
+export const routeTextIds: Record<string, string[]> = {
+    "/": ["galaxy_intro", "history_system"],
+};
 
 export const DEFAULT_HELP_TEXT = "Welcome to Galaxy Help Mode!";
 
@@ -45,6 +48,8 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
     const invalidIds = ref<string[]>([]);
     /** The ids of the components for which help text was requested while help mode was disabled */
     const idsToStore = ref<string[]>([]);
+    /** The route for which help text is loaded */
+    const currentHelpRoute = ref<string | null>(null);
 
     const status = computed(() => toggledSideBar.value === "help" || draggableActive.value);
 
@@ -65,7 +70,7 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
         }
     });
 
-    async function storeHelpModeText(id: string, icon?: IconDefinition) {
+    async function storeHelpModeText(id: string, top = false) {
         // if help mode is disabled, store the id in the temp array and return
         if (!status.value) {
             idsToStore.value.push(id);
@@ -83,27 +88,54 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
                 throw new Error(`No help mode config found for ${id}`);
             }
 
-            const { title, file_path } = config[id];
+            const { title, file_path, icon } = config[id];
 
             // if the text is already stored, don't fetch it again
             if (!contents.value[id]) {
-                const response = await fetch(
-                    "https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/" + file_path
-                );
+                const response = await fetch(file_path);
                 const text = await response.text();
                 contents.value[id] = { title, content: text, icon };
             }
 
             // set the active tab to the id
             activeTab.value = id;
-            // move this id to the top of the stack
-            currentTabs.value.push(id);
+
+            if (top) {
+                // move this id to the top of the stack
+                currentTabs.value = [id, ...currentTabs.value];
+            } else {
+                // move this id to the end of the stack
+                currentTabs.value.push(id);
+            }
         } catch (error) {
             console.error(`Failed to fetch help mode text for ${id}`, error);
             invalidIds.value.push(id);
             rethrowSimple(error);
         } finally {
             loading.value = false;
+        }
+    }
+
+    async function storeHelpModeTextForRoute(route: string) {
+        if (currentHelpRoute.value === route) {
+            return;
+        } else if (currentHelpRoute.value) {
+            // clear the previous route's help text(s)
+            const lastIds = routeTextIds[currentHelpRoute.value];
+            if (lastIds) {
+                for (const id of lastIds) {
+                    clearHelpModeText(id);
+                }
+            }
+        }
+        // now, set the current route
+        currentHelpRoute.value = route;
+        // load the help text(s) for the new route
+        const ids = routeTextIds[route];
+        if (ids) {
+            for (const id of ids) {
+                await storeHelpModeText(id);
+            }
         }
     }
 
@@ -147,5 +179,8 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
         clearHelpModeText,
         /** Adds help mode text for the given Galaxy component `id` if help mode is enabled */
         storeHelpModeText,
+        /** Adds help mode text(s) for the given Galaxy route if help mode is enabled */
+        storeHelpModeTextForRoute,
+        currentHelpRoute,
     };
 });

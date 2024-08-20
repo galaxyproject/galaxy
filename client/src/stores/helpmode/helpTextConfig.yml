@@ -1,12 +1,24 @@
 tool_form_base:
   title: Tool Form
-  file_path: tools/tool_form_base.md
+  file_path: https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/tools/tool_form_base.md
+  icon: fa-wrench
 collection_builder:
   title: Collection Builder
-  file_path: collections/collection_builder.md
+  file_path: https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/collections/collection_builder.md
 selector_modal_switch:
   title: History Selector
-  file_path: histories/selector_modal_switch.md
+  file_path: https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/histories/selector_modal_switch.md
+  icon: fa-exchange-alt
 selector_modal_multiview:
   title: History Selector
-  file_path: histories/selector_modal_multiview.md
+  file_path: https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/histories/selector_modal_multiview.md
+  icon: fa-columns
+galaxy_intro:
+  title: A short introduction to Galaxy
+  file_path: https://raw.githubusercontent.com/galaxyproject/training-material/main/topics/introduction/tutorials/galaxy-intro-short/tutorial.md
+  origin: training-material
+history_system:
+  title: Understanding Histories
+  file_path: https://raw.githubusercontent.com/galaxyproject/training-material/main/topics/galaxy-interface/tutorials/history/tutorial.md
+  origin: training-material
+  icon: fa-hdd

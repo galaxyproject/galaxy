@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCard } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 
 import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
@@ -44,13 +44,11 @@ function toggleOut() {
 
         <template v-slot:header>
             <div v-localize class="ml-1">
-                This is Galaxy's help mode. It shows help text for the current component you are interacting with.
+                This is Galaxy's help mode. It shows help text for the current view you are interacting with.
             </div>
         </template>
 
-        <BCard class="help-text">
-            <HelpModeText />
-        </BCard>
+        <HelpModeText class="help-text" />
     </ActivityPanel>
 </template>
 
@@ -58,7 +56,6 @@ function toggleOut() {
 .help-text {
     display: flex;
     flex-direction: column;
-    background-color: aliceblue;
     overflow: auto;
 }
 </style>

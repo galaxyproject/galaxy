@@ -159,7 +159,7 @@ export default {
     methods: {
         ...mapActions(useHelpModeStore, ["storeHelpModeText", "clearHelpModeText"]),
         callHelpMode() {
-            this.storeHelpModeText("tool_form_base");
+            this.storeHelpModeText("tool_form_base", true);
         },
         buildFormData() {
             const params = {};

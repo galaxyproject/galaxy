@@ -30,6 +30,49 @@ function addRuleOpenLinksInNewPage(engine: MarkdownIt) {
     };
 }
 
+function addRulePrependInternalRouteToInternalLinks(engine: MarkdownIt, internalRoute: string) {
+    const defaultRender =
+        engine.renderer.rules.link_open ||
+        function (tokens, idx, options, _env, self) {
+            return self.renderToken(tokens, idx, options);
+        };
+
+    engine.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+        const token = tokens[idx];
+
+        if (token) {
+            const hrefIndex = token.attrIndex("href");
+
+            if (hrefIndex >= 0) {
+                const href = token.attrs![hrefIndex]![1];
+                if (href.startsWith("/")) {
+                    token.attrs![hrefIndex]![1] = `${internalRoute}${href}`;
+                }
+            }
+        }
+
+        return defaultRender(tokens, idx, options, env, self);
+    };
+}
+
+function addRuleRemoveBeforeFirstH1(engine: MarkdownIt) {
+    const defaultRender = engine.renderer.render;
+
+    engine.renderer.render = function (tokens, options, env) {
+        let firstH1Index = tokens.findIndex((token) => token.type === "heading_open" && token.tag === "h1");
+
+        if (firstH1Index !== -1) {
+            // If there's a closing tag for the h1, we need to keep it
+            if (tokens[firstH1Index + 1]?.type === "heading_close") {
+                firstH1Index++;
+            }
+            tokens = tokens.slice(firstH1Index);
+        }
+
+        return defaultRender.call(this, tokens, options, env);
+    };
+}
+
 function addRuleHeadingIncreaseLevel(engine: MarkdownIt, increaseBy: number) {
     const defaultOpen =
         engine.renderer.rules.heading_open ||
@@ -119,9 +162,11 @@ function adjustMdForOptions(markdown: string, options: UseMarkdownOptions) {
 interface UseMarkdownOptions {
     openLinksInNewPage?: boolean;
     increaseHeadingLevelBy?: number;
+    removeContentBeforeFirstH1?: boolean;
     html?: boolean;
     appendHrRuleToDetails?: boolean;
     replaceCodeWithIcon?: boolean;
+    internalRoute?: string;
 }
 
 type RawMarkdown = string;
@@ -133,6 +178,14 @@ export function useMarkdown(options: UseMarkdownOptions = {}) {
 
     if (options.openLinksInNewPage) {
         addRuleOpenLinksInNewPage(mdEngine);
+    }
+
+    if (options.removeContentBeforeFirstH1) {
+        addRuleRemoveBeforeFirstH1(mdEngine);
+    }
+
+    if (options.internalRoute) {
+        addRulePrependInternalRouteToInternalLinks(mdEngine, options.internalRoute);
     }
 
     if (options.increaseHeadingLevelBy) {
