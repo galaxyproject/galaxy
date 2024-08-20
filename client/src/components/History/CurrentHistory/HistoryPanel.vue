@@ -4,7 +4,6 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
 import { type HistoryItemSummary, type HistorySummaryExtended, isHistoryItem, userOwnsHistory } from "@/api";
-import { copyContent } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
