@@ -16869,9 +16869,8 @@ export interface components {
             /**
              * Plugin
              * @description The plugin of this Visualization.
-             * @default {}
              */
-            plugin: components["schemas"]["VisualizationPluginResponse"] | null;
+            plugin?: components["schemas"]["VisualizationPluginResponse"] | null;
             /**
              * Revisions
              * @description A list of encoded IDs of the revisions of this Visualization.
@@ -16885,9 +16884,8 @@ export interface components {
             /**
              * Tags
              * @description A list of tags to add to this item.
-             * @default []
              */
-            tags: components["schemas"]["TagCollection"] | null;
+            tags?: components["schemas"]["TagCollection"] | null;
             /**
              * Title
              * @description The name of the visualization.
@@ -16993,7 +16991,7 @@ export interface components {
              * @description The config of the visualization.
              * @default {}
              */
-            config: Record<string, never> | null;
+            config: Record<string, never> | string | null;
             /**
              * DbKey
              * @description The database key of the visualization.
