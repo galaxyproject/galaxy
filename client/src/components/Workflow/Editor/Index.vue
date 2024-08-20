@@ -27,17 +27,25 @@
                 <b-form-textarea v-model="saveAsAnnotation" />
             </b-form-group>
         </b-modal>
-        <FlexPanel side="left">
-            <ToolPanel
-                workflow
-                :module-sections="moduleSections"
-                :data-managers="dataManagers"
-                :editor-workflows="workflows"
-                @onInsertTool="onInsertTool"
-                @onInsertModule="onInsertModule"
-                @onInsertWorkflow="onInsertWorkflow"
-                @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-        </FlexPanel>
+        <ActivityBar
+            ref="activityBar"
+            :default-activities="workflowEditorActivities"
+            :special-activities="specialWorkflowActivities"
+            activity-bar-id="workflow-editor"
+            :show-admin="false">
+            <template v-slot:side-panel>
+                <ToolPanel
+                    v-if="activityBar.isActiveSideBar('workflow-editor-tools')"
+                    workflow
+                    :module-sections="moduleSections"
+                    :data-managers="dataManagers"
+                    :editor-workflows="workflows"
+                    @onInsertTool="onInsertTool"
+                    @onInsertModule="onInsertModule"
+                    @onInsertWorkflow="onInsertWorkflow"
+                    @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+            </template>
+        </ActivityBar>
         <div id="center" class="workflow-center">
             <div class="editor-top-bar" unselectable="on">
                 <span>
@@ -212,6 +220,7 @@ import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
+import { specialWorkflowActivities, workflowEditorActivities } from "./modules/activities";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
@@ -225,6 +234,7 @@ import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
 import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
@@ -236,6 +246,7 @@ library.add(faArrowLeft, faArrowRight, faHistory);
 
 export default {
     components: {
+        ActivityBar,
         MarkdownEditor,
         FlexPanel,
         SaveChangesModal,
@@ -457,6 +468,8 @@ export default {
 
         const stepActions = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
+        const activityBar = ref(null);
+
         return {
             id,
             name,
@@ -496,6 +509,7 @@ export default {
             initialLoading,
             stepActions,
             undoRedoStore,
+            activityBar,
         };
     },
     data() {
@@ -520,6 +534,8 @@ export default {
             debounceTimer: null,
             showSaveChangesModal: false,
             navUrl: "",
+            workflowEditorActivities,
+            specialWorkflowActivities,
         };
     },
     computed: {

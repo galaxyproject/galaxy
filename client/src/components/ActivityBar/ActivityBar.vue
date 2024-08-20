@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
@@ -28,11 +29,13 @@ const props = withDefaults(
         defaultActivities?: Activity[];
         activityBarId?: string;
         specialActivities?: Activity[];
+        showAdmin?: boolean;
     }>(),
     {
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
+        showAdmin: true,
     }
 );
 
@@ -46,6 +49,18 @@ const userStore = useUserStore();
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
+
+watchImmediate(
+    () => props.defaultActivities,
+    (defaults) => {
+        if (defaults) {
+            activityStore.overrideDefaultActivities(defaults);
+        } else {
+            activityStore.resetDefaultActivities();
+        }
+    }
+);
+
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
@@ -222,7 +237,7 @@ defineExpose({
                     tooltip="View additional activities"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
-                    v-if="isAdmin"
+                    v-if="isAdmin && showAdmin"
                     id="activity-admin"
                     icon="user-cog"
                     :is-active="isActiveSideBar('admin')"
