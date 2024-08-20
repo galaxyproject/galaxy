@@ -1224,6 +1224,8 @@ export interface components {
              * @enum {string}
              */
             parameter_type: "gx_data_collection"
+            /** Value */
+            value: Record<string, never> | null
         }
         /** DataColumnParameterModel */
         DataColumnParameterModel: {

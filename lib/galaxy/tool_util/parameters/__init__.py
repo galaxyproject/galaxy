@@ -1,3 +1,4 @@
+from .case import test_case_state
 from .convert import (
     decode,
     encode,
@@ -7,6 +8,7 @@ from .factory import (
     input_models_for_pages,
     input_models_for_tool_source,
     input_models_from_json,
+    ParameterDefinitionError,
     tool_parameter_bundle_from_json,
 )
 from .json import to_json_schema_string
@@ -68,6 +70,7 @@ __all__ = (
     "input_models_for_tool_source",
     "tool_parameter_bundle_from_json",
     "input_models_from_json",
+    "ParameterDefinitionError",
     "JobInternalToolState",
     "ToolParameterBundle",
     "ToolParameterBundleModel",
@@ -106,6 +109,7 @@ __all__ = (
     "TestCaseToolState",
     "ToolParameterT",
     "to_json_schema_string",
+    "test_case_state",
     "RequestToolState",
     "RequestInternalToolState",
     "flat_state_path",

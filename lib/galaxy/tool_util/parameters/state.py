@@ -17,6 +17,7 @@ from .models import (
     create_job_internal_model,
     create_request_internal_model,
     create_request_model,
+    create_test_case_model,
     create_workflow_step_linked_model,
     create_workflow_step_model,
     StateRepresentationT,
@@ -91,12 +92,12 @@ class JobInternalToolState(ToolState):
 
 
 class TestCaseToolState(ToolState):
-    state_representation: Literal["test_case"] = "test_case"
+    state_representation: Literal["test_case_xml"] = "test_case_xml"
 
     @classmethod
     def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
         # implement a test case model...
-        return create_request_internal_model(input_models)
+        return create_test_case_model(input_models)
 
 
 class WorkflowStepToolState(ToolState):

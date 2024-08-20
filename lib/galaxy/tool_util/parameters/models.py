@@ -39,7 +39,10 @@ from typing_extensions import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.tool_util.parser.interface import DrillDownOptionsDict
+from galaxy.tool_util.parser.interface import (
+    DrillDownOptionsDict,
+    TestCollectionDefDict,
+)
 from ._types import (
     cast_as_type,
     is_optional,
@@ -57,7 +60,7 @@ from ._types import (
 # + request_internal: This is a pydantic model to validate what Galaxy expects to find in the database,
 # in particular dataset and collection references should be decoded integers.
 StateRepresentationT = Literal[
-    "request", "request_internal", "job_internal", "test_case", "workflow_step", "workflow_step_linked"
+    "request", "request_internal", "job_internal", "test_case_xml", "workflow_step", "workflow_step_linked"
 ]
 
 
@@ -119,17 +122,16 @@ class ParamModel(Protocol):
 
 
 def dynamic_model_information_from_py_type(
-    param_model: ParamModel, py_type: Type, requires_value: Optional[bool] = None
+    param_model: ParamModel, py_type: Type, requires_value: Optional[bool] = None, validators=None
 ):
     name = param_model.name
     if requires_value is None:
         requires_value = param_model.request_requires_value
     initialize = ... if requires_value else None
     py_type_is_optional = is_optional(py_type)
+    validators = validators or {}
     if not py_type_is_optional and not requires_value:
-        validators = {"not_null": field_validator(name)(Validators.validate_not_none)}
-    else:
-        validators = {}
+        validators["not_null"] = field_validator(name)(Validators.validate_not_none)
 
     return DynamicModelInformation(
         name,
@@ -310,9 +312,9 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
-            base_model = MultiDataRequestInternal
+            base_model = str
         else:
-            base_model = DataTestCaseValue
+            base_model = str
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
@@ -324,7 +326,7 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
             )
         elif state_representation == "job_internal":
             return dynamic_model_information_from_py_type(self, self.py_type_internal)
-        elif state_representation == "test_case":
+        elif state_representation == "test_case_xml":
             return dynamic_model_information_from_py_type(self, self.py_type_test_case)
         elif state_representation == "workflow_step":
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
@@ -369,6 +371,8 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
             return dynamic_model_information_from_py_type(self, type(None), requires_value=False)
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
+        elif state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, TestCollectionDefDict)
         else:
             raise NotImplementedError(
                 f"Have not implemented data collection parameter models for state representation {state_representation}"
@@ -536,7 +540,14 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
     options: Optional[List[LabelValue]] = None
     multiple: bool
 
-    def py_type_if_required(self, allow_connections=False) -> Type:
+    @staticmethod
+    def split_str(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return [x.strip() for x in data.split(",")]
+
+        return data
+
+    def py_type_if_required(self, allow_connections: bool = False) -> Type:
         if self.options is not None:
             if len(self.options) > 0:
                 literal_options: List[Type] = [cast_as_type(Literal[o.value]) for o in self.options]
@@ -569,6 +580,16 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             py_type = self.py_type_if_required(allow_connections=True)
             return dynamic_model_information_from_py_type(self, optional_if_needed(py_type, self.optional))
+        elif state_representation == "test_case_xml":
+            # in a YAML test case representation this can be string, in XML we are still expecting a comma separated string
+            py_type = self.py_type_if_required(allow_connections=False)
+            if self.multiple:
+                validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
+            else:
+                validators = {}
+            return dynamic_model_information_from_py_type(
+                self, optional_if_needed(py_type, self.optional), validators=validators
+            )
         else:
             return dynamic_model_information_from_py_type(self, self.py_type)
 
@@ -662,8 +683,16 @@ class DrillDownParameterModel(BaseGalaxyToolParameterModelDefinition):
 
         return py_type
 
+    @property
+    def py_type_test_case_xml(self) -> Type:
+        base_model = str
+        return optional_if_needed(base_model, not self.request_requires_value)
+
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        if state_representation == "test_case_xml":
+            return dynamic_model_information_from_py_type(self, self.py_type_test_case_xml)
+        else:
+            return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
@@ -693,6 +722,15 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
     multiple: bool
 
+    @staticmethod
+    def split_str(cls, data: Any) -> Any:
+        if isinstance(data, str):
+            return [int(x.strip()) for x in data.split(",")]
+        elif isinstance(data, int):
+            return [data]
+
+        return data
+
     @property
     def py_type(self) -> Type:
         py_type: Type = StrictInt
@@ -701,7 +739,16 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
         return optional_if_needed(py_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-        return dynamic_model_information_from_py_type(self, self.py_type)
+        if state_representation == "test_case_xml":
+            if self.multiple:
+                validators = {
+                    "from_string": field_validator(self.name, mode="before")(DataColumnParameterModel.split_str)
+                }
+            else:
+                validators = {}
+            return dynamic_model_information_from_py_type(self, self.py_type, validators=validators)
+        else:
+            return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
@@ -1125,13 +1172,6 @@ class ToolParameterBundleModel(BaseModel):
     input_models: List[ToolParameterT]
 
 
-def parameters_by_name(tool_parameter_bundle: ToolParameterBundle) -> Dict[str, ToolParameterT]:
-    as_dict = {}
-    for input_model in simple_input_models(tool_parameter_bundle.input_models):
-        as_dict[input_model.name] = input_model
-    return as_dict
-
-
 def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) -> ToolParameterT:
     if input_parameter.__class__ == ToolParameterModel:
         assert isinstance(input_parameter, ToolParameterModel)
@@ -1166,7 +1206,7 @@ def create_job_internal_model(tool: ToolParameterBundle, name: str = "DynamicMod
 
 
 def create_test_case_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:
-    return create_field_model(tool.input_models, name, "test_case")
+    return create_field_model(tool.input_models, name, "test_case_xml")
 
 
 def create_workflow_step_model(tool: ToolParameterBundle, name: str = "DynamicModelForTool") -> Type[BaseModel]:

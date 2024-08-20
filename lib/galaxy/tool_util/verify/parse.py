@@ -5,11 +5,16 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
 from packaging.version import Version
 
+from galaxy.tool_util.parameters import (
+    input_models_for_tool_source,
+    test_case_state as case_state,
+)
 from galaxy.tool_util.parser.interface import (
     InputSource,
     TestCollectionDef,
@@ -52,10 +57,38 @@ def parse_tool_test_descriptions(
     """
     Build ToolTestDescription objects for each test description.
     """
+    validate_on_load = Version(tool_source.parse_profile()) >= Version("24.2")
     raw_tests_dict: ToolSourceTests = tool_source.parse_tests_to_dict()
     tests: List[ToolTestDescription] = []
+
+    profile = tool_source.parse_profile()
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
-        test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
+        validation_exception: Optional[Exception] = None
+        if validate_on_load:
+            tool_parameter_bundle = input_models_for_tool_source(tool_source)
+            try:
+                case_state(raw_test_dict, tool_parameter_bundle.input_models, profile, validate=True)
+            except Exception as e:
+                # TOOD: restrict types of validation exceptions a bit probably?
+                validation_exception = e
+
+        if validation_exception:
+            tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
+            test = ToolTestDescription.from_tool_source_dict(
+                InvalidToolTestDict(
+                    {
+                        "tool_id": tool_id,
+                        "tool_version": tool_version,
+                        "test_index": i,
+                        "inputs": {},
+                        "error": True,
+                        "exception": unicodify(validation_exception),
+                        "maxseconds": None,
+                    }
+                )
+            )
+        else:
+            test = _description_from_tool_source(tool_source, raw_test_dict, i, tool_guid)
         tests.append(test)
     return tests
 
@@ -74,10 +107,7 @@ def _description_from_tool_source(
     if maxseconds is not None:
         maxseconds = int(maxseconds)
 
-    tool_id = tool_guid or tool_source.parse_id()
-    assert tool_id
-    tool_version = parse_tool_version_with_defaults(tool_id, tool_source)
-
+    tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)
     processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
     try:
         processed_inputs = _process_raw_inputs(
@@ -125,6 +155,13 @@ def _description_from_tool_source(
         )
 
     return ToolTestDescription.from_tool_source_dict(processed_test_dict)
+
+
+def _tool_id_and_version(tool_source: ToolSource, tool_guid: Optional[str]) -> Tuple[str, str]:
+    tool_id = tool_guid or tool_source.parse_id()
+    assert tool_id
+    tool_version = parse_tool_version_with_defaults(tool_id, tool_source)
+    return tool_id, tool_version
 
 
 def _process_raw_inputs(

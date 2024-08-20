@@ -101,7 +101,7 @@ class TestTestParsing(TestCase):
         self._init_tool_for_path(functional_test_tool_path("deprecated/simple_constructs_24_2.xml"))
         test_dicts = self._parse_tests()
         test_0 = test_dicts[0].to_dict()
-        assert "p1|p1use" not in test_0["inputs"]
+        assert test_0["error"] is True
 
     def test_bigwigtowig_converter(self):
         # defines
