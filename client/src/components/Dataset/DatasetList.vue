@@ -4,7 +4,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
 import { GalaxyApi, type HDASummary } from "@/api";
-import { copyDataset } from "@/api/datasets";
+import { copyContent } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -100,16 +100,13 @@ async function load(concat = false) {
     }
 }
 
-async function onCopyDataset(item: HDASummary) {
+async function onCopyContent(item: HDASummary) {
     const dataset_id = item.id;
-
     try {
         if (!currentHistoryId.value) {
             throw new Error("No current history found.");
         }
-
-        await copyDataset(dataset_id, currentHistoryId.value);
-
+        await copyContent(dataset_id, currentHistoryId.value, item.history_content_type);
         historyStore.loadCurrentHistory();
     } catch (error: any) {
         onError(error);
@@ -198,7 +195,7 @@ onMounted(() => {
             :items="rows"
             @sort-changed="onSort">
             <template v-slot:cell(name)="row">
-                <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
+                <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyContent" />
             </template>
 
             <template v-slot:cell(history_id)="row">
