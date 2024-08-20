@@ -261,7 +261,7 @@ class VisualizationShowResponse(Model):
         description="The hash of the email of the user owning this Visualization.",
     )
     tags: Optional[TagCollection] = Field(
-        [],
+        None,
         title="Tags",
         description="A list of tags to add to this item.",
     )
@@ -271,7 +271,7 @@ class VisualizationShowResponse(Model):
         description="The annotation of this Visualization.",
     )
     plugin: Optional[VisualizationPluginResponse] = Field(
-        {},
+        None,
         title="Plugin",
         description="The plugin of this Visualization.",
     )
@@ -299,7 +299,7 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    import_id: Optional[EncodedDatabaseIdField] = Field(
+    import_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="Import ID",
         description="The ID of the imported visualization.",

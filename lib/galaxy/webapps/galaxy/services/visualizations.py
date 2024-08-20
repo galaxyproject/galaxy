@@ -1,6 +1,7 @@
 import json
 import logging
 from typing import (
+    Optional,
     Tuple,
     Union,
 )
@@ -10,7 +11,7 @@ from galaxy.managers.base import (
     is_valid_slug,
     security_check,
 )
-from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sharable import (
     slug_exists,
     SlugBuilder,
@@ -40,8 +41,11 @@ from galaxy.schema.visualization import (
     VisualizationUpdateResponse,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.visualization.plugins.plugin import VisualizationPlugin
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
@@ -73,7 +77,7 @@ class VisualizationsService(ServiceBase):
 
     def index(
         self,
-        trans,
+        trans: ProvidesUserContext,
         payload: VisualizationIndexQueryPayload,
         include_total_count: bool = False,
     ) -> Tuple[VisualizationSummaryList, int]:
@@ -95,7 +99,7 @@ class VisualizationsService(ServiceBase):
 
     def show(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
     ) -> VisualizationShowResponse:
         """Return a dictionary containing the Visualization's details
@@ -132,13 +136,16 @@ class VisualizationsService(ServiceBase):
         dictionary["email_hash"] = md5_hash_str(visualization.user.email)
         dictionary["tags"] = visualization.make_tag_string_list()
         dictionary["annotation"] = get_item_annotation_str(trans.sa_session, trans.user, visualization)
-        if trans.app.visualizations_registry:
-            dictionary["plugin"] = trans.app.visualizations_registry.get_plugin(dictionary["type"]).to_dict()
+        app: StructuredApp = trans.app
+        if app.visualizations_registry:
+            visualizations_registry: VisualizationsRegistry = app.visualizations_registry
+            visualization_plugin: VisualizationPlugin = visualizations_registry.get_plugin(dictionary["type"])
+            dictionary["plugin"] = visualization_plugin.to_dict()
         return VisualizationShowResponse(**dictionary)
 
     def create(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         payload: VisualizationCreatePayload,
     ) -> VisualizationCreateResponse:
         """Returns a dictionary of the created visualization
@@ -163,7 +170,7 @@ class VisualizationsService(ServiceBase):
             save = payload.save
 
             # generate defaults - this will err if given a weird key?
-            visualization = self._create_visualization(trans, title, type, dbkey, slug, annotation, save)
+            visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation, save)
 
             # Create and save first visualization revision
             revision = trans.model.VisualizationRevision(
@@ -183,7 +190,7 @@ class VisualizationsService(ServiceBase):
 
     def update(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
         payload: VisualizationUpdatePayload,
     ) -> Union[VisualizationUpdateResponse, None]:
@@ -299,7 +306,7 @@ class VisualizationsService(ServiceBase):
 
     def _get_visualization(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
         check_ownership=True,
         check_accessible=False,
@@ -337,7 +344,7 @@ class VisualizationsService(ServiceBase):
 
     def _add_visualization_revision(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         visualization: Visualization,
         config: dict,
         title: str,
@@ -363,12 +370,12 @@ class VisualizationsService(ServiceBase):
 
     def _create_visualization(
         self,
-        trans: ProvidesAppContext,
-        title: str,
+        trans: ProvidesUserContext,
         type: str,
-        dbkey: str = None,
-        slug: str = None,
-        annotation: str = None,
+        title: Optional[str] = None,
+        dbkey: Optional[str] = None,
+        slug: Optional[str] = None,
+        annotation: Optional[str] = None,
         save: bool = True,
     ) -> Visualization:
         """Create visualization but not first revision. Returns Visualization object."""
@@ -411,7 +418,7 @@ class VisualizationsService(ServiceBase):
 
     def _import_visualization(
         self,
-        trans: ProvidesAppContext,
+        trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
     ) -> Visualization:
         """
