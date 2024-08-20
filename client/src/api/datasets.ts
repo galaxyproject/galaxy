@@ -69,14 +69,14 @@ export async function purgeDataset(datasetId: string) {
     return data;
 }
 
-type CopyDatasetParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
-type CopyDatasetBodyType = components["schemas"]["CreateHistoryContentPayload"];
+type CopyContentParamsType = GalaxyApiPaths["/api/histories/{history_id}/contents/{type}s"]["post"]["parameters"];
+type CopyContentBodyType = components["schemas"]["CreateHistoryContentPayload"];
 
-export async function copyDataset(
-    contentId: CopyDatasetBodyType["content"],
-    historyId: CopyDatasetParamsType["path"]["history_id"],
-    type: CopyDatasetParamsType["path"]["type"] = "dataset",
-    source: CopyDatasetBodyType["source"] = "hda",
+export async function copyContent(
+    contentId: CopyContentBodyType["content"],
+    historyId: CopyContentParamsType["path"]["history_id"],
+    type: CopyContentParamsType["path"]["type"] = "dataset",
+    source: CopyContentBodyType["source"] = "hda"
 ) {
     const { data, error } = await GalaxyApi().POST("/api/histories/{history_id}/contents/{type}s", {
         params: {
