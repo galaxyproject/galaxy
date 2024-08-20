@@ -73,7 +73,7 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
 });
 
 const invocation = computed(() =>
-    !initialLoading.value
+    !initialLoading.value && !errorMessage.value
         ? (invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView)
         : null
 );
@@ -120,6 +120,8 @@ onMounted(async () => {
         }
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
+    } finally {
+        initialLoading.value = false;
     }
 });
 
@@ -274,10 +276,13 @@ function getWorkflowName() {
             </BTab>
         </BTabs>
     </div>
+    <BAlert v-else-if="initialLoading" variant="info" show>
+        <LoadingSpan message="Loading invocation" />
+    </BAlert>
     <BAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
     </BAlert>
     <BAlert v-else variant="info" show>
-        <LoadingSpan message="Loading invocation" />
+        <span v-localize>Invocation not found.</span>
     </BAlert>
 </template>
