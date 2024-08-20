@@ -3,6 +3,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -357,7 +358,7 @@ class VisualizationUpdatePayload(Model):
         title="Deleted",
         description="Whether this Visualization has been deleted.",
     )
-    config: Optional[dict] = Field(
+    config: Optional[Union[dict, bytes]] = Field(
         {},
         title="Config",
         description="The config of the visualization.",
