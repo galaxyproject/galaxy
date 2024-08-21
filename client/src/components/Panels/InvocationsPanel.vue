@@ -3,12 +3,18 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
+import { useActivityStore } from "@/stores/activityStore";
 import { useUserStore } from "@/stores/userStore";
 
 import InvocationScrollList from "../Workflow/Invocation/InvocationScrollList.vue";
 import ActivityPanel from "./ActivityPanel.vue";
 
-const { currentUser, toggledSideBar } = storeToRefs(useUserStore());
+const props = defineProps<{
+    activityBarId: string;
+}>();
+
+const { currentUser } = storeToRefs(useUserStore());
+const { toggledSideBar } = storeToRefs(useActivityStore(props.activityBarId));
 
 const shouldCollapse = ref(false);
 function collapseOnLeave() {

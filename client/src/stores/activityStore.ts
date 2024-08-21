@@ -1,7 +1,7 @@
 /**
  * Stores the Activity Bar state
  */
-import { watchImmediate } from "@vueuse/core";
+import { useDebounceFn, watchImmediate } from "@vueuse/core";
 import { computed, type Ref, ref } from "vue";
 
 import { useHashedUserId } from "@/composables/hashedUserId";
@@ -33,6 +33,8 @@ export interface Activity {
     tooltip: string;
     // indicate wether the activity should be visible by default
     visible: boolean;
+    // if activity should cause a click event
+    click?: true;
 }
 
 export const useActivityStore = defineScopedStore("activityStore", (scope) => {
@@ -40,15 +42,21 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
 
     const { hashedUserId } = useHashedUserId();
 
+    const customDefaultActivities = ref<Activity[] | null>(null);
+    const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
+
+    const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
+
+    function toggleSideBar(currentOpen = "") {
+        toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
     watchImmediate(
         () => hashedUserId.value,
         () => {
             sync();
         }
     );
-
-    const customDefaultActivities = ref<Activity[] | null>(null);
-    const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
 
     function overrideDefaultActivities(activities: Activity[]) {
         customDefaultActivities.value = activities;
@@ -72,7 +80,7 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
      * This helper function applies changes of the built-in activities,
      * to the user stored activities which are persisted in local cache.
      */
-    function sync() {
+    const sync = useDebounceFn(() => {
         // create a map of built-in activities
         const activitiesMap: Record<string, Activity> = {};
 
@@ -114,7 +122,25 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
         if (JSON.stringify(activities.value) !== JSON.stringify(newActivities)) {
             activities.value = newActivities;
         }
-    }
+
+        // if toggled side-bar does not exist, choose the first option
+        if (toggledSideBar.value !== "") {
+            const allSideBars = activities.value.flatMap((activity) => {
+                if (activity.panel) {
+                    return [activity.id];
+                } else {
+                    return [];
+                }
+            });
+
+            const allSideBarsSet = new Set(allSideBars);
+            const firstSideBar = allSideBars[0];
+
+            if (firstSideBar && !allSideBarsSet.has(toggledSideBar.value)) {
+                toggledSideBar.value = firstSideBar;
+            }
+        }
+    }, 10);
 
     function getAll() {
         return activities.value;
@@ -133,6 +159,8 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     }
 
     return {
+        toggledSideBar,
+        toggleSideBar,
         activities,
         getAll,
         remove,

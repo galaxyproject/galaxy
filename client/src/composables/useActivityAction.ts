@@ -1,14 +1,13 @@
 import { useRouter } from "vue-router/composables";
 
-import { type Activity } from "@/stores/activityStore";
-import { useUserStore } from "@/stores/userStore";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 
-export function useActivityAction() {
+export function useActivityAction(activityStoreId: string) {
     const router = useRouter();
-    const userStore = useUserStore();
+    const activityStore = useActivityStore(activityStoreId);
     const executeActivity = (activity: Activity) => {
         if (activity.panel) {
-            userStore.toggleSideBar(activity.id);
+            activityStore.toggleSideBar(activity.id);
         }
         if (activity.to) {
             router.push(activity.to);

@@ -86,10 +86,10 @@ function isActiveRoute(activityTo: string) {
  * Checks if a panel has been expanded
  */
 function isActiveSideBar(menuKey: string) {
-    return userStore.toggledSideBar === menuKey;
+    return activityStore.toggledSideBar === menuKey;
 }
 
-const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
+const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
 
 /**
  * Checks if an activity that has a panel should have the `is-active` prop
@@ -151,7 +151,7 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
     if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
         return;
     }
-    userStore.toggleSideBar(toggle);
+    activityStore.toggleSideBar(toggle);
 }
 
 defineExpose({
@@ -271,13 +271,13 @@ defineExpose({
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" :activity-bar-id="props.activityBarId" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
-            <SettingsPanel v-else-if="isActiveSideBar('settings')" :activity-bar-scope="props.activityBarId" />
+            <SettingsPanel v-else-if="isActiveSideBar('settings')" :activity-bar-id="props.activityBarId" />
             <AdminPanel v-else-if="isActiveSideBar('admin')" />
-            <slot name="side-panel"></slot>
+            <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>
     </div>
 </template>
