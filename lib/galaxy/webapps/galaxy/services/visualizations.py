@@ -163,8 +163,6 @@ class VisualizationsService(ServiceBase):
         if import_id:
             visualization = self._import_visualization(trans, import_id)
         else:
-            # custom validator to sanitize the HTML, and assign that type to those fields that require it: type, annotation, title, slug, dbkey
-
             # must have a type (I've taken this to be the visualization name)
             if not payload.type:
                 raise exceptions.RequestParameterMissingException("key/value 'type' is required")
