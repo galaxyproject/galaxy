@@ -3,28 +3,20 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import {
-    type DCEDataset,
-    type HistoryItemSummary,
-    type HistorySummaryExtended,
-    isDatasetElement,
-    isHistoryItem,
-    userOwnsHistory,
-} from "@/api";
-import { copyDataset, type HistoryContentSource, type HistoryContentType } from "@/api/datasets";
+import { type HistoryItemSummary, type HistorySummaryExtended, userOwnsHistory } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
-import { Toast } from "@/composables/toast";
 import { useActiveElement } from "@/composables/useActiveElement";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
-import { useEventStore } from "@/stores/eventStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setItemDragstart } from "@/utils/setDrag";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -61,8 +53,6 @@ interface Props {
     isMultiViewItem?: boolean;
 }
 
-type DraggableHistoryItem = HistoryItemSummary | DCEDataset; // TODO: DCESummary instead of DCEDataset
-
 type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
 
 const props = withDefaults(defineProps<Props>(), {
@@ -79,11 +69,9 @@ const isLoading = ref(false);
 const offsetQueryParam = ref(0);
 const searchError = ref<BackendFilterError | undefined>(undefined);
 const showAdvanced = ref(false);
-const showDropZone = ref(false);
 const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
-const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
     return historyItems.value.reduce((acc: ContentItemRef, item) => {
         acc[itemUniqueKey(item)] = ref(null);
@@ -99,6 +87,8 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 const { currentUser } = storeToRefs(useUserStore());
+
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(props.history.id);
 
 const currentUserOwnsHistory = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
@@ -228,28 +218,6 @@ watch(
     }
 );
 
-function dragSameHistory() {
-    return getDragData().sameHistory;
-}
-
-function getDragData() {
-    const eventStore = useEventStore();
-    const dragItems = eventStore.getDragItems();
-    // Filter out any non-history items
-    // TODO: `isDCE` instead of `isDatasetElement`
-    const historyItems = dragItems?.filter(
-        (item: any) => isHistoryItem(item) || isDatasetElement(item)
-    ) as DraggableHistoryItem[];
-
-    // TODO: handle historyId === null || historyItems.length === 0
-    const historyId = historyItems[0]
-        ? isHistoryItem(historyItems[0])
-            ? historyItems[0].history_id
-            : historyItems[0].object?.history_id
-        : null;
-    return { data: historyItems, sameHistory: historyId === props.history.id, multiple: historyItems?.length > 1 };
-}
-
 function getHighlight(item: HistoryItemSummary) {
     if (unref(isLoading)) {
         return undefined;
@@ -361,95 +329,6 @@ function onTagChange(item: HistoryItemSummary, newTags: string[]) {
 function onOperationError(error: any) {
     console.debug("HistoryPanel - Operation error.", error);
     operationError.value = error;
-}
-
-function onDragEnter(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    dragTarget.value = e.target;
-    showDropZone.value = true;
-}
-
-function onDragOver(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    e.preventDefault();
-}
-
-function onDragLeave(e: DragEvent) {
-    if (dragSameHistory()) {
-        return;
-    }
-    if (dragTarget.value === e.target) {
-        showDropZone.value = false;
-    }
-}
-
-async function onDrop() {
-    showDropZone.value = false;
-    const { data, sameHistory, multiple } = getDragData();
-    if (!data || sameHistory) {
-        return;
-    }
-
-    let datasetCount = 0;
-    let collectionCount = 0;
-    try {
-        // iterate over the data array and copy each item to the current history
-        for (const item of data) {
-            let dataSource: HistoryContentSource;
-            let type: HistoryContentType;
-            let id: string;
-            if (isHistoryItem(item)) {
-                dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-                type = item.history_content_type;
-                id = item.id;
-            }
-            // TEMPORARY: fix this when DCEs are handled correctly, unify like commented out code below
-            else if (isDatasetElement(item) && item.object) {
-                dataSource = "hda";
-                type = "dataset";
-                id = item.object.id;
-            }
-            /** TODO: Handle DCE, `DCEDataset`s work fine as they are HDAs,
-             *        `DCECollection`s are `dataset_collection`s and need to be HDCAs...
-             */
-            // else if (isDCE(item) && (item as DCESummary).object) {
-            //     const collectionElement = item as DCESummary;
-            //     dataSource = collectionElement.element_type === "dataset_collection" ? "hdca" : "hda"; // incorrect...
-            //     type = collectionElement.element_type === "dataset_collection" ? "dataset_collection" : "dataset";
-            //     id = collectionElement.object.id as string;
-            // }
-            else {
-                throw new Error(`Invalid item type${item.element_type ? `: ${item.element_type}` : ""}`);
-            }
-            await copyDataset(id, props.history.id, type, dataSource);
-
-            if (dataSource === "hda") {
-                datasetCount++;
-                if (!multiple) {
-                    Toast.info("Dataset copied to history");
-                }
-            } else {
-                collectionCount++;
-                if (!multiple) {
-                    Toast.info("Collection copied to history");
-                }
-            }
-        }
-
-        if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
-        }
-        if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
-        }
-        historyStore.loadHistoryById(props.history.id);
-    } catch (error) {
-        Toast.error(`${error}`);
-    }
 }
 
 function updateFilterValue(filterKey: string, newValue: any) {
