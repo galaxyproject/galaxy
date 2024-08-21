@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/workflows/setup-node.yaml
+      - uses: ./.github/composite-actions/setup-node.yaml
       - run: yarn install --frozen-lockfile
         working-directory: client
       - name: Run ESLint
