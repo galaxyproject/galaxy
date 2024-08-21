@@ -122,7 +122,7 @@ class VisualizationsService(ServiceBase):
             "slug": visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
             "latest_revision": (
-                self._get_visualization_revision_dict(visualization.latest_revision)
+                self._get_visualization_revision(visualization.latest_revision)
                 if visualization.latest_revision
                 else None
             ),
@@ -151,6 +151,7 @@ class VisualizationsService(ServiceBase):
     def create(
         self,
         trans: ProvidesUserContext,
+        import_id: Optional[DecodedDatabaseIdField],
         payload: VisualizationCreatePayload,
     ) -> VisualizationCreateResponse:
         """Returns a dictionary of the created visualization
@@ -159,10 +160,11 @@ class VisualizationsService(ServiceBase):
         :returns:   dictionary containing Visualization details
         """
 
-        if payload.import_id:
-            visualization = self._import_visualization(trans, payload.import_id)
+        if import_id:
+            visualization = self._import_visualization(trans, import_id)
         else:
-            payload = cast(VisualizationCreatePayload, self._validate_and_parse_payload(payload))
+            # custom validator to sanitize the HTML, and assign that type to those fields that require it: type, annotation, title, slug, dbkey
+
             # must have a type (I've taken this to be the visualization name)
             if not payload.type:
                 raise exceptions.RequestParameterMissingException("key/value 'type' is required")
@@ -178,9 +180,7 @@ class VisualizationsService(ServiceBase):
             visualization = self._create_visualization(trans, type, title, dbkey, slug, annotation, save)
 
             # Create and save first visualization revision
-            revision = trans.model.VisualizationRevision(
-                visualization=visualization, title=title, config=config, dbkey=dbkey
-            )
+            revision = VisualizationRevision(visualization=visualization, title=title, config=config, dbkey=dbkey)
             visualization.latest_revision = revision
 
             if save:
@@ -196,7 +196,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesUserContext,
         visualization_id: DecodedDatabaseIdField,
         payload: VisualizationUpdatePayload,
-    ) -> Union[VisualizationUpdateResponse, None]:
+    ) -> Optional[VisualizationUpdateResponse]:
         """
         Update a visualization
 
@@ -204,7 +204,6 @@ class VisualizationsService(ServiceBase):
         :returns:   dictionary containing Visualization details
         """
         rval = None
-        payload = cast(VisualizationUpdatePayload, self._validate_and_parse_payload(payload))
 
         # there's a differentiation here between updating the visualization and creating a new revision
         # that needs to be handled clearly here or alternately, using a different controller
@@ -238,76 +237,6 @@ class VisualizationsService(ServiceBase):
 
         return VisualizationUpdateResponse(**rval) if rval else None
 
-    def _validate_and_parse_payload(
-        self,
-        payload: Union[VisualizationCreatePayload, VisualizationUpdatePayload],
-    ) -> Union[VisualizationCreatePayload, VisualizationUpdatePayload]:
-        """
-        Validate and parse incomming data payload for a visualization.
-        """
-        # This layer handles (most of the stricter idiot proofing):
-        #   - unknown/unallowed keys
-        #   - changing data keys from api key to attribute name
-        #   - protection against bad data form/type
-        #   - protection against malicious data content
-        # all other conversions and processing (such as permissions, etc.) should happen down the line
-
-        # keys listed here don't error when attempting to set, but fail silently
-        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
-        valid_but_uneditable_keys = (
-            "id",
-            "model_class",
-            # TODO: fill out when we create to_dict, get_dict, whatevs
-        )
-        # TODO: importable
-        ValidationError = exceptions.RequestParameterInvalidException
-
-        validated_payload = {}
-        for key, val in payload.model_dump().items():
-            # By adding the pydatnic model there will be some variables that are not set and should be ignored in the validation
-            if val is None:
-                continue
-            # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
-            if key == "type":
-                if not isinstance(val, str):
-                    raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
-                val = sanitize_html(val)
-            elif key == "config":
-                if not isinstance(val, dict):
-                    raise ValidationError(f"{key} must be a dictionary: {str(type(val))}")
-            elif key == "annotation":
-                if not isinstance(val, str):
-                    raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
-                val = sanitize_html(val)
-            elif key == "deleted":
-                if not isinstance(val, bool):
-                    raise ValidationError(f"{key} must be a bool: {str(type(val))}")
-
-            # these are keys that actually only be *updated* at the revision level and not here
-            #   (they are still valid for create, tho)
-            elif key == "title":
-                if not isinstance(val, str):
-                    raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
-                val = sanitize_html(val)
-            elif key == "slug":
-                if not isinstance(val, str):
-                    raise ValidationError(f"{key} must be a string: {str(type(val))}")
-                val = sanitize_html(val)
-            elif key == "dbkey":
-                if not isinstance(val, str):
-                    raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
-                val = sanitize_html(val)
-
-            elif key not in valid_but_uneditable_keys:
-                continue
-                # raise AttributeError( 'unknown key: %s' %( str( key ) ) )
-
-            validated_payload[key] = val
-        if isinstance(payload, VisualizationCreatePayload):
-            return VisualizationCreatePayload(**validated_payload)
-        elif isinstance(payload, VisualizationUpdatePayload):
-            return VisualizationUpdatePayload(**validated_payload)
-
     def _get_visualization(
         self,
         trans: ProvidesUserContext,
@@ -318,7 +247,6 @@ class VisualizationsService(ServiceBase):
         """
         Get a Visualization from the database by id, verifying ownership.
         """
-        # Load workflow from database
         try:
             visualization = trans.sa_session.get(Visualization, visualization_id)
         except TypeError:
@@ -328,7 +256,7 @@ class VisualizationsService(ServiceBase):
         else:
             return security_check(trans, visualization, check_ownership, check_accessible)
 
-    def _get_visualization_revision_dict(
+    def _get_visualization_revision(
         self,
         revision: VisualizationRevision,
     ) -> VisualizationRevisionResponse:
@@ -361,9 +289,7 @@ class VisualizationsService(ServiceBase):
         """
         # precondition: only add new revision on owned vis's
         # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(
-            visualization=visualization, title=title, dbkey=dbkey, config=config
-        )
+        revision = VisualizationRevision(visualization=visualization, title=title, dbkey=dbkey, config=config)
 
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
@@ -391,7 +317,7 @@ class VisualizationsService(ServiceBase):
             title_err = "visualization name is required"
         elif slug and not is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif slug and slug_exists(trans.sa_session, trans.model.Visualization, user, slug, ignore_deleted=True):
+        elif slug and slug_exists(trans.sa_session, Visualization, user, slug, ignore_deleted=True):
             slug_err = "visualization identifier must be unique"
 
         if title_err or slug_err:
@@ -400,7 +326,7 @@ class VisualizationsService(ServiceBase):
             raise exceptions.RequestParameterMissingException(val_err)
 
         # Create visualization
-        visualization = trans.model.Visualization(user=user, title=title, dbkey=dbkey, type=type)
+        visualization = Visualization(user=user, title=title, dbkey=dbkey, type=type)
         if slug:
             visualization.slug = slug
         else:

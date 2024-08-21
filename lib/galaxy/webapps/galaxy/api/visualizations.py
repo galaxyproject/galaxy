@@ -6,10 +6,7 @@ may change often.
 """
 
 import logging
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional
 
 from fastapi import (
     Body,
@@ -253,6 +250,9 @@ class FastAPIVisualizations:
     def create(
         self,
         payload: VisualizationCreatePayload = Body(...),
+        import_id: Optional[DecodedDatabaseIdField] = Query(
+            None, title="Import ID", description="The encoded database identifier of the Visualization to import."
+        ),
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationCreateResponse:
         """
@@ -262,7 +262,7 @@ class FastAPIVisualizations:
         POST /api/visualizations?import_id={encoded_visualization_id}
         imports a copy of an existing visualization into the user's workspace and does not require the rest of the payload
         """
-        return self.service.create(trans, payload)
+        return self.service.create(trans, import_id, payload)
 
     @router.put(
         "/api/visualizations/{id}",
@@ -273,5 +273,5 @@ class FastAPIVisualizations:
         id: VisualizationIdPathParam,
         payload: VisualizationUpdatePayload = Body(...),
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Union[VisualizationUpdateResponse, None]:
+    ) -> Optional[VisualizationUpdateResponse]:
         return self.service.update(trans, id, payload)

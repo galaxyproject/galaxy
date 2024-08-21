@@ -16697,11 +16697,6 @@ export interface components {
              */
             dbkey?: string | null;
             /**
-             * Import ID
-             * @description The ID of the imported visualization.
-             */
-            import_id?: string | null;
-            /**
              * Save
              * @description Whether to save the visualization.
              * @default true
@@ -16815,11 +16810,12 @@ export interface components {
              */
             id: string;
             /**
-             * Model Class
-             * @description The model class name for this object.
-             * @default VisualizationRevision
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
              */
-            model_class: string;
+            model_class: "VisualizationRevision";
             /**
              * Title
              * @description The name of the visualization revision.
@@ -16861,11 +16857,12 @@ export interface components {
              */
             latest_revision: components["schemas"]["VisualizationRevisionResponse"];
             /**
-             * Model Class
-             * @description The model class name for this object.
-             * @default Visualization
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             * @enum {string}
              */
-            model_class: string;
+            model_class: "Visualization";
             /**
              * Plugin
              * @description The plugin of this Visualization.
@@ -32441,7 +32438,10 @@ export interface operations {
     };
     create_api_visualizations_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The encoded database identifier of the Visualization to import. */
+                import_id?: string | null;
+            };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;

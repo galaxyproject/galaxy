@@ -9,6 +9,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     RootModel,
 )
 from typing_extensions import Literal
@@ -16,15 +17,21 @@ from typing_extensions import Literal
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    ModelClassField,
 )
 from galaxy.schema.schema import (
     CreateTimeField,
     Model,
     TagCollection,
     UpdateTimeField,
+    WithModelClass,
 )
+from galaxy.util.sanitize_html import sanitize_html
 
 VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
+
+VISUALIZATION_MODEL_CLASS = Literal["Visualization"]
+VISUALIZATION_REVISION_MODEL_CLASS = Literal["VisualizationRevision"]
 
 
 class VisualizationIndexQueryPayload(Model):
@@ -104,12 +111,8 @@ class VisualizationSummaryList(RootModel):
     )
 
 
-class VisualizationRevisionResponse(Model):
-    model_class: str = Field(
-        "VisualizationRevision",
-        title="Model Class",
-        description="The model class name for this object.",
-    )
+class VisualizationRevisionResponse(Model, WithModelClass):
+    model_class: VISUALIZATION_REVISION_MODEL_CLASS = ModelClassField(VISUALIZATION_REVISION_MODEL_CLASS)
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -200,12 +203,8 @@ class VisualizationPluginResponse(Model):
     )
 
 
-class VisualizationShowResponse(Model):
-    model_class: str = Field(
-        "Visualization",
-        title="Model Class",
-        description="The model class name for this object.",
-    )
+class VisualizationShowResponse(Model, WithModelClass):
+    model_class: VISUALIZATION_MODEL_CLASS = ModelClassField(VISUALIZATION_MODEL_CLASS)
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -300,11 +299,6 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    import_id: Optional[DecodedDatabaseIdField] = Field(
-        None,
-        title="Import ID",
-        description="The ID of the imported visualization.",
-    )
     type: Optional[str] = Field(
         None,
         title="Type",
@@ -341,6 +335,13 @@ class VisualizationCreatePayload(Model):
         description="Whether to save the visualization.",
     )
 
+    @field_validator("type", "title", "dbkey", "slug", "annotation", mode="before")
+    @classmethod
+    def sanitize_html_fields(cls, v):
+        if isinstance(v, str):
+            return sanitize_html(v)
+        return v
+
 
 class VisualizationUpdatePayload(Model):
     title: Optional[str] = Field(
@@ -363,3 +364,10 @@ class VisualizationUpdatePayload(Model):
         title="Config",
         description="The config of the visualization.",
     )
+
+    @field_validator("title", "dbkey", mode="before")
+    @classmethod
+    def sanitize_html_fields(cls, v):
+        if isinstance(v, str):
+            return sanitize_html(v)
+        return v
