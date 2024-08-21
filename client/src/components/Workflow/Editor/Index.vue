@@ -114,7 +114,7 @@
                             v-else-if="hasActiveNodeTool"
                             :key="activeStep.id"
                             :step="activeStep"
-                            :datatypes="datatypes"
+                            :data-types="datatypes"
                             @onChangePostJobActions="onChangePostJobActions"
                             @onAnnotation="onAnnotation"
                             @onLabel="onLabel"
