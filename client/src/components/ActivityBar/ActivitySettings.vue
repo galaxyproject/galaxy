@@ -19,13 +19,13 @@ library.add({
 });
 
 const props = defineProps<{
-    activityBarScope: string;
+    activityBarId: string;
     query: string;
 }>();
 
-const activityStore = useActivityStore(props.activityBarScope);
+const activityStore = useActivityStore(props.activityBarId);
 const { activities } = storeToRefs(activityStore);
-const activityAction = useActivityAction();
+const activityAction = useActivityAction(props.activityBarId);
 
 const filteredActivities = computed(() => {
     if (props.query?.length > 0) {

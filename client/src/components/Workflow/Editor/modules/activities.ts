@@ -1,3 +1,5 @@
+import type { Activity } from "@/stores/activityStore";
+
 export const workflowEditorActivities = [
     {
         anonymous: true,
@@ -12,7 +14,7 @@ export const workflowEditorActivities = [
         tooltip: "Search and run tools",
         visible: true,
     },
-] as const;
+] as const satisfies Readonly<Activity[]>;
 
 export const specialWorkflowActivities = [
     {
@@ -28,4 +30,4 @@ export const specialWorkflowActivities = [
         tooltip: "Search and run tools",
         visible: true,
     },
-] as const;
+] as const satisfies Readonly<Activity[]>;

@@ -28,14 +28,13 @@
             </b-form-group>
         </b-modal>
         <ActivityBar
-            ref="activityBar"
             :default-activities="workflowEditorActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
             :show-admin="false">
-            <template v-slot:side-panel>
+            <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel
-                    v-if="activityBar.isActiveSideBar('workflow-editor-tools')"
+                    v-if="isActiveSideBar('workflow-editor-tools')"
                     workflow
                     :module-sections="moduleSections"
                     :data-managers="dataManagers"
@@ -468,8 +467,6 @@ export default {
 
         const stepActions = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
-        const activityBar = ref(null);
-
         return {
             id,
             name,
@@ -509,7 +506,6 @@ export default {
             initialLoading,
             stepActions,
             undoRedoStore,
-            activityBar,
         };
     },
     data() {
