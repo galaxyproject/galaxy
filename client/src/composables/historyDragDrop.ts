@@ -9,7 +9,14 @@ import { useHistoryStore } from "@/stores/historyStore";
 type DraggableHistoryItem = HistoryItemSummary | DCEDataset; // TODO: DCESummary instead of DCEDataset
 
 export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, createNew = false, pinHistories = false) {
-    const destinationHistoryId = unref(targetHistoryId);
+    // convert destinationHistoryId to a ref if it's not already
+    const destinationHistoryId = computed(() => {
+        if (typeof targetHistoryId === "string") {
+            return targetHistoryId;
+        }
+        return unref(targetHistoryId);
+    });
+
     const eventStore = useEventStore();
     const historyStore = useHistoryStore();
 
@@ -29,8 +36,8 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
     const operationDisabled = computed(
         () =>
             !fromHistoryId.value ||
-            (destinationHistoryId && fromHistoryId.value === destinationHistoryId) ||
-            (!createNew && !destinationHistoryId) ||
+            (destinationHistoryId.value && fromHistoryId.value === destinationHistoryId.value) ||
+            (!createNew && !destinationHistoryId.value) ||
             !getDragItems().length ||
             processingDrop.value
     );
@@ -83,8 +90,8 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
             const originalHistoryId = fromHistoryId.value as string;
 
             let historyId;
-            if (destinationHistoryId) {
-                historyId = destinationHistoryId;
+            if (destinationHistoryId.value) {
+                historyId = destinationHistoryId.value;
             } else if (createNew) {
                 await historyStore.createNewHistory();
                 historyId = historyStore.currentHistoryId;

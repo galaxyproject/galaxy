@@ -88,7 +88,8 @@ const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 const { currentUser } = storeToRefs(useUserStore());
 
-const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(props.history.id);
+const historyIdComputed = computed(() => props.history.id);
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(historyIdComputed);
 
 const currentUserOwnsHistory = computed(() => {
     return userOwnsHistory(currentUser.value, props.history);
