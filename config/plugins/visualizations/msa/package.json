@@ -11,7 +11,7 @@
         "babel-preset-env": "^1.6.1"
     },
     "scripts": {
-        "build": "parcel build src/script.js --dist-dir static"
+        "build": "parcel build src/script.js --dist-dir static --no-source-maps"
     },
     "devDependencies": {
         "parcel": "^2.12.0"
