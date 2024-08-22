@@ -739,7 +739,7 @@ export default {
                     await this.onSave();
                 }
 
-                this.$router.push("/");
+                this.$router.push("/workflows/list");
             }
         },
         onLayout() {
