@@ -3,8 +3,8 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
-import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
+import { type Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
 import {
@@ -28,6 +28,7 @@ function getUrl(path: string): string {
 
 interface Props {
     invocation?: WorkflowInvocationElementView;
+    workflow?: Workflow;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
     isFullPage?: boolean;
@@ -39,8 +40,6 @@ interface Props {
 const props = defineProps<Props>();
 
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
-
-const { workflow } = useWorkflowInstance(props.invocation?.workflow_id ?? "");
 
 const invocationId = computed<string | undefined>(() => props.invocation?.id);
 
