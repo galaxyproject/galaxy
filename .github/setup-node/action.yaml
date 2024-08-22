@@ -12,7 +12,7 @@ inputs:
     cache-dependency-path:
         description: 'The path to the dependency file to cache'
         required: false
-        default: 'galaxy root/client/yarn.lock'
+        default: './client/yarn.lock'
 runs:
     using: "composite"
     steps:
