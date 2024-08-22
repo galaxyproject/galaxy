@@ -1,6 +1,6 @@
 {
-    "name": "visualization",
-    "version": "0.1.0",
+    "name": "@galaxyproject/msa",
+    "version": "0.2.0",
     "keywords": [
         "galaxy",
         "visualization"
@@ -10,6 +10,9 @@
         "babel-plugin-transform-export-extensions": "^6.22.0",
         "babel-preset-env": "^1.6.1"
     },
+    "files": [
+        "static"
+    ],
     "scripts": {
         "build": "parcel build src/script.js --dist-dir static --no-source-maps"
     },
