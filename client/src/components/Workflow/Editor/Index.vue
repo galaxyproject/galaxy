@@ -31,7 +31,8 @@
             :default-activities="workflowEditorActivities"
             :special-activities="specialWorkflowActivities"
             activity-bar-id="workflow-editor"
-            :show-admin="false">
+            :show-admin="false"
+            @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel
                     v-if="isActiveSideBar('workflow-editor-tools')"
@@ -728,6 +729,17 @@ export default {
         },
         onSaveAs() {
             this.showSaveAsModal = true;
+        },
+        async onActivityClicked(activityId) {
+            if (activityId === "save-and-exit") {
+                if (this.isNewTempWorkflow) {
+                    await this.onCreate();
+                } else {
+                    await this.onSave();
+                }
+
+                this.$router.push("/");
+            }
         },
         onLayout() {
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {

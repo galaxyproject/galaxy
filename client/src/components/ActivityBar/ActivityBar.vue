@@ -63,7 +63,10 @@ watchImmediate(
 
 const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
-const emit = defineEmits(["dragstart"]);
+const emit = defineEmits<{
+    (e: "dragstart", dragItem: Activity | null): void;
+    (e: "activityClicked", activityId: string): void;
+}>();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
@@ -78,7 +81,7 @@ const isDragging = ref(false);
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
-function isActiveRoute(activityTo: string) {
+function isActiveRoute(activityTo?: string | null) {
     return route.path === activityTo && isActiveSideBar("");
 }
 
@@ -95,7 +98,10 @@ const isSideBarOpen = computed(() => activityStore.toggledSideBar !== "");
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
-    return isActiveSideBar(activity.id) || (activity.to !== null && isActiveRoute(activity.to));
+    return (
+        isActiveSideBar(activity.id) ||
+        (activity.to !== undefined && activity.to !== null && isActiveRoute(activity.to))
+    );
 }
 
 /**
@@ -145,13 +151,21 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string = "", to: string | null = null) {
+function toggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
     if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
         return;
     }
     activityStore.toggleSideBar(toggle);
+}
+
+function onActivityClicked(activity: Activity) {
+    if (activity.click) {
+        emit("activityClicked", activity.id);
+    } else {
+        toggleSidebar();
+    }
 }
 
 defineExpose({
@@ -196,7 +210,7 @@ defineExpose({
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="onToggleSidebar()" />
+                                @click="toggleSidebar()" />
                             <ActivityItem
                                 v-else-if="activity.id === 'admin' || activity.panel"
                                 :id="`activity-${activity.id}`"
@@ -206,17 +220,17 @@ defineExpose({
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to || ''"
-                                @click="onToggleSidebar(activity.id, activity.to)" />
+                                @click="toggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
-                                v-else-if="activity.to"
+                                v-else
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar()" />
+                                :to="activity.to ?? undefined"
+                                @click="onActivityClicked(activity)" />
                         </div>
                     </div>
                 </draggable>
@@ -228,14 +242,14 @@ defineExpose({
                     icon="bell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
-                    @click="onToggleSidebar('notifications')" />
+                    @click="toggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
                     icon="ellipsis-h"
                     :is-active="isActiveSideBar('settings')"
                     title="More"
                     tooltip="View additional activities"
-                    @click="onToggleSidebar('settings')" />
+                    @click="toggleSidebar('settings')" />
                 <ActivityItem
                     v-if="isAdmin && showAdmin"
                     id="activity-admin"
@@ -244,7 +258,7 @@ defineExpose({
                     title="Admin"
                     tooltip="Administer this Galaxy"
                     variant="danger"
-                    @click="onToggleSidebar('admin')" />
+                    @click="toggleSidebar('admin')" />
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -255,17 +269,17 @@ defineExpose({
                         :title="activity.title"
                         :tooltip="activity.tooltip"
                         :to="activity.to || ''"
-                        @click="onToggleSidebar(activity.id, activity.to)" />
+                        @click="toggleSidebar(activity.id, activity.to)" />
                     <ActivityItem
-                        v-else-if="activity.to"
+                        v-else
                         :id="`activity-${activity.id}`"
                         :key="activity.id"
                         :icon="activity.icon"
                         :is-active="isActiveRoute(activity.to)"
                         :title="activity.title"
                         :tooltip="activity.tooltip"
-                        :to="activity.to"
-                        @click="onToggleSidebar()" />
+                        :to="activity.to ?? undefined"
+                        @click="onActivityClicked(activity)" />
                 </template>
             </b-nav>
         </div>
