@@ -252,6 +252,7 @@ function getWorkflowName() {
                 <p>TODO: Insert readonly version of workflow editor here</p>
             </BTab> -->
             <BTab
+                v-if="!props.isSubworkflow"
                 title="Report"
                 title-item-class="invocation-report-tab"
                 :disabled="!invocationStateSuccess || !workflow"

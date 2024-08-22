@@ -154,6 +154,12 @@ function onCancel() {
 
 <template>
     <div class="mb-3 workflow-invocation-state-component">
+        <BAlert v-if="invocation && isSubworkflow" variant="secondary" show>
+            This subworkflow is
+            <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
+            <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
+            to view this subworkflow in graph view.
+        </BAlert>
         <div v-if="!invocationAndJobTerminal">
             <BAlert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
@@ -225,23 +231,15 @@ function onCancel() {
             </div>
         </div>
         <!-- An invocation has been loaded, display the graph -->
-        <div v-if="invocation">
-            <div v-if="workflow && !isSubworkflow">
-                <InvocationGraph
-                    class="mt-1"
-                    :invocation="invocation"
-                    :workflow="workflow"
-                    :is-terminal="invocationAndJobTerminal"
-                    :is-scheduled="invocationSchedulingTerminal"
-                    :is-full-page="isFullPage"
-                    :show-minimap="isFullPage" />
-            </div>
-            <BAlert v-else-if="isSubworkflow" variant="secondary" show>
-                This subworkflow is
-                <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
-                <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
-                to view this subworkflow in graph view.
-            </BAlert>
+        <div v-if="invocation && workflow && !isSubworkflow">
+            <InvocationGraph
+                class="mt-1"
+                :invocation="invocation"
+                :workflow="workflow"
+                :is-terminal="invocationAndJobTerminal"
+                :is-scheduled="invocationSchedulingTerminal"
+                :is-full-page="isFullPage"
+                :show-minimap="isFullPage" />
         </div>
     </div>
 </template>
