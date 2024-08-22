@@ -44,6 +44,19 @@
                     @onInsertModule="onInsertModule"
                     @onInsertWorkflow="onInsertWorkflow"
                     @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+                <WorkflowLint
+                    v-else-if="isActiveSideBar('workflow-best-practices')"
+                    :untyped-parameters="parameters"
+                    :annotation="annotation"
+                    :creator="creator"
+                    :license="license"
+                    :steps="steps"
+                    :datatypes-mapper="datatypesMapper"
+                    @onAttributes="() => showAttributes(true)"
+                    @onHighlight="onHighlight"
+                    @onUnhighlight="onUnhighlight"
+                    @onRefactor="onAttemptRefactor"
+                    @onScrollTo="onScrollTo" />
             </template>
         </ActivityBar>
         <div id="center" class="workflow-center">
@@ -111,7 +124,6 @@
                             @onLayout="onLayout"
                             @onEdit="onEdit"
                             @onAttributes="() => showAttributes(true)"
-                            @onLint="onLint"
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
@@ -155,19 +167,6 @@
                             @onCreator="onCreator"
                             @update:nameCurrent="setName"
                             @update:annotationCurrent="setAnnotation" />
-                        <WorkflowLint
-                            v-else-if="showInPanel === 'lint'"
-                            :untyped-parameters="parameters"
-                            :annotation="annotation"
-                            :creator="creator"
-                            :license="license"
-                            :steps="steps"
-                            :datatypes-mapper="datatypesMapper"
-                            @onAttributes="() => showAttributes(true)"
-                            @onHighlight="onHighlight"
-                            @onUnhighlight="onUnhighlight"
-                            @onRefactor="onAttemptRefactor"
-                            @onScrollTo="onScrollTo" />
                     </div>
                 </div>
             </div>
@@ -820,12 +819,6 @@ export default {
         },
         onUnhighlight(stepId) {
             this.highlightId = null;
-        },
-        onLint() {
-            this.ensureParametersSet();
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "lint";
-            this.showChanges = false;
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
