@@ -14,17 +14,10 @@ concurrency:
 jobs:
   client-unit-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [20.16.0]
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node}}
-          cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
+        uses: ./.github/setup-node/
       - run: yarn install --frozen-lockfile
         working-directory: client
       - name: Stage client libs (Gulp)
