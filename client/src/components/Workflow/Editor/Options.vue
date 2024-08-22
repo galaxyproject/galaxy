@@ -7,7 +7,6 @@ import {
     faDownload,
     faEdit,
     faHistory,
-    faMagic,
     faPencilAlt,
     faPlay,
     faRecycle,
@@ -18,7 +17,7 @@ import { computed } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 
-library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faMagic, faDownload, faPlay, faHistory, faSave, faRecycle);
+library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faDownload, faPlay, faHistory, faSave, faRecycle);
 
 const emit = defineEmits<{
     (e: "onAttributes"): void;
@@ -27,7 +26,6 @@ const emit = defineEmits<{
     (e: "onReport"): void;
     (e: "onSaveAs"): void;
     (e: "onLayout"): void;
-    (e: "onLint"): void;
     (e: "onUpgrade"): void;
     (e: "onDownload"): void;
     (e: "onRun"): void;
@@ -143,10 +141,6 @@ async function onSave() {
 
             <BDropdownItem href="#" @click="emit('onLayout')">
                 <FontAwesomeIcon icon="fa fa-align-left" /> Auto Layout
-            </BDropdownItem>
-
-            <BDropdownItem href="#" @click="emit('onLint')">
-                <FontAwesomeIcon icon="fa fa-magic" /> Best Practices
             </BDropdownItem>
 
             <BDropdownItem href="#" @click="emit('onUpgrade')">

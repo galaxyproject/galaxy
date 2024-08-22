@@ -1,24 +1,31 @@
-import { faSave, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faMagic, faSave, faWrench } from "@fortawesome/free-solid-svg-icons";
 
 import type { Activity } from "@/stores/activityStore";
 
 export const workflowEditorActivities = [
     {
-        anonymous: true,
+        title: "Tools",
+        id: "workflow-editor-tools",
         description: "Displays the tool panel to search and place all available tools.",
         icon: faWrench,
-        id: "workflow-editor-tools",
         panel: true,
-        title: "Tools",
-        to: null,
         tooltip: "Search tools to use in your workflow",
         visible: true,
+    },
+    {
+        title: "Best Practices",
+        id: "workflow-best-practices",
+        description: "Show and test for the best practices in this workflow.",
+        tooltip: "Test workflow for best practices",
+        icon: faMagic,
+        panel: true,
+        visible: true,
+        optional: true,
     },
 ] as const satisfies Readonly<Activity[]>;
 
 export const specialWorkflowActivities = [
     {
-        anonymous: true,
         description: "Save this workflow, then exit the workflow editor.",
         icon: faSave,
         id: "save-and-exit",
