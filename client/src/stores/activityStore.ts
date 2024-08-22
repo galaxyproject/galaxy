@@ -12,27 +12,27 @@ import { defineScopedStore } from "./scopedStore";
 
 export interface Activity {
     // determine wether an anonymous user can access this activity
-    anonymous: boolean;
+    anonymous?: boolean;
     // description of the activity
     description: string;
     // unique identifier
     id: string;
     // icon to be displayed in activity bar
-    icon: string;
+    icon: string | object;
     // indicate if this activity can be modified and/or deleted
-    mutable: boolean;
+    mutable?: boolean;
     // indicate wether this activity can be disabled by the user
-    optional: boolean;
+    optional?: boolean;
     // specifiy wether this activity utilizes the side panel
-    panel: boolean;
+    panel?: boolean;
     // title to be displayed in the activity bar
     title: string;
     // route to be executed upon selecting the activity
-    to: string | null;
+    to?: string | null;
     // tooltip to be displayed when hovering above the icon
     tooltip: string;
     // indicate wether the activity should be visible by default
-    visible: boolean;
+    visible?: boolean;
     // if activity should cause a click event
     click?: true;
 }
@@ -50,13 +50,6 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
-
-    watchImmediate(
-        () => hashedUserId.value,
-        () => {
-            sync();
-        }
-    );
 
     function overrideDefaultActivities(activities: Activity[]) {
         customDefaultActivities.value = activities;
@@ -157,6 +150,13 @@ export const useActivityStore = defineScopedStore("activityStore", (scope) => {
             activities.value.splice(findIndex, 1);
         }
     }
+
+    watchImmediate(
+        () => hashedUserId.value,
+        () => {
+            sync();
+        }
+    );
 
     return {
         toggledSideBar,

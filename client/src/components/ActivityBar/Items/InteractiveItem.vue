@@ -13,7 +13,7 @@ const totalCount = computed(() => entryPoints.value.length);
 export interface Props {
     id: string;
     title: string;
-    icon: string;
+    icon: string | object;
     isActive: boolean;
     to: string;
 }
