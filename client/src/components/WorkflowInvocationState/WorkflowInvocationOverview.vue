@@ -7,6 +7,7 @@ import { getRootFromIndexLink } from "@/onload";
 import { type Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
+import { type InvocationMessageResponseModel } from "./invocationMessageModel";
 import {
     errorCount as jobStatesSummaryErrorCount,
     jobCount as jobStatesSummaryJobCount,
@@ -107,8 +108,10 @@ const invocationPdfLink = computed<string | null>(() => {
     }
 });
 
-const hasMessages = computed<boolean>(() => {
-    return props.invocation?.messages.length ? true : false;
+const uniqueMessages = computed(() => {
+    const messages = props.invocation?.messages || [];
+    const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
+    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as InvocationMessageResponseModel[];
 });
 
 const stepStatesStr = computed<string>(() => {
@@ -174,14 +177,14 @@ function onCancel() {
             </BButton>
         </div>
         <div class="d-flex align-items-center">
-            <div v-if="invocationAndJobTerminal" class="mr-1" :class="{ 'd-flex': !hasMessages }">
+            <div v-if="invocationAndJobTerminal" class="mr-1" :class="{ 'd-flex': !uniqueMessages.length }">
                 <BButton
                     v-b-tooltip.hover
                     :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
                     :disabled="!invocationStateSuccess"
                     size="sm"
                     class="invocation-pdf-link text-nowrap w-100"
-                    :class="{ 'mt-1': hasMessages }"
+                    :class="{ 'mt-1': uniqueMessages.length }"
                     :href="invocationPdfLink"
                     target="_blank">
                     Generate PDF
@@ -193,9 +196,9 @@ function onCancel() {
                     note="Loading step state summary..."
                     :loading="true"
                     class="steps-progress" />
-                <template v-if="invocation && hasMessages">
+                <template v-if="invocation && uniqueMessages.length">
                     <InvocationMessage
-                        v-for="message in invocation.messages"
+                        v-for="message in uniqueMessages"
                         :key="message.reason"
                         class="steps-progress my-1"
                         :invocation-message="message"
