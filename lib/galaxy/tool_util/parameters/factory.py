@@ -170,12 +170,20 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 options=static_options,
             )
         elif param_type == "data_column":
+            multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional()
             return DataColumnParameterModel(
                 name=input_source.parse_name(),
+                multiple=multiple,
+                optional=optional,
             )
         elif param_type == "group_tag":
+            multiple = input_source.get_bool("multiple", False)
+            optional = input_source.parse_optional()
             return GroupTagParameterModel(
                 name=input_source.parse_name(),
+                optional=optional,
+                multiple=multiple,
             )
         elif param_type == "baseurl":
             return BaseUrlParameterModel(

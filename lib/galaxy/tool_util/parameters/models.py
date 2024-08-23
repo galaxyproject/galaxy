@@ -603,32 +603,40 @@ def any_drill_down_options_selected(options: List[DrillDownOptionsDict]) -> bool
 
 class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_data_column"] = "gx_data_column"
+    multiple: bool
 
     @property
     def py_type(self) -> Type:
-        return StrictInt
+        py_type: Type = StrictInt
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
-        return False
+        return self.multiple and not self.optional
 
 
 class GroupTagParameterModel(BaseGalaxyToolParameterModelDefinition):
     parameter_type: Literal["gx_group_tag"] = "gx_group_tag"
+    multiple: bool
 
     @property
     def py_type(self) -> Type:
-        return StrictStr
+        py_type: Type = StrictStr
+        if self.multiple:
+            py_type = list_type(py_type)
+        return optional_if_needed(py_type, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
         return dynamic_model_information_from_py_type(self, self.py_type)
 
     @property
     def request_requires_value(self) -> bool:
-        return True
+        return not self.optional
 
 
 class BaseUrlParameterModel(BaseGalaxyToolParameterModelDefinition):

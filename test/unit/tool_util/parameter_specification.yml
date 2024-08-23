@@ -707,10 +707,36 @@ gx_data_column:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: 0 }
   request_invalid:
   - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [ 0 ] }
   request_internal_valid:
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+
+gx_data_column_optional:
+  request_valid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: 0 }
+  - { ref_parameter: {src: hda, id: abcdabcd} }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: null }
+  request_invalid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [ 0 ] }
+  request_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
+  request_internal_invalid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+
+gx_data_column_multiple:
+  request_valid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: [0] }
+  request_invalid:
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: abcdabcd}, parameter: ["0"] }
+  request_internal_valid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: [0] }
+  request_internal_invalid:
+  - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+  - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
 
 gx_group_tag:
   request_valid:
@@ -725,6 +751,40 @@ gx_group_tag:
   - { ref_parameter: {src: hdca, id: 123}, parameter: 'type: matched' }
   request_internal_invalid:
   - { ref_parameter: {src: hdca, id: 123}, parameter: null }
+
+gx_group_tag_optional:
+  request_valid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'type:matched' }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'matched' }
+  - { ref_parameter: { src: hdca, id: abcdabcd} }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: null }
+  request_invalid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 7 }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: true }
+  request_internal_valid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: 'type: matched' }
+  - { ref_parameter: {src: hdca, id: 123}, parameter: null }
+  request_internal_invalid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: 8 }
+
+
+gx_group_tag_multiple:
+  request_valid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: ['type:matched'] }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: ['matched'] }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: ['matched'] }
+  request_invalid:
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 'matched' }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: 7 }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: true }
+  - { ref_parameter: { src: hdca, id: abcdabcd}, parameter: null }
+  - { ref_parameter: { src: hdca, id: abcdabcd} }
+  request_internal_valid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: ['type: matched'] }
+  request_internal_invalid:
+  - { ref_parameter: {src: hdca, id: 123}, parameter: 8 }
+  - { ref_parameter: {src: hdca, id: 123}, parameter: null }
+
 
 cwl_int:
   request_valid:
