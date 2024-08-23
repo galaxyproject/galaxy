@@ -7450,6 +7450,46 @@ steps: []
 
         assert invocation_steps[1]["state"] == "ok"
 
+    def test_data_input_recovery_on_delayed_input(self):
+        self.workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  the_output:
+    outputSource: child/output
+steps:
+  running_output:
+    tool_id: job_properties
+    tool_state:
+      failbool: false
+      sleepsecs: 3
+      thebool: false
+  child:
+    in:
+      input_dataset:
+        source: running_output/out_file1
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input_dataset: data
+        run_step:
+          default: false
+          optional: true
+          type: boolean
+      outputs:
+        output:
+          outputSource: conditional_cat/out_file1
+      steps:
+        conditional_cat:
+          tool_id: cat
+          when: $(inputs.when)
+          in:
+            input1: input_dataset
+            when:
+              source: run_step"""
+        )
+
     def _run_mapping_workflow(self):
         history_id = self.dataset_populator.new_history()
         summary = self._run_workflow(
