@@ -1,4 +1,4 @@
-import { faMagic, faSave, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faHistory, faMagic, faSave, faWrench } from "@fortawesome/free-solid-svg-icons";
 
 import type { Activity } from "@/stores/activityStore";
 
@@ -18,6 +18,16 @@ export const workflowEditorActivities = [
         description: "Show and test for the best practices in this workflow.",
         tooltip: "Test workflow for best practices",
         icon: faMagic,
+        panel: true,
+        visible: true,
+        optional: true,
+    },
+    {
+        title: "Changes",
+        id: "workflow-undo-redo",
+        description: "View, undo, and redo your latest changes.",
+        tooltip: "Show and manage latest changes",
+        icon: faHistory,
         panel: true,
         visible: true,
         optional: true,
