@@ -32,6 +32,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     PostJobAction,
     Workflow,
+    WorkflowInvocationStep,
     WorkflowStep,
     WorkflowStepConnection,
 )
@@ -762,7 +763,7 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
     ) -> Optional[bool]:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -974,8 +975,11 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
 
-    def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step, already_persisted=True)
+    def recover_mapping(self, invocation_step: WorkflowInvocationStep, progress: "WorkflowProgress"):
+        super().recover_mapping(invocation_step, progress)
+        progress.set_outputs_for_input(
+            invocation_step, progress.outputs.get(invocation_step.workflow_step_id), already_persisted=True
+        )
 
     def get_export_state(self):
         return self._parse_state_into_dict()
