@@ -7450,6 +7450,84 @@ steps: []
 
         assert invocation_steps[1]["state"] == "ok"
 
+    def test_data_input_recovery_on_delayed_input(self):
+        self.workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs: {}
+outputs:
+  the_output:
+    outputSource: child/output
+steps:
+  running_output:
+    tool_id: job_properties
+    tool_state:
+      failbool: false
+      sleepsecs: 3
+      thebool: false
+  child:
+    in:
+      input_dataset:
+        source: running_output/out_file1
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input_dataset: data
+        run_step:
+          default: false
+          optional: true
+          type: boolean
+      outputs:
+        output:
+          outputSource: conditional_cat/out_file1
+      steps:
+        conditional_cat:
+          tool_id: cat
+          when: $(inputs.when)
+          in:
+            input1: input_dataset
+            when:
+              source: run_step"""
+        )
+
+    def test_subworkflow_output_not_found_fails(self):
+        # This test might start failing if we ever validate connections before attempting to schedule
+        summary = self.workflow_populator.run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input: data
+outputs:
+  the_output:
+    outputSource: child/output
+steps:
+  child:
+    in:
+      input_dataset:
+        source: input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input_dataset: data
+      outputs:
+        output:
+          outputSource: cat/out_file_that_doesnt_exist
+      steps:
+        cat:
+          tool_id: cat
+          in:
+            input1: input_dataset
+test_data:
+  input:
+    value: 1.fasta
+    type: File
+            """,
+            assert_ok=False,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        assert invocation["state"] == "failed"
+        assert invocation["messages"][0]["reason"] == "output_not_found"
+
     def _run_mapping_workflow(self):
         history_id = self.dataset_populator.new_history()
         summary = self._run_workflow(
