@@ -52,11 +52,12 @@
                     :license="license"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
-                    @onAttributes="() => showAttributes(true)"
+                    @onAttributes="showAttributes"
                     @onHighlight="onHighlight"
                     @onUnhighlight="onUnhighlight"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
+                <UndoRedoStack v-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
             </template>
         </ActivityBar>
         <div id="center" class="workflow-center">
@@ -81,12 +82,6 @@
                         :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
                         @click="undoRedoStore.redo()">
                         <FontAwesomeIcon icon="fa-arrow-right" />
-                    </b-button>
-                    <b-button
-                        title="View Last Changes"
-                        :variant="showChanges ? 'primary' : 'link'"
-                        @click="toggleShowChanges">
-                        <FontAwesomeIcon icon="fa-history" />
                     </b-button>
                 </b-button-group>
             </div>
@@ -123,15 +118,14 @@
                             @onReport="onReport"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
-                            @onAttributes="() => showAttributes(true)"
+                            @onAttributes="showAttributes"
                             @onUpgrade="onUpgrade" />
                     </div>
                 </div>
                 <div ref="rightPanelElement" class="unified-panel-body workflow-right p-2">
                     <div v-if="!initialLoading" class="position-relative h-100">
-                        <UndoRedoStack v-if="showChanges" :store-id="id" />
                         <FormTool
-                            v-else-if="hasActiveNodeTool"
+                            v-if="hasActiveNodeTool"
                             :key="activeStep.id"
                             :step="activeStep"
                             :datatypes="datatypes"
@@ -314,18 +308,8 @@ export default {
         }
 
         const showInPanel = ref("attributes");
-        const showChanges = ref(false);
 
-        function toggleShowChanges() {
-            ensureParametersSet();
-            showChanges.value = !showChanges.value;
-        }
-
-        function showAttributes(closeChanges = false) {
-            if (closeChanges) {
-                showChanges.value = false;
-            }
-
+        function showAttributes() {
             ensureParametersSet();
             stateStore.activeNodeId = null;
             showInPanel.value = "attributes";
@@ -474,8 +458,6 @@ export default {
             parameters,
             ensureParametersSet,
             showInPanel,
-            showChanges,
-            toggleShowChanges,
             showAttributes,
             setName,
             report,
