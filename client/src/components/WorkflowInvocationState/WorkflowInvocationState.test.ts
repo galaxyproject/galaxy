@@ -13,6 +13,10 @@ localVue.use(PiniaVuePlugin);
 
 const selectors = {
     invocationSummary: ".invocation-overview",
+    bAlertStub: "balert-stub",
+    spanElement: "span",
+    invocationReportTab: "btab-stub[title='Report']",
+    fullPageHeading: "anonymous-stub[h1='true']",
 };
 
 /** Invocation data to be expected in the store */
@@ -75,11 +79,33 @@ jest.mock("@/stores/invocationStore", () => {
     };
 });
 
+// Sample workflow
+const workflowData = {
+    id: "workflow-id",
+    name: "Test Workflow",
+    version: 0,
+};
+
+// Mock the workflow store to return the expected workflow data given the stored workflow ID
+jest.mock("@/stores/workflowStore", () => {
+    const originalModule = jest.requireActual("@/stores/workflowStore");
+    return {
+        ...originalModule,
+        useWorkflowStore: () => ({
+            ...originalModule.useWorkflowStore(),
+            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => workflowData),
+            fetchWorkflowForInstanceId: jest.fn(),
+        }),
+    };
+});
+
 /** Mount the WorkflowInvocationState component with the given invocation ID
  * @param invocationId The invocation ID to be passed as a prop
+ * @param shallow Whether to use shallowMount or mount
+ * @param fullPage Whether to render the header as well or just the invocation state tabs
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationState(invocationId: string, shallow = true) {
+async function mountWorkflowInvocationState(invocationId: string, shallow = true, isFullPage = false) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
@@ -88,6 +114,7 @@ async function mountWorkflowInvocationState(invocationId: string, shallow = true
         wrapper = shallowMount(WorkflowInvocationState as object, {
             propsData: {
                 invocationId,
+                isFullPage,
             },
             pinia,
             localVue,
@@ -96,6 +123,7 @@ async function mountWorkflowInvocationState(invocationId: string, shallow = true
         wrapper = mount(WorkflowInvocationState as object, {
             propsData: {
                 invocationId,
+                isFullPage,
             },
             pinia,
             localVue,
@@ -124,9 +152,9 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(0);
 
         // expect there to be an alert for the missing invocation
-        const alert = wrapper.find("balert-stub");
+        const alert = wrapper.find(selectors.bAlertStub);
         expect(alert.attributes("variant")).toBe("info");
-        const span = alert.find("span");
+        const span = alert.find(selectors.spanElement);
         expect(span.text()).toBe("Invocation not found.");
     });
 
@@ -157,22 +185,29 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(0);
 
         // expect there to be an alert for the handled error
-        const alert = wrapper.find("balert-stub");
+        const alert = wrapper.find(selectors.bAlertStub);
         expect(alert.attributes("variant")).toBe("danger");
         expect(alert.text()).toBe("User does not own specified item.");
     });
 });
 
-describe("WorkflowInvocationState check 'Report' tab disabled state", () => {
+describe("WorkflowInvocationState check 'Report' tab disabled state and header", () => {
     it("determines that 'Report' tab is disabled for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id", false);
-        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
-        expect(reportTab.classes()).toContain("disabled");
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
+        const reportTab = wrapper.find(selectors.invocationReportTab);
+        expect(reportTab.attributes("disabled")).toBe("true");
     });
     it("determines that 'Report' tab is not disabled for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id, false);
-        const reportTab = wrapper.find(".invocation-report-tab").find(".nav-link");
-        expect(reportTab.classes()).not.toContain("disabled");
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, true);
+        const reportTab = wrapper.find(selectors.invocationReportTab);
+        expect(reportTab.attributes("disabled")).toBeUndefined();
+    });
+    it("determines that a header is displayed for the invocation", async () => {
+        const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
+        const heading = wrapper.find(selectors.fullPageHeading);
+        expect(heading.exists()).toBe(true);
+        expect(heading.text()).toContain('Invoked Workflow: "Test Workflow"');
+        expect(wrapper.html()).toContain(`Workflow Version: ${workflowData.version + 1}`);
     });
 });
 
