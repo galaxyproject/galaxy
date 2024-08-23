@@ -44,6 +44,7 @@ from galaxy.schema.invocation import (
     InvocationCancellationReviewFailed,
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureOutputNotFound,
     InvocationFailureWhenNotBoolean,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
@@ -823,7 +824,17 @@ class SubWorkflowModule(WorkflowModule):
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
             )
-            replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            try:
+                replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=workflow_output.workflow_step_id,
+                        output_name=workflow_output.output_name,
+                        dependent_workflow_step_id=step.id,
+                    )
+                )
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
         return None
