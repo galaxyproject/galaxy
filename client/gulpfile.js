@@ -1,10 +1,11 @@
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs-extra");
 const del = require("del");
 const { src, dest, series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
 const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
+const xml2js = require("xml2js");
 
 /*
  * We'll want a flexible glob down the road, but for now there are no
@@ -24,7 +25,6 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "hyphyvision",
     "jqplot/jqplot_bar",
     "media_player",
-    "msa",
     "mvpapp",
     "ngl",
     "nora",
@@ -39,8 +39,14 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "ts_visjs",
     "venn",
 ];
+const INSTALL_PLUGIN_BUILD_IDS = ["msa"]; // todo: derive from XML
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
+
+const failOnError =
+    process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR && process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR !== "0"
+        ? true
+        : false;
 
 const PATHS = {
     nodeModules: "./node_modules",
@@ -56,11 +62,6 @@ const PATHS = {
         underscore: ["underscore.js", "underscore.js"],
     },
 };
-
-const failOnError =
-    process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR && process.env.GALAXY_PLUGIN_BUILD_FAIL_ON_ERROR !== "0"
-        ? true
-        : false;
 
 PATHS.pluginBaseDir =
     (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
@@ -162,6 +163,8 @@ function buildPlugins(callback, forceRebuild) {
             console.log(`No changes detected for ${pluginName}`);
         } else {
             console.log(`Installing Dependencies for ${pluginName}`);
+
+            // Else we call yarn install and yarn build
             child_process.spawnSync(
                 "yarn",
                 ["install", "--production=false", "--network-timeout=300000", "--check-files"],
@@ -205,6 +208,71 @@ function buildPlugins(callback, forceRebuild) {
     return callback();
 }
 
+function installPlugins(callback) {
+    // iterate through install_plugin_build_ids, identify xml files and install dependencies
+    for (const plugin_name of INSTALL_PLUGIN_BUILD_IDS) {
+        const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${plugin_name}`);
+        const xmlPath = path.join(pluginDir, `config/${plugin_name}.xml`);
+        // Check if the file exists
+        if (fs.existsSync(xmlPath)) {
+            installDependenciesFromXML(xmlPath, pluginDir);
+        } else {
+            console.error(`XML file not found: ${xmlPath}`);
+        }
+    }
+
+    return callback();
+}
+
+// Function to parse the XML and install dependencies
+function installDependenciesFromXML(xmlPath, pluginDir) {
+    const parser = new xml2js.Parser();
+    fs.readFile(xmlPath, (err, data) => {
+        if (err) {
+            console.error("Error reading XML file:", err);
+            return;
+        }
+        parser.parseString(data, async (err, result) => {
+            if (err) {
+                console.error("Error parsing XML:", err);
+                return;
+            }
+            // Navigate to the dependencies
+            const requirements = result.visualization.requirements[0].requirement;
+            // Extract the details
+            requirements.forEach((dep) => {
+                const reqType = dep.$.type;
+                const pkgName = dep.$.package;
+                const version = dep.$.version;
+
+                if (reqType == "package" && pkgName && version) {
+                    // install the package.
+                    if (
+                        child_process.spawnSync("npm", ["install", "--silent", "--no-save", `${pkgName}@${version}`], {
+                            cwd: pluginDir,
+                            stdio: "inherit",
+                            shell: true,
+                        }).status === 0
+                    ) {
+                        // Copy static from the installed package to the
+                        // plugin's static directory.
+                        // This keeps separation from standard staging.
+                        fs.copy(path.join(pluginDir, "node_modules", pkgName, "static"), path.join(pluginDir, "static"))
+                            .then(() => {
+                                console.log(`Successfully staged package for ${pkgName}@${version} in ${pluginDir}`);
+                            })
+                            .catch((err) => {
+                                console.error(`Error staging package ${pkgName}@${version} in ${pluginDir}`);
+                            });
+                    } else {
+                        console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
+                    }
+                }
+            });
+        });
+    });
+}
+
 function forceBuildPlugins(callback) {
     return buildPlugins(callback, true);
 }
@@ -214,8 +282,8 @@ function cleanPlugins() {
 }
 
 const client = parallel(fonts, stageLibs, icons);
-const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
-const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
+const plugins = series(buildPlugins, installPlugins, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, installPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
@@ -229,3 +297,4 @@ module.exports.plugins = plugins;
 module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
+module.exports.installPlugins = installPlugins;
