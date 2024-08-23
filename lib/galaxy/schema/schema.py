@@ -3592,28 +3592,6 @@ class DeleteHistoryContentPayload(Model):
     )
 
 
-class DeleteHistoryContentResult(Model):
-    """Contains minimum information about the deletion state of a history item.
-
-    Can also contain any other properties of the item."""
-
-    id: DecodedDatabaseIdField = Field(
-        ...,
-        title="ID",
-        description="The encoded ID of the history item.",
-    )
-    deleted: bool = Field(
-        ...,
-        title="Deleted",
-        description="True if the item was successfully deleted.",
-    )
-    purged: Optional[bool] = Field(
-        default=None,
-        title="Purged",
-        description="True if the item was successfully removed from disk.",
-    )
-
-
 class HistoryContentsArchiveDryRunResult(RootModel):
     """
     Contains a collection of filepath/filename entries that represent

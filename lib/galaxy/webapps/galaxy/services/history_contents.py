@@ -739,7 +739,6 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self,
         trans,
         id: DecodedDatabaseIdField,
-        serialization_params: SerializationParams,
         contents_type: HistoryContentType,
         payload: DeleteHistoryContentPayload,
     ):
@@ -747,12 +746,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
         """
         if contents_type == HistoryContentType.dataset:
-            return self.__delete_dataset(trans, id, payload.purge, payload.stop_job, serialization_params)
+            return self.__delete_dataset(trans, id, payload.purge, payload.stop_job)
         elif contents_type == HistoryContentType.dataset_collection:
-            async_result = self.dataset_collection_manager.delete(
+            return self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
             )
-            return {"id": self.encode_id(id), "deleted": True, "async_result": async_result is not None}
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
 
@@ -866,24 +864,16 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             archive.write(file_path, archive_path)
         return archive
 
-    def __delete_dataset(
-        self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams
-    ):
+    def __delete_dataset(self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool):
         hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.error_if_uploading(hda)
 
-        async_result = None
         if purge:
-            async_result = self.hda_manager.purge(hda, user=trans.user)
+            return self.hda_manager.purge(hda, user=trans.user)
         else:
             self.hda_manager.delete(hda, stop_job=stop_job)
-        serialization_params.default_view = "detailed"
-        rval = self.hda_serializer.serialize_to_view(
-            hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
-        )
-        rval["async_result"] = async_result is not None
-        return rval
+        return None
 
     def __update_dataset_collection(self, trans, id: DecodedDatabaseIdField, payload: dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)
