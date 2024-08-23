@@ -1,8 +1,25 @@
-import { faHistory, faMagic, faSave, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faHistory,
+    faMagic,
+    faPencilAlt,
+    faSave,
+    faSitemap,
+    faTools,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 
 import type { Activity } from "@/stores/activityStore";
 
 export const workflowEditorActivities = [
+    {
+        title: "Attributes",
+        id: "workflow-editor-attributes",
+        tooltip: "Edit workflow attributes",
+        description: "View and edit the attributes of this workflow.",
+        panel: true,
+        icon: faPencilAlt,
+        visible: true,
+    },
     {
         title: "Tools",
         id: "workflow-editor-tools",
@@ -11,6 +28,26 @@ export const workflowEditorActivities = [
         panel: true,
         tooltip: "Search tools to use in your workflow",
         visible: true,
+    },
+    {
+        title: "Workflow Tools",
+        id: "workflow-editor-utility-tools",
+        description: "Browse and insert tools specific to workflows.",
+        tooltip: "Workflow specific tools",
+        icon: faTools,
+        panel: true,
+        optional: true,
+        visible: false,
+    },
+    {
+        title: "Workflows",
+        id: "workflow-editor-workflows",
+        description: "Browse other workflows and add them as sub-workflows.",
+        tooltip: "Search workflows to use in your workflow",
+        icon: faSitemap,
+        panel: true,
+        visible: true,
+        optional: true,
     },
     {
         title: "Best Practices",
