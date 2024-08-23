@@ -14,6 +14,7 @@
 
 # Things to verify:
 # - non optional, multi-selects require a selection (see TODO below...)
+# - https://github.com/galaxyproject/galaxy/issues/18541
 gx_int:
   request_valid:
     - parameter: 5
@@ -25,12 +26,27 @@ gx_int:
     - parameter: "null"
     - parameter: "None"
     - parameter: { 5 }
-  test_case_valid:
+    - parameter: {__class__: 'ConnectedValue'}
+  test_case_xml_valid:
     - parameter: 5
     - {}
-  test_case_invalid:
+  test_case_xml_invalid:
     - parameter: null
     - parameter: "5"
+  workflow_step_valid:
+    - parameter: 5
+    - {}
+  workflow_step_invalid:
+    - parameterx: 5
+    - parameter: 'foobar'
+  workflow_step_linked_valid:
+    - parameter: 5
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: 'foobar'
+    - parameter: {__class__: 'ConnectedValue2'}
+
 
 gx_boolean:
   request_valid:
@@ -44,6 +60,21 @@ gx_boolean:
     # Marius and John were on fence here.
     - parameter: "mytrue"
     - parameter: null
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_valid:
+    - parameter: True
+    - {}
+  workflow_step_invalid:
+    - parameter: "true"
+    - parameter: mytrue
+    - parameter: null
+  workflow_step_linked_valid:
+    - parameter: True
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: "true"
+    - parameter: {__class__: 'ConnectedValue3'}
 
 gx_int_optional:
   request_valid:
@@ -55,6 +86,21 @@ gx_int_optional:
    - parameter: "None"
    - parameter: "null"
    - parameter: [5]
+   - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_valid:
+   - parameter: 5
+   - parameter: null
+   - {}
+  workflow_step_invalid:
+   - parameter: "5"
+   - parameter: "None"
+   - parameter: "null"
+   - parameter: [5]
+  workflow_step_linked_valid:
+   - parameter: 5
+   - parameter: null
+   - {}
+   - parameter: {__class__: 'ConnectedValue'}
 
 gx_int_required: &gx_int_required
   request_valid:
@@ -76,11 +122,36 @@ gx_text:
     - parameter: moocow
     - parameter: 'some spaces'
     - parameter: ''
+    - {}
   request_invalid:
     - parameter: 5
     - parameter: null
     - parameter: {}
     - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+  workflow_step_invalid:
+    - parameter: 5
+    - parameter: null
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - {}
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: 5
+    - parameter: null
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {"class": 'ConnectedValue'}
 
 gx_text_optional:
   request_valid:
@@ -89,6 +160,26 @@ gx_text_optional:
     - parameter: ''
     - parameter: null
   request_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+  workflow_step_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+  workflow_step_invalid:
+    - parameter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: 'some spaces'
+    - parameter: ''
+    - parameter: null
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
@@ -113,12 +204,25 @@ gx_select:
   - parameter: "ex2"
   request_internal_invalid:
   - parameter: {}
-  test_case_valid:
+  test_case_xml_valid:
   - parameter: 'ex2'
   - parameter: '--ex1'
   - {}
-  test_case_invalid:
+  test_case_xml_invalid:
   - parameter: {}
+  - parameter: null
+  workflow_step_valid:
+  - parameter: "--ex1"
+  - {}
+  workflow_step_invalid:
+  - parameter: 'foobar'
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+  - parameter: "--ex1"
+  - parameter: {__class__: 'ConnectedValue'}
+  - {}
+  workflow_step_linked_invalid:
+  - parameter: 'foobar'
   - parameter: null
 
 gx_select_optional:
@@ -135,6 +239,28 @@ gx_select_optional:
   - parameter: ["ex2"]
   - parameter: {}
   - parameter: 5
+  workflow_step_valid:
+  - parameter: "--ex1"
+  - parameter: "ex2"
+  - parameter: null
+  - {}
+  workflow_step_invalid:
+  - parameter: "Ex1"
+  - parameter: ["ex2"]
+  - parameter: {}
+  - parameter: 5
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+  - parameter: "--ex1"
+  - parameter: "ex2"
+  - parameter: null
+  - {}
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+  - parameter: "Ex1"
+  - parameter: ["ex2"]
+  - parameter: {}
+  - parameter: 5
 
 gx_select_multiple:
   request_valid:
@@ -147,6 +273,32 @@ gx_select_multiple:
   - parameter: {}
   - parameter: 5
   - {}
+  workflow_step_valid:
+  - parameter: ["--ex1"]
+  - parameter: ["ex2"]
+  - {}  # could come in linked...
+  # ... hmmm? this should maybe be invalid right? 
+  - parameter: null
+  workflow_step_invalid:
+  - parameter: ["Ex1"]
+  - parameter: {}
+  - parameter: 5
+  - parameter: {__class__: 'ConnectedValue'}
+  - parameter: [{__class__: 'ConnectedValue'}]
+  workflow_step_linked_valid:
+  - parameter: ["--ex1"]
+  - parameter: ["ex2"]
+  - parameter: [{__class__: 'ConnectedValue'}]
+  workflow_step_linked_invalid:
+  - parameter: ["Ex1"]
+  - parameter: {}
+  - parameter: 5
+  - {}
+  # might be wrong? I guess we would expect the semantic of this to do like a map-over
+  # but as far as I am aware that is not implemented https://github.com/galaxyproject/galaxy/issues/18541
+  - parameter: {__class__: 'ConnectedValue'}
+  # they are non-optinoal right?
+  - parameter: null
 
 gx_select_multiple_optional:
   request_valid:
@@ -209,6 +361,19 @@ gx_hidden:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
+  workflow_step_valid:
+    - parameter: moocow
+    - {}
+  workflow_step_invalid:
+    - parmaeter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: 5
+    - parameter: null
 
 gx_hidden_optional:
   request_valid:
@@ -220,7 +385,21 @@ gx_hidden_optional:
     - parameter: 5
     - parameter: {}
     - parameter: { "moo": "cow" }
-    
+  workflow_step_valid:
+    - parameter: moocow
+    - {}
+    - parameter: null
+  workflow_step_invalid:
+    - parmaeter: 5
+    - parameter: {}
+    - parameter: { "moo": "cow" }
+  workflow_step_linked_valid:
+    - parameter: moocow
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: null
+  workflow_step_linked_invalid:
+    - parameter: 5
+
 gx_float:
   request_valid:
     - parameter: 5
@@ -233,6 +412,30 @@ gx_float:
     - parameter: "5"
     - parameter: "5.0"
     - parameter: { "moo": "cow" }
+  test_case_xml_valid:
+    - parameter: 5
+    - parameter: 5.0
+    - {}
+  test_case_xml_invalid:
+    - parameter: null
+    - parameter: "5.0"
+    - parameter: "5.1"
+  workflow_step_valid:
+    - parameter: 5
+    - parameter: 5.0
+    - {}
+  workflow_step_invalid:
+    - parameterx: 5
+    - parameter: 'foobar'
+  workflow_step_linked_valid:
+    - parameter: 5
+    - parameter: 5.4
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: 'foobar'
+    - parameter: {__class__: 'ConnectedValue2'}
+
 
 gx_float_optional:
   request_valid:
@@ -246,6 +449,29 @@ gx_float_optional:
     - parameter: "5.0"
     - parameter: {}
     - parameter: { "moo": "cow" }
+  test_case_xml_valid:
+    - parameter: 5
+    - parameter: 5.0
+    - {}
+    - parameter: null
+  test_case_xml_invalid:
+    - parameter: "5.0"
+    - parameter: "5.1"
+  workflow_step_valid:
+    - parameter: 5
+    - parameter: 5.0
+    - {}
+  workflow_step_invalid:
+    - parameterx: 5
+    - parameter: 'foobar'
+  workflow_step_linked_valid:
+    - parameter: 5
+    - parameter: 5.4
+    - parameter: {__class__: 'ConnectedValue'}
+    - parameter: null
+  workflow_step_linked_invalid:
+    - parameter: 'foobar'
+    - parameter: {__class__: 'ConnectedValue2'}
 
 gx_color:
   request_valid:
@@ -255,6 +481,22 @@ gx_color:
    - parameter: null
    - parameter: {}
    - parameter: '#abcd'
+  workflow_step_valid:
+   - parameter: '#aabbcc'
+   - parameter: '#000000'
+   - {}
+  workflow_step_invalid:
+    - parameterx: '#aabbcc'
+    - parameter: 'foobar'
+    - parameter: 5
+  workflow_step_linked_valid:
+    - parameter: '#aabbcc'
+    - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+    - parameter: null
+    - parameter: 'foobar'
+    - parameter: 5
+    - parameter: {__class__: 'ConnectedValue2'}
 
 gx_data:
   request_valid:
@@ -291,6 +533,21 @@ gx_data:
    # expanded out.
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {src: hda, id: abcdabcd}
+  workflow_step_valid:
+   - {}
+  workflow_step_invalid:
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+   - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+   - {}
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {__class__: 'ConnectedValueX'}
 
 
 gx_data_optional:
@@ -320,6 +577,21 @@ gx_data_optional:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  workflow_step_valid:
+   - {}
+  workflow_step_invalid:
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_valid:
+   - {}
+   - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+   - {src: hda, id: abcdabcd}
+   - {src: hda, id: 7}
+   - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
+   - parameter: {__class__: 'ConnectedValueX'}
 
 gx_data_multiple:
   request_valid:
@@ -408,6 +680,16 @@ gx_data_collection:
    - parameter: true
    - parameter: 5
    - parameter: "5"
+  workflow_step_valid:
+  - {}
+  workflow_step_invalid:
+  - parameter: {src: hdca, id: abcdabcd}
+  - parameter: 5
+  - parameter: {}  
+  workflow_step_linked_valid:
+  - parameter: {__class__: 'ConnectedValue'}
+  workflow_step_linked_invalid:
+  - {}
 
 gx_data_collection_optional:
   request_valid:
@@ -712,6 +994,12 @@ gx_data_column:
   - { ref_parameter: {src: hda, id: 123}, parameter: 0 }
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
+  test_case_xml_valid:
+  - { ref_parameter: "1.bed", parameter: 3 }
+  test_case_xml_invalid:
+  - { ref_parameter: "1.bed", parameter: "3" }
+  test_case_xml_invalid:
+  - { ref_parameter: "1.bed", parameter: "c2: With name" }
 
 gx_data_column_optional:
   request_valid:

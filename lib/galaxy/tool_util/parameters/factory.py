@@ -19,6 +19,7 @@ from .models import (
     BaseUrlParameterModel,
     BooleanParameterModel,
     ColorParameterModel,
+    cond_test_parameter_default_value,
     ConditionalParameterModel,
     ConditionalWhen,
     CwlBooleanParameterModel,
@@ -52,6 +53,10 @@ from .models import (
 
 
 class ParameterDefinitionError(Exception):
+    pass
+
+
+class UnknownParameterTypeError(ParameterDefinitionError):
     pass
 
 
@@ -135,9 +140,11 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             )
         elif param_type == "data_collection":
             optional = input_source.parse_optional()
+            default_value = input_source.parse_default()
             return DataCollectionParameterModel(
                 name=input_source.parse_name(),
                 optional=optional,
+                value=default_value,
             )
         elif param_type == "select":
             # Function... example in devteam cummeRbund.
@@ -202,23 +209,14 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
                 name=input_source.parse_name(),
             )
         else:
-            raise Exception(f"Unknown Galaxy parameter type {param_type}")
+            raise UnknownParameterTypeError(f"Unknown Galaxy parameter type {param_type}")
     elif input_type == "conditional":
         test_param_input_source = input_source.parse_test_input_source()
         test_parameter = cast(
             Union[BooleanParameterModel, SelectParameterModel], _from_input_source_galaxy(test_param_input_source)
         )
         whens = []
-        default_value = object()
-        if isinstance(test_parameter, BooleanParameterModel):
-            default_value = test_parameter.value
-        elif isinstance(test_parameter, SelectParameterModel):
-            select_parameter = cast(SelectParameterModel, test_parameter)
-            select_default_value = select_parameter.default_value
-            if select_default_value is not None:
-                default_value = select_default_value
-
-        # TODO: handle select parameter model...
+        default_test_value = cond_test_parameter_default_value(test_parameter)
         for value, case_inputs_sources in input_source.parse_when_input_sources():
             if isinstance(test_parameter, BooleanParameterModel):
                 # TODO: investigate truevalue/falsevalue when...
@@ -228,7 +226,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
 
             tool_parameter_models = input_models_for_page(case_inputs_sources)
             is_default_when = False
-            if typed_value == default_value:
+            if typed_value == default_test_value:
                 is_default_when = True
             whens.append(
                 ConditionalWhen(discriminator=value, parameters=tool_parameter_models, is_default_when=is_default_when)

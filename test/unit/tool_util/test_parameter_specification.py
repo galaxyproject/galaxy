@@ -20,6 +20,8 @@ from galaxy.tool_util.parameters import (
     validate_internal_request,
     validate_request,
     validate_test_case,
+    validate_workflow_step,
+    validate_workflow_step_linked,
 )
 from galaxy.tool_util.parameters.json import to_json_schema_string
 from galaxy.tool_util.unittest_utils.parameters import (
@@ -91,8 +93,12 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         "request_internal_invalid": _assert_internal_requests_invalid,
         "job_internal_valid": _assert_internal_jobs_validate,
         "job_internal_invalid": _assert_internal_jobs_invalid,
-        "test_case_valid": _assert_test_cases_validate,
-        "test_case_invalid": _assert_test_cases_invalid,
+        "test_case_xml_valid": _assert_test_cases_validate,
+        "test_case_xml_invalid": _assert_test_cases_invalid,
+        "workflow_step_valid": _assert_workflow_steps_validate,
+        "workflow_step_invalid": _assert_workflow_steps_invalid,
+        "workflow_step_linked_valid": _assert_workflow_steps_linked_validate,
+        "workflow_step_linked_invalid": _assert_workflow_steps_linked_invalid,
     }
 
     for valid_or_invalid, tests in combos.items():
@@ -183,6 +189,48 @@ def _assert_test_case_invalid(parameters: ToolParameterBundleModel, test_case: R
     ), f"Parameters {parameters} didn't result in validation error on test_case {test_case} as expected."
 
 
+def _assert_workflow_step_validates(parameters: ToolParameterBundleModel, workflow_step: RawStateDict) -> None:
+    try:
+        validate_workflow_step(parameters, workflow_step)
+    except RequestParameterInvalidException as e:
+        raise AssertionError(f"Parameters {parameters} failed to validate workflow step {workflow_step}. {e}")
+
+
+def _assert_workflow_step_invalid(parameters: ToolParameterBundleModel, workflow_step: RawStateDict) -> None:
+    exc = None
+    try:
+        validate_workflow_step(parameters, workflow_step)
+    except RequestParameterInvalidException as e:
+        exc = e
+    assert (
+        exc is not None
+    ), f"Parameters {parameters} didn't result in validation error on workflow step {workflow_step} as expected."
+
+
+def _assert_workflow_step_linked_validates(
+    parameters: ToolParameterBundleModel, workflow_step_linked: RawStateDict
+) -> None:
+    try:
+        validate_workflow_step_linked(parameters, workflow_step_linked)
+    except RequestParameterInvalidException as e:
+        raise AssertionError(
+            f"Parameters {parameters} failed to validate linked workflow step {workflow_step_linked}. {e}"
+        )
+
+
+def _assert_workflow_step_linked_invalid(
+    parameters: ToolParameterBundleModel, workflow_step_linked: RawStateDict
+) -> None:
+    exc = None
+    try:
+        validate_workflow_step_linked(parameters, workflow_step_linked)
+    except RequestParameterInvalidException as e:
+        exc = e
+    assert (
+        exc is not None
+    ), f"Parameters {parameters} didn't result in validation error on linked workflow step {workflow_step_linked} as expected."
+
+
 _assert_requests_validate = partial(_for_each, _assert_request_validates)
 _assert_requests_invalid = partial(_for_each, _assert_request_invalid)
 _assert_internal_requests_validate = partial(_for_each, _assert_internal_request_validates)
@@ -191,6 +239,10 @@ _assert_internal_jobs_validate = partial(_for_each, _assert_internal_job_validat
 _assert_internal_jobs_invalid = partial(_for_each, _assert_internal_job_invalid)
 _assert_test_cases_validate = partial(_for_each, _assert_test_case_validates)
 _assert_test_cases_invalid = partial(_for_each, _assert_test_case_invalid)
+_assert_workflow_steps_validate = partial(_for_each, _assert_workflow_step_validates)
+_assert_workflow_steps_invalid = partial(_for_each, _assert_workflow_step_invalid)
+_assert_workflow_steps_linked_validate = partial(_for_each, _assert_workflow_step_linked_validates)
+_assert_workflow_steps_linked_invalid = partial(_for_each, _assert_workflow_step_linked_invalid)
 
 
 def decode_val(val: str) -> int:

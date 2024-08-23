@@ -1,3 +1,4 @@
+from .case import test_case_state
 from .convert import (
     decode,
     encode,
@@ -7,6 +8,7 @@ from .factory import (
     input_models_for_pages,
     input_models_for_tool_source,
     input_models_from_json,
+    ParameterDefinitionError,
     tool_parameter_bundle_from_json,
 )
 from .json import to_json_schema_string
@@ -42,6 +44,8 @@ from .models import (
     validate_internal_request,
     validate_request,
     validate_test_case,
+    validate_workflow_step,
+    validate_workflow_step_linked,
 )
 from .state import (
     JobInternalToolState,
@@ -49,8 +53,16 @@ from .state import (
     RequestToolState,
     TestCaseToolState,
     ToolState,
+    WorkflowStepLinkedToolState,
+    WorkflowStepToolState,
 )
-from .visitor import visit_input_values
+from .visitor import (
+    flat_state_path,
+    keys_starting_with,
+    repeat_inputs_to_array,
+    validate_explicit_conditional_test_value,
+    visit_input_values,
+)
 
 __all__ = (
     "from_input_source",
@@ -58,6 +70,7 @@ __all__ = (
     "input_models_for_tool_source",
     "tool_parameter_bundle_from_json",
     "input_models_from_json",
+    "ParameterDefinitionError",
     "JobInternalToolState",
     "ToolParameterBundle",
     "ToolParameterBundleModel",
@@ -89,13 +102,22 @@ __all__ = (
     "validate_internal_request",
     "validate_request",
     "validate_test_case",
+    "validate_workflow_step",
+    "validate_workflow_step_linked",
+    "validate_explicit_conditional_test_value",
     "ToolState",
     "TestCaseToolState",
     "ToolParameterT",
     "to_json_schema_string",
+    "test_case_state",
     "RequestToolState",
     "RequestInternalToolState",
+    "flat_state_path",
+    "keys_starting_with",
     "visit_input_values",
+    "repeat_inputs_to_array",
     "decode",
     "encode",
+    "WorkflowStepToolState",
+    "WorkflowStepLinkedToolState",
 )
