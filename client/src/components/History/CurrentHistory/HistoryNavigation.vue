@@ -18,6 +18,7 @@ import {
     faUserLock,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import {
     BButton,
     BButtonGroup,
@@ -34,9 +35,12 @@ import { computed, ref } from "vue";
 
 import { canMutateHistory, type HistorySummary } from "@/api";
 import { iframeRedirect } from "@/components/plugins/legacyNavigation";
+import { useToast } from "@/composables/toast";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
+import { rethrowSimple } from "@/utils/simple-error";
 
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
@@ -74,6 +78,8 @@ const props = withDefaults(defineProps<Props>(), {
 const showSwitchModal = ref(false);
 const purgeHistory = ref(false);
 
+const toast = useToast();
+
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
@@ -109,6 +115,16 @@ function userTitle(title: string) {
         return localize("Log in to") + " " + localize(title);
     } else {
         return localize(title);
+    }
+}
+
+async function resumePausedJobs() {
+    const url = `${getAppRoot()}history/resume_paused_jobs?current=True`;
+    try {
+        const response = await axios.get(url);
+        toast.success(response.data.message);
+    } catch (e) {
+        rethrowSimple(e);
     }
 }
 </script>
@@ -187,7 +203,7 @@ function userTitle(title: string) {
                     <BDropdownItem
                         :disabled="!canEditHistory"
                         :title="localize('Resume all Paused Jobs in this History')"
-                        @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
+                        @click="resumePausedJobs()">
                         <FontAwesomeIcon fixed-width :icon="faPlay" class="mr-1" />
                         <span v-localize>Resume Paused Jobs</span>
                     </BDropdownItem>
