@@ -3,11 +3,14 @@
 import argparse
 import sys
 from json import dumps
-from textwrap import wrap
+from textwrap import (
+    indent,
+    wrap,
+)
 from typing import List
 
 from galaxy.tool_util.upgrade import (
-    AdviceCode,
+    Advice,
     advise_on_upgrade,
     latest_supported_version,
 )
@@ -52,17 +55,20 @@ def arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_advice(advice: AdviceCode):
-    message = "\n".join(wrap(advice["message"], initial_indent="", subsequent_indent="    "))
-    level = advice["level"]
+def _print_advice(advice: Advice):
+    message = "\n".join(wrap(advice.advice_code_message, initial_indent="", subsequent_indent="    "))
+    level = advice.level
     level_str = LEVEL_TO_STRING[level]
-    url = advice.get("url")
+    url = advice.url
     print(f"- {level_str}{message}\n")
+    if advice.message:
+        print(indent(advice.message, "    "))
+        print("")
     if url:
         print(f"    More information at {url}")
 
 
-def _print_advice_list(advice_list: List[AdviceCode]):
+def _print_advice_list(advice_list: List[Advice]):
     for advice in advice_list:
         _print_advice(advice)
 
@@ -70,9 +76,9 @@ def _print_advice_list(advice_list: List[AdviceCode]):
 def advise(xml_file: str, version: str, json: bool, niche: bool):
     advice_list = advise_on_upgrade(xml_file, version)
     if not niche:
-        advice_list = [a for a in advice_list if not a.get("niche", False)]
+        advice_list = [a for a in advice_list if not a.niche]
     if json:
-        print(dumps(advice_list))
+        print(dumps(a.to_dict() for a in advice_list))
     else:
         _print_advice_list(advice_list)
 

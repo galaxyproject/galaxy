@@ -10,6 +10,7 @@
 # - We could try to walk parameters and give more specific advice on structured_like qualification.
 from json import loads
 from typing import (
+    Any,
     cast,
     Dict,
     List,
@@ -23,6 +24,7 @@ from typing_extensions import (
     TypedDict,
 )
 
+from galaxy.tool_util.parameters.case import validate_test_cases_for_tool_source
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import Element
@@ -33,10 +35,12 @@ TARGET_TOO_NEW = (
     "Target upgrade version is too new for this script, consider upgrading this script for the latest advice."
 )
 
+TYPE_LEVEL = Literal["must_fix", "consider", "ready", "info"]
+
 
 class AdviceCode(TypedDict):
     name: str
-    level: Literal["must_fix", "consider", "ready", "info"]
+    level: TYPE_LEVEL
     message: str
     niche: NotRequired[bool]
     url: NotRequired[str]
@@ -50,16 +54,47 @@ for name, upgrade_object in loads(upgrade_codes_json).items():
     upgrade_codes_by_name[name] = cast(AdviceCode, upgrade_object)
 
 
+class Advice:
+    advice_code: AdviceCode
+    message: Optional[str]
+
+    def __init__(self, advice_code: AdviceCode, message: Optional[str]):
+        self.advice_code = advice_code
+        self.message = message
+
+    @property
+    def url(self) -> Optional[str]:
+        return self.advice_code.get("url")
+
+    @property
+    def level(self) -> TYPE_LEVEL:
+        return self.advice_code["level"]
+
+    @property
+    def niche(self) -> bool:
+        return self.advice_code.get("niche", False)
+
+    @property
+    def advice_code_message(self) -> str:
+        return self.advice_code["message"]
+
+    def to_dict(self) -> Dict[str, Any]:
+        as_dict = cast(Dict[str, Any], self.advice_code.copy())
+        as_dict["advice_code_message"] = self.advice_code_message
+        as_dict["message"] = self.message
+        return as_dict
+
+
 class AdviceCollection:
-    _advice: List[AdviceCode]
+    _advice: List[Advice]
 
     def __init__(self):
         self._advice = []
 
-    def add(self, code: str):
-        self._advice.append(upgrade_codes_by_name[code])
+    def add(self, code: str, message: Optional[str] = None):
+        self._advice.append(Advice(upgrade_codes_by_name[code], message))
 
-    def to_list(self) -> List[AdviceCode]:
+    def to_list(self) -> List[Advice]:
         return self._advice
 
 
@@ -218,6 +253,19 @@ class ProfileMigration24_0(ProfileMigration):
             advice_collection.add("24_0_request_cleaning")
 
 
+class ProfileMigration24_2(ProfileMigration):
+    from_version = "24.0"
+    to_version = "24.2"
+
+    @classmethod
+    def advise(cls, advice_collection: AdviceCollection, xml_file: str) -> None:
+        tool_source = _xml_tool_source(xml_file)
+        results = validate_test_cases_for_tool_source(tool_source, use_latest_profile=True)
+        for result in results:
+            if result.validation_error:
+                advice_collection.add("24_2_fix_test_case_validation", str(result.validation_error))
+
+
 profile_migrations: List[Type[ProfileMigration]] = [
     ProfileMigration16_04,
     ProfileMigration17_09,
@@ -228,12 +276,13 @@ profile_migrations: List[Type[ProfileMigration]] = [
     ProfileMigration21_09,
     ProfileMigration23_0,
     ProfileMigration24_0,
+    ProfileMigration24_2,
 ]
 
-latest_supported_version = "24.0"
+latest_supported_version = "24.2"
 
 
-def advise_on_upgrade(xml_file: str, to_version: Optional[str] = None) -> List[AdviceCode]:
+def advise_on_upgrade(xml_file: str, to_version: Optional[str] = None) -> List[Advice]:
     to_version = to_version or latest_supported_version
     tool_source = _xml_tool_source(xml_file)
     initial_version = tool_source.parse_profile()

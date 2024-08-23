@@ -85,5 +85,10 @@
     "24_0_request_cleaning": {
         "level": "consider",
         "message": "Starting with 24.0 data source tools, Galaxy requires explicit `request_param_translation` for each parameter sent to the tool. If this tools depends on unspecified parameters - new xml elements will need to be added for these parameters."
+    },
+    "24_2_fix_test_case_validation": {
+        "level": "must_fix",
+        "message": "Starting with 24.2 tools, test cases must validate against a more stringent schema. Unknown parameters are disallowed (prevents misspellings), select parameters must be specified by value (to prevent ambiguity and match the API), column parameters must be specified as integers, and parameters must be full qualified ('|' separation to include parent repeat, cond, and sections).",
+        "url": "https://github.com/galaxyproject/galaxy/pull/18679"
     }
 }
