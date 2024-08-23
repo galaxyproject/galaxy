@@ -2847,6 +2847,16 @@ steps:
             assert "## Workflow Outputs" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" not in markdown_content
+            with self._different_user():
+                exception_raised = False
+                try:
+                    self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+                except AssertionError as e:
+                    if "Request status code (403)" in str(e):
+                        exception_raised = True
+            assert exception_raised, "Expected workflow report request to fail, but it didn't"
+            self.dataset_populator.make_public(history_id)
+            self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
 
     @skip_without_tool("cat")
     def test_workflow_invocation_report_custom(self):

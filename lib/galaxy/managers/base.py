@@ -110,6 +110,8 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
             raise exceptions.ItemOwnershipException(
                 f"{item.__class__.__name__} is not owned by the current user", type="error"
             )
+        # no need to check accessibility if we're the owner
+        return item
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
