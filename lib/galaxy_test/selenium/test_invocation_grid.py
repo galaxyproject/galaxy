@@ -22,10 +22,11 @@ class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
             invocations=30,
         )
         gx_selenium_context.navigate_to_invocations()
+        invocations = gx_selenium_context.components.invocations
+        invocations.invocations_table.wait_for_visible()
 
         # shows a maximum of 25 invocations per page
         self._assert_showing_n_invocations(25)
-        invocations = gx_selenium_context.components.invocations
         invocations.pager.wait_for_visible()
         self.screenshot("invocations_paginated_first_page")
         self._next_page(invocations)
