@@ -176,6 +176,7 @@
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
+  <tool file="legacy_interpreter.xml" />
   <tool file="tool_directory.xml" />
   <tool file="tool_directory_docker.xml" />
   <tool file="output_action_change_format.xml" />
