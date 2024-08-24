@@ -1,4 +1,5 @@
 import base64
+import io
 import json
 import os
 import shutil
@@ -7829,6 +7830,11 @@ outer_input:
         downloaded_workflow = self._download_workflow(workflow_id)
         subworkflow = downloaded_workflow["steps"]["1"]["subworkflow"]
         assert subworkflow["tags"] == []
+
+    def test_upload_malformated_yaml(self):
+        malformated_yaml = "class: GalaxyWorkflow:\n    a-1:()"
+        r = self._post("workflows", files={"archive_file": io.StringIO(malformated_yaml)})
+        assert r.status_code == 400
 
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
