@@ -244,7 +244,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history = trans.get_history()
             if history:
                 history.resume_paused_jobs()
-                return trans.show_ok_message("Your jobs have been resumed.")
+                return {"message": "Your jobs have been resumed.", "status": "success"}
         raise exceptions.RequestParameterInvalidException(
             "You can currently only resume all the datasets of the current history."
         )
