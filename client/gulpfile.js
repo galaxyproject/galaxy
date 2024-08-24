@@ -77,6 +77,8 @@ PATHS.pluginBuildModules = [
     path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
 ];
 
+const parser = new xml2js.Parser();
+
 function stageLibs(callback) {
     Object.keys(PATHS.stagedLibraries).forEach((lib) => {
         var p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
@@ -208,66 +210,73 @@ function buildPlugins(callback, forceRebuild) {
     return callback();
 }
 
-function installPlugins(callback) {
+async function installPlugins(callback) {
     // iterate through install_plugin_build_ids, identify xml files and install dependencies
     for (const plugin_name of INSTALL_PLUGIN_BUILD_IDS) {
         const pluginDir = path.join(PATHS.pluginBaseDir, `visualizations/${plugin_name}`);
         const xmlPath = path.join(pluginDir, `config/${plugin_name}.xml`);
         // Check if the file exists
         if (fs.existsSync(xmlPath)) {
-            installDependenciesFromXML(xmlPath, pluginDir);
+            await installDependenciesFromXML(xmlPath, pluginDir);
         } else {
             console.error(`XML file not found: ${xmlPath}`);
         }
     }
-
     return callback();
 }
 
 // Function to parse the XML and install dependencies
-function installDependenciesFromXML(xmlPath, pluginDir) {
-    const parser = new xml2js.Parser();
-    fs.readFile(xmlPath, (err, data) => {
-        if (err) {
-            console.error("Error reading XML file:", err);
-            return;
-        }
-        parser.parseString(data, async (err, result) => {
+async function installDependenciesFromXML(xmlPath, pluginDir) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(xmlPath, (err, data) => {
             if (err) {
-                console.error("Error parsing XML:", err);
-                return;
+                console.error("Error reading XML file:", err);
+                reject(err);
             }
-            // Navigate to the dependencies
-            const requirements = result.visualization.requirements[0].requirement;
-            // Extract the details
-            requirements.forEach((dep) => {
-                const reqType = dep.$.type;
-                const pkgName = dep.$.package;
-                const version = dep.$.version;
-
-                if (reqType == "package" && pkgName && version) {
-                    // install the package.
-                    if (
-                        child_process.spawnSync("npm", ["install", "--silent", "--no-save", `${pkgName}@${version}`], {
-                            cwd: pluginDir,
-                            stdio: "inherit",
-                            shell: true,
-                        }).status === 0
-                    ) {
-                        // Copy static from the installed package to the
-                        // plugin's static directory.
-                        // This keeps separation from standard staging.
-                        fs.copy(path.join(pluginDir, "node_modules", pkgName, "static"), path.join(pluginDir, "static"))
-                            .then(() => {
-                                console.log(`Successfully staged package for ${pkgName}@${version} in ${pluginDir}`);
-                            })
-                            .catch((err) => {
-                                console.error(`Error staging package ${pkgName}@${version} in ${pluginDir}`);
-                            });
-                    } else {
-                        console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
-                    }
+            parser.parseString(data, async (err, result) => {
+                if (err) {
+                    console.error("Error parsing XML:", err);
+                    reject(err);
                 }
+                // Navigate to the dependencies
+                const requirements = result.visualization.requirements[0].requirement;
+                // Extract the details
+                requirements.forEach(async (dep) => {
+                    const reqType = dep.$.type;
+                    const pkgName = dep.$.package;
+                    const version = dep.$.version;
+
+                    if (reqType == "package" && pkgName && version) {
+                        // install the package.
+                        if (
+                            child_process.spawnSync(
+                                "npm",
+                                ["install", "--silent", "--no-save", `${pkgName}@${version}`],
+                                {
+                                    cwd: pluginDir,
+                                    stdio: "inherit",
+                                    shell: true,
+                                }
+                            ).status === 0
+                        ) {
+                            // Copy static from the installed package to the
+                            // plugin's static directory.
+                            // This keeps separation from standard staging.
+                            try {
+                                await fs.copy(
+                                    path.join(pluginDir, "node_modules", pkgName, "static"),
+                                    path.join(pluginDir, "static")
+                                );
+                                console.log(`Installed package ${pkgName}@${version} in ${pluginDir}`);
+                            } catch (err) {
+                                console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
+                            }
+                        } else {
+                            console.error(`Error installing package ${pkgName}@${version} in ${pluginDir}`);
+                        }
+                    }
+                });
+                resolve();
             });
         });
     });
