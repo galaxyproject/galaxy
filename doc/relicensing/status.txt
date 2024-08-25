@@ -273,6 +273,7 @@ dan-blanchard, dan.blanchard@gmail.com, https://github.com/galaxyproject/galaxy/
 cginmn, carlos.andrew.garcia@gmail.com, 2024-08-09 personal email to michael.crusoe@vu.nl
 markiskander, motiontracker@gmail.com, 2024-08-12 personal email to michael.crusoe@vu.nl
 leobiscassi, leo.biscassi@gmail.com, 2024-08-12 personal email to michael.crusoe@vu.nl
+ThomasWollmann, thomas.s.wollmann@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2259147420
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -336,7 +337,6 @@ golharam, Ryan Golhar, ngsbioinformatics@gmail.com
 simleo, Simone Leo, simone.leo@gmail.com
 saxtouri, Stavros Sachtouris, saxtouri@admin.grnet.gr
 tmcgowan, Thomas McGowan, mcgo0092@umn.edu
-ThomasWollmann, Thomas Wollmann, thomas.s.wollmann@gmail.com
 XDtim, Tim Thompson, tim.thompson@xdbio.com
 NA, Wen-Yu Chung, wychung@bx.psu.edu,last contribution in 2009
 WilliamHolden, William Holden, theappdev@protonmail.com
