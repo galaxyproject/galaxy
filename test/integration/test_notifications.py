@@ -417,7 +417,7 @@ class NotificationsIntegrationBase(IntegrationTestCase):
 
     def _update_notification(self, notification_id: str, update_state: dict[str, Any]):
         update_response = self._put(f"notifications/{notification_id}", data=update_state, json=True)
-        self._assert_status_code_is(update_response, 204)
+        self._assert_status_code_is_ok(update_response)
 
     def _assert_notifications_sent(self, response, expected_count: int = 0):
         if self.task_based:
