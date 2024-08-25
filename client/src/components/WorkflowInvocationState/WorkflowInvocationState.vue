@@ -166,7 +166,7 @@ function cancelWorkflowSchedulingLocal() {
                     :is-subworkflow="isSubworkflow"
                     @invocation-cancelled="cancelWorkflowSchedulingLocal" />
             </BTab>
-            <BTab title="Steps" lazy>
+            <BTab v-if="!isSubworkflow" title="Steps" lazy>
                 <WorkflowInvocationSteps
                     v-if="invocation && storeId"
                     :invocation="invocation"
