@@ -588,7 +588,7 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(self, testdef: "ToolTestDescription", history_id: str, resource_parameters: Optional[Dict[str, Any]] = None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
