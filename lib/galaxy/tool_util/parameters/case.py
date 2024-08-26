@@ -299,6 +299,6 @@ def validate_test_cases_for_tool_source(
     test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     results_by_test: List[TestCaseStateValidationResult] = []
     for test_case in test_cases:
-        validation_result = test_case_validation(test_case, tool_parameter_bundle.input_models, profile)
+        validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile)
         results_by_test.append(validation_result)
     return results_by_test
