@@ -5,7 +5,7 @@ from galaxy.model.db.library import (
     get_library_ids,
     get_library_permissions_by_role,
 )
-from . import verify_items
+from . import have_same_elements
 
 
 def test_get_library_ids(session, make_library, make_library_permissions):
@@ -18,7 +18,7 @@ def test_get_library_ids(session, make_library, make_library_permissions):
 
     ids = get_library_ids(session, "b").all()
     expected = [l2.id, l3.id]
-    verify_items(ids, expected)
+    have_same_elements(ids, expected)
 
 
 def test_get_library_permissions_by_role(session, make_role, make_library_permissions):
@@ -31,7 +31,7 @@ def test_get_library_permissions_by_role(session, make_role, make_library_permis
 
     lp_roles = [lp.role for lp in lps]
     expected = [r1, r2]
-    verify_items(lp_roles, expected)
+    have_same_elements(lp_roles, expected)
 
 
 def test_get_libraries_for_admins(session, make_library):
@@ -44,14 +44,14 @@ def test_get_libraries_for_admins(session, make_library):
 
     libs_deleted = get_libraries_for_admins(session, True).all()
     expected = [libs[0], libs[1]]
-    verify_items(libs_deleted, expected)
+    have_same_elements(libs_deleted, expected)
 
     libs_not_deleted = get_libraries_for_admins(session, False).all()
     expected = [libs[2], libs[3], libs[4]]
-    verify_items(libs_not_deleted, expected)
+    have_same_elements(libs_not_deleted, expected)
 
     libs_all = get_libraries_for_admins(session, None).all()
-    verify_items(libs_all, libs)
+    have_same_elements(libs_all, libs)
 
 
 def test_get_libraries_for_admins__ordering(session, make_library):
@@ -75,7 +75,7 @@ def test_get_libraries_for_non_admins(session, make_library):
     # Expected:  l1 (not deleted, not restricted), l2 (not deleted, restricted but accessible)
     # Not returned: l3 (not deleted but restricted), l4 (deleted)
     expected = [l1, l2]
-    verify_items(allowed, expected)
+    have_same_elements(allowed, expected)
 
 
 def test_get_libraries_for_admins_non_admins__ordering(session, make_library):
