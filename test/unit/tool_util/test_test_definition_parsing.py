@@ -1,6 +1,5 @@
 """Tool test parsing to dicts logic."""
 
-import json
 import os
 from typing import (
     Any,
@@ -17,6 +16,7 @@ from galaxy.util import (
     in_packages,
 )
 from galaxy.util.unittest import TestCase
+from .util import dict_verify_each
 
 # Not the whole response, just some keys and such to test...
 SIMPLE_CONSTRUCTS_EXPECTATIONS_0 = [
@@ -117,18 +117,6 @@ class TestTestParsing(TestCase):
         self._verify_each(test_dicts[1].to_dict(), BIGWIG_TO_WIG_EXPECTATIONS)
 
     def _verify_each(self, target_dict: dict, expectations: List[Any]):
-        assert_json_encodable(target_dict)
-        for path, expectation in expectations:
-            exception = target_dict.get("exception")
-            assert not exception, f"Test failed to generate with exception {exception}"
-            self._verify(target_dict, path, expectation)
-
-    def _verify(self, target_dict: dict, expectation_path: List[str], expectation: Any):
-        rest = target_dict
-        for path_part in expectation_path:
-            rest = rest[path_part]
-        assert rest == expectation, f"{rest} != {expectation} for {expectation_path}"
-
-
-def assert_json_encodable(as_dict: dict):
-    json.dumps(as_dict)
+        exception = target_dict.get("exception")
+        assert not exception, f"Test failed to generate with exception {exception}"
+        dict_verify_each(target_dict, expectations)

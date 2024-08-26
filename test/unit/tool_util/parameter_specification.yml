@@ -533,6 +533,13 @@ gx_data:
    # expanded out.
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {src: hda, id: abcdabcd}
+  test_case_xml_valid:
+   - parameter: {class: File, path: foo.bed}
+   - parameter: {class: File, location: "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"}
+  test_case_xml_invalid:
+   - parameter: foo.bed
+   - parameter: null
+   - {}
   workflow_step_valid:
    - {}
   workflow_step_invalid:
@@ -592,6 +599,11 @@ gx_data_optional:
    - {src: hda, id: 7}
    - parameter: {__class__: "Batch", values: [{src: hdca, id: 5}]}
    - parameter: {__class__: 'ConnectedValueX'}
+  test_case_xml_valid:
+  - {}
+  - parameter: {class: "File", path: "1.bed"}
+  test_case_xml_invalid:
+  - parameter: {class: "NotAFile", path: "1.bed"}
 
 gx_data_multiple:
   request_valid:
@@ -690,6 +702,49 @@ gx_data_collection:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - {}
+  test_case_xml_valid:
+  - parameter: {class: Collection, collection_type: list, elements: []}
+  - parameter:
+     class: Collection
+     collection_type: list
+     elements:
+     - {identifier: "first", path: "1.bed", class: File}
+     - {identifier: "second", path: "2.bed", class: File}
+  - parameter:
+     name: "A nested listed with a name"
+     class: Collection
+     collection_type: "list:paired"
+     elements:
+     - class: Collection
+       collection_type: paired
+       identifier: first_el
+       elements:
+       - {identifier: "forward", path: "1_f.bed", class: File}
+       - {identifier: "reverse", path: "1_r.bed", class: File}
+  test_case_xml_invalid:
+  # collection type is required
+  - parameter: {class: Collection, elements: []}
+  - parameter:
+     class: Collection
+     collection_type: list
+     elements:
+     - {identifier: "first", path: "1.bed", class: NotAFile}
+  - parameter:
+     class: Collection
+     collection_type: list
+     elements:
+     - {identifier: "first", pathmisspelled: "1.bed", class: File}
+  - parameter:
+     name: "A nested listed with a name"
+     class: Collection
+     collection_type: "list:paired"
+     elements:
+     - class: Collection
+       collection_type: paired
+       identifier: first_el
+       elements:
+       - {identifier: "forward", path: "1_f.bed", class: File}
+       - {identifier: "reverse", path: "1_r.bed", class: FileX}
 
 gx_data_collection_optional:
   request_valid:
@@ -995,11 +1050,11 @@ gx_data_column:
   request_internal_invalid:
   - { ref_parameter: {src: hda, id: 123}, parameter: "0" }
   test_case_xml_valid:
-  - { ref_parameter: "1.bed", parameter: 3 }
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: 3 }
   test_case_xml_invalid:
-  - { ref_parameter: "1.bed", parameter: "3" }
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "3" }
   test_case_xml_invalid:
-  - { ref_parameter: "1.bed", parameter: "c2: With name" }
+  - { ref_parameter: {class: "File", path: "1.bed"}, parameter: "c2: With name" }
 
 gx_data_column_optional:
   request_valid:
