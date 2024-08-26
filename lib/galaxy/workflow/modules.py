@@ -32,6 +32,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     PostJobAction,
     Workflow,
+    WorkflowInvocationStep,
     WorkflowStep,
     WorkflowStepConnection,
 )
@@ -43,6 +44,7 @@ from galaxy.schema.invocation import (
     InvocationCancellationReviewFailed,
     InvocationFailureDatasetFailed,
     InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureOutputNotFound,
     InvocationFailureWhenNotBoolean,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
@@ -762,7 +764,7 @@ class SubWorkflowModule(WorkflowModule):
         return self.trans.security.encode_id(self.subworkflow.id)
 
     def execute(
-        self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
+        self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
     ) -> Optional[bool]:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
@@ -822,7 +824,17 @@ class SubWorkflowModule(WorkflowModule):
             workflow_output_label = (
                 workflow_output.label or f"{workflow_output.workflow_step.order_index}:{workflow_output.output_name}"
             )
-            replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            try:
+                replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
+            except KeyError:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=workflow_output.workflow_step_id,
+                        output_name=workflow_output.output_name,
+                        dependent_workflow_step_id=step.id,
+                    )
+                )
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
         return None
@@ -974,8 +986,11 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
         return None
 
-    def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step, already_persisted=True)
+    def recover_mapping(self, invocation_step: WorkflowInvocationStep, progress: "WorkflowProgress"):
+        super().recover_mapping(invocation_step, progress)
+        progress.set_outputs_for_input(
+            invocation_step, progress.outputs.get(invocation_step.workflow_step_id), already_persisted=True
+        )
 
     def get_export_state(self):
         return self._parse_state_into_dict()

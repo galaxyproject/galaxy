@@ -14,6 +14,7 @@ from typing import (
 )
 
 import sqlalchemy
+import yaml
 from gxformat2 import (
     from_galaxy_native,
     ImporterGalaxyInterface,
@@ -635,9 +636,12 @@ class WorkflowContentsManager(UsesAnnotations):
             galaxy_interface = Format2ConverterGalaxyInterface()
             import_options = ImportOptions()
             import_options.deduplicate_subworkflows = True
-            as_dict = python_to_workflow(
-                as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
-            )
+            try:
+                as_dict = python_to_workflow(
+                    as_dict, galaxy_interface, workflow_directory=workflow_directory, import_options=import_options
+                )
+            except yaml.scanner.ScannerError as e:
+                raise exceptions.MalformedContents(str(e))
 
         return RawWorkflowDescription(as_dict, workflow_path)
 

@@ -51,7 +51,11 @@ const invocationJobsSummaryById = {
 // Mock the invocation store to return the expected invocation data given the invocation ID
 jest.mock("@/stores/invocationStore", () => {
     const originalModule = jest.requireActual("@/stores/invocationStore");
-    const mockFetchInvocationForId = jest.fn();
+    const mockFetchInvocationForId = jest.fn().mockImplementation((fetchParams) => {
+        if (fetchParams.id === "error-invocation") {
+            throw new Error("User does not own specified item.");
+        }
+    });
     const mockFetchInvocationJobsSummaryForId = jest.fn();
     return {
         ...originalModule,
@@ -106,8 +110,8 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState(invocationData.id);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
 
-        // Neither the invocation nor the jobs summary should be fetched for terminal invocations
-        assertInvocationFetched(0);
+        // Invocation is fetched once and the jobs summary isn't fetched at all for terminal invocations
+        assertInvocationFetched(1);
         assertJobsSummaryFetched(0);
     });
 
@@ -115,17 +119,23 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("not-fetched-invocation");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Both, the invocation and jobs summary should be fetched once if the invocation is not in the store
+        // Invocation is fetched once and the jobs summary is then never fetched if the invocation is not in the store
         assertInvocationFetched(1);
-        assertJobsSummaryFetched(1);
+        assertJobsSummaryFetched(0);
+
+        // expect there to be an alert for the missing invocation
+        const alert = wrapper.find("balert-stub");
+        expect(alert.attributes("variant")).toBe("info");
+        const span = alert.find("span");
+        expect(span.text()).toBe("Invocation not found.");
     });
 
     it("determines that invocation is not terminal with non-terminal state", async () => {
         const wrapper = await mountWorkflowInvocationState("non-terminal-id");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the invocation should be fetched for non-terminal invocations
-        assertInvocationFetched(1);
+        // Only the invocation is fetched for non-terminal invocations; once for the initial fetch and then for the polling
+        assertInvocationFetched(2);
         assertJobsSummaryFetched(0);
     });
 
@@ -133,9 +143,23 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         const wrapper = await mountWorkflowInvocationState("non-terminal-jobs");
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
 
-        // Only the jobs summary should be fetched, not the invocation since it is in scheduled/terminal state
-        assertInvocationFetched(0);
+        // Only the jobs summary should be polled, the invocation is initially fetched only since it is in scheduled/terminal state
+        assertInvocationFetched(1);
         assertJobsSummaryFetched(1);
+    });
+
+    it("determines that errored invocation fetches are handled correctly", async () => {
+        const wrapper = await mountWorkflowInvocationState("error-invocation");
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+
+        // Invocation is fetched once and the jobs summary isn't fetched at all for errored invocations
+        assertInvocationFetched(1);
+        assertJobsSummaryFetched(0);
+
+        // expect there to be an alert for the handled error
+        const alert = wrapper.find("balert-stub");
+        expect(alert.attributes("variant")).toBe("danger");
+        expect(alert.text()).toBe("User does not own specified item.");
     });
 });
 
