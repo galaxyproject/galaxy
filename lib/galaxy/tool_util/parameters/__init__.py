@@ -62,6 +62,7 @@ from .visitor import (
     repeat_inputs_to_array,
     validate_explicit_conditional_test_value,
     visit_input_values,
+    VISITOR_NO_REPLACEMENT,
 )
 
 __all__ = (
@@ -116,6 +117,7 @@ __all__ = (
     "keys_starting_with",
     "visit_input_values",
     "repeat_inputs_to_array",
+    "VISITOR_NO_REPLACEMENT",
     "decode",
     "encode",
     "WorkflowStepToolState",

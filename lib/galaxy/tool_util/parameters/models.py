@@ -41,7 +41,8 @@ from typing_extensions import (
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tool_util.parser.interface import (
     DrillDownOptionsDict,
-    TestCollectionDefDict,
+    JsonTestCollectionDefDict,
+    JsonTestDatasetDefDict,
 )
 from ._types import (
     cast_as_type,
@@ -312,9 +313,9 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     def py_type_test_case(self) -> Type:
         base_model: Type
         if self.multiple:
-            base_model = str
+            base_model = list_type(JsonTestDatasetDefDict)
         else:
-            base_model = str
+            base_model = JsonTestDatasetDefDict
         return optional_if_needed(base_model, self.optional)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
@@ -372,7 +373,7 @@ class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
         elif state_representation == "workflow_step_linked":
             return dynamic_model_information_from_py_type(self, ConnectedValue)
         elif state_representation == "test_case_xml":
-            return dynamic_model_information_from_py_type(self, TestCollectionDefDict)
+            return dynamic_model_information_from_py_type(self, JsonTestCollectionDefDict)
         else:
             raise NotImplementedError(
                 f"Have not implemented data collection parameter models for state representation {state_representation}"
@@ -1183,7 +1184,7 @@ def to_simple_model(input_parameter: Union[ToolParameterModel, ToolParameterT]) 
 def simple_input_models(
     input_models: Union[List[ToolParameterModel], List[ToolParameterT]]
 ) -> Iterable[ToolParameterT]:
-    return [to_simple_model(m) for m in input_models]
+    return [to_simple_model(m) for m in parameters]
 
 
 def create_model_strict(*args, **kwd) -> Type[BaseModel]:
