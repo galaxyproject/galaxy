@@ -8,13 +8,18 @@ import pytest
 from galaxy.tool_util.models import parse_tool
 from galaxy.tool_util.parameters.case import (
     test_case_state as case_state,
+    TestCaseStateAndWarnings,
     TestCaseStateValidationResult,
     validate_test_cases_for_tool_source,
 )
 from galaxy.tool_util.parser.factory import get_tool_source
-from galaxy.tool_util.parser.interface import ToolSourceTest
+from galaxy.tool_util.parser.interface import (
+    ToolSource,
+    ToolSourceTest,
+)
 from galaxy.tool_util.unittest_utils import functional_test_tool_directory
 from galaxy.tool_util.verify.parse import parse_tool_test_descriptions
+from .util import dict_verify_each
 
 # legacy tools allows specifying parameter and repeat parameters without
 # qualification. This was problematic and could result in ambigious specifications.
@@ -116,6 +121,73 @@ def test_validate_framework_test_tools():
             raise Exception(f"Failed to validate {tool_path}: {str(e)}")
 
 
+def test_test_case_state_conversion():
+    tool_source = tool_source_for("collection_nested_test")
+    test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["f1", "collection_type"], "list:paired"),
+        (["f1", "class"], "Collection"),
+        (["f1", "elements", 0, "class"], "Collection"),
+        (["f1", "elements", 0, "collection_type"], "paired"),
+        (["f1", "elements", 0, "elements", 0, "class"], "File"),
+        (["f1", "elements", 0, "elements", 0, "path"], "simple_line.txt"),
+        (["f1", "elements", 0, "elements", 0, "identifier"], "forward"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+    tool_source = tool_source_for("dbkey_filter_input")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["inputs", "class"], "File"),
+        (["inputs", "dbkey"], "hg19"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+    tool_source = tool_source_for("discover_metadata_files")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["input_bam", "class"], "File"),
+        (["input_bam", "filetype"], "bam"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+    tool_source = tool_source_for("remote_test_data_location")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["input", "class"], "File"),
+        (
+            ["input", "location"],
+            "https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt",
+        ),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+    tool_source = tool_source_for("composite")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["input", "class"], "File"),
+        (["input", "filetype"], "velvet"),
+        (["input", "composite_data", 0], "velveth_test1/Sequences"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+    tool_source = tool_source_for("parameters/gx_group_tag")
+    test_cases = tool_source.parse_tests_to_dict()["tests"]
+    state = case_state_for(tool_source, test_cases[0])
+    expectations = [
+        (["ref_parameter", "class"], "Collection"),
+        (["ref_parameter", "collection_type"], "paired"),
+        (["ref_parameter", "elements", 0, "identifier"], "forward"),
+        (["ref_parameter", "elements", 0, "tags", 0], "group:type:single"),
+    ]
+    dict_verify_each(state.tool_state.input_state, expectations)
+
+
 def _validate_path(tool_path: str):
     tool_source = get_tool_source(tool_path)
     parsed_tool = parse_tool(tool_source)
@@ -130,7 +202,17 @@ def _validate_path(tool_path: str):
 
 
 def validate_test_cases_for(tool_name: str, **kwd) -> List[TestCaseStateValidationResult]:
+    return validate_test_cases_for_tool_source(tool_source_for(tool_name), **kwd)
+
+
+def case_state_for(tool_source: ToolSource, test_case: ToolSourceTest) -> TestCaseStateAndWarnings:
+    parsed_tool = parse_tool(tool_source)
+    profile = tool_source.parse_profile()
+    return case_state(test_case, parsed_tool.inputs, profile)
+
+
+def tool_source_for(tool_name: str) -> ToolSource:
     test_tool_directory = functional_test_tool_directory()
     tool_path = os.path.join(test_tool_directory, f"{tool_name}.xml")
     tool_source = get_tool_source(tool_path)
-    return validate_test_cases_for_tool_source(tool_source, **kwd)
+    return tool_source
