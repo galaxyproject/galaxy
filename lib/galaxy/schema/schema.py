@@ -3283,8 +3283,17 @@ class HDACustom(HDADetailed):
     model_config = ConfigDict(extra="allow")
 
 
+@partial_model()
+class HDCACustom(HDCADetailed):
+    """Can contain any serializable property of an HDCA.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
+AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,
