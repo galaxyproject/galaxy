@@ -6581,6 +6581,11 @@ export interface components {
              */
             element_count?: number | null;
             /**
+             * Elements Datatypes
+             * @description A set containing all the different element datatypes in the collection.
+             */
+            elements_datatypes: string[];
+            /**
              * HID
              * @description The index position of this item in the History.
              */
