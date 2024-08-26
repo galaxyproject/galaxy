@@ -39,8 +39,8 @@ class ToolState(ABC):
     def _validate(self, pydantic_model: Type[BaseModel]) -> None:
         validate_against_model(pydantic_model, self.input_state)
 
-    def validate(self, input_models: HasToolParameters) -> None:
-        base_model = self.parameter_model_for(input_models)
+    def validate(self, parameters: HasToolParameters) -> None:
+        base_model = self.parameter_model_for(parameters)
         if base_model is None:
             raise NotImplementedError(
                 f"Validating tool state against state representation {self.state_representation} is not implemented."
@@ -53,17 +53,17 @@ class ToolState(ABC):
         """Get state representation of the inputs."""
 
     @classmethod
-    def parameter_model_for(cls, input_models: HasToolParameters) -> Type[BaseModel]:
+    def parameter_model_for(cls, parameters: HasToolParameters) -> Type[BaseModel]:
         bundle: ToolParameterBundle
-        if isinstance(input_models, list):
-            bundle = ToolParameterBundleModel(input_models=input_models)
+        if isinstance(parameters, list):
+            bundle = ToolParameterBundleModel(parameters=parameters)
         else:
-            bundle = input_models
+            bundle = parameters
         return cls._parameter_model_for(bundle)
 
     @classmethod
     @abstractmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
         """Return a model type for this tool state kind."""
 
 
@@ -71,46 +71,46 @@ class RequestToolState(ToolState):
     state_representation: Literal["request"] = "request"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
-        return create_request_model(input_models)
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_request_model(parameters)
 
 
 class RequestInternalToolState(ToolState):
     state_representation: Literal["request_internal"] = "request_internal"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
-        return create_request_internal_model(input_models)
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_request_internal_model(parameters)
 
 
 class JobInternalToolState(ToolState):
     state_representation: Literal["job_internal"] = "job_internal"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
-        return create_job_internal_model(input_models)
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_job_internal_model(parameters)
 
 
 class TestCaseToolState(ToolState):
     state_representation: Literal["test_case_xml"] = "test_case_xml"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
         # implement a test case model...
-        return create_test_case_model(input_models)
+        return create_test_case_model(parameters)
 
 
 class WorkflowStepToolState(ToolState):
     state_representation: Literal["workflow_step"] = "workflow_step"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
-        return create_workflow_step_model(input_models)
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_workflow_step_model(parameters)
 
 
 class WorkflowStepLinkedToolState(ToolState):
     state_representation: Literal["workflow_step_linked"] = "workflow_step_linked"
 
     @classmethod
-    def _parameter_model_for(cls, input_models: ToolParameterBundle) -> Type[BaseModel]:
-        return create_workflow_step_linked_model(input_models)
+    def _parameter_model_for(cls, parameters: ToolParameterBundle) -> Type[BaseModel]:
+        return create_workflow_step_linked_model(parameters)

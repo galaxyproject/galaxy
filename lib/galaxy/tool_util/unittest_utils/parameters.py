@@ -17,7 +17,7 @@ from . import functional_test_tool_path
 class ParameterBundle(ToolParameterBundle):
 
     def __init__(self, parameter: ToolParameterT):
-        self.input_models = [parameter]
+        self.parameters = [parameter]
 
 
 def parameter_bundle(parameter: ToolParameterT) -> ParameterBundle:

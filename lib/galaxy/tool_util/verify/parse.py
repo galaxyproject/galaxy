@@ -67,7 +67,7 @@ def parse_tool_test_descriptions(
         if validate_on_load:
             tool_parameter_bundle = input_models_for_tool_source(tool_source)
             try:
-                case_state(raw_test_dict, tool_parameter_bundle.input_models, profile, validate=True)
+                case_state(raw_test_dict, tool_parameter_bundle.parameters, profile, validate=True)
             except Exception as e:
                 # TOOD: restrict types of validation exceptions a bit probably?
                 validation_exception = e
