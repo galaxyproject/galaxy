@@ -884,7 +884,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             except Exception as exc:
                 if i == retry - 1:
                     raise exc
-                log.warning(f"Failed to delete job {job.name} (attempt {i + 1}/{retry}). Retrying deletion in {timeout} seconds.")
+                log.warning(
+                    f"Failed to delete job {job.name} (attempt {i + 1}/{retry}). Retrying deletion in {timeout} seconds."
+                )
                 time.sleep(timeout)
 
     def __cleanup_k8s_ingress(self, ingress, job_failed=False):
