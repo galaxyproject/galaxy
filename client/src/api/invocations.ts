@@ -8,7 +8,7 @@ export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvoc
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
-export type InvocationMessage = components["schemas"]["WorkflowInvocationElementView"]["messages"][0];
+export type InvocationMessage = components["schemas"]["InvocationMessageResponseUnion"];
 
 export type StepJobSummary =
     | components["schemas"]["InvocationStepJobsResponseStepModel"]

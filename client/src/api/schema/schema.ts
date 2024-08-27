@@ -8049,6 +8049,18 @@ export interface components {
                 [key: string]: number | undefined;
             };
         };
+        InvocationMessageResponseUnion:
+            | components["schemas"]["InvocationCancellationReviewFailedResponse"]
+            | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
+            | components["schemas"]["InvocationCancellationUserRequestResponse"]
+            | components["schemas"]["InvocationFailureDatasetFailedResponse"]
+            | components["schemas"]["InvocationFailureCollectionFailedResponse"]
+            | components["schemas"]["InvocationFailureJobFailedResponse"]
+            | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
+            | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
+            | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
+            | components["schemas"]["InvocationUnexpectedFailureResponse"]
+            | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"];
         /** InvocationOutput */
         InvocationOutput: {
             /**
@@ -13316,19 +13328,7 @@ export interface components {
              * Messages
              * @description A list of messages about why the invocation did not succeed.
              */
-            messages: (
-                | components["schemas"]["InvocationCancellationReviewFailedResponse"]
-                | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
-                | components["schemas"]["InvocationCancellationUserRequestResponse"]
-                | components["schemas"]["InvocationFailureDatasetFailedResponse"]
-                | components["schemas"]["InvocationFailureCollectionFailedResponse"]
-                | components["schemas"]["InvocationFailureJobFailedResponse"]
-                | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
-                | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
-                | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
-                | components["schemas"]["InvocationUnexpectedFailureResponse"]
-                | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
-            )[];
+            messages: components["schemas"]["InvocationMessageResponseUnion"][];
             /**
              * Model class
              * @description The name of the database model class.
