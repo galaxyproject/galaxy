@@ -152,6 +152,26 @@ def make_galaxy_session_to_history_association(session, make_history, make_galax
 
 
 @pytest.fixture
+def make_group(session):
+    def f(**kwd):
+        model = m.Group(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_group_role_association(session):
+    def f(group, role):
+        model = m.GroupRoleAssociation(group, role)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_hda(session, make_history):
     def f(**kwd):
         kwd["history"] = kwd.get("history") or make_history()
@@ -391,6 +411,16 @@ def make_user(session):
 def make_user_item_rating_association(session):
     def f(assoc_class, user, item, rating):
         model = assoc_class(user, item, rating)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_user_group_association(session):
+    def f(user, group):
+        model = m.UserGroupAssociation(user, group)
         write_to_db(session, model)
         return model
 
