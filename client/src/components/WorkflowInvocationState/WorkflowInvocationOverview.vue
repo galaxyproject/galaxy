@@ -3,8 +3,8 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { getRootFromIndexLink } from "@/onload";
-import { type Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
 import {
@@ -27,8 +27,7 @@ function getUrl(path: string): string {
 }
 
 interface Props {
-    invocation?: WorkflowInvocationElementView;
-    workflow?: Workflow;
+    invocation: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
     isFullPage?: boolean;
@@ -41,7 +40,9 @@ const props = defineProps<Props>();
 
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
 
-const invocationId = computed<string | undefined>(() => props.invocation?.id);
+const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
+
+const invocationId = computed<string | undefined>(() => props.invocation.id);
 
 const indexStr = computed(() => {
     if (props.index == undefined) {
@@ -52,7 +53,7 @@ const indexStr = computed(() => {
 });
 
 const invocationState = computed(() => {
-    return props.invocation?.state || "new";
+    return props.invocation.state || "new";
 });
 
 const invocationStateSuccess = computed(() => {
@@ -72,17 +73,14 @@ const disabledReportTooltip = computed(() => {
 });
 
 const stepCount = computed<number>(() => {
-    return props.invocation?.steps.length || 0;
+    return props.invocation.steps.length || 0;
 });
 
 type StepStateType = { [state: string]: number };
 
 const stepStates = computed<StepStateType>(() => {
     const stepStates: StepStateType = {};
-    if (!props.invocation) {
-        return {};
-    }
-    const steps: InvocationStep[] = props.invocation?.steps || [];
+    const steps: InvocationStep[] = props.invocation.steps || [];
     for (const step of steps) {
         if (!step) {
             continue;
@@ -108,7 +106,7 @@ const invocationPdfLink = computed<string | null>(() => {
 });
 
 const uniqueMessages = computed(() => {
-    const messages = props.invocation?.messages || [];
+    const messages = props.invocation.messages || [];
     const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
     return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
 });
@@ -156,7 +154,7 @@ function onCancel() {
 
 <template>
     <div class="mb-3 workflow-invocation-state-component">
-        <BAlert v-if="invocation && isSubworkflow" variant="secondary" show>
+        <BAlert v-if="isSubworkflow" variant="secondary" show>
             This subworkflow is
             <HelpText :uri="`galaxy.invocations.states.${invocation.state}`" :text="invocation.state" />.
             <ExternalLink :href="withPrefix(`/workflows/invocations/${invocation.id}`)"> Click here </ExternalLink>
@@ -195,7 +193,7 @@ function onCancel() {
                     note="Loading step state summary..."
                     :loading="true"
                     class="steps-progress" />
-                <template v-if="invocation && uniqueMessages.length">
+                <template v-if="uniqueMessages.length">
                     <InvocationMessage
                         v-for="message in uniqueMessages"
                         :key="message.reason"
@@ -232,8 +230,14 @@ function onCancel() {
                     class="jobs-progress" />
             </div>
         </div>
-        <!-- An invocation has been loaded, display the graph -->
-        <div v-if="invocation && workflow && !isSubworkflow">
+        <!-- Once the workflow for the invocation has been loaded, display the graph -->
+        <BAlert v-if="loading" variant="info" show>
+            <LoadingSpan message="Loading workflow..." />
+        </BAlert>
+        <BAlert v-else-if="error" variant="danger" show>
+            {{ error }}
+        </BAlert>
+        <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
                 class="mt-1"
                 :invocation="invocation"
@@ -243,5 +247,6 @@ function onCancel() {
                 :is-full-page="isFullPage"
                 :show-minimap="isFullPage" />
         </div>
+        <BAlert v-else-if="!workflow" variant="info" show> No workflow found for this invocation. </BAlert>
     </div>
 </template>

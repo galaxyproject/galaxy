@@ -1,32 +1,22 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BTab, BTabs } from "bootstrap-vue";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useInvocationStore } from "@/stores/invocationStore";
-import { useWorkflowStore, type Workflow } from "@/stores/workflowStore";
-import localize from "@/utils/localization";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { cancelWorkflowScheduling } from "./services";
 import { isTerminal, jobCount, runningCount } from "./util";
 
-import Heading from "../Common/Heading.vue";
-import SwitchToHistoryLink from "../History/SwitchToHistoryLink.vue";
-import UtcDate from "../UtcDate.vue";
 import InvocationReport from "../Workflow/InvocationReport.vue";
-import WorkflowInvocationsCount from "../Workflow/WorkflowInvocationsCount.vue";
-import WorkflowRunButton from "../Workflow/WorkflowRunButton.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationHeader from "./WorkflowInvocationHeader.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-
-library.add(faArrowLeft, faClock, faEdit, faEye, faHdd, faPlay, faSitemap);
 
 interface Props {
     invocationId: string;
@@ -49,7 +39,6 @@ const invocationStore = useInvocationStore();
 
 const stepStatesInterval = ref<any>(undefined);
 const jobStatesInterval = ref<any>(undefined);
-const initialLoading = ref(true);
 const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 
@@ -107,26 +96,24 @@ const invocationStateSuccess = computed(() => {
 
 const workflowStore = useWorkflowStore();
 
-const workflow = ref<Workflow | undefined>(undefined);
-const isDeletedWorkflow = computed(() => workflow.value?.deleted === true);
-const workflowVersion = computed(() => workflow.value?.version);
-
-onMounted(async () => {
-    try {
-        await invocationStore.fetchInvocationForId({ id: props.invocationId });
-        invocationLoaded.value = true;
-        if (invocation.value) {
-            await workflowStore.fetchWorkflowForInstanceId(invocation.value.workflow_id);
-            workflow.value = workflowStore.getStoredWorkflowByInstanceId(invocation.value.workflow_id);
-            await pollStepStatesUntilTerminal();
-            await pollJobStatesUntilTerminal();
+watch(
+    () => props.invocationId,
+    async (id) => {
+        invocationLoaded.value = false;
+        try {
+            await invocationStore.fetchInvocationForId({ id });
+            invocationLoaded.value = true;
+            // Only start polling if there is a valid invocation
+            if (invocation.value) {
+                await pollStepStatesUntilTerminal();
+                await pollJobStatesUntilTerminal();
+            }
+        } catch (e) {
+            errorMessage.value = errorMessageAsString(e);
         }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
-    } finally {
-        initialLoading.value = false;
-    }
-});
+    },
+    { immediate: true }
+);
 
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
@@ -154,91 +141,19 @@ function onCancel() {
 function cancelWorkflowSchedulingLocal() {
     cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
 }
-function getWorkflowName() {
-    return workflow.value?.name || "...";
-}
 </script>
 
 <template>
     <div v-if="invocation" class="d-flex flex-column w-100">
-        <div v-if="props.isFullPage" class="d-flex flex-gapx-1">
-            <Heading h1 separator inline truncate size="xl" class="flex-grow-1">
-                Invoked Workflow: "{{ getWorkflowName() }}"
-            </Heading>
-
-            <div v-if="!props.fromPanel">
-                <BButton
-                    v-b-tooltip.hover.noninteractive
-                    :title="localize('Return to Invocations List')"
-                    class="text-nowrap"
-                    size="sm"
-                    variant="outline-primary"
-                    to="/workflows/invocations">
-                    <FontAwesomeIcon :icon="faArrowLeft" class="mr-1" />
-                    <span v-localize>Invocations List</span>
-                </BButton>
-            </div>
-        </div>
-        <div v-if="props.isFullPage" class="py-2 pl-3 d-flex justify-content-between align-items-center">
-            <div>
-                <i>
-                    <FontAwesomeIcon :icon="faClock" class="mr-1" />invoked
-                    <UtcDate :date="invocation.update_time" mode="elapsed" />
-                </i>
-                <span class="d-flex flex-gapx-1 align-items-center">
-                    <FontAwesomeIcon :icon="faHdd" />History:
-                    <SwitchToHistoryLink :history-id="invocation.history_id" />
-                </span>
-            </div>
-            <div v-if="workflow" class="d-flex flex-gapx-1 align-items-center">
-                <div class="d-flex flex-column align-items-end mr-2">
-                    <span v-if="workflowVersion !== undefined" class="mb-1">
-                        <FontAwesomeIcon :icon="faSitemap" />
-                        Workflow Version: {{ workflowVersion + 1 }}
-                    </span>
-                    <WorkflowInvocationsCount class="float-right" :workflow="workflow" />
-                </div>
-                <BButtonGroup vertical>
-                    <BButton
-                        v-b-tooltip.hover.noninteractive.html
-                        :title="
-                            !isDeletedWorkflow
-                                ? `<b>Edit</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        size="sm"
-                        variant="secondary"
-                        :disabled="isDeletedWorkflow"
-                        :to="`/workflows/edit?id=${workflow.id}&version=${workflowVersion}`">
-                        <FontAwesomeIcon :icon="faEdit" />
-                        <span v-localize>Edit</span>
-                    </BButton>
-                    <WorkflowRunButton
-                        :id="workflow.id || ''"
-                        :title="
-                            !isDeletedWorkflow
-                                ? `<b>Rerun</b><br>${getWorkflowName()}`
-                                : 'This workflow has been deleted.'
-                        "
-                        :disabled="isDeletedWorkflow"
-                        full
-                        :version="workflowVersion" />
-                </BButtonGroup>
-            </div>
-        </div>
+        <WorkflowInvocationHeader v-if="props.isFullPage" :invocation="invocation" :from-panel="props.fromPanel" />
         <BTabs
             ref="invocationTabs"
             class="mt-1 d-flex flex-column overflow-auto"
             :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
             <BTab key="0" title="Overview" active>
-                <BAlert v-if="initialLoading" variant="info" show>
-                    <LoadingSpan message="Loading workflow" />
-                </BAlert>
                 <WorkflowInvocationOverview
-                    v-else
                     class="invocation-overview"
                     :invocation="invocation"
-                    :workflow="workflow"
                     :index="index"
                     :is-full-page="props.isFullPage"
                     :invocation-and-job-terminal="invocationAndJobTerminal"
@@ -255,7 +170,9 @@ function getWorkflowName() {
                 v-if="!props.isSubworkflow"
                 title="Report"
                 title-item-class="invocation-report-tab"
-                :disabled="!invocationStateSuccess || !workflow"
+                :disabled="
+                    !invocationStateSuccess || !workflowStore.getStoredWorkflowByInstanceId(invocation.workflow_id)
+                "
                 :lazy="reportLazy"
                 :active.sync="reportActive">
                 <InvocationReport v-if="invocationStateSuccess" :invocation-id="invocation.id" />
@@ -270,11 +187,11 @@ function getWorkflowName() {
             </BTab>
         </BTabs>
     </div>
-    <BAlert v-else-if="initialLoading" variant="info" show>
-        <LoadingSpan message="Loading invocation" />
-    </BAlert>
     <BAlert v-else-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
+    </BAlert>
+    <BAlert v-else-if="!invocationLoaded" variant="info" show>
+        <LoadingSpan message="Loading invocation" />
     </BAlert>
     <BAlert v-else variant="info" show>
         <span v-localize>Invocation not found.</span>
