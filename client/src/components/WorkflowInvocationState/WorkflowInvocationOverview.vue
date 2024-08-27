@@ -7,7 +7,6 @@ import { getRootFromIndexLink } from "@/onload";
 import { type Workflow } from "@/stores/workflowStore";
 import { withPrefix } from "@/utils/redirect";
 
-import { type InvocationMessageResponseModel } from "./invocationMessageModel";
 import {
     errorCount as jobStatesSummaryErrorCount,
     jobCount as jobStatesSummaryJobCount,
@@ -111,7 +110,7 @@ const invocationPdfLink = computed<string | null>(() => {
 const uniqueMessages = computed(() => {
     const messages = props.invocation?.messages || [];
     const uniqueMessagesSet = new Set(messages.map((message) => JSON.stringify(message)));
-    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as InvocationMessageResponseModel[];
+    return Array.from(uniqueMessagesSet).map((message) => JSON.parse(message)) as typeof messages;
 });
 
 const stepStatesStr = computed<string>(() => {
