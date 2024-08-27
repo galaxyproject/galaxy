@@ -78,7 +78,7 @@ const workflowStep = computed(() => {
 const dependentWorkflowStep = computed(() => {
     if ("dependent_workflow_step_id" in props.invocationMessage && workflow.value) {
         const stepId = props.invocationMessage["dependent_workflow_step_id"];
-        if (stepId !== undefined) {
+        if (stepId !== undefined && stepId !== null) {
             return workflow.value.steps[stepId];
         }
     }
