@@ -3,7 +3,7 @@ import { BAlert, BTable } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { GalaxyApi, type HDASummary } from "@/api";
+import { GalaxyApi, type HistoryItemSummary } from "@/api";
 import { copyContent } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -26,7 +26,7 @@ const message = ref("");
 const loading = ref(true);
 const sortDesc = ref(true);
 const sortBy = ref("update_time");
-const rows = ref<HDASummary[]>([]);
+const rows = ref<HistoryItemSummary[]>([]);
 const messageVariant = ref("danger");
 const fields = ref([
     {
@@ -86,7 +86,7 @@ async function load(concat = false) {
             rethrowSimple(error);
         }
 
-        const datasets = data as HDASummary[];
+        const datasets = data as HistoryItemSummary[];
 
         if (concat) {
             rows.value = rows.value.concat(datasets);
@@ -100,7 +100,7 @@ async function load(concat = false) {
     }
 }
 
-async function onCopyContent(item: HDASummary) {
+async function onCopyContent(item: HistoryItemSummary) {
     const dataset_id = item.id;
     try {
         if (!currentHistoryId.value) {
@@ -113,7 +113,7 @@ async function onCopyContent(item: HDASummary) {
     }
 }
 
-async function onShowDataset(item: HDASummary) {
+async function onShowDataset(item: HistoryItemSummary) {
     const { history_id } = item;
     const filters = {
         deleted: item.deleted,
