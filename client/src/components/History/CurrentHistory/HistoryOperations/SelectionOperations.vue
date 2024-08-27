@@ -37,9 +37,6 @@
             <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
                 <span v-localize>Build Dataset List</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                <span v-localize>Build Dataset Pair</span>
-            </b-dropdown-item>
             <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
                 <span v-localize>Build List of Dataset Pairs</span>
             </b-dropdown-item>
@@ -384,9 +381,6 @@ export default {
             allContents = data;
 
             this.buildNewCollection("list", allContents);
-        },
-        async buildDatasetPair() {
-            await this.buildNewCollection("paired");
         },
         async buildListOfPairs() {
             await this.buildNewCollection("list:paired");
