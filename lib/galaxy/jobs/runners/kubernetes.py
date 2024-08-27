@@ -756,7 +756,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
-                        log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name}  pending...")
+                        log.debug(f"Job id: {job_state.job_id} with k8s id: {job.name} pending...")
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
                             creation_time_str = job.obj["metadata"].get("creationTimestamp")
                             creation_time = datetime.strptime(creation_time_str, "%Y-%m-%dT%H:%M:%SZ")
@@ -832,7 +832,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
-            log.exception("Could not clean up k8s batch job. Ignoring...")
+            log.exception("Could not clean up an unschedulable k8s batch job. Ignoring...")
         return None
 
     def _handle_job_failure(self, job, job_state):
@@ -861,7 +861,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log.debug(msg)
                 error_file.write(msg)
                 job_state.fail_message = (
-                    "An unknown error occurered with this job. See standard output within the info section for details."
+                    "An unknown error occurred with this job. See standard output within the info section for details."
                 )
         # changes for resubmission
         # job_state.running = False
@@ -871,12 +871,21 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
-            log.exception("Could not clean up k8s batch job. Ignoring...")
+            log.exception("Could not clean up a failed k8s batch job. Ignoring...")
         return mark_failed
 
-    def __cleanup_k8s_job(self, job):
+    def __cleanup_k8s_job(self, job, retry=5, timeout=10):
+        log.debug(f"Cleaning up job with K8s id {job.name}.")
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
-        delete_job(job, k8s_cleanup_job)
+        for i in range(retry):
+            try:
+                delete_job(job, k8s_cleanup_job)
+                break
+            except Exception as exc:
+                if i == retry - 1:
+                    raise exc
+                log.warning(f"Failed to delete job {job.name} (attempt {i + 1}/{retry}). Retrying deletion in {timeout} seconds.")
+                time.sleep(timeout)
 
     def __cleanup_k8s_ingress(self, ingress, job_failed=False):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
