@@ -57,7 +57,7 @@ galaxy:
   invocations:
     states:
       scheduled: |
-        This state indicates the workflow invocation has had all of its job scheduled. This means all the
+        This state indicates the workflow invocation has had all of its jobs scheduled. This means all the
         datasets are likely created and Galaxy has created the stubs for the jobs in the workflow. *The jobs
         themselves might not have been queued or running.*
 
