@@ -417,7 +417,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
             raise exceptions.ObjectNotFound(message)
         self.check_security(
-            trans, workflow_invocation, check_ownership=check_accessible, check_accessible=check_accessible
+            trans, workflow_invocation, check_ownership=check_ownership, check_accessible=check_accessible
         )
         return workflow_invocation
 

@@ -2387,6 +2387,13 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
             link = f"{str(link)}/{output_name}"
         return {"$link": link}
 
+    def make_public(self, workflow_id: str) -> dict:
+        using_requirement("new_published_objects")
+        sharing_response = self._put(f"workflows/{workflow_id}/publish")
+        api_asserts.assert_status_code_is_ok(sharing_response)
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
 
 class CwlPopulator:
     def __init__(self, dataset_populator: DatasetPopulator, workflow_populator: WorkflowPopulator):

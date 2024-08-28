@@ -2857,7 +2857,9 @@ steps:
                         exception_raised = True
             assert exception_raised, "Expected workflow report request to fail, but it didn't"
             self.dataset_populator.make_public(history_id)
-            self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            self.workflow_populator.make_public(workflow_id)
+            with self._different_user():
+                self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
 
     @skip_without_tool("cat")
     def test_workflow_invocation_report_custom(self):
