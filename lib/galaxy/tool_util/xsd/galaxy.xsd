@@ -29,10 +29,14 @@ List of behavior changes associated with profile versions:
 - Disable default tool version of 1.0.0.
 - Use non zero exit code as default stdio error condition (before non-empty stderr).
 
+#### 17.09
+
+- Introduce `provided_metadata_style` with default `"default"`. Restore legacy behavior by setting
+  this to `"legacy"`.
+
 #### 18.01
 
 - Use a separate home directory for each job.
-- Introduce `provided_metadata_style` with default `"default"` before `"legacy"`.
 
 #### 18.09
 

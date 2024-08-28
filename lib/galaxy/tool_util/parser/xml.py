@@ -376,6 +376,10 @@ class XmlToolSource(ToolSource):
     def _command_el(self):
         return self.root.find("command")
 
+    @property
+    def _outputs_el(self):
+        return self.root.find("outputs")
+
     def _get_attribute_as_bool(self, attribute, default, elem=None):
         if elem is None:
             elem = self.root
@@ -411,7 +415,7 @@ class XmlToolSource(ToolSource):
 
     def parse_provided_metadata_style(self):
         style = None
-        out_elem = self.root.find("outputs")
+        out_elem = self._outputs_el
         if out_elem is not None and "provided_metadata_style" in out_elem.attrib:
             style = out_elem.attrib["provided_metadata_style"]
 
