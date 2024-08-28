@@ -375,6 +375,21 @@ class YamlInputSource(InputSource):
             sources.append((value, case_page_source))
         return sources
 
+    def parse_validator_elems(self):
+        elements = []
+        if "validators" in self.input_dict:
+            for elem in self.input_dict["validators"]:
+                if "regex_match" in elem:
+                    elements.append(
+                        {
+                            "message": elem.get("regex_doc"),
+                            "content": elem["regex_match"],
+                            "negate": elem.get("negate", False),
+                            "type": "regex",
+                        }
+                    )
+        return elements
+
     def parse_static_options(self) -> List[Tuple[str, str, bool]]:
         static_options = []
         input_dict = self.input_dict

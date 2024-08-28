@@ -1337,7 +1337,33 @@ class XmlInputSource(InputSource):
         return self.input_elem.find("sanitizer")
 
     def parse_validator_elems(self):
-        return self.input_elem.findall("validator")
+        elements = []
+        attributes = {
+            "type": str,
+            "message": str,
+            "negate": string_as_bool,
+            "check": str,
+            "table_name": str,
+            "filename": str,
+            "metadata_name": str,
+            "metadata_column": str,
+            "min": float,
+            "max": float,
+            "exclude_min": string_as_bool,
+            "exclude_max": string_as_bool,
+            "split": str,
+            "skip": str,
+            "value": str,
+            "value_json": lambda v: json.loads(v) if v else None,
+            "line_startswith": str,
+        }
+        for elem in self.input_elem.findall("validator"):
+            elem_dict = {"content": elem.text}
+            for attribute, type_cast in attributes.items():
+                if val := elem.get(attribute):
+                    elem_dict[attribute] = type_cast(val)
+            elements.append(elem_dict)
+        return elements
 
     def parse_dynamic_options(self) -> Optional[XmlDynamicOptions]:
         """Return a XmlDynamicOptions to describe dynamic options if options elem is available."""

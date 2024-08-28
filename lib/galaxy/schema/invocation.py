@@ -77,6 +77,7 @@ class FailureReason(str, Enum):
     expression_evaluation_failed = "expression_evaluation_failed"
     when_not_boolean = "when_not_boolean"
     unexpected_failure = "unexpected_failure"
+    workflow_parameter_invalid = "workflow_parameter_invalid"
 
 
 # The reasons below are attached to the invocation and user-actionable.
@@ -212,6 +213,14 @@ class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
     )
 
 
+class GenericInvocationFailureWorkflowParameterInvalid(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.workflow_parameter_invalid]
+    workflow_step_id: int = Field(
+        ..., title="Workflow parameter step that failed validation", validation_alias="workflow_step_index"
+    )
+    details: str = Field(..., description="Message raised by validator")
+
+
 InvocationCancellationReviewFailed = GenericInvocationCancellationReviewFailed[int]
 InvocationCancellationHistoryDeleted = GenericInvocationCancellationHistoryDeleted[int]
 InvocationCancellationUserRequest = GenericInvocationCancellationUserRequest[int]
@@ -223,6 +232,7 @@ InvocationFailureExpressionEvaluationFailed = GenericInvocationFailureExpression
 InvocationFailureWhenNotBoolean = GenericInvocationFailureWhenNotBoolean[int]
 InvocationUnexpectedFailure = GenericInvocationUnexpectedFailure[int]
 InvocationWarningWorkflowOutputNotFound = GenericInvocationEvaluationWarningWorkflowOutputNotFound[int]
+InvocationFailureWorkflowParameterInvalid = GenericInvocationFailureWorkflowParameterInvalid[int]
 
 InvocationMessageUnion = Union[
     InvocationCancellationReviewFailed,
@@ -236,6 +246,7 @@ InvocationMessageUnion = Union[
     InvocationFailureWhenNotBoolean,
     InvocationUnexpectedFailure,
     InvocationWarningWorkflowOutputNotFound,
+    InvocationFailureWorkflowParameterInvalid,
 ]
 
 InvocationCancellationReviewFailedResponseModel = GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField]
@@ -253,6 +264,9 @@ InvocationUnexpectedFailureResponseModel = GenericInvocationUnexpectedFailure[En
 InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluationWarningWorkflowOutputNotFound[
     EncodedDatabaseIdField
 ]
+InvocationFailureWorkflowParameterInvalidResponseModel = GenericInvocationFailureWorkflowParameterInvalid[
+    EncodedDatabaseIdField
+]
 
 _InvocationMessageResponseUnion = Annotated[
     Union[
@@ -267,6 +281,7 @@ _InvocationMessageResponseUnion = Annotated[
         InvocationFailureWhenNotBooleanResponseModel,
         InvocationUnexpectedFailureResponseModel,
         InvocationWarningWorkflowOutputNotFoundResponseModel,
+        InvocationFailureWorkflowParameterInvalidResponseModel,
     ],
     Field(discriminator="reason"),
 ]
