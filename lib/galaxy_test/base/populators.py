@@ -720,6 +720,9 @@ class BaseDatasetPopulator(BasePopulator):
         ]
         return active_jobs
 
+    def _get_history_contents(self, history_id: str, query: str = ""):
+        return self._get(f"histories/{history_id}/contents{query}").json()
+
     def cancel_job(self, job_id: str) -> Response:
         return self._delete(f"jobs/{job_id}")
 

@@ -3255,6 +3255,65 @@ input_c:
             )
             assert output_filtered["element_count"] == 2, output_filtered
 
+    def test_workflow_invocation_content_filter_simple_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Add a collection so that we can check that filter really works
+            self.dataset_collection_populator.create_list_in_history(history_id)
+            # Run a workflow
+            summary = self.workflow_populator.run_workflow(
+                WORKFLOW_SIMPLE, history_id=history_id, test_data={"input1": "abcdef"}
+            )
+            all_contents = self.dataset_populator._get_history_contents(history_id, query="?v=dev&q=visible&qv=true")
+            invocation_contents = self.dataset_populator._get_history_contents(
+                history_id, query=f"?v=dev&q=visible&qv=true&q=invocation_id-eq&qv={summary.invocation_id}"
+            )
+            assert len(all_contents) == 3  # 1 HDCA 1 workflow input + 1 workflow output
+            assert len(invocation_contents) == 1  # 1 regular step output
+
+    def test_workflow_invocation_content_filter_mapped_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Add a collection so that we can check that filter really works
+            self.dataset_collection_populator.create_list_in_history(history_id)
+            # Run a workflow
+            summary = self.workflow_populator.run_workflow(
+                WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
+                history_id=history_id,
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+""",
+            )
+            all_contents = self.dataset_populator._get_history_contents(history_id, query="?v=dev&q=visible&qv=true")
+            invocation_contents = self.dataset_populator._get_history_contents(
+                history_id, query=f"?v=dev&q=visible&qv=true&q=invocation_id-eq&qv={summary.invocation_id}"
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, summary.workflow_id, summary.invocation_id)
+            assert (
+                len(all_contents) == 3
+            )  # 3 HDCAs (unrelated collection, input dataset collection and output dataset collection)
+            assert len(invocation_contents) == 1  # 1 mapped over step output HDCA
+
+    def test_workflow_invocation_content_filter_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            # Add a collection so that we can check that filter really works
+            self.dataset_collection_populator.create_list_in_history(history_id)
+            # Run a workflow
+            summary = self.workflow_populator.run_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id)
+            self.workflow_populator.wait_for_invocation_and_jobs(history_id, summary.workflow_id, summary.invocation_id)
+            all_contents = self.dataset_populator._get_history_contents(history_id, query="?v=dev&q=visible&qv=true")
+            invocation_contents = self.dataset_populator._get_history_contents(
+                history_id, query=f"?v=dev&q=visible&qv=true&q=invocation_id-eq&qv={summary.invocation_id}"
+            )
+            assert (
+                len(all_contents) == 4
+            )  # 4 HDCAs (unrelated collection, input dataset collection and 2 output dataset collections)
+            assert len(invocation_contents) == 2  # 2 output collection
+
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
