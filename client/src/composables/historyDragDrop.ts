@@ -7,6 +7,11 @@ import { useEventStore } from "@/stores/eventStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 type DraggableHistoryItem = HistoryItemSummary | DCEDataset; // TODO: DCESummary instead of DCEDataset
+interface HistoryItemCopyData {
+    dataSource: HistoryContentSource;
+    type: HistoryContentType;
+    id: string;
+}
 
 export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, createNew = false, pinHistories = false) {
     // convert destinationHistoryId to a ref if it's not already
@@ -102,24 +107,33 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
                 throw new Error("Destination history not found or created");
             }
 
-            // iterate over the data array and copy each item to the current history
+            const copyableItems: HistoryItemCopyData[] = [];
+            // iterate over the data array and get valid copyable items
             for (const item of dragItems) {
-                let dataSource: HistoryContentSource;
-                let type: HistoryContentType;
-                let id: string;
+                let copyableItem: HistoryItemCopyData;
                 if (isHistoryItem(item)) {
-                    dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
-                    type = item.history_content_type;
-                    id = item.id;
+                    copyableItem = {
+                        dataSource: item.history_content_type === "dataset" ? "hda" : "hdca",
+                        type: item.history_content_type,
+                        id: item.id,
+                    };
                 }
                 // For DCEs, only `DCEDataset`s are droppable, `DCEDatasetCollection`s are not
                 else if (isDatasetElement(item) && item.object) {
-                    dataSource = "hda";
-                    type = "dataset";
-                    id = item.object.id;
+                    copyableItem = {
+                        dataSource: "hda",
+                        type: "dataset",
+                        id: item.object.id,
+                    };
                 } else {
                     throw new Error(`Invalid item type${item.element_type ? `: ${item.element_type}` : ""}`);
                 }
+                copyableItems.push(copyableItem);
+            }
+
+            // iterate over the data array and copy each item to the current history
+            for (const item of copyableItems) {
+                const { dataSource, type, id } = item;
                 await copyDataset(id, historyId, type, dataSource);
 
                 if (dataSource === "hda") {
