@@ -16,7 +16,6 @@ export function useWorkflowInstance(workflowId: string) {
                 await workflowStore.fetchWorkflowForInstanceId(workflowId);
             } catch (e) {
                 error.value = errorMessageAsString(e);
-                console.error("unable to fetch workflow \n", error.value);
             } finally {
                 loading.value = false;
             }

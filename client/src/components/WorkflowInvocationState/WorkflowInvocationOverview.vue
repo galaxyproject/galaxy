@@ -240,6 +240,7 @@ function onCancel() {
         <div v-else-if="workflow && !isSubworkflow">
             <InvocationGraph
                 class="mt-1"
+                data-description="workflow invocation graph"
                 :invocation="invocation"
                 :workflow="workflow"
                 :is-terminal="invocationAndJobTerminal"

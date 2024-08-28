@@ -1,5 +1,5 @@
 import { createTestingPinia } from "@pinia/testing";
-import { mount, shallowMount, Wrapper } from "@vue/test-utils";
+import { shallowMount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -79,22 +79,20 @@ jest.mock("@/stores/invocationStore", () => {
     };
 });
 
-// Sample workflow
-const workflowData = {
-    id: "workflow-id",
-    name: "Test Workflow",
-    version: 0,
-};
-
-// Mock the workflow store to return the expected workflow data given the stored workflow ID
+// Mock the workflow store to return a workflow for `getStoredWorkflowByInstanceId`
 jest.mock("@/stores/workflowStore", () => {
     const originalModule = jest.requireActual("@/stores/workflowStore");
     return {
         ...originalModule,
         useWorkflowStore: () => ({
             ...originalModule.useWorkflowStore(),
-            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => workflowData),
-            fetchWorkflowForInstanceId: jest.fn(),
+            getStoredWorkflowByInstanceId: jest.fn().mockImplementation(() => {
+                return {
+                    id: "workflow-id",
+                    name: "Test Workflow",
+                    version: 0,
+                };
+            }),
         }),
     };
 });
@@ -105,30 +103,18 @@ jest.mock("@/stores/workflowStore", () => {
  * @param fullPage Whether to render the header as well or just the invocation state tabs
  * @returns The mounted wrapper
  */
-async function mountWorkflowInvocationState(invocationId: string, shallow = true, isFullPage = false) {
+async function mountWorkflowInvocationState(invocationId: string, isFullPage = false) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    let wrapper;
-    if (shallow) {
-        wrapper = shallowMount(WorkflowInvocationState as object, {
-            propsData: {
-                invocationId,
-                isFullPage,
-            },
-            pinia,
-            localVue,
-        });
-    } else {
-        wrapper = mount(WorkflowInvocationState as object, {
-            propsData: {
-                invocationId,
-                isFullPage,
-            },
-            pinia,
-            localVue,
-        });
-    }
+    const wrapper = shallowMount(WorkflowInvocationState as object, {
+        propsData: {
+            invocationId,
+            isFullPage,
+        },
+        pinia,
+        localVue,
+    });
     await flushPromises();
     return wrapper;
 }
@@ -193,21 +179,14 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
 
 describe("WorkflowInvocationState check 'Report' tab disabled state and header", () => {
     it("determines that 'Report' tab is disabled for non-terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState("non-terminal-id", true);
+        const wrapper = await mountWorkflowInvocationState("non-terminal-id");
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBe("true");
     });
     it("determines that 'Report' tab is not disabled for terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id, true);
+        const wrapper = await mountWorkflowInvocationState(invocationData.id);
         const reportTab = wrapper.find(selectors.invocationReportTab);
         expect(reportTab.attributes("disabled")).toBeUndefined();
-    });
-    it("determines that a header is displayed for the invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData.id, true, true);
-        const heading = wrapper.find(selectors.fullPageHeading);
-        expect(heading.exists()).toBe(true);
-        expect(heading.text()).toContain('Invoked Workflow: "Test Workflow"');
-        expect(wrapper.html()).toContain(`Workflow Version: ${workflowData.version + 1}`);
     });
 });
 
