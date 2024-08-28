@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowCircleDown,
+    faArrowCircleUp,
+    faCheckCircle,
+    faExchangeAlt,
+    faSpinner,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -21,7 +27,7 @@ import ContentOptions from "./ContentOptions.vue";
 import DatasetDetails from "./Dataset/DatasetDetails.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faExchangeAlt, faSpinner);
 
 const router = useRouter();
 const route = useRoute();
@@ -41,6 +47,7 @@ interface Props {
     selectable?: boolean;
     filterable?: boolean;
     isPlaceholder?: boolean;
+    isSubItem?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,6 +62,7 @@ const props = withDefaults(defineProps<Props>(), {
     selectable: false,
     filterable: false,
     isPlaceholder: false,
+    isSubItem: false,
 });
 
 const emit = defineEmits<{
@@ -80,6 +88,7 @@ const entryPointStore = useEntryPointStore();
 const eventStore = useEventStore();
 
 const contentItem = ref<HTMLElement | null>(null);
+const subItemsVisible = ref(false);
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -100,6 +109,15 @@ const contentCls = computed(() => {
     } else {
         return `alert-${status}`;
     }
+});
+const computedClass = computed(() => {
+    return {
+        "content-item m-1 p-0 rounded btn-transparent-background": true,
+        [contentCls.value]: true,
+        "being-used": Object.values(itemUrls.value).includes(route.path),
+        "range-select-anchor": props.isRangeSelectAnchor,
+        "sub-item": props.isSubItem,
+    };
 });
 const contentState = computed(() => {
     return STATES[state.value] && STATES[state.value];
@@ -181,14 +199,6 @@ const itemUrls = computed<ItemUrls>(() => {
     };
 });
 
-const isBeingUsed = computed(() => {
-    return Object.values(itemUrls.value).includes(route.path) ? "being-used" : "";
-});
-
-const rangeSelectClass = computed(() => {
-    return props.isRangeSelectAnchor ? "range-select-anchor" : "";
-});
-
 /** Based on the user's keyboard platform, checks if it is the
  * typical key for selection (ctrl for windows/linux, cmd for mac)
  */
@@ -197,7 +207,8 @@ function isSelectKey(event: KeyboardEvent) {
 }
 
 function onKeyDown(event: KeyboardEvent) {
-    if (!(event.target as HTMLElement)?.classList?.contains("content-item")) {
+    const classList = (event.target as HTMLElement)?.classList;
+    if (!classList.contains("content-item") || classList.contains("sub-item")) {
         return;
     }
 
@@ -339,12 +350,12 @@ function unexpandedClick(event: Event) {
     <div
         :id="contentId"
         ref="contentItem"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed, rangeSelectClass]"
+        :class="computedClass"
         :data-hid="id"
         :data-state="dataState"
         tabindex="0"
         role="button"
-        :draggable="props.item.accessible === false ? false : true"
+        :draggable="props.item.accessible === false || props.isSubItem || subItemsVisible ? false : true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
         @keydown="onKeyDown">
@@ -394,26 +405,39 @@ function unexpandedClick(event: Event) {
                     <span class="id hid">{{ id }}:</span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
-                <span v-if="item.purged" class="align-self-start btn-group p-1">
+                <span v-if="item.purged" class="ml-auto align-self-start btn-group p-1">
                     <BBadge variant="secondary" title="This dataset has been permanently deleted">
                         <icon icon="burn" /> Purged
                     </BBadge>
                 </span>
-                <ContentOptions
-                    v-if="!isPlaceholder && !item.purged"
-                    :writable="writable"
-                    :is-dataset="isDataset"
-                    :is-deleted="item.deleted"
-                    :is-history-item="isHistoryItem"
-                    :is-visible="item.visible"
-                    :state="state"
-                    :item-urls="itemUrls"
-                    @delete="onDelete"
-                    @display="onDisplay"
-                    @showCollectionInfo="onShowCollectionInfo"
-                    @edit="onEdit"
-                    @undelete="onUndelete"
-                    @unhide="emit('unhide')" />
+                <span class="align-self-start btn-group">
+                    <BButton
+                        v-if="item.sub_items?.length && !isSubItem"
+                        title="Show converted items"
+                        tabindex="0"
+                        class="display-btn px-1 align-items-center"
+                        size="sm"
+                        variant="link"
+                        @click.prevent.stop="subItemsVisible = !subItemsVisible">
+                        <FontAwesomeIcon :icon="faExchangeAlt" />
+                        <span class="indicator">{{ item.sub_items?.length }}</span>
+                    </BButton>
+                    <ContentOptions
+                        v-if="!isPlaceholder && !item.purged"
+                        :writable="writable"
+                        :is-dataset="isDataset"
+                        :is-deleted="item.deleted"
+                        :is-history-item="isHistoryItem"
+                        :is-visible="item.visible"
+                        :state="state"
+                        :item-urls="itemUrls"
+                        @delete="onDelete"
+                        @display="onDisplay"
+                        @showCollectionInfo="onShowCollectionInfo"
+                        @edit="onEdit"
+                        @undelete="onUndelete"
+                        @unhide="emit('unhide')" />
+                </span>
             </div>
         </div>
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
@@ -448,6 +472,7 @@ function unexpandedClick(event: Event) {
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
         </BCollapse>
+        <slot name="sub_items" :sub-items-visible="subItemsVisible" />
     </div>
 </template>
 
@@ -460,6 +485,18 @@ function unexpandedClick(event: Event) {
 
     .name {
         word-break: break-all;
+    }
+
+    .indicator {
+        align-items: center;
+        border-radius: 50%;
+        color: $brand-primary;
+        display: flex;
+        justify-content: center;
+        height: 1.2rem;
+        position: absolute;
+        top: -0.3rem;
+        width: 1.2rem;
     }
 
     // improve focus visibility
