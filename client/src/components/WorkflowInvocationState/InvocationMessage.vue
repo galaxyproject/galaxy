@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { InvocationMessage } from "@/api/invocations";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
-
-import type { InvocationMessageResponseModel } from "./invocationMessageModel";
 
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import JobInformation from "@/components/JobInformation/JobInformation.vue";
@@ -49,7 +48,7 @@ interface Invocation {
 }
 
 interface InvocationMessageProps {
-    invocationMessage: InvocationMessageResponseModel;
+    invocationMessage: InvocationMessage;
     invocation: Invocation;
 }
 
@@ -79,7 +78,7 @@ const workflowStep = computed(() => {
 const dependentWorkflowStep = computed(() => {
     if ("dependent_workflow_step_id" in props.invocationMessage && workflow.value) {
         const stepId = props.invocationMessage["dependent_workflow_step_id"];
-        if (stepId !== undefined) {
+        if (stepId !== undefined && stepId !== null) {
             return workflow.value.steps[stepId];
         }
     }

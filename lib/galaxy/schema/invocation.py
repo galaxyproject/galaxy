@@ -20,6 +20,7 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     Literal,
+    TypeAliasType,
 )
 
 from galaxy.schema import schema
@@ -253,7 +254,7 @@ InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluati
     EncodedDatabaseIdField
 ]
 
-InvocationMessageResponseUnion = Annotated[
+_InvocationMessageResponseUnion = Annotated[
     Union[
         InvocationCancellationReviewFailedResponseModel,
         InvocationCancellationHistoryDeletedResponseModel,
@@ -269,6 +270,8 @@ InvocationMessageResponseUnion = Annotated[
     ],
     Field(discriminator="reason"),
 ]
+
+InvocationMessageResponseUnion = TypeAliasType("InvocationMessageResponseUnion", _InvocationMessageResponseUnion)
 
 
 class InvocationMessageResponseModel(RootModel):
