@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar as faRegStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { watchImmediate } from "@vueuse/core";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
@@ -12,18 +13,29 @@ import { useUserStore } from "@/stores/userStore";
 library.add(faStar, faRegStar);
 
 interface Props {
-    query: string;
+    value?: boolean;
+    modelValue?: boolean;
+    query?: string;
 }
+
 const props = defineProps<Props>();
 
+const currentValue = computed(() => props.value ?? props.modelValue ?? false);
+const toggle = ref(false);
+
+watchImmediate(
+    () => currentValue.value,
+    (val) => (toggle.value = val)
+);
+
 const emit = defineEmits<{
-    (e: "onFavorites", filter: string): void;
+    (e: "change", toggled: boolean): void;
+    (e: "update:modelValue", toggled: boolean): void;
 }>();
 
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const FAVORITES = ["#favorites", "#favs", "#favourites"];
-const toggle = ref(false);
 
 const tooltipText = computed(() => {
     if (isAnonymous.value) {
@@ -40,17 +52,14 @@ const tooltipText = computed(() => {
 watch(
     () => props.query,
     () => {
-        toggle.value = FAVORITES.includes(props.query);
+        toggle.value = FAVORITES.includes(props.query ?? "");
     }
 );
 
-function onFavorites() {
+function toggleFavorites() {
     toggle.value = !toggle.value;
-    if (toggle.value) {
-        emit("onFavorites", "#favorites");
-    } else {
-        emit("onFavorites", "");
-    }
+    emit("update:modelValue", toggle.value);
+    emit("change", toggle.value);
 }
 </script>
 
@@ -63,7 +72,7 @@ function onFavorites() {
         aria-label="Show favorite tools"
         :disabled="isAnonymous"
         :title="tooltipText"
-        @click="onFavorites">
+        @click="toggleFavorites">
         <FontAwesomeIcon :icon="toggle ? faRegStar : faStar" />
     </BButton>
 </template>
