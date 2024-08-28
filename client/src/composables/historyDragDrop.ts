@@ -162,13 +162,16 @@ export function useHistoryDragDrop(targetHistoryId?: Ref<string> | string, creat
                 );
             }
 
-            if (pinHistories && historyStore.pinnedHistories.length > 0) {
-                // pin the target history
-                historyStore.pinHistory(historyId);
-                // also pin the original history where the item came from
-                historyStore.pinHistory(originalHistoryId);
-            } else {
-                historyStore.loadHistoryById(historyId);
+            // if items were copied
+            if (datasetCount > 0 && collectionCount > 0) {
+                if (pinHistories && historyStore.pinnedHistories.length > 0) {
+                    // pin the target history
+                    historyStore.pinHistory(historyId);
+                    // also pin the original history where the item came from
+                    historyStore.pinHistory(originalHistoryId);
+                } else {
+                    historyStore.loadHistoryById(historyId);
+                }
             }
         } catch (error) {
             Toast.error(`${error}`);
