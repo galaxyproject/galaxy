@@ -275,6 +275,7 @@ markiskander, motiontracker@gmail.com, 2024-08-12 personal email to michael.crus
 leobiscassi, leo.biscassi@gmail.com, 2024-08-12 personal email to michael.crusoe@vu.nl
 ThomasWollmann, thomas.s.wollmann@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2259147420
 fmareuil, fmareuil@pasteur.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2260099669
+FreekDB, freekdb@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-2263520321
 
 # not yet agreed, special handling
 jxtx, James Taylor, james@jamestaylor.org, deceased; RIP buddy
@@ -292,7 +293,6 @@ sszakony, Scott Szakonyi, sszakony@nd.edu, address bounced; last contribution in
 RichardJActon, Richard James Acton, racton@uni-koeln.de, address bounced
 NicHerndon, Nic Herndon, nic.herndon@uconn.edu, address bounced
 NA, Chinmay Rao, chinmay@bx.psu.edu, address bounced
-FreekDB, Freek de Bruijn, freek.de.bruijn@nbic.nl, address bounced
 NA, Hunter Moseley, hunter.moseley@louisville.edu, address bounced
 jessevdam, Jesse c j van Dam, jesse.vandam@wur.nl, address bounced
 NA, Jianbin He, jbhe@bx.psu.edu, address bounced
