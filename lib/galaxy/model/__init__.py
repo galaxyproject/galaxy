@@ -2967,10 +2967,11 @@ class Group(Base, Dictifiable, RepresentById):
 
 class UserGroupAssociation(Base, RepresentById):
     __tablename__ = "user_group_association"
+    __table_args__ = (UniqueConstraint("user_id", "group_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True, nullable=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user: Mapped["User"] = relationship(back_populates="groups")
