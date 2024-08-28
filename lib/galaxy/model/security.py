@@ -1,23 +1,35 @@
 import logging
 import socket
+import sqlite3
 from datetime import (
     datetime,
     timedelta,
 )
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
+from psycopg2.errors import (
+    ForeignKeyViolation,
+    UniqueViolation,
+)
 from sqlalchemy import (
     and_,
+    delete,
     false,
     func,
+    insert,
     not_,
     or_,
     select,
+    text,
 )
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import text
 
 import galaxy.model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -1445,62 +1457,171 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                 self.get_showable_folders(user, roles, folder, actions_to_check, showable_folders=showable_folders)
         return showable_folders
 
-    def set_entity_user_associations(self, users=None, roles=None, groups=None, delete_existing_assocs=True):
-        users = users or []
-        roles = roles or []
-        groups = groups or []
-        for user in users:
-            if delete_existing_assocs:
-                flush_needed = False
-                for a in user.non_private_roles + user.groups:
-                    self.sa_session.delete(a)
-                    flush_needed = True
-                if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
-            self.sa_session.refresh(user)
-            for role in roles:
-                # Make sure we are not creating an additional association with a PRIVATE role
-                if role not in [x.role for x in user.roles]:
-                    self.associate_components(user=user, role=role)
-            for group in groups:
-                self.associate_components(user=user, group=group)
+    def set_user_group_and_role_associations(
+        self,
+        user: User,
+        *,
+        group_ids: Optional[List[int]] = None,
+        role_ids: Optional[List[int]] = None,
+    ) -> None:
+        """
+        Set user groups and user roles, replacing current associations.
 
-    def set_entity_group_associations(self, groups=None, users=None, roles=None, delete_existing_assocs=True):
-        users = users or []
-        roles = roles or []
-        groups = groups or []
-        for group in groups:
-            if delete_existing_assocs:
-                flush_needed = False
-                for a in group.roles + group.users:
-                    self.sa_session.delete(a)
-                    flush_needed = True
-                if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
-            for role in roles:
-                self.associate_components(group=group, role=role)
-            for user in users:
-                self.associate_components(group=group, user=user)
+        Associations are set only if a list of new associations is provided.
+        If the provided list is empty, existing associations will be removed.
+        If the provided value is None, existing associations will not be updated.
+        """
+        self._ensure_model_instance_has_id(user)
+        if group_ids is not None:
+            self._set_user_groups(user, group_ids or [])
+        if role_ids is not None:
+            self._set_user_roles(user, role_ids or [])
+        # Commit only if both user groups and user roles have been set.
+        self.sa_session.commit()
 
-    def set_entity_role_associations(self, roles=None, users=None, groups=None, delete_existing_assocs=True):
-        users = users or []
-        roles = roles or []
-        groups = groups or []
-        for role in roles:
-            if delete_existing_assocs:
-                flush_needed = False
-                for a in role.users + role.groups:
-                    self.sa_session.delete(a)
-                    flush_needed = True
-                if flush_needed:
-                    with transaction(self.sa_session):
-                        self.sa_session.commit()
-            for user in users:
-                self.associate_components(user=user, role=role)
-            for group in groups:
-                self.associate_components(group=group, role=role)
+    def set_group_user_and_role_associations(
+        self,
+        group: Group,
+        *,
+        user_ids: Optional[List[int]] = None,
+        role_ids: Optional[List[int]] = None,
+    ) -> None:
+        """
+        Set group users and group roles, replacing current associations.
+
+        Associations are set only if a list of new associations is provided.
+        If the provided list is empty, existing associations will be removed.
+        If the provided value is None, existing associations will not be updated.
+        """
+        self._ensure_model_instance_has_id(group)
+        if user_ids is not None:
+            self._set_group_users(group, user_ids)
+        if role_ids is not None:
+            self._set_group_roles(group, role_ids)
+        # Commit only if both group users and group roles have been set.
+        self.sa_session.commit()
+
+    def set_role_user_and_group_associations(
+        self,
+        role: Role,
+        *,
+        user_ids: Optional[List[int]] = None,
+        group_ids: Optional[List[int]] = None,
+    ) -> None:
+        """
+        Set role users and role groups, replacing current associations.
+
+        Associations are set only if a list of new associations is provided.
+        If the provided list is empty, existing associations will be removed.
+        If the provided value is None, existing associations will not be updated.
+        """
+        self._ensure_model_instance_has_id(role)
+        if user_ids is not None:
+            self._set_role_users(role, user_ids or [])
+        if group_ids is not None:
+            self._set_role_groups(role, group_ids or [])
+        # Commit only if both role users and role groups have been set.
+        self.sa_session.commit()
+
+    def _set_user_groups(self, user, group_ids):
+        delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.user_id == user.id)
+        insert_values = [{"user_id": user.id, "group_id": group_id} for group_id in group_ids]
+        self._set_associations(user, UserGroupAssociation, delete_stmt, insert_values)
+
+    def _set_user_roles(self, user, role_ids):
+        # Do not include user's private role association in delete statement.
+        delete_stmt = delete(UserRoleAssociation).where(UserRoleAssociation.user_id == user.id)
+        private_role = get_private_user_role(user, self.sa_session)
+        if not private_role:
+            log.warning("User %s does not have a private role assigned", user)
+        else:
+            delete_stmt = delete_stmt.where(UserRoleAssociation.role_id != private_role.id)
+        role_ids = self._filter_private_roles(role_ids)
+        insert_values = [{"user_id": user.id, "role_id": role_id} for role_id in role_ids]
+        self._set_associations(user, UserRoleAssociation, delete_stmt, insert_values)
+
+    def _filter_private_roles(self, role_ids):
+        """Filter out IDs of private roles: those should not be assignable via UI"""
+        filtered = []
+        for role_id in role_ids:
+            stmt = select(Role.id).where(Role.id == role_id).where(Role.type == Role.types.PRIVATE)
+            is_private = bool(self.sa_session.scalars(stmt).all())
+            if not is_private:
+                filtered.append(role_id)
+        return filtered
+
+    def _set_group_users(self, group, user_ids):
+        delete_stmt = delete(UserGroupAssociation).where(UserGroupAssociation.group_id == group.id)
+        insert_values = [{"group_id": group.id, "user_id": user_id} for user_id in user_ids]
+        self._set_associations(group, UserGroupAssociation, delete_stmt, insert_values)
+
+    def _set_group_roles(self, group, role_ids):
+        delete_stmt = delete(GroupRoleAssociation).where(GroupRoleAssociation.group_id == group.id)
+        insert_values = [{"group_id": group.id, "role_id": role_id} for role_id in role_ids]
+        self._set_associations(group, GroupRoleAssociation, delete_stmt, insert_values)
+
+    def _set_role_users(self, role, user_ids):
+        # Do not set users if the role is private
+        # Even though we do not expect to be handling a private role here, the following code is
+        # a safeguard against deleting a user-role-association record for a private role.
+        if role.type == Role.types.PRIVATE:
+            return
+
+        # First, check previously associated users to:
+        # - delete DefaultUserPermissions for users that are being removed from this role;
+        # - delete DefaultHistoryPermissions for histories associated with users that are being removed from this role.
+        for ura in role.users:
+            if ura.user_id not in user_ids:  # If a user will be removed from this role, then:
+                user = self.sa_session.get(User, ura.user_id)
+                # Delete DefaultUserPermissions for this user
+                for dup in user.default_permissions:
+                    if role == dup.role:
+                        self.sa_session.delete(dup)
+                # Delete DefaultHistoryPermissions for histories associated with this user
+                for history in user.histories:
+                    for dhp in history.default_permissions:
+                        if role == dhp.role:
+                            self.sa_session.delete(dhp)
+
+        delete_stmt = delete(UserRoleAssociation).where(UserRoleAssociation.role_id == role.id)
+        insert_values = [{"role_id": role.id, "user_id": user_id} for user_id in user_ids]
+        self._set_associations(role, UserRoleAssociation, delete_stmt, insert_values)
+
+    def _set_role_groups(self, role, group_ids):
+        delete_stmt = delete(GroupRoleAssociation).where(GroupRoleAssociation.role_id == role.id)
+        insert_values = [{"role_id": role.id, "group_id": group_id} for group_id in group_ids]
+        self._set_associations(role, GroupRoleAssociation, delete_stmt, insert_values)
+
+    def _ensure_model_instance_has_id(self, model_instance):
+        # If model_instance is new, it may have not been assigned a database id yet, which is required
+        # for creating association records. Flush if that's the case.
+        if model_instance.id is None:
+            self.sa_session.flush([model_instance])
+
+    def _set_associations(self, parent_model, assoc_model, delete_stmt, insert_values):
+        """
+        Delete current associations for assoc_model, then insert new associations if values are provided.
+        """
+        # Ensure sqlite respects foreign key constraints.
+        if self.sa_session.bind.dialect.name == "sqlite":
+            self.sa_session.execute(text("PRAGMA foreign_keys = ON;"))
+        self.sa_session.execute(delete_stmt)
+        if not insert_values:
+            return
+        try:
+            self.sa_session.execute(insert(assoc_model), insert_values)
+        except IntegrityError as ie:
+            self.sa_session.rollback()
+            if is_unique_constraint_violation(ie):
+                msg = f"Attempting to create a duplicate {assoc_model} record ({insert_values})"
+                log.exception(msg)
+                raise RequestParameterInvalidException()
+            elif is_foreign_key_violation(ie):
+                msg = f"Attempting to create an invalid {assoc_model} record ({insert_values})"
+                log.exception(msg)
+                raise RequestParameterInvalidException()
+            else:
+                raise
 
     def get_component_associations(self, **kwd):
         assert len(kwd) == 2, "You must specify exactly 2 Galaxy security components to check for associations."
@@ -1670,3 +1791,27 @@ def _walk_action_roles(permissions, query_action):
                 yield action, roles
         elif action == query_action.action and roles:
             yield action, roles
+
+
+def is_unique_constraint_violation(error):
+    # A more elegant way to handle sqlite iw this:
+    #   if hasattr(error.orig, "sqlite_errorname"):
+    #       return error.orig.sqlite_errorname == "SQLITE_CONSTRAINT_UNIQUE"
+    # However, that's only possible with Python 3.11+
+    # https://docs.python.org/3/library/sqlite3.html#sqlite3.Error.sqlite_errorcode
+    if isinstance(error.orig, sqlite3.IntegrityError):
+        return error.orig.args[0].startswith("UNIQUE constraint failed")
+    else:
+        return isinstance(error.orig, UniqueViolation)
+
+
+def is_foreign_key_violation(error):
+    # A more elegant way to handle sqlite iw this:
+    #   if hasattr(error.orig, "sqlite_errorname"):
+    #       return error.orig.sqlite_errorname == "SQLITE_CONSTRAINT_UNIQUE"
+    # However, that's only possible with Python 3.11+
+    # https://docs.python.org/3/library/sqlite3.html#sqlite3.Error.sqlite_errorcode
+    if isinstance(error.orig, sqlite3.IntegrityError):
+        return error.orig.args[0] == "FOREIGN KEY constraint failed"
+    else:
+        return isinstance(error.orig, ForeignKeyViolation)
