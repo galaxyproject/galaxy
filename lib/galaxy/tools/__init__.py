@@ -1833,18 +1833,7 @@ class Tool(UsesDictVisibleKeys):
         collection_info: Optional[MatchingCollections]
         expanded_incomings, collection_info = expand_meta_parameters(request_context, self, incoming)
 
-        # Remapping a single job to many jobs doesn't make sense, so disable
-        # remap if multi-runs of tools are being used.
-        produces_multiple_jobs = len(expanded_incomings) > 1
-        if rerun_remap_job_id and produces_multiple_jobs:
-            raise exceptions.RequestParameterInvalidException(
-                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs when remapping existing job)."
-            )
-
-        if self.input_translator and produces_multiple_jobs:
-            raise exceptions.RequestParameterInvalidException(
-                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs with this type of data source tool)."
-            )
+        self._ensure_expansion_is_valid(expanded_incomings, rerun_remap_job_id)
 
         # Process incoming data
         validation_timer = self.app.execution_timer_factory.get_timer(
@@ -1862,6 +1851,25 @@ class Tool(UsesDictVisibleKeys):
 
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
+
+    def _ensure_expansion_is_valid(
+        self, expanded_incomings: List[ToolStateJobInstanceT], rerun_remap_job_id: Optional[int]
+    ) -> None:
+        """If the request corresponds to multiple jobs but this doesn't work with request configuration - raise an error.
+
+        In particular check if this is a data source job or if we're remapping a single job - in either case we should
+        not have any expansion occuring.
+        """
+        produces_multiple_jobs = len(expanded_incomings) > 1
+        if rerun_remap_job_id and produces_multiple_jobs:
+            raise exceptions.RequestParameterInvalidException(
+                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs when remapping existing job)."
+            )
+
+        if self.input_translator and produces_multiple_jobs:
+            raise exceptions.RequestParameterInvalidException(
+                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs with this type of data source tool)."
+            )
 
     def _populate(
         self, request_context, expanded_incoming: ToolStateJobInstanceT, input_format: InputFormatT
