@@ -3,7 +3,7 @@ import { faEdit, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -15,8 +15,6 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/List/WorkflowActions.vue";
 import WorkflowActionsExtend from "@/components/Workflow/List/WorkflowActionsExtend.vue";
 import WorkflowIndicators from "@/components/Workflow/List/WorkflowIndicators.vue";
-import WorkflowRename from "@/components/Workflow/List/WorkflowRename.vue";
-import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
@@ -37,16 +35,15 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
-    (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
+    (e: "refreshList", overlayLoading?: boolean, silent?: boolean): void;
     (e: "updateFilter", key: string, value: any): void;
+    (e: "rename", id: string, name: string): void;
+    (e: "preview", id: string): void;
 }>();
 
 const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
-
-const showRename = ref(false);
-const showPreview = ref(false);
 
 const workflow = computed(() => props.workflow);
 
@@ -96,15 +93,6 @@ async function onImport() {
     Toast.success("Workflow imported successfully");
 }
 
-function onRenameClose() {
-    showRename.value = false;
-    emit("refreshList", true);
-}
-
-function toggleShowPreview(val: boolean = false) {
-    showPreview.value = val;
-}
-
 async function onTagsUpdate(tags: string[]) {
     workflow.value.tags = tags;
     await updateWorkflow(workflow.value.id, { tags });
@@ -139,8 +127,7 @@ async function onTagClick(tag: string) {
                     <WorkflowActions
                         :workflow="workflow"
                         :published="publishedView"
-                        @refreshList="emit('refreshList', true)"
-                        @toggleShowPreview="toggleShowPreview" />
+                        @refreshList="emit('refreshList', true)" />
                 </div>
 
                 <span class="workflow-name font-weight-bold">
@@ -148,9 +135,9 @@ async function onTagClick(tag: string) {
                         v-b-tooltip.hover.noninteractive
                         class="workflow-name-preview"
                         title="Preview Workflow"
-                        @click.stop.prevent="toggleShowPreview(true)"
-                        >{{ workflow.name }}</BLink
-                    >
+                        @click.stop.prevent="emit('preview', props.workflow.id)">
+                        {{ workflow.name }}
+                    </BLink>
                     <BButton
                         v-if="!shared && !workflow.deleted"
                         v-b-tooltip.hover.noninteractive
@@ -159,7 +146,7 @@ async function onTagClick(tag: string) {
                         variant="link"
                         size="sm"
                         title="Rename"
-                        @click="showRename = !showRename">
+                        @click="emit('rename', props.workflow.id, props.workflow.name)">
                         <FontAwesomeIcon :icon="faPen" fixed-width />
                     </BButton>
                 </span>
@@ -221,36 +208,9 @@ async function onTagClick(tag: string) {
                     </div>
                 </div>
             </div>
-
-            <WorkflowRename
-                v-if="!isAnonymous && !shared && !workflow.deleted"
-                :id="workflow.id"
-                :show="showRename"
-                :name="workflow.name"
-                @close="onRenameClose" />
-
-            <BModal
-                v-model="showPreview"
-                ok-only
-                size="xl"
-                hide-header
-                dialog-class="workflow-card-preview-modal w-auto"
-                centered>
-                <WorkflowPublished v-if="showPreview" :id="workflow.id" quick-view />
-            </BModal>
         </div>
     </div>
 </template>
-
-<style lang="scss">
-.workflow-card-preview-modal {
-    max-width: min(1400px, calc(100% - 200px));
-
-    .modal-content {
-        height: min(800px, calc(100vh - 80px));
-    }
-}
-</style>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";

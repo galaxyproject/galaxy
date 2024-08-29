@@ -14,13 +14,12 @@ library.add(faStar, faRegStar);
 
 interface Props {
     value?: boolean;
-    modelValue?: boolean;
     query?: string;
 }
 
 const props = defineProps<Props>();
 
-const currentValue = computed(() => props.value ?? props.modelValue ?? false);
+const currentValue = computed(() => props.value ?? false);
 const toggle = ref(false);
 
 watchImmediate(
@@ -30,7 +29,7 @@ watchImmediate(
 
 const emit = defineEmits<{
     (e: "change", toggled: boolean): void;
-    (e: "update:modelValue", toggled: boolean): void;
+    (e: "input", toggled: boolean): void;
 }>();
 
 const { isAnonymous } = storeToRefs(useUserStore());
@@ -58,7 +57,7 @@ watch(
 
 function toggleFavorites() {
     toggle.value = !toggle.value;
-    emit("update:modelValue", toggle.value);
+    emit("input", toggle.value);
     emit("change", toggle.value);
 }
 </script>
