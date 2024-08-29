@@ -98,7 +98,7 @@ class TestSetGroupUserAndRoleAssociations:
         group = Group()
         session.add(group)
         assert group.id is None  # group does not exist in database
-        users = [make_user_and_role()[0] for _ in range(5)]
+        users = [make_user_and_role()[0] for _ in range(5)]  # type: ignore[unreachable]
         roles = [make_role() for _ in range(5)]
 
         # users and roles for creating associations
@@ -363,7 +363,7 @@ class TestSetUserGroupAndRoleAssociations:
 
         session.add(user)
         assert user.id is None  # user does not exist in database
-        groups = [make_group() for _ in range(5)]
+        groups = [make_group() for _ in range(5)]  # type: ignore[unreachable]
         roles = [make_role() for _ in range(5)]
 
         # groups and roles for creating associations
@@ -623,7 +623,7 @@ class TestSetRoleUserAndGroupAssociations:
         role = Role()
         session.add(role)
         assert role.id is None  # role does not exist in database
-        users = [make_user_and_role()[0] for _ in range(5)]
+        users = [make_user_and_role()[0] for _ in range(5)]  # type: ignore[unreachable]
         groups = [make_group() for _ in range(5)]
 
         # users and groups for creating associations
