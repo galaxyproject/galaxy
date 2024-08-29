@@ -10,10 +10,6 @@ from typing import (
     Optional,
 )
 
-from psycopg2.errors import (
-    ForeignKeyViolation,
-    UniqueViolation,
-)
 from sqlalchemy import (
     and_,
     delete,
@@ -1802,7 +1798,9 @@ def is_unique_constraint_violation(error):
     if isinstance(error.orig, sqlite3.IntegrityError):
         return error.orig.args[0].startswith("UNIQUE constraint failed")
     else:
-        return isinstance(error.orig, UniqueViolation)
+        # If this is a PostgreSQL unique constraint, then error.orig is an instance of psycopg2.errors.UniqueViolation
+        # and should have an attribute `pgcode` = 23505.
+        return int(getattr(error.orig, "pgcode", -1)) == 23505
 
 
 def is_foreign_key_violation(error):
@@ -1814,4 +1812,6 @@ def is_foreign_key_violation(error):
     if isinstance(error.orig, sqlite3.IntegrityError):
         return error.orig.args[0] == "FOREIGN KEY constraint failed"
     else:
-        return isinstance(error.orig, ForeignKeyViolation)
+        # If this is a PostgreSQL foreign key error, then error.orig is an instance of psycopg2.errors.ForeignKeyViolation
+        # and should have an attribute `pgcode` = 23503.
+        return int(getattr(error.orig, "pgcode", -1)) == 23503
