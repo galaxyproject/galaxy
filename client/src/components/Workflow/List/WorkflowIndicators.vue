@@ -18,6 +18,7 @@ interface Props {
     workflow: any;
     publishedView: boolean;
     noEditTime?: boolean;
+    filterable?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -30,10 +31,15 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const publishedTitle = computed(() => {
-    if (userStore.matchesCurrentUsername(props.workflow.owner)) {
-        return "Published by you. Click to view all published workflows by you";
+    if (props.workflow.published && !props.publishedView) {
+        return "Published workflow" + (props.filterable ? ". Click to filter published workflows" : "");
+    } else if (userStore.matchesCurrentUsername(props.workflow.owner)) {
+        return "Published by you" + (props.filterable ? ". Click to view all published workflows by you" : "");
     } else {
-        return `Published by '${props.workflow.owner}'. Click to view all published workflows by '${props.workflow.owner}'`;
+        return (
+            `Published by '${props.workflow.owner}'` +
+            (props.filterable ? `. Click to view all published workflows by '${props.workflow.owner}'` : "")
+        );
     }
 });
 
@@ -89,7 +95,7 @@ function onViewUserPublished() {
             v-b-tooltip.noninteractive.hover
             size="sm"
             class="workflow-published-icon inline-icon-button"
-            title="Published workflow. Click to filter published workflows"
+            :title="publishedTitle"
             @click="emit('update-filter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
         </BButton>

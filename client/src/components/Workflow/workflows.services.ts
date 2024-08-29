@@ -3,7 +3,39 @@ import axios from "axios";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
-type Workflow = Record<string, never>;
+export type Workflow = Record<string, never>;
+
+interface LoadWorkflowsOptions {
+    sortBy: SortBy;
+    sortDesc: boolean;
+    limit: number;
+    offset: number;
+    filterText: string;
+    showPublished: boolean;
+    skipStepCounts: boolean;
+}
+
+const getWorkflows = fetcher.path("/api/workflows").method("get").create();
+export async function loadWorkflows({
+    sortBy = "update_time",
+    sortDesc = true,
+    limit = 20,
+    offset = 0,
+    filterText = "",
+    showPublished = false,
+    skipStepCounts = true,
+}: LoadWorkflowsOptions): Promise<{ data: Workflow[]; headers: Headers }> {
+    const { data, headers } = await getWorkflows({
+        sort_by: sortBy,
+        sort_desc: sortDesc,
+        limit,
+        offset,
+        search: filterText,
+        show_published: showPublished,
+        skip_step_counts: skipStepCounts,
+    });
+    return { data, headers };
+}
 
 export async function updateWorkflow(id: string, changes: object): Promise<Workflow> {
     const { data } = await axios.put(withPrefix(`/api/workflows/${id}`), changes);

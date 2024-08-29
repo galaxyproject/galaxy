@@ -4,14 +4,13 @@ import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawe
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { BButton, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
 library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
 
 interface Props {
-    modelValue?: string;
     value?: string;
     delay?: number;
     loading?: boolean;
@@ -21,7 +20,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    modelValue: "",
     value: "",
     delay: 1000,
     loading: false,
@@ -30,10 +28,8 @@ const props = withDefaults(defineProps<Props>(), {
     enableAdvanced: false,
 });
 
-const currentValue = computed(() => props.modelValue ?? props.value ?? "");
-
 const emit = defineEmits<{
-    (e: "update:modelValue", value: string): void;
+    (e: "input", value: string): void;
     (e: "change", value: string): void;
     (e: "onToggle", showAdvanced: boolean): void;
 }>();
@@ -62,12 +58,16 @@ function delayQuery(query: string) {
 }
 
 function setQuery(queryNew: string) {
-    emit("update:modelValue", queryNew);
+    emit("input", queryNew);
     emit("change", queryNew);
 }
 
+watch(
+    () => queryInput.value,
+    () => delayQuery(queryInput.value ?? "")
+);
+
 function clearBox() {
-    setQuery("");
     queryInput.value = "";
     toolInput.value?.focus();
 }
@@ -77,7 +77,7 @@ function onToggle() {
 }
 
 watchImmediate(
-    () => currentValue.value,
+    () => props.value,
     (newQuery) => {
         queryInput.value = newQuery;
     }
@@ -94,7 +94,6 @@ watchImmediate(
             autocomplete="off"
             :placeholder="placeholder"
             data-description="filter text input"
-            @input="delayQuery"
             @keydown.esc="clearBox" />
 
         <BInputGroupAppend>
