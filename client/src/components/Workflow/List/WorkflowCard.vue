@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faEye, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BLink } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
@@ -21,23 +20,25 @@ import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished
 import WorkflowInvocationsCount from "@/components/Workflow/WorkflowInvocationsCount.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
-library.add(faEdit, faEye, faPen, faUpload);
-
 interface Props {
     workflow: any;
     gridView?: boolean;
+    hideRuns?: boolean;
+    filterable?: boolean;
     publishedView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    hideRuns: false,
+    filterable: true,
 });
 
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
-    (e: "update-filter", key: string, value: any): void;
+    (e: "updateFilter", key: string, value: any): void;
 }>();
 
 const userStore = useUserStore();
@@ -95,7 +96,7 @@ async function onImport() {
     Toast.success("Workflow imported successfully");
 }
 
-function onRenameClose(e: any) {
+function onRenameClose() {
     showRename.value = false;
     emit("refreshList", true);
 }
@@ -126,10 +127,14 @@ async function onTagClick(tag: string) {
                 <WorkflowIndicators
                     :workflow="workflow"
                     :published-view="publishedView"
-                    @update-filter="(k, v) => emit('update-filter', k, v)" />
+                    :filterable="props.filterable"
+                    @update-filter="(k, v) => emit('updateFilter', k, v)" />
 
                 <div class="workflow-count-actions">
-                    <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
+                    <WorkflowInvocationsCount
+                        v-if="!props.hideRuns && !isAnonymous && !shared"
+                        class="mx-1"
+                        :workflow="workflow" />
 
                     <WorkflowActions
                         :workflow="workflow"
