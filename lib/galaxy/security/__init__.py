@@ -95,9 +95,6 @@ class RBACAgent:
     def can_manage_library_item(self, roles, item):
         raise Exception("Unimplemented Method")
 
-    def associate_components(self, **kwd):
-        raise Exception(f"No valid method of associating provided components: {kwd}")
-
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
 

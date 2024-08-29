@@ -710,20 +710,6 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
                     perms[action].extend([_ for _ in role_ids if _ not in perms[action]])
         return perms
 
-    def associate_components(self, **kwd):
-        if "user" in kwd:
-            if "group" in kwd:
-                return self.associate_user_group(kwd["user"], kwd["group"])
-            elif "role" in kwd:
-                return self.associate_user_role(kwd["user"], kwd["role"])
-        elif "role" in kwd:
-            if "group" in kwd:
-                return self.associate_group_role(kwd["group"], kwd["role"])
-        if "action" in kwd:
-            if "dataset" in kwd and "role" in kwd:
-                return self.associate_action_dataset_role(kwd["action"], kwd["dataset"], kwd["role"])
-        raise Exception(f"No valid method of associating provided components: {kwd}")
-
     def associate_user_group(self, user, group):
         assoc = UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
@@ -1036,7 +1022,7 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
             with transaction(self.sa_session):
                 self.sa_session.commit()
             for user in users:
-                self.associate_components(user=user, role=sharing_role)
+                self.associate_user_role(user, sharing_role)
         self.set_dataset_permission(dataset, {self.permitted_actions.DATASET_ACCESS: [sharing_role]})
 
     def set_all_library_permissions(self, trans, library_item, permissions=None):
