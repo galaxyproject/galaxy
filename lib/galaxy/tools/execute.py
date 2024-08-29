@@ -259,7 +259,14 @@ class ExecutionSlice:
 
 
 class ExecutionTracker:
-    def __init__(self, trans, tool, mapping_params, collection_info, completed_jobs=None):
+    def __init__(
+        self,
+        trans,
+        tool: "Tool",
+        mapping_params: MappingParameters,
+        collection_info: Optional[MatchingCollections],
+        completed_jobs: Optional[CompletedJobsT] = None,
+    ):
         # Known ahead of time...
         self.trans = trans
         self.tool = tool
@@ -574,7 +581,14 @@ class ExecutionTracker:
 # Seperate these because workflows need to track their jobs belong to the invocation
 # in the database immediately and they can be recovered.
 class ToolExecutionTracker(ExecutionTracker):
-    def __init__(self, trans, tool, mapping_params, collection_info, completed_jobs=None):
+    def __init__(
+        self,
+        trans,
+        tool: "Tool",
+        mapping_params: MappingParameters,
+        collection_info: Optional[MatchingCollections],
+        completed_jobs: Optional[CompletedJobsT] = None,
+    ):
         super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
 
         # New to track these things for tool output API response in the tool case,
@@ -606,7 +620,15 @@ class ToolExecutionTracker(ExecutionTracker):
 
 
 class WorkflowStepExecutionTracker(ExecutionTracker):
-    def __init__(self, trans, tool, mapping_params, collection_info, invocation_step, completed_jobs=None):
+    def __init__(
+        self,
+        trans,
+        tool: "Tool",
+        mapping_params: MappingParameters,
+        collection_info: Optional[MatchingCollections],
+        invocation_step: model.WorkflowInvocationStep,
+        completed_jobs: Optional[CompletedJobsT] = None,
+    ):
         super().__init__(trans, tool, mapping_params, collection_info, completed_jobs=completed_jobs)
         self.invocation_step = invocation_step
 
