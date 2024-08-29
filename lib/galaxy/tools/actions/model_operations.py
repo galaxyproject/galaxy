@@ -10,6 +10,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
@@ -24,7 +25,6 @@ from galaxy.tools.execute import (
     DEFAULT_RERUN_REMAP_JOB_ID,
     DEFAULT_SET_OUTPUT_HID,
     JobCallbackT,
-    ToolParameterRequestInstanceT,
 )
 from galaxy.tools.execution_helpers import ToolExecutionCache
 
@@ -52,7 +52,7 @@ class ModelOperationToolAction(DefaultToolAction):
         self,
         tool,
         trans,
-        incoming: Optional[ToolParameterRequestInstanceT] = None,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
         history: Optional[History] = None,
         job_params=None,
         rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,

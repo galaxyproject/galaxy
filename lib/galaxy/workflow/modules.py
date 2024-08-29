@@ -30,6 +30,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    Job,
     PostJobAction,
     Workflow,
     WorkflowInvocationStep,
@@ -1209,8 +1210,7 @@ class InputParameterModule(WorkflowModule):
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
 
-        parameter_type_cond = Conditional()
-        parameter_type_cond.name = "parameter_definition"
+        parameter_type_cond = Conditional("parameter_definition")
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
@@ -1262,8 +1262,7 @@ class InputParameterModule(WorkflowModule):
                 input_default_value = ColorToolParameter(None, default_source)
 
             optional_value = optional_param(optional)
-            optional_cond = Conditional()
-            optional_cond.name = "optional"
+            optional_cond = Conditional("optional")
             optional_cond.test_param = optional_value
 
             when_this_type = ConditionalWhen()
@@ -1276,8 +1275,7 @@ class InputParameterModule(WorkflowModule):
                 name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked
             )
             specify_default = BooleanToolParameter(None, specify_default_source)
-            specify_default_cond = Conditional()
-            specify_default_cond.name = "specify_default"
+            specify_default_cond = Conditional("specify_default")
             specify_default_cond.test_param = specify_default
 
             when_specify_default_true = ConditionalWhen()
@@ -1350,9 +1348,8 @@ class InputParameterModule(WorkflowModule):
                         "selected": restrict_how_value == "staticSuggestions",
                     },
                 ]
-                restrictions_cond = Conditional()
+                restrictions_cond = Conditional("restrictions")
                 restrictions_how = SelectToolParameter(None, restrict_how_source)
-                restrictions_cond.name = "restrictions"
                 restrictions_cond.test_param = restrictions_how
 
                 when_restrict_none = ConditionalWhen()
@@ -2290,19 +2287,7 @@ class ToolModule(WorkflowModule):
             param_combinations.append(execution_state.inputs)
 
         complete = False
-        completed_jobs = {}
-        for i, param in enumerate(param_combinations):
-            if use_cached_job:
-                completed_jobs[i] = tool.job_search.by_tool_input(
-                    trans=trans,
-                    tool_id=tool.id,
-                    tool_version=tool.version,
-                    param=param,
-                    param_dump=tool.params_to_strings(param, trans.app, nested=True),
-                    job_state=None,
-                )
-            else:
-                completed_jobs[i] = None
+        completed_jobs: Dict[int, Optional[Job]] = tool.completed_jobs(trans, use_cached_job, param_combinations)
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
@@ -2337,10 +2322,11 @@ class ToolModule(WorkflowModule):
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
+        step_outputs: Dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
         if collection_info:
-            step_outputs = dict(execution_tracker.implicit_collections)
+            step_outputs.update(execution_tracker.implicit_collections)
         else:
-            step_outputs = dict(execution_tracker.output_datasets)
+            step_outputs.update(execution_tracker.output_datasets)
             step_outputs.update(execution_tracker.output_collections)
         progress.set_step_outputs(invocation_step, step_outputs, already_persisted=not invocation_step.is_new)
 

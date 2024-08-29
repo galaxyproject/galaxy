@@ -175,7 +175,7 @@ class SessionRequestContext(WorkRequestContext):
 
 def proxy_work_context_for_history(
     trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False
-):
+) -> WorkRequestContext:
     """Create a WorkContext for supplied context with potentially different history.
 
     This provides semi-structured access to a transaction/work context with a supplied target
