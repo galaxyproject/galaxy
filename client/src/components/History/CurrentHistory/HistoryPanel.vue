@@ -691,7 +691,22 @@ function setItemDragstart(
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
                                     @undelete="onUndelete(item)"
-                                    @unhide="onUnhide(item)" />
+                                    @unhide="onUnhide(item)">
+                                    <template v-slot:sub_items="slotProps">
+                                        <div v-if="slotProps.subItemsVisible" class="pl-2 sub-items-content">
+                                            <ContentItem
+                                                v-for="subItem in item.sub_items"
+                                                :id="subItem.hid"
+                                                :key="subItem.id"
+                                                :item="subItem"
+                                                :name="subItem.name"
+                                                :expand-dataset="isExpanded(subItem)"
+                                                :is-dataset="isDataset(subItem)"
+                                                :is-sub-item="true"
+                                                @update:expand-dataset="setExpanded(subItem, $event)" />
+                                        </div>
+                                    </template>
+                                </ContentItem>
                             </template>
                         </ListingLayout>
                     </div>
@@ -700,3 +715,11 @@ function setItemDragstart(
         </SelectedItems>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.sub-items-content {
+    background: $body-bg;
+}
+</style>

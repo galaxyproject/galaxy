@@ -1112,6 +1112,9 @@ class HDCASummary(HDCACommon, WithModelClass):
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: ElementCountField
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
@@ -1136,9 +1139,6 @@ class HDCADetailed(HDCASummary):
 
     populated: PopulatedField
     elements: List[DCESummary] = ElementsField
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
     implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
@@ -3350,8 +3350,17 @@ class HDACustom(HDADetailed):
     model_config = ConfigDict(extra="allow")
 
 
+@partial_model()
+class HDCACustom(HDCADetailed):
+    """Can contain any serializable property of an HDCA.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+
 AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
+AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,

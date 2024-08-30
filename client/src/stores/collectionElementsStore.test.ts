@@ -124,6 +124,7 @@ function mockCollection(id: string, numElements = 10): HDCASummary {
     return {
         id: id,
         element_count: numElements,
+        elements_datatypes: ["txt"],
         collection_type: "list",
         populated_state: "ok",
         populated_state_message: "",
