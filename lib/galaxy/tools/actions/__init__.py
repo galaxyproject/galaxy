@@ -681,6 +681,7 @@ class DefaultToolAction(ToolAction):
                 output_collection.mark_as_populated()
             for hdca in output_collections.out_collection_instances.values():
                 hdca.visible = False
+                hdca.collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 data.set_skipped(object_store_populator)
