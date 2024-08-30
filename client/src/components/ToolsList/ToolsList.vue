@@ -7,7 +7,8 @@ import { computed, onMounted, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
-import { type FilterSettings, type Tool, useToolStore } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
+import { type FilterSettings, type Tool } from "@/stores/toolStoreTypes";
 
 import ScrollToTopButton from "./ScrollToTopButton.vue";
 import ToolsListTable from "./ToolsListTable.vue";
