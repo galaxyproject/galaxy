@@ -5,10 +5,12 @@ from datetime import (
     datetime,
 )
 from typing import (
+    Any,
     cast,
     Dict,
     List,
     Optional,
+    Union,
 )
 
 import sqlalchemy
@@ -989,16 +991,17 @@ def summarize_job_parameters(trans, job: Job):
                     or input.type == "data_collection"
                     or isinstance(input_value, model.HistoryDatasetAssociation)
                 ):
-                    value = []
+                    value: List[Union[Dict[str, Any], None]] = []
                     for element in listify(input_value):
-                        element_id = element.id
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            value.append({"src": "hda", "id": element_id, "hid": hda.hid, "name": hda.name})
+                            value.append({"src": "hda", "id": element.id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
-                            value.append({"src": "dce", "id": element_id, "name": element.element_identifier})
+                            value.append({"src": "dce", "id": element.id, "name": element.element_identifier})
                         elif isinstance(element, model.HistoryDatasetCollectionAssociation):
-                            value.append({"src": "hdca", "id": element_id, "hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": element.id, "hid": element.hid, "name": element.name})
+                        elif element is None:
+                            value.append(None)
                         else:
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"

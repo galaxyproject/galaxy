@@ -9132,7 +9132,7 @@ export interface components {
              * @description The values of the job parameter
              */
             value?:
-                | components["schemas"]["EncodedJobParameterHistoryItem"][]
+                | (components["schemas"]["EncodedJobParameterHistoryItem"] | null)[]
                 | number
                 | number
                 | boolean
