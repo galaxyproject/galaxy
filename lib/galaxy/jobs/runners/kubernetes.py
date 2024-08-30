@@ -886,7 +886,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __cleanup_k8s_job(self, retriable_delete_k8s_job: RetriableDeleteJob):
         k8s_job = retriable_delete_k8s_job.k8s_job
-        log.debug(f"Cleaning up job with K8s id {k8s_job.name} (attempt {retriable_delete_k8s_job.attempts+1}).")
+        log.debug(f"Cleaning up job with K8s id {k8s_job.name} (attempt {retriable_delete_k8s_job.attempts + 1}).")
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
         try:
             delete_job(k8s_job, k8s_cleanup_job)
