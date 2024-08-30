@@ -141,6 +141,9 @@ export default {
             return !!this.configForm?.id;
         },
         inputs() {
+            // TODO: Refactor
+            // This code contains a computed side-effect and prop mutation.
+            // Both should be refactored
             const inputs = this.configForm.inputs;
             Utils.deepEach(inputs, (input) => {
                 if (input.type) {
@@ -150,10 +153,14 @@ export default {
                         input.info = `Data input '${input.name}' (${extensions})`;
                         input.value = { __class__: "RuntimeValue" };
                     } else {
-                        input.connectable = ["rules"].indexOf(input.type) == -1;
-                        input.collapsible_value = {
-                            __class__: "RuntimeValue",
-                        };
+                        const isRules = input.type === "rules";
+                        input.connectable = !isRules;
+                        input.collapsible_value = isRules
+                            ? undefined
+                            : {
+                                  __class__: "RuntimeValue",
+                              };
+
                         input.is_workflow =
                             (input.options && input.options.length === 0) ||
                             ["integer", "float"].indexOf(input.type) != -1;
