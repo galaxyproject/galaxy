@@ -210,15 +210,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         try:
             k8s_job.create()
         except HTTPError:
-            log.exception("Kubernetes failed to create job, HTTP exception encountered")
+            log.exception("Kubernetes failed to create a job, HTTP exception encountered")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
-            ajs.fail_message = "Kubernetes failed to create job."
+            ajs.fail_message = "Kubernetes failed to create a job; HTTP exception encountered."
             self.mark_as_failed(ajs)
             return
         if not k8s_job.name:
-            log.exception(f"Kubernetes failed to create job, empty name encountered: [{job.obj}]")
+            log.exception(f"Kubernetes failed to create a job, empty name encountered: [{k8s_job.obj}]")
             ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
-            ajs.fail_message = "Kubernetes failed to create job."
+            ajs.fail_message = "Kubernetes failed to create a job; empty name encountered."
             self.mark_as_failed(ajs)
             return
         k8s_job_id = k8s_job.name
@@ -1051,7 +1051,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_id=job_id,
             job_destination=job_wrapper.job_destination,
         )
-        ajs.command_line = job.command_line
+        ajs.command_line = gxy_job.command_line
         if gxy_job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
                 "(%s/%s) is still in %s state, adding to the runner monitor queue",
