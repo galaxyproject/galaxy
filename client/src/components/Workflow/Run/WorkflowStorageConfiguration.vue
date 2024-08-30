@@ -91,7 +91,7 @@ export default {
             return `Invocation ${this.preferredOrEmptyString} Storage Location`;
         },
         intermediateModalTitle() {
-            return `Invocation {{ preferredOrEmptyString }} Storage Location (Intermediate Datasets)`;
+            return `Invocation ${this.preferredOrEmptyString} Storage Location (Intermediate Datasets)`;
         },
         suffixPrimary() {
             if (this.splitObjectStore) {
