@@ -107,7 +107,9 @@ class TestGroupsApi(ApiTestCase):
             another_user_id = self.dataset_populator.user_id()
             another_role_id = self.dataset_populator.user_private_role_id()
         assert another_user_id is not None
-        update_response = self._put(f"groups/{group_id}", data={"user_ids": [another_user_id]}, admin=True, json=True)
+        update_response = self._put(
+            f"groups/{group_id}", data={"user_ids": [user_id, another_user_id]}, admin=True, json=True
+        )
         self._assert_status_code_is_ok(update_response)
 
         # Check if the user was added
@@ -119,7 +121,9 @@ class TestGroupsApi(ApiTestCase):
         )
 
         # Add another role to the group
-        update_response = self._put(f"groups/{group_id}", data={"role_ids": [another_role_id]}, admin=True, json=True)
+        update_response = self._put(
+            f"groups/{group_id}", data={"role_ids": [user_private_role_id, another_role_id]}, admin=True, json=True
+        )
         self._assert_status_code_is_ok(update_response)
 
         # Check if the role was added
