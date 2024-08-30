@@ -471,8 +471,8 @@ def files_contains(file1, file2, attributes=None):
 
 
 def _singleobject_intersection_over_union(
-    mask1: "numpy.typing.NDArray",
-    mask2: "numpy.typing.NDArray",
+    mask1: "numpy.typing.NDArray[numpy.bool_]",
+    mask2: "numpy.typing.NDArray[numpy.bool_]",
 ) -> "numpy.floating":
     return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
 
@@ -483,7 +483,7 @@ def _multiobject_intersection_over_union(
     pin_labels: Optional[List[int]] = None,
     repeat_reverse: bool = True,
 ) -> List["numpy.floating"]:
-    iou_list = []
+    iou_list: List[numpy.floating] = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
 
@@ -494,13 +494,13 @@ def _multiobject_intersection_over_union(
 
         # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
         else:
-            cc1_iou_list = []
+            cc1_iou_list: List[numpy.floating] = []
             for label2 in numpy.unique(mask2[cc1]):
                 if pin_labels is not None and label2 in pin_labels:
                     continue
                 cc2 = mask2 == label2
                 cc1_iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
-            iou_list.append(max(cc1_iou_list))
+            iou_list.append(max(cc1_iou_list))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
     if repeat_reverse:
         iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, pin_labels, repeat_reverse=False))
@@ -511,7 +511,7 @@ def _multiobject_intersection_over_union(
 def intersection_over_union(
     mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", pin_labels: Optional[List[int]] = None
 ) -> "numpy.floating":
-    """Compute the intersection over union (IoU) for the objects in two masks containing lables.
+    """Compute the intersection over union (IoU) for the objects in two masks containing labels.
 
     The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
     To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
@@ -529,7 +529,7 @@ def intersection_over_union(
         count = sum(label in mask for mask in (mask1, mask2))
         count_str = {1: "one", 2: "both"}
         assert count == 2, f"Label {label} is pinned but missing in {count_str[2 - count]} of the images."
-    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
+    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))  # type: ignore[type-var, unused-ignore]  # https://github.com/python/typeshed/issues/12562
 
 
 def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
