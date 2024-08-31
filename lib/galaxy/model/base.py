@@ -38,8 +38,7 @@ log = logging.getLogger(__name__)
 # of a request (which run within a threadpool) to see changes to the ContextVar
 # state. See https://github.com/tiangolo/fastapi/issues/953#issuecomment-586006249
 # for details
-_request_state: Dict[str, str] = {}
-REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
+REQUEST_ID: ContextVar[Union[Dict[str, str], None]] = ContextVar("request_id", default=None)
 
 
 @contextlib.contextmanager
@@ -112,12 +111,12 @@ class ModelMapping(Bunch):
 
     def request_scopefunc(self):
         """
-        Return a value that is used as dictionary key for sqlalchemy's ScopedRegistry.
+        Return a value that is used as dictionary key for SQLAlchemy's ScopedRegistry.
 
         This ensures that threads or request contexts will receive a single identical session
         from the ScopedRegistry.
         """
-        return REQUEST_ID.get().get("request") or threading.get_ident()
+        return REQUEST_ID.get({}).get("request") or threading.get_ident()
 
     @staticmethod
     def set_request_id(request_id):
