@@ -120,6 +120,19 @@ def make_default_history_permissions(session, make_history, make_role):
 
 
 @pytest.fixture
+def make_default_user_permissions(session, make_user, make_role):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        kwd["action"] = kwd.get("action") or random_str()
+        kwd["role"] = kwd.get("role") or make_role()
+        model = m.DefaultUserPermissions(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_event(session):
     def f(**kwd):
         model = m.Event(**kwd)

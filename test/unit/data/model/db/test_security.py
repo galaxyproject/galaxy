@@ -846,6 +846,67 @@ class TestSetRoleUserAndGroupAssociations:
         # verify associations not updated
         verify_role_associations(role, users_to_load, groups_to_load)
 
+    def test_delete_default_user_permissions_and_default_history_permissions(
+        self,
+        session,
+        make_role,
+        make_user_and_role,
+        make_user_role_association,
+        make_default_user_permissions,
+        make_default_history_permissions,
+        make_history,
+    ):
+        """
+        When setting role users, we check check previously associated users to:
+        - delete DefaultUserPermissions for users that are being removed from this role;
+        - delete DefaultHistoryPermissions for histories associated with users that are being removed from this role.
+        """
+        role = make_role()
+        users = [make_user_and_role()[0] for _ in range(5)]
+        # load and verify existing associations
+        user1, user2 = users[0], users[1]
+        users_to_load = [user1, user2]
+        for user in users_to_load:
+            make_user_role_association(user, role)
+        verify_role_associations(role, users_to_load, [])
+
+        # users and groups for creating new associations
+        new_users_to_add = [users[1], users[2]]  # REMOVE users[0], LEAVE users[1], ADD users[2]
+        user_ids = [u.id for u in new_users_to_add]
+        # sanity check: ensure we are trying to change existing associations
+        assert not have_same_elements(users_to_load, new_users_to_add)
+
+        # load default user permissions
+        dup1 = make_default_user_permissions(user=user1, role=role)
+        dup2 = make_default_user_permissions(user=user2, role=role)
+        assert have_same_elements(user1.default_permissions, [dup1])
+        assert have_same_elements(user2.default_permissions, [dup2])
+
+        # load and verify default history permissions for users associated with this role
+        history1, history2 = make_history(user=user1), make_history(user=user1)  # 2 histories for user 1
+        history3 = make_history(user=user2)  # 1 history for user 2
+        dhp1 = make_default_history_permissions(history=history1, role=role)
+        dhp2 = make_default_history_permissions(history=history2, role=role)
+        dhp3 = make_default_history_permissions(history=history3, role=role)
+        assert have_same_elements(history1.default_permissions, [dhp1])
+        assert have_same_elements(history2.default_permissions, [dhp2])
+        assert have_same_elements(history3.default_permissions, [dhp3])
+
+        # now update role users
+        GalaxyRBACAgent(session).set_role_user_and_group_associations(role, user_ids=user_ids, group_ids=[])
+
+        # verify user role associations
+        verify_role_associations(role, new_users_to_add, [])
+
+        # verify default user permissions
+        assert have_same_elements(user1.default_permissions, [])  # user1 was removed from role
+        assert have_same_elements(user2.default_permissions, [dup2])  # user2 was NOT removed from role
+
+        # verify default history permissions
+        assert have_same_elements(history1.default_permissions, [])
+        assert have_same_elements(history2.default_permissions, [])
+        assert have_same_elements(history3.default_permissions, [dhp3])
+
 
 def verify_group_associations(group, expected_users, expected_roles):
     new_group_users = [assoc.user for assoc in group.users]
