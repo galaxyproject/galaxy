@@ -849,14 +849,6 @@ class User(Base, Dictifiable, RepresentById):
     all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
         back_populates="user", cascade_backrefs=False
     )
-    non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
-        viewonly=True,
-        primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)
-            & (UserRoleAssociation.role_id == Role.id)
-            & not_(Role.name == User.email)
-        ),
-    )
 
     preferences: AssociationProxy[Any]
 
