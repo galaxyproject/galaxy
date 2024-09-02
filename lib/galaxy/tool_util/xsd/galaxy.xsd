@@ -74,6 +74,10 @@ List of behavior changes associated with profile versions:
 - Do not use Galaxy python environment for `data_source_async` tools.
 - Drop request parameters received by data source tools that are not declared in `<request_param_translation>` section.
 
+### 22.09
+
+- Dynamic options metadata filters of data parameters now allow any metadata if the referred data set does not define the metadata.
+
 ### Examples
 
 A normal tool:
