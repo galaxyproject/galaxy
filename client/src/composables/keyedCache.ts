@@ -45,6 +45,7 @@ export function useKeyedCache<T>(
 ) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingItem = ref<{ [key: string]: boolean }>({});
+    const loadingErrors = ref<{ [key: string]: Error }>({});
 
     const getItemById = computed(() => {
         return (id: string) => {
@@ -69,10 +70,17 @@ export function useKeyedCache<T>(
         };
     });
 
+    const hasItemLoadError = computed(() => {
+        return (id: string) => {
+            return loadingErrors.value[id] ?? null;
+        };
+    });
+
     async function fetchItemById(params: FetchParams) {
         const itemId = params.id;
         const isAlreadyLoading = loadingItem.value[itemId] ?? false;
-        if (isAlreadyLoading) {
+        const failedLoading = loadingErrors.value[itemId];
+        if (isAlreadyLoading || failedLoading) {
             return;
         }
         set(loadingItem.value, itemId, true);
@@ -81,6 +89,8 @@ export function useKeyedCache<T>(
             const { data } = await fetchItem({ id: itemId });
             set(storedItems.value, itemId, data);
             return data;
+        } catch (error) {
+            set(loadingErrors.value, itemId, error);
         } finally {
             del(loadingItem.value, itemId);
         }
@@ -99,6 +109,10 @@ export function useKeyedCache<T>(
         getItemById,
         /**
          * A computed function that returns true if the item with the given id is currently being fetched.
+         */
+        hasItemLoadError,
+        /**
+         * A computed function holding errors
          */
         isLoadingItem,
         /**
