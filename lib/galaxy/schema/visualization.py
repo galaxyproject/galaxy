@@ -9,7 +9,6 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
-    field_validator,
     RootModel,
 )
 from typing_extensions import Literal
@@ -22,11 +21,11 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     CreateTimeField,
     Model,
+    SanitizedString,
     TagCollection,
     UpdateTimeField,
     WithModelClass,
 )
-from galaxy.util.sanitize_html import sanitize_html
 
 VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
@@ -299,27 +298,27 @@ class VisualizationUpdateResponse(Model):
 
 
 class VisualizationCreatePayload(Model):
-    type: Optional[str] = Field(
+    type: Optional[SanitizedString] = Field(
         None,
         title="Type",
         description="The type of the visualization.",
     )
-    title: Optional[str] = Field(
-        "Untitled Visualization",
+    title: Optional[SanitizedString] = Field(
+        SanitizedString("Untitled Visualization"),
         title="Title",
         description="The name of the visualization.",
     )
-    dbkey: Optional[str] = Field(
+    dbkey: Optional[SanitizedString] = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
     )
-    slug: Optional[str] = Field(
+    slug: Optional[SanitizedString] = Field(
         None,
         title="Slug",
         description="The slug of the visualization.",
     )
-    annotation: Optional[str] = Field(
+    annotation: Optional[SanitizedString] = Field(
         None,
         title="Annotation",
         description="The annotation of the visualization.",
@@ -335,21 +334,14 @@ class VisualizationCreatePayload(Model):
         description="Whether to save the visualization.",
     )
 
-    @field_validator("type", "title", "dbkey", "slug", "annotation", mode="before")
-    @classmethod
-    def sanitize_html_fields(cls, v):
-        if isinstance(v, str):
-            return sanitize_html(v)
-        return v
-
 
 class VisualizationUpdatePayload(Model):
-    title: Optional[str] = Field(
+    title: Optional[SanitizedString] = Field(
         None,
         title="Title",
         description="The name of the visualization.",
     )
-    dbkey: Optional[str] = Field(
+    dbkey: Optional[SanitizedString] = Field(
         None,
         title="DbKey",
         description="The database key of the visualization.",
@@ -364,10 +356,3 @@ class VisualizationUpdatePayload(Model):
         title="Config",
         description="The config of the visualization.",
     )
-
-    @field_validator("title", "dbkey", mode="before")
-    @classmethod
-    def sanitize_html_fields(cls, v):
-        if isinstance(v, str):
-            return sanitize_html(v)
-        return v
