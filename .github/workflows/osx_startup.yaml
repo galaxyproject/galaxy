@@ -49,9 +49,10 @@ jobs:
         with:
           path: .tox
           key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx
-      - name: Install miniconda  # use this job to test using Python from a conda environment
+      - name: Install miniforge  # use this job to test using Python from a conda environment
         uses: conda-incubator/setup-miniconda@v3
         with:
+          miniforge-version: latest
           activate-environment: ''
       - name: Restore client cache
         uses: actions/cache@v4
