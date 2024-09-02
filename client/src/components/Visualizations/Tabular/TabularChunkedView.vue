@@ -51,7 +51,8 @@ const columnStyle = computed(() => {
     const columnStyle = Array(props.options.dataset_config.metadata_columns);
     if (props.options.dataset_config.metadata_column_types?.length > 0) {
         props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
-            columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
+            columnStyle[index] =
+                column_type === "str" || column_type === "list" ? "string-align no-wrap" : "number-align";
         });
     }
     return columnStyle;
@@ -117,6 +118,9 @@ function processRow(row: string[]) {
         // SAM file or like format with optional metadata included.
         return row.slice(0, num_columns - 1).concat([row.slice(num_columns - 1).join("\t")]);
     } else if (row.length === 1) {
+        if (isComment(row[0])) {
+            return row;
+        }
         // Try to split by comma first
         let rowDataSplit = row[0]!.split(",");
         if (rowDataSplit.length === num_columns) {
@@ -162,6 +166,10 @@ function nextChunk() {
         });
 }
 
+function isComment(row_el: string | undefined) {
+    return row_el!.startsWith("#");
+}
+
 onMounted(() => {
     // Render first chunk if available.
     if (props.options.dataset_config.first_data_chunk) {
@@ -177,7 +185,9 @@ onMounted(() => {
         <b-table-simple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
-                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
+                    <b-th v-for="(column, index) in columns" :key="column" class="no-wrap">{{
+                        column || `Column ${index + 1}`
+                    }}</b-th>
                 </b-tr>
             </b-thead>
             <b-tbody>
@@ -185,10 +195,12 @@ onMounted(() => {
                     <b-td
                         v-for="(element, elementIndex) in row.slice(0, -1)"
                         :key="elementIndex"
-                        :class="columnStyle[elementIndex]">
+                        :class="isComment(row[0]) ? null : columnStyle[elementIndex]">
                         {{ element }}
                     </b-td>
-                    <b-td :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
+                    <b-td
+                        :class="isComment(row[0]) ? null : columnStyle[row.length - 1]"
+                        :colspan="1 + columns.length - row.length">
                         {{ row.slice(-1)[0] }}
                     </b-td>
                 </b-tr>
@@ -203,5 +215,8 @@ onMounted(() => {
 }
 .number-align {
     text-align: right;
+}
+.no-wrap {
+    white-space: nowrap;
 }
 </style>
