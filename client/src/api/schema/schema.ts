@@ -8785,7 +8785,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
             /** Variables */
             variables?:
                 | (
@@ -13748,7 +13748,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /** Variables */
             variables?:
                 | (
@@ -16503,7 +16503,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3";
+            type: "aws_s3" | "azure_blob" | "boto3" | "disk" | "generic_s3" | "onedata";
             /**
              * Uuid
              * Format: uuid4
@@ -16578,7 +16578,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "ftp" | "posix" | "s3fs" | "azure";
+            type: "ftp" | "posix" | "s3fs" | "azure" | "onedata";
             /** Uri Root */
             uri_root: string;
             /**
