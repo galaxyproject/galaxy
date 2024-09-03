@@ -129,7 +129,7 @@ class CondaContext(installable.InstallableContext):
 
         self.conda_prefix = conda_prefix
         if conda_exec is None:
-            self.conda_exec = self._bin("conda")
+            self.conda_exec = self._bin("mamba")
         self.ensure_channels: List[str] = listify(ensure_channels)
         self.use_local = use_local
         self._reset_conda_properties()
