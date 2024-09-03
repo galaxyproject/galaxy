@@ -136,51 +136,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
         <xs:element name="inputs" type="Inputs" minOccurs="0"/>
         <xs:element name="tests" type="Tests" minOccurs="0"/>
         <xs:element name="stdio" type="Stdio" minOccurs="0"/>
-        <xs:element name="help" type="xs:string" minOccurs="0">
-          <xs:annotation gxdocs:best_practices="help-tag">
-            <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
-
-tag | details
---- | -------
-``.. class:: warningmark`` | a yellow warning symbol
-``.. class:: infomark`` | a blue information symbol
-``.. image:: path-of-the-file.png :height: 500 :width: 600`` | insert a png file of height 500 and width 600 at this position |
-``**bold**`` | bold
-``*italic*`` | italic
-``*`` | list
-``-`` | list
-``::`` | paragraph
-``-----`` | a horizontal line
-
-### Examples
-
-Show a warning sign to remind users that this tool accept fasta format files only, followed by an example of the query sequence and a figure.
-
-```xml
-<help>
-
-.. class:: warningmark
-
-'''TIP''' This tool requires *fasta* format.
-
-----
-
-'''Example'''
-
-Query sequence::
-    >seq1
-    ATCG...
-
-.. image:: my_figure.png
-    :height: 500
-    :width: 600
-
-</help>
-```
-
-]]></xs:documentation>
-          </xs:annotation>
-        </xs:element>
+        <xs:element name="help" type="Help" minOccurs="0" maxOccurs="1" />
         <xs:element name="code" type="Code" minOccurs="0"/>
         <xs:element name="uihints" type="UIhints" minOccurs="0"/>
         <xs:element name="options" type="Options" minOccurs="0"/>
@@ -782,6 +738,69 @@ Read more about configuring Galaxy to run Docker jobs
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently may be ``docker`` or ``singularity``.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="HelpFormatType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Document type of tool help</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="restructuredtext"/>
+      <xs:enumeration value="markdown"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="Help">
+    <xs:annotation gxdocs:best_practices="help-tag">
+      <xs:documentation xml:lang="en"><![CDATA[This tag set includes all of the necessary details of how to use the tool. This tag set should be included as the next to the last tag set, before citations, in the tool config. Tool help is written in reStructuredText. Included here is only an overview of a subset of features. For more information see [here](https://docutils.sourceforge.io/docs/ref/rst/restructuredtext.html).
+
+tag | details
+--- | -------
+``.. class:: warningmark`` | a yellow warning symbol
+``.. class:: infomark`` | a blue information symbol
+``.. image:: path-of-the-file.png :height: 500 :width: 600`` | insert a png file of height 500 and width 600 at this position |
+``**bold**`` | bold
+``*italic*`` | italic
+``*`` | list
+``-`` | list
+``::`` | paragraph
+``-----`` | a horizontal line
+
+### Examples
+
+Show a warning sign to remind users that this tool accept fasta format files only, followed by an example of the query sequence and a figure.
+
+```xml
+<help>
+
+.. class:: warningmark
+
+'''TIP''' This tool requires *fasta* format.
+
+----
+
+'''Example'''
+
+Query sequence::
+    >seq1
+    ATCG...
+
+.. image:: my_figure.png
+    :height: 500
+    :width: 600
+
+</help>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="format" type="HelpFormatType">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Valid values are ``restructuredtext`` and ``markdown``</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

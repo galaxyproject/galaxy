@@ -24,6 +24,8 @@
   <tool file="multi_repeats.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="help_features_rst.xml" />
+  <tool file="help_features_markdown.xml" />
   <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />

@@ -1886,7 +1886,7 @@ class ToolModule(WorkflowModule):
         return self.tool.version if self.tool else self.tool_version
 
     def get_tooltip(self, static_path=None):
-        if self.tool and self.tool.help:
+        if self.tool and self.tool.raw_help and self.tool.raw_help.format == "restructuredtext":
             host_url = self.trans.url_builder("/")
             static_path = self.trans.url_builder(static_path) if static_path else ""
             return self.tool.help.render(host_url=host_url, static_path=static_path)

@@ -78,6 +78,7 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart,
 )
 from galaxy.tool_util.parser.interface import (
+    HelpContent,
     InputSource,
     PageSource,
     ToolSource,
@@ -1678,9 +1679,12 @@ class Tool(UsesDictVisibleKeys):
 
     @property
     def help(self) -> Template:
+        help_content = self.raw_help
+        assert help_content
+        assert help_content.format == "restructuredtext"
         try:
             return Template(
-                rst_to_html(self.raw_help),
+                rst_to_html(help_content.content),
                 input_encoding="utf-8",
                 default_filters=["decode.utf8"],
                 encoding_errors="replace",
@@ -1697,23 +1701,25 @@ class Tool(UsesDictVisibleKeys):
         """
         return biotools_reference(self.xrefs)
 
-    def __get_help_with_images(self, raw_help: Optional[str]):
-        help_text = raw_help or ""
-        try:
-            if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                return set_image_paths(
-                    self.app,
-                    help_text,
-                    encoded_repository_id=self.repository_id,
-                    tool_shed_repository=self.tool_shed_repository,
-                    tool_id=self.old_id,
-                    tool_version=self.version,
+    def __get_help_with_images(self, help_content: Optional[HelpContent]) -> Optional[HelpContent]:
+        if help_content and help_content.format == "restructuredtext":
+            help_text = help_content.content or ""
+            try:
+                if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
+                    help_text = set_image_paths(
+                        self.app,
+                        help_text,
+                        encoded_repository_id=self.repository_id,
+                        tool_shed_repository=self.tool_shed_repository,
+                        tool_id=self.old_id,
+                        tool_version=self.version,
+                    )
+            except Exception:
+                log.exception(
+                    "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
                 )
-        except Exception:
-            log.exception(
-                "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
-            )
-        return help_text
+            help_content = HelpContent(format="restructuredtext", content=help_text)
+        return help_content
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
@@ -2505,12 +2511,18 @@ class Tool(UsesDictVisibleKeys):
         if tool_help:
             # create tool help
             help_txt = ""
-            if self.help:
-                help_txt = self.help.render(
-                    static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
-                )
-                help_txt = unicodify(help_txt)
+            help_format = "restructuredtext"
+            help_content = self.raw_help
+            if help_content:
+                help_format = help_content.format
+                if help_format == "restructuredtext":
+                    help_txt = self.help.render(
+                        static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
+                    )
+                    help_txt = unicodify(help_txt)
+
             tool_dict["help"] = help_txt
+            tool_dict["help_format"] = help_format
 
         return tool_dict
 
@@ -2570,11 +2582,15 @@ class Tool(UsesDictVisibleKeys):
 
         # create tool help
         tool_help = ""
-        if self.help:
+        tool_help_format = "restructuredtext"
+        if self.raw_help and self.raw_help.format == "restructuredtext":
             tool_help = self.help.render(
                 static_path=self.app.url_for("/static"), host_url=self.app.url_for("/", qualified=True)
             )
             tool_help = unicodify(tool_help, "utf-8")
+        elif self.raw_help:
+            tool_help = self.raw_help.content
+            tool_help_format = self.raw_help.format
 
         if isinstance(self.action, tuple):
             action = self.action[0] + self.app.url_for(self.action[1])
@@ -2586,6 +2602,7 @@ class Tool(UsesDictVisibleKeys):
             {
                 "id": self.id,
                 "help": tool_help,
+                "help_format": tool_help_format,
                 "citations": bool(self.citations),
                 "sharable_url": self.sharable_url,
                 "message": tool_message,

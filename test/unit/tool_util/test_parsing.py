@@ -372,7 +372,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert isinf(exit[0].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT1!!!"
 
     def test_tests(self):
@@ -579,7 +579,7 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert isinf(exit[1].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT2!!!"
 
     def test_inputs(self):

@@ -17,6 +17,7 @@ import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelection from "../FormSelection.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+import HelpText from "@/components/Help/HelpText.vue";
 
 library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
 
@@ -650,7 +651,11 @@ const noOptionsWarningMessage = computed(() => {
             </BFormCheckbox>
             <div class="info text-info">
                 <FontAwesomeIcon icon="fa-exclamation" />
-                <span v-localize class="ml-1">
+                <span v-if="props.type == 'data' && currentVariant.src == SOURCE.COLLECTION" class="ml-1">
+                    The supplied input will be <HelpText text="mapped over" uri="galaxy.collections.mapOver" /> this
+                    tool.
+                </span>
+                <span v-else v-localize class="ml-1">
                     This is a batch mode input field. Individual jobs will be triggered for each dataset.
                 </span>
             </div>

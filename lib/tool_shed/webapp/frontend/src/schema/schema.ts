@@ -1587,6 +1587,16 @@ export interface components {
              */
             parameter_type: "gx_group_tag"
         }
+        /** HelpContent */
+        HelpContent: {
+            /** Content */
+            content: string
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "restructuredtext" | "plain_text" | "markdown"
+        }
         /** HiddenParameterModel */
         HiddenParameterModel: {
             /** Argument */
@@ -1737,8 +1747,7 @@ export interface components {
             edam_operations: string[]
             /** Edam Topics */
             edam_topics: string[]
-            /** Help */
-            help: string | null
+            help: components["schemas"]["HelpContent"] | null
             /** Id */
             id: string
             /** Inputs */

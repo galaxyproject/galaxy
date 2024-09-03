@@ -17,6 +17,7 @@ from .parameters import (
 )
 from .parser.interface import (
     Citation,
+    HelpContent,
     ToolSource,
     XrefDict,
 )
@@ -39,7 +40,7 @@ class ParsedTool(BaseModel):
     edam_operations: List[str]
     edam_topics: List[str]
     xrefs: List[XrefDict]
-    help: Optional[str]
+    help: Optional[HelpContent]
 
 
 def parse_tool(tool_source: ToolSource) -> ParsedTool:

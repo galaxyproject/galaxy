@@ -121,6 +121,11 @@ class Citation(BaseModel):
     content: str
 
 
+class HelpContent(BaseModel):
+    format: Literal["restructuredtext", "plain_text", "markdown"]
+    content: str
+
+
 class ToolSource(metaclass=ABCMeta):
     """This interface represents an abstract source to parse tool
     information from.
@@ -333,9 +338,11 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self) -> Optional[str]:
-        """Return RST definition of help text for tool or None if the tool
-        doesn't define help text.
+    def parse_help(self) -> Optional[HelpContent]:
+        """Return help text for tool or None if the tool doesn't define help text.
+
+        The returned object contains the help text and an indication if it is reStructuredText
+        (``restructuredtext``), Markdown (``markdown``), or plain text (``plain_text``).
         """
 
     @abstractmethod

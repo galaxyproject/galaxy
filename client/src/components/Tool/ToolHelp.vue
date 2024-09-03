@@ -1,42 +1,18 @@
-<script setup>
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
+<script setup lang="ts">
+import ToolHelpMarkdown from "./ToolHelpMarkdown.vue";
+import ToolHelpRst from "./ToolHelpRst.vue";
 
-const props = defineProps({
-    content: {
-        type: String,
-        required: true,
-    },
-});
-
-const { formattedContent } = useFormattedToolHelp(props.content);
+defineProps<{
+    format: string;
+    content: string;
+}>();
 </script>
-
 <template>
-    <div class="form-help form-text" v-html="formattedContent" />
+    <span>
+        <ToolHelpMarkdown v-if="format == 'markdown'" :content="content" />
+        <ToolHelpRst v-else-if="format == 'restructuredtext'" :content="content" />
+        <div v-else class="form-help form-text">
+            {{ content }}
+        </div>
+    </span>
 </template>
-
-<style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
-.form-help {
-    &:deep(h3) {
-        font-size: $h4-font-size;
-        font-weight: bold;
-    }
-
-    &:deep(h4) {
-        font-size: $h5-font-size;
-        font-weight: bold;
-    }
-
-    &:deep(h5) {
-        font-size: $h6-font-size;
-        font-weight: bold;
-    }
-
-    &:deep(h6) {
-        font-size: $h6-font-size;
-        text-decoration: underline;
-    }
-}
-</style>

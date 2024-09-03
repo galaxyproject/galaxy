@@ -7,6 +7,7 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import HelpTerm from "components/Help/HelpTerm";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryView from "components/History/HistoryView";
@@ -194,6 +195,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "about",
                         component: AboutGalaxy,
+                    },
+                    {
+                        path: "help/terms/:term",
+                        component: HelpTerm,
+                        props: true,
                     },
                     {
                         path: "carbon_emissions_calculations",
