@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: uniqprimer
+Version: 0.5.0
+Summary: A Python tool for finding primers unique to a given genome
+Home-page: UNKNOWN
+Author: John Herndon
+Author-email: johnlherndon@gmail.com
+License: GNU GPL v3
+Description: UNKNOWN
+Platform: UNKNOWN

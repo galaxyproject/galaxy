@@ -1,0 +1,504 @@
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.55
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpgd6MOr/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpgd6MOr/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.99
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.48
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.58
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpgd6MOr/tempSequences.fasta" of length 366574
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpgd6MOr/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.83
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.47
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/PX099A.fa tmpgd6MOr/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Time Elapsed: 7 minutes, 25 seconds ***
+*** Output Written to primers.txt ***
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.94
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpzf5wS8/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpzf5wS8/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.48
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.87
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.87
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpzf5wS8/tempSequences.fasta" of length 161807
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpzf5wS8/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.98
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.85
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/Xoc_BLS256.fasta tmpzf5wS8/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Time Elapsed: 6 minutes, 16 seconds ***
+*** Output Written to primers.txt ***
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.15
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpbX8CHe/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpbX8CHe/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.63
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.87
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.83
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpbX8CHe/tempSequences.fasta" of length 161807
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpbX8CHe/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.04
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.85
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/Xoc_BLS256.fasta tmpbX8CHe/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Time Elapsed: 5 minutes, 0 seconds ***
+*** Output Written to primers.txt ***
+*** Removing temporary directory ***
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.79
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpuVRdjW/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpuVRdjW/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.55
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.48
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.91
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpuVRdjW/tempSequences.fasta" of length 366574
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpuVRdjW/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.18
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.47
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/PX099A.fa tmpuVRdjW/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Time Elapsed: 3 minutes, 16 seconds ***
+*** Output Written to primers.txt ***
+*** Removing temporary directory ***
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.91
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpLVmpjS/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpLVmpjS/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.93
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.48
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.39
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpLVmpjS/tempSequences.fasta" of length 366574
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpLVmpjS/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.73
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.47
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/PX099A.fa tmpLVmpjS/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Time Elapsed: 5 minutes, 26 seconds ***
+*** Output Written to primers.txt ***
+*** Removing temporary directory ***
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.29
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmppJaqDI/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmppJaqDI/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 6.73
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.48
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.27
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmppJaqDI/tempSequences.fasta" of length 366574
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmppJaqDI/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.60
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.47
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/PX099A.fa tmppJaqDI/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Time Elapsed: 8 minutes, 28 seconds ***
+*** Output Written to primers.txt ***
+*** Finished ***
+Traceback (most recent call last):
+  File "./uniqprimer.py", line 18, in <module>
+    from primertools import *
+  File "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/primertools/excludefilemanager.py", line 7, in <module>
+    import fastaparser
+  File "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/primertools/fastaparser.py", line 14, in <module>
+    from Bio import SeqIO
+ImportError: No module named Bio
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.11
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpFv9Owj/combined_exlude.ffn" of length 4941439
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpFv9Owj/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 5.92
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.87
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.58
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpFv9Owj/tempSequences.fasta" of length 161807
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpFv9Owj/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.77
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.85
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/Xoc_BLS256.fasta tmpFv9Owj/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Time Elapsed: 7 minutes, 2 seconds ***
+*** Output Written to primers.txt ***
+*** Finished ***
+Traceback (most recent call last):
+  File "./uniqprimer.py", line 18, in <module>
+    from primertools import *
+  File "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/primertools/excludefilemanager.py", line 7, in <module>
+    import fastaparser
+  File "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/primertools/fastaparser.py", line 14, in <module>
+    from Bio import SeqIO
+ImportError: No module named Bio
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.00
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpPHilD4/combined_exlude.ffn" of length 9773186
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpPHilD4/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 9.99
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 14.56
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.91
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpPHilD4/tempSequences.fasta" of length 169503
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpPHilD4/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 2.07
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.86
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/Xoc_BLS256.fasta tmpPHilD4/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+Failure: No unique primers exist for this combination
+*** Finished ***
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 5240076
+# construct suffix tree for sequence of length 5240076
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 52400 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.13
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpz0OJOq/combined_exlude.ffn" of length 9773186
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpz0OJOq/combined_exlude.ffn"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 6.27
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 14.56
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+1: PREPARING DATA
+2,3: RUNNING mummer AND CREATING CLUSTERS
+# reading input file "nucmer_alignments.ntref" of length 4831747
+# construct suffix tree for sequence of length 4831747
+# (maximum reference length is 536870908)
+# (maximum query length is 4294967295)
+# process 48317 characters per dot
+#....................................................................................................
+# CONSTRUCTIONTIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.24
+# reading input file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpz0OJOq/tempSequences.fasta" of length 169503
+# matching query-file "/homedir/galaxy/shed_tools/galaxy.southgreen.fr/toolshed/repos/dereeper/uniqprimer/631882b4244e/uniqprimer/uniqprimer-0.5.0/tmpz0OJOq/tempSequences.fasta"
+# against subject-file "nucmer_alignments.ntref"
+# COMPLETETIME /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 1.33
+# SPACE /usr/local/bioinfo/MUMmer/3.23/mummer nucmer_alignments.ntref 4.86
+4: FINISHING DATA
+5: GENERATING COORDS FILE
+Pick PCR primers and hybridization oligos
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+Search DNA sequences for matches with primer pairs
+*** Finding Primers ***
+*** Creating Combined Fasta File for Exclude Files ***
+*** Finding Sequences Unique to Target Genome ***
+*** Running nucmer ***
+*** Running nucmer Complete ***
+data/Xoc_BLS256.fasta tmpz0OJOq/tempSequences.fasta
+*** Running nucmer ***
+*** Running nucmer Complete ***
+*** Finding Primers ***
+*** Running EPrimer3 ***
+*** Running EPrimer3 Complete ***
+*** Cross Validating Primers ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+*** Running PrimerSearch ***
+*** Running PrimerSearch Complete ***
+Failure: No unique primers exist for this combination
+*** Finished ***
