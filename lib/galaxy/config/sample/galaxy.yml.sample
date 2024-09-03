@@ -1351,8 +1351,7 @@ galaxy:
   # Map for the interactivetool proxy. Mappings are stored in a SQLite
   # database file located on this path. As an alternative, you may also
   # store them in any other RDBMS supported by SQLAlchemy using the
-  # option ``interactivetools_map_sqlalchemy``, which overrides this
-  # one.
+  # option ``interactivetoolsproxy_map``, which overrides this one.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
@@ -1365,7 +1364,7 @@ galaxy:
   # Mappings are written to the table "gxitproxy" within the database.
   # This value cannot match ``database_connection`` nor
   # ``install_database_connection``.
-  #interactivetools_map_sqlalchemy: null
+  #interactivetoolsproxy_map: null
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools

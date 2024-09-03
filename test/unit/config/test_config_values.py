@@ -67,9 +67,9 @@ def test_error_if_database_connection_contains_brackets(bracket):
         config.GalaxyAppConfiguration(override_tempdir=False, amqp_internal_connection=uri)
 
 
-def test_error_if_interactivetools_map_sqlalchemy_matches_other_database_connections():
+def test_error_if_interactivetoolsproxy_map_matches_other_database_connections():
     """
-    The setting `interactivetools_map_sqlalchemy` allows storing the session map in a
+    The setting `interactivetoolsproxy_map` allows storing the session map in a
     database supported by SQLAlchemy. This database must be different from the Galaxy database
     and the tool shed database.
 
@@ -85,23 +85,23 @@ def test_error_if_interactivetools_map_sqlalchemy_matches_other_database_connect
     )
 
     with pytest.raises(ConfigurationError):
-        # interactivetools_map_sqlalchemy matches database_connection
+        # interactivetoolsproxy_map matches database_connection
         config.GalaxyAppConfiguration(
             **settings,
-            interactivetools_map_sqlalchemy=database_connection,
+            interactivetoolsproxy_map=database_connection,
         )
 
     with pytest.raises(ConfigurationError):
-        # interactivetools_map_sqlalchemy matches install_database_connection
+        # interactivetoolsproxy_map matches install_database_connection
         config.GalaxyAppConfiguration(
             **settings,
-            interactivetools_map_sqlalchemy=install_database_connection,
+            interactivetoolsproxy_map=install_database_connection,
         )
 
-    # interactivetools_map_sqlalchemy differs from database_connection, install_database_connection
+    # interactivetoolsproxy_map differs from database_connection, install_database_connection
     config.GalaxyAppConfiguration(
         **settings,
-        interactivetools_map_sqlalchemy="dbscheme://user:password@host/gxitproxy",
+        interactivetoolsproxy_map="dbscheme://user:password@host/gxitproxy",
     )
 
 

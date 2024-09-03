@@ -135,7 +135,7 @@ class InteractiveToolManager:
         self.job_manager = app.job_manager
         self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
         self.propagator = InteractiveToolPropagatorSQLAlchemy(
-            app.config.interactivetools_map_sqlalchemy or app.config.interactivetools_map,
+            app.config.interactivetoolsproxy_map or app.config.interactivetools_map,
             self.encoder.encode_id,
         )
 

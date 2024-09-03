@@ -109,11 +109,11 @@ the URL and headers, then somewhat massaged, and finally forwarded to the correc
     SQLite may not be the best choice. A common case is a high-availability production setup, meaning that multiple
     copies of Galaxy are running on different servers behind a load balancer.
 
-    For these situations, there exists an optional |configuration option interactivetools_map_sqlalchemy|_ that allows
-    using any database supported by SQLAlchemy (it overrides ``interactivetools_map``).
+    For these situations, there exists an optional |configuration option interactivetoolsproxy_map|_ that allows using
+    any database supported by SQLAlchemy (it overrides ``interactivetools_map``).
 
-.. |configuration option interactivetools_map_sqlalchemy| replace:: configuration option ``interactivetools_map_sqlalchemy``
-.. _configuration option interactivetools_map_sqlalchemy: ../config.html#interactivetools-map-sqlalchemy
+.. |configuration option interactivetoolsproxy_map| replace:: configuration option ``interactivetoolsproxy_map``
+.. _configuration option interactivetoolsproxy_map: ../config.html#interactivetoolsproxy-map
 
 .. note::
 

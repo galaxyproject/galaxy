@@ -1104,19 +1104,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
-        # InteractiveTools propagator mapping
-        if self.interactivetools_map_sqlalchemy is None:
+        # Interactive tools proxy mapping
+        if self.interactivetoolsproxy_map is None:
             self.interactivetools_map = "sqlite:///" + self._in_root_dir(
                 kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
             )
         else:
-            self.interactivetools_map = None  # overridden by `self.interactivetools_map_sqlalchemy`
+            self.interactivetools_map = None  # overridden by `self.interactivetoolsproxy_map`
 
             # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
             urls = {
                 setting: parse_sqlalchemy_url(value)
                 for setting, value in (
-                    ("interactivetools_map_sqlalchemy", self.interactivetools_map_sqlalchemy),
+                    ("interactivetoolsproxy_map", self.interactivetoolsproxy_map),
                     ("database_connection", self.database_connection),
                     ("install_database_connection", self.install_database_connection),
                 )
@@ -1128,8 +1128,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
             conflicting_settings = {
                 setting
-                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetools_map_sqlalchemy"
-                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetools_map_sqlalchemy"
+                for setting, url in tuple(urls.items())[1:]  # exclude "interactivetoolsproxy_map"
+                if is_in_conflict(url, list(urls.values())[0])  # compare with "interactivetoolsproxy_map"
             }
 
             if conflicting_settings:
@@ -1257,8 +1257,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         try_parsing(self.database_connection, "database_connection")
         try_parsing(self.install_database_connection, "install_database_connection")
-        if self.interactivetools_map_sqlalchemy is not None:
-            try_parsing(self.interactivetools_map_sqlalchemy, "interactivetools_map_sqlalchemy")
+        if self.interactivetoolsproxy_map is not None:
+            try_parsing(self.interactivetoolsproxy_map, "interactivetoolsproxy_map")
         try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
 
     def _configure_dataset_storage(self):
