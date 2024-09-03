@@ -219,7 +219,8 @@ class CondaContext(installable.InstallableContext):
         does not exist or is empty.
         """
         conda_exec = os.path.abspath(self.conda_exec)
-        conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, "bin/conda"))
+        conda_exec_basename = os.path.basename(self.conda_exec)
+        conda_prefix_plus_exec = os.path.abspath(os.path.join(self.conda_prefix, "bin", conda_exec_basename))
         if conda_exec == conda_prefix_plus_exec:
             if not os.path.exists(self.conda_prefix):
                 return True
