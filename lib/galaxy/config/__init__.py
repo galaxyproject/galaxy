@@ -33,7 +33,6 @@ from typing import (
 from urllib.parse import urlparse
 
 import yaml
-from sqlalchemy.engine import make_url as parse_sqlalchemy_url
 
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
@@ -1114,7 +1113,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
             # ensure the database URL for the SQLAlchemy map does not match that of a Galaxy DB
             urls = {
-                setting: parse_sqlalchemy_url(value)
+                setting: urlparse(value)
                 for setting, value in (
                     ("interactivetoolsproxy_map", self.interactivetoolsproxy_map),
                     ("database_connection", self.database_connection),
@@ -1124,7 +1123,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
             def is_in_conflict(url1, url2):
-                return all((url1.host == url2.host, url1.port == url2.port, url1.database == url2.database))
+                return all(
+                    (
+                        url1.scheme == url2.scheme,
+                        url1.hostname == url2.hostname,
+                        url1.port == url2.port,
+                        url1.path == url2.path,
+                    )
+                )
 
             conflicting_settings = {
                 setting
