@@ -5337,7 +5337,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         roles=None,
         ldda_message="",
         element_identifier=None,
-    ):
+    ) -> "LibraryDatasetDatasetAssociation":
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
@@ -5371,7 +5371,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             user=user,
         )
         library_dataset.library_dataset_dataset_association = ldda
-        object_session(self).add(library_dataset)
+        session = object_session(self)
+        assert session
+        session.add(library_dataset)
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         roles = roles or []
         for role in roles:
@@ -5381,7 +5383,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             trans.sa_session.add(dp)
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
         if self.set_metadata_requires_flush:
-            session = object_session(self)
             with transaction(session):
                 session.commit()
         ldda.metadata = self.metadata
@@ -5390,10 +5391,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             ldda.message = ldda_message
         if not replace_dataset:
             target_folder.add_library_dataset(library_dataset, genome_build=ldda.dbkey)
-            object_session(self).add(target_folder)
-        object_session(self).add(library_dataset)
+            session.add(target_folder)
+        session.add(library_dataset)
 
-        session = object_session(self)
         with transaction(session):
             session.commit()
 
@@ -5980,6 +5980,11 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+    message: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    tags: Mapped[List["LibraryDatasetDatasetAssociationTagAssociation"]] = relationship(
+        order_by=lambda: LibraryDatasetDatasetAssociationTagAssociation.id,
+        back_populates="library_dataset_dataset_association",
+    )
 
     def __init__(
         self,

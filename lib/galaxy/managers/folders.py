@@ -505,7 +505,7 @@ class FolderManager:
             stmt = stmt.where(
                 or_(
                     func.lower(ldda.name).contains(search_text, autoescape=True),
-                    func.lower(ldda.message).contains(search_text, autoescape=True),  # type:ignore[attr-defined]
+                    func.lower(ldda.message).contains(search_text, autoescape=True),
                 )
             )
         sort_column = LDDA_SORT_COLUMN_MAP[payload.order_by](ldda, associated_dataset)

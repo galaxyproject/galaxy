@@ -604,7 +604,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert hda is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
-        roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
+        roles = self.hda_manager.serialize_dataset_association_roles(hda)
         return DatasetAssociationRoles(**roles)
 
     def update(

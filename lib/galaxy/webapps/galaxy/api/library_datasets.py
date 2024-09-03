@@ -171,7 +171,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
