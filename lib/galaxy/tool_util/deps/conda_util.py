@@ -77,7 +77,7 @@ def find_conda_prefix() -> str:
         destination = os.path.join(home, destination)
         if os.path.exists(destination):
             return destination
-    return "miniforge3"
+    return os.path.join(home, "miniforge3")
 
 
 class CondaContext(installable.InstallableContext):
